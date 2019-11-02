@@ -9,6 +9,7 @@
 
 using System;
 using System.Collections.Generic;
+using TS3Client;
 
 namespace TS3AudioBot.Sessions
 {
@@ -18,9 +19,9 @@ namespace TS3AudioBot.Sessions
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 
 		// Map: Id => UserSession
-		private readonly Dictionary<ushort, UserSession> openSessions = new Dictionary<ushort, UserSession>();
+		private readonly Dictionary<ClientId, UserSession> openSessions = new Dictionary<ClientId, UserSession>();
 
-		public UserSession GetOrCreateSession(ushort clientId)
+		public UserSession GetOrCreateSession(ClientId clientId)
 		{
 			lock (openSessions)
 			{
@@ -34,7 +35,7 @@ namespace TS3AudioBot.Sessions
 			}
 		}
 
-		public R<UserSession> GetSession(ushort id)
+		public R<UserSession> GetSession(ClientId id)
 		{
 			lock (openSessions)
 			{
@@ -45,7 +46,7 @@ namespace TS3AudioBot.Sessions
 			}
 		}
 
-		public void RemoveSession(ushort id)
+		public void RemoveSession(ClientId id)
 		{
 			lock (openSessions)
 			{

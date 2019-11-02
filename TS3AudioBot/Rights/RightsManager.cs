@@ -96,10 +96,10 @@ namespace TS3AudioBot.Rights
 
 				if (info.TryGet<Ts3Client>(out var ts) && info.TryGet<Ts3BaseFunctions>(out var tsClient))
 				{
-					ulong[] serverGroups = clientCall.ServerGroups;
-					ulong? channelId = clientCall.ChannelId;
-					ulong? databaseId = clientCall.DatabaseId;
-					ulong? channelGroup = clientCall.ChannelGroup;
+					ServerGroupId[] serverGroups = clientCall.ServerGroups;
+					ChannelId? channelId = clientCall.ChannelId;
+					ClientDbId? databaseId = clientCall.DatabaseId;
+					ChannelGroupId? channelGroup = clientCall.ChannelGroup;
 
 					if (clientCall.ClientId != null
 						&& ((needsAvailableGroups && serverGroups is null)
@@ -138,7 +138,7 @@ namespace TS3AudioBot.Rights
 					}
 
 					execCtx.ChannelGroupId = channelGroup;
-					execCtx.ServerGroups = serverGroups ?? Array.Empty<ulong>();
+					execCtx.ServerGroups = serverGroups ?? Array.Empty<ServerGroupId>();
 
 					if (needsPermOverview.Length > 0 && databaseId != null && channelId != null)
 					{
@@ -307,7 +307,7 @@ namespace TS3AudioBot.Rights
 				{
 					var adminUid = Interactive.LoopAction("Please enter an admin uid", uid =>
 					{
-						if (!TS3Client.Full.IdentityData.IsUidValid(uid))
+						if (!Uid.IsValid(uid))
 						{
 							Console.WriteLine("The uid seems to be invalid, continue anyway? [y/N]");
 							return Interactive.UserAgree(defaultTo: false);

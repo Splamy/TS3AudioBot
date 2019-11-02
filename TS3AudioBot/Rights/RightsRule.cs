@@ -71,17 +71,17 @@ namespace TS3AudioBot.Rights
 			case "groupid":
 				var servergroupid = tomlObj.TryGetValueArray<ulong>();
 				if (servergroupid is null) ctx.Errors.Add("<groupid> Field has invalid data.");
-				else Matcher.Add(new MatchServerGroupId(servergroupid));
+				else Matcher.Add(new MatchServerGroupId(servergroupid.Cast<ServerGroupId>()));
 				return true;
 			case "channelgroupid":
 				var channelgroupid = tomlObj.TryGetValueArray<ulong>();
 				if (channelgroupid is null) ctx.Errors.Add("<channelgroupid> Field has invalid data.");
-				else Matcher.Add(new MatchChannelGroupId(channelgroupid));
+				else Matcher.Add(new MatchChannelGroupId(channelgroupid.Cast<ChannelGroupId>()));
 				return true;
 			case "useruid":
 				var useruid = tomlObj.TryGetValueArray<string>();
 				if (useruid is null) ctx.Errors.Add("<useruid> Field has invalid data.");
-				else Matcher.Add(new MatchClientUid(useruid));
+				else Matcher.Add(new MatchClientUid(useruid.Cast<Uid>()));
 				return true;
 			case "perm":
 				var perm = tomlObj.TryGetValueArray<string>();

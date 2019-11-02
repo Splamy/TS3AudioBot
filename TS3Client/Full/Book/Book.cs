@@ -11,9 +11,6 @@ using System;
 using System.Linq;
 using TS3Client.Helper;
 using TS3Client.Messages;
-using ChannelId = System.UInt64;
-using ClientId = System.UInt16;
-using ServerGroupId = System.UInt64;
 using SocketAddr = System.String;
 
 namespace TS3Client.Full.Book

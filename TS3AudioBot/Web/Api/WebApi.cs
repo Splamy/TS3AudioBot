@@ -25,6 +25,7 @@ using TS3AudioBot.Dependency;
 using TS3AudioBot.Helper;
 using TS3AudioBot.Localization;
 using TS3AudioBot.Sessions;
+using TS3Client;
 using TS3Client.Helper;
 
 namespace TS3AudioBot.Web.Api
@@ -70,7 +71,7 @@ namespace TS3AudioBot.Web.Api
 				ReturnError(new CommandException(authResult.Error, CommandExceptionReason.Unauthorized), response);
 				return;
 			}
-			if (!AllowAnonymousRequest && string.IsNullOrEmpty(authResult.Value.ClientUid))
+			if (!AllowAnonymousRequest && authResult.Value.ClientUid == Uid.Null)
 			{
 				Log.Debug("Unauthorized request!");
 				ReturnError(new CommandException(ErrorAnonymousDisabled, CommandExceptionReason.Unauthorized), response);
@@ -340,7 +341,7 @@ namespace TS3AudioBot.Web.Api
 			if (dbToken.Value != token)
 				return ErrorAuthFailure;
 
-			return new ApiCall(userUid, token: dbToken.Value);
+			return new ApiCall((Uid)userUid, token: dbToken.Value);
 		}
 	}
 }

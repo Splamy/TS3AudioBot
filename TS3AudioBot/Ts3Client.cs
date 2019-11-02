@@ -58,10 +58,8 @@ namespace TS3AudioBot
 		private IdentityData identity;
 		private List<ClientList> clientbuffer = new List<ClientList>();
 		private bool clientbufferOutdated = true;
-		// dbid -> DbData
-		private readonly TimedCache<ulong, ClientDbInfo> clientDbNames = new TimedCache<ulong, ClientDbInfo>();
-		// uid -> dbid
-		private readonly LruCache<string, ulong> dbIdCache = new LruCache<string, ulong>(1024);
+		private readonly TimedCache<ClientDbId, ClientDbInfo> clientDbNames = new TimedCache<ClientDbId, ClientDbInfo>();
+		private readonly LruCache<Uid, ClientDbId> dbIdCache = new LruCache<Uid, ClientDbId>(1024);
 		private bool alone = true;
 
 		private readonly StallCheckPipe stallCheckPipe;
@@ -226,7 +224,7 @@ namespace TS3AudioBot
 
 		#region Ts3Client functions wrapper
 
-		public E<LocalStr> SendMessage(string message, ushort clientId)
+		public E<LocalStr> SendMessage(string message, ClientId clientId)
 		{
 			if (Ts3String.TokenLength(message) > Ts3Const.MaxSizeTextMessage)
 				return new LocalStr(strings.error_ts_msg_too_long);
@@ -247,8 +245,8 @@ namespace TS3AudioBot
 			return tsFullClient.SendServerMessage(message, 1).FormatLocal();
 		}
 
-		public E<LocalStr> KickClientFromServer(ushort clientId) => tsFullClient.KickClientFromServer(new[] { clientId }).FormatLocal();
-		public E<LocalStr> KickClientFromChannel(ushort clientId) => tsFullClient.KickClientFromChannel(new[] { clientId }).FormatLocal();
+		public E<LocalStr> KickClientFromServer(ClientId clientId) => tsFullClient.KickClientFromServer(new[] { clientId }).FormatLocal();
+		public E<LocalStr> KickClientFromChannel(ClientId clientId) => tsFullClient.KickClientFromChannel(new[] { clientId }).FormatLocal();
 
 		public E<LocalStr> ChangeDescription(string description)
 			=> tsFullClient.ChangeDescription(description, tsFullClient.ClientId).FormatLocal();
@@ -272,9 +270,9 @@ namespace TS3AudioBot
 				return result.Error.FormatLocal();
 		}
 
-		public R<ClientList, LocalStr> GetCachedClientById(ushort id) => ClientBufferRequest(client => client.ClientId == id);
+		public R<ClientList, LocalStr> GetCachedClientById(ClientId id) => ClientBufferRequest(client => client.ClientId == id);
 
-		public R<ClientList, LocalStr> GetFallbackedClientById(ushort id)
+		public R<ClientList, LocalStr> GetFallbackedClientById(ClientId id)
 		{
 			var result = ClientBufferRequest(client => client.ClientId == id);
 			if (result.Ok)
@@ -328,7 +326,7 @@ namespace TS3AudioBot
 			return R.Ok;
 		}
 
-		public R<ulong[], LocalStr> GetClientServerGroups(ulong dbId)
+		public R<ServerGroupId[], LocalStr> GetClientServerGroups(ClientDbId dbId)
 		{
 			var result = tsFullClient.ServerGroupsByClientDbId(dbId);
 			if (!result.Ok)
@@ -336,7 +334,7 @@ namespace TS3AudioBot
 			return result.Value.Select(csg => csg.ServerGroupId).ToArray();
 		}
 
-		public R<ClientDbInfo, LocalStr> GetDbClientByDbId(ulong clientDbId)
+		public R<ClientDbInfo, LocalStr> GetDbClientByDbId(ClientDbId clientDbId)
 		{
 			if (clientDbNames.TryGetValue(clientDbId, out var clientData))
 				return clientData;
@@ -349,9 +347,9 @@ namespace TS3AudioBot
 			return clientData;
 		}
 
-		public R<ClientInfo, LocalStr> GetClientInfoById(ushort id) => tsFullClient.ClientInfo(id).FormatLocal(() => strings.error_ts_no_client_found);
+		public R<ClientInfo, LocalStr> GetClientInfoById(ClientId id) => tsFullClient.ClientInfo(id).FormatLocal(() => strings.error_ts_no_client_found);
 
-		public R<ulong, LocalStr> GetClientDbIdByUid(string uid)
+		public R<ClientDbId, LocalStr> GetClientDbIdByUid(Uid uid)
 		{
 			if (dbIdCache.TryGetValue(uid, out var dbid))
 				return dbid;
@@ -376,7 +374,7 @@ namespace TS3AudioBot
 
 			// Check all own server groups
 			var getGroupResult = GetClientServerGroups(myDbId);
-			var groups = getGroupResult.Ok ? getGroupResult.Value : Array.Empty<ulong>();
+			var groups = getGroupResult.Ok ? getGroupResult.Value : Array.Empty<ServerGroupId>();
 
 			// Add self to master group (via token)
 			if (!string.IsNullOrEmpty(key))
@@ -390,11 +388,11 @@ namespace TS3AudioBot
 			}
 
 			// Remember new group (or check if in new group at all)
-			var groupDiff = Array.Empty<ulong>();
+			var groupDiff = Array.Empty<ServerGroupId>();
 			if (getGroupResult.Ok)
 			{
 				getGroupResult = GetClientServerGroups(myDbId);
-				var groupsNew = getGroupResult.Ok ? getGroupResult.Value : Array.Empty<ulong>();
+				var groupsNew = getGroupResult.Ok ? getGroupResult.Value : Array.Empty<ServerGroupId>();
 				groupDiff = groupsNew.Except(groups).ToArray();
 			}
 
@@ -404,7 +402,7 @@ namespace TS3AudioBot
 				var botGroup = tsFullClient.ServerGroupAdd("ServerBot");
 				if (botGroup.Ok)
 				{
-					config.BotGroupId.Value = botGroup.Value.ServerGroupId;
+					config.BotGroupId.Value = botGroup.Value.ServerGroupId.Value;
 
 					// Add self to new group
 					var grpresult = tsFullClient.ServerGroupAddClient(botGroup.Value.ServerGroupId, myDbId);
@@ -417,7 +415,7 @@ namespace TS3AudioBot
 			const int ava = 500000; // max size in bytes for the avatar
 
 			// Add various rights to the bot group
-			var permresult = tsFullClient.ServerGroupAddPerm(config.BotGroupId.Value,
+			var permresult = tsFullClient.ServerGroupAddPerm((ServerGroupId)config.BotGroupId.Value,
 				new[] {
 					Ts3Permission.i_client_whisper_power, // + Required for whisper channel playing
 					Ts3Permission.i_client_private_textmessage_power, // + Communication
@@ -503,7 +501,7 @@ namespace TS3AudioBot
 
 		public E<LocalStr> DeleteAvatar() => tsFullClient.DeleteAvatar().FormatLocal();
 
-		public E<LocalStr> MoveTo(ulong channelId, string password = null)
+		public E<LocalStr> MoveTo(ChannelId channelId, string password = null)
 			=> tsFullClient.ClientMove(tsFullClient.ClientId, channelId, password).FormatLocal(() => strings.error_ts_cannot_move);
 
 		public E<LocalStr> SetChannelCommander(bool isCommander)
@@ -653,9 +651,9 @@ namespace TS3AudioBot
 			OnMessageReceived?.Invoke(sender, textMessage);
 		}
 
-		private void ChannelClientsChanged(ulong channelId)
+		private void ChannelClientsChanged(ChannelId channelId)
 		{
-			if (channelId != tsFullClient.Book.Self().Channel)
+			if (channelId != tsFullClient.Book.Self()?.Channel)
 				return;
 			IsAloneRecheck();
 		}

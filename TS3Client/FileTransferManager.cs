@@ -18,7 +18,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using TS3Client.Helper;
 using TS3Client.Messages;
-using ChannelIdT = System.UInt64;
 using IOFileInfo = System.IO.FileInfo;
 
 namespace TS3Client
@@ -47,7 +46,7 @@ namespace TS3Client
 		/// False will throw an exception if the file already exists.</param>
 		/// <param name="channelPassword">The password for the channel.</param>
 		/// <returns>A token to track the file transfer.</returns>
-		public R<FileTransferToken, CommandError> UploadFile(IOFileInfo file, ChannelIdT channel, string path, bool overwrite = false, string channelPassword = "")
+		public R<FileTransferToken, CommandError> UploadFile(IOFileInfo file, ChannelId channel, string path, bool overwrite = false, string channelPassword = "")
 			=> UploadFile(file.Open(FileMode.Open, FileAccess.Read), channel, path, overwrite, channelPassword);
 
 		/// <summary>Initiate a file upload to the server.</summary>
@@ -60,7 +59,7 @@ namespace TS3Client
 		/// <param name="closeStream">True will <see cref="IDisposable.Dispose"/> the stream after the upload is finished.</param>
 		/// <param name="createMd5">Will generate a md5 sum of the uploaded file.</param>
 		/// <returns>A token to track the file transfer.</returns>
-		public R<FileTransferToken, CommandError> UploadFile(Stream stream, ChannelIdT channel, string path, bool overwrite = false, string channelPassword = "", bool closeStream = true, bool createMd5 = false)
+		public R<FileTransferToken, CommandError> UploadFile(Stream stream, ChannelId channel, string path, bool overwrite = false, string channelPassword = "", bool closeStream = true, bool createMd5 = false)
 		{
 			ushort cftid = GetFreeTransferId();
 			var request = parent.FileTransferInitUpload(channel, path, channelPassword, cftid, stream.Length, overwrite, false);
@@ -80,7 +79,7 @@ namespace TS3Client
 		/// <param name="path">The download path within the channel. Eg: "file.txt", "path/file.png"</param>
 		/// <param name="channelPassword">The password for the channel.</param>
 		/// <returns>A token to track the file transfer.</returns>
-		public R<FileTransferToken, CommandError> DownloadFile(IOFileInfo file, ChannelIdT channel, string path, string channelPassword = "")
+		public R<FileTransferToken, CommandError> DownloadFile(IOFileInfo file, ChannelId channel, string path, string channelPassword = "")
 			=> DownloadFile(file.Open(FileMode.Create, FileAccess.Write), channel, path, channelPassword, true);
 
 		/// <summary>Initiate a file download from the server.</summary>
@@ -90,7 +89,7 @@ namespace TS3Client
 		/// <param name="channelPassword">The password for the channel.</param>
 		/// <param name="closeStream">True will <see cref="IDisposable.Dispose"/> the stream after the download is finished.</param>
 		/// <returns>A token to track the file transfer.</returns>
-		public R<FileTransferToken, CommandError> DownloadFile(Stream stream, ChannelIdT channel, string path, string channelPassword = "", bool closeStream = true)
+		public R<FileTransferToken, CommandError> DownloadFile(Stream stream, ChannelId channel, string path, string channelPassword = "", bool closeStream = true)
 		{
 			ushort cftid = GetFreeTransferId();
 			var request = parent.FileTransferInitDownload(channel, path, channelPassword, cftid, 0);
@@ -292,7 +291,7 @@ namespace TS3Client
 	{
 		public Stream LocalStream { get; }
 		public TransferDirection Direction { get; }
-		public ChannelIdT ChannelId { get; }
+		public ChannelId ChannelId { get; }
 		public string Path { get; }
 		public long Size { get; }
 		public ushort ClientTransferId { get; }
@@ -307,20 +306,20 @@ namespace TS3Client
 
 		public TransferStatus Status { get; internal set; }
 
-		public FileTransferToken(Stream localStream, FileUpload upload, ChannelIdT channelId,
+		public FileTransferToken(Stream localStream, FileUpload upload, ChannelId channelId,
 			string path, string channelPassword, long size, bool createMd5)
 			: this(localStream, upload.ClientFileTransferId, upload.ServerFileTransferId, TransferDirection.Upload,
 				channelId, path, channelPassword, upload.Port, (long)upload.SeekPosition, upload.FileTransferKey, size, createMd5)
 		{ }
 
-		public FileTransferToken(Stream localStream, FileDownload download, ChannelIdT channelId,
+		public FileTransferToken(Stream localStream, FileDownload download, ChannelId channelId,
 			string path, string channelPassword, long seekPos)
 			: this(localStream, download.ClientFileTransferId, download.ServerFileTransferId, TransferDirection.Download,
 				channelId, path, channelPassword, download.Port, seekPos, download.FileTransferKey, (long)download.Size, false)
 		{ }
 
 		public FileTransferToken(Stream localStream, ushort cftid, ushort sftid,
-			TransferDirection dir, ChannelIdT channelId, string path, string channelPassword, ushort port, long seekPos,
+			TransferDirection dir, ChannelId channelId, string path, string channelPassword, ushort port, long seekPos,
 			string transferKey, long size, bool createMd5)
 		{
 			CloseStreamWhenDone = false;

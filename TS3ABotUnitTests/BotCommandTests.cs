@@ -12,6 +12,7 @@ using TS3AudioBot.CommandSystem.Ast;
 using TS3AudioBot.CommandSystem.CommandResults;
 using TS3AudioBot.CommandSystem.Commands;
 using TS3AudioBot.Dependency;
+using TS3Client;
 
 namespace TS3ABotUnitTests
 {
@@ -271,7 +272,7 @@ namespace TS3ABotUnitTests
 		{
 			var execInfo = new ExecutionInformation();
 			execInfo.AddModule(new CallerInfo(false) { SkipRightsChecks = true, CommandComplexityMax = int.MaxValue });
-			execInfo.AddModule(new InvokerData("InvokerUid"));
+			execInfo.AddModule(new InvokerData((Uid)"InvokerUid"));
 			execInfo.AddModule(Filter.GetFilterByName(matcher));
 			execInfo.AddModule(cmdMgr);
 			return execInfo;

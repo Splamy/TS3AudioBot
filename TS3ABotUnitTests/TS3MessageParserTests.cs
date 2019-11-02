@@ -20,7 +20,7 @@ namespace TS3ABotUnitTests
 			var notifv = notif.Value;
 			Assert.AreEqual(notifv.Length, 1);
 			var notifs = notifv[0];
-			AssertEx.PropertyValuesAreEquals(notifs, new ChannelChanged() { ChannelId = 6 });
+			AssertEx.PropertyValuesAreEquals(notifs, new ChannelChanged() { ChannelId = (ChannelId)6 });
 		}
 
 		[Test]
@@ -31,7 +31,7 @@ namespace TS3ABotUnitTests
 			var notifv = notif.Value;
 			Assert.AreEqual(notifv.Length, 1);
 			var notifs = notifv[0];
-			AssertEx.PropertyValuesAreEquals(notifs, new ClientChatComposing() { ClientId = 42, ClientUid = "asdfe/rvt==" });
+			AssertEx.PropertyValuesAreEquals(notifs, new ClientChatComposing() { ClientId = (ClientId)42, ClientUid = (Uid)"asdfe/rvt==" });
 		}
 
 		[Test]
@@ -41,8 +41,8 @@ namespace TS3ABotUnitTests
 			Assert.True(notif.Ok);
 			var notifv = notif.Value;
 			Assert.AreEqual(notifv.Length, 2);
-			AssertEx.PropertyValuesAreEquals(notifv[0], new ChannelChanged() { ChannelId = 5 });
-			AssertEx.PropertyValuesAreEquals(notifv[1], new ChannelChanged() { ChannelId = 4 });
+			AssertEx.PropertyValuesAreEquals(notifv[0], new ChannelChanged() { ChannelId = (ChannelId)5 });
+			AssertEx.PropertyValuesAreEquals(notifv[1], new ChannelChanged() { ChannelId = (ChannelId)4 });
 		}
 
 		[Test]
@@ -52,8 +52,8 @@ namespace TS3ABotUnitTests
 			Assert.True(notif.Ok);
 			var notifv = notif.Value;
 			Assert.AreEqual(notifv.Length, 2);
-			AssertEx.PropertyValuesAreEquals(notifv[0], new ClientChatComposing() { ClientId = 42, ClientUid = "asdfe/rvt==" });
-			AssertEx.PropertyValuesAreEquals(notifv[1], new ClientChatComposing() { ClientId = 1337, ClientUid = "asdfe/rvt==" });
+			AssertEx.PropertyValuesAreEquals(notifv[0], new ClientChatComposing() { ClientId = (ClientId)42, ClientUid = (Uid)"asdfe/rvt==" });
+			AssertEx.PropertyValuesAreEquals(notifv[1], new ClientChatComposing() { ClientId = (ClientId)1337, ClientUid = (Uid)"asdfe/rvt==" });
 		}
 
 		[Test]
@@ -68,10 +68,10 @@ namespace TS3ABotUnitTests
 			Assert.True(notif.Ok);
 			var notifv = notif.Value;
 			Assert.AreEqual(notifv.Length, 4);
-			AssertEx.PropertyValuesAreEquals(notifv[0], new ClientList() { ClientId = 1, ChannelId = 1, DatabaseId = 2, Name = "TestBob1", ClientType = ClientType.Full, Uid = "u/dFMOFFipxS9fJ8HKv0KH6WVzA=" });
-			AssertEx.PropertyValuesAreEquals(notifv[1], new ClientList() { ClientId = 2, ChannelId = 4, DatabaseId = 2, Name = "TestBob", ClientType = ClientType.Full, Uid = "u/dFMOFFipxS9fJ8HKv0KH6WVzA=" });
-			AssertEx.PropertyValuesAreEquals(notifv[2], new ClientList() { ClientId = 3, ChannelId = 4, DatabaseId = 6, Name = "Splamy", ClientType = ClientType.Full, Uid = "uA0U7t4PBxdJ5TLnarsOHQh4/tY=" });
-			AssertEx.PropertyValuesAreEquals(notifv[3], new ClientList() { ClientId = 4, ChannelId = 4, DatabaseId = 7, Name = "AudioBud", ClientType = ClientType.Full, Uid = "b+P0CqXms5I0C+A66HZ4Sbu/PNw=" });
+			AssertEx.PropertyValuesAreEquals(notifv[0], new ClientList() { ClientId = (ClientId)1, ChannelId = (ChannelId)1, DatabaseId = (ClientDbId)2, Name = "TestBob1", ClientType = ClientType.Full, Uid = (Uid)"u/dFMOFFipxS9fJ8HKv0KH6WVzA=" });
+			AssertEx.PropertyValuesAreEquals(notifv[1], new ClientList() { ClientId = (ClientId)2, ChannelId = (ChannelId)4, DatabaseId = (ClientDbId)2, Name = "TestBob", ClientType = ClientType.Full, Uid = (Uid)"u/dFMOFFipxS9fJ8HKv0KH6WVzA=" });
+			AssertEx.PropertyValuesAreEquals(notifv[2], new ClientList() { ClientId = (ClientId)3, ChannelId = (ChannelId)4, DatabaseId = (ClientDbId)6, Name = "Splamy", ClientType = ClientType.Full, Uid = (Uid)"uA0U7t4PBxdJ5TLnarsOHQh4/tY=" });
+			AssertEx.PropertyValuesAreEquals(notifv[3], new ClientList() { ClientId = (ClientId)4, ChannelId = (ChannelId)4, DatabaseId = (ClientDbId)7, Name = "AudioBud", ClientType = ClientType.Full, Uid = (Uid)"b+P0CqXms5I0C+A66HZ4Sbu/PNw=" });
 		}
 
 		[Test]

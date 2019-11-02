@@ -8,14 +8,15 @@
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
 using System.Collections.Generic;
+using TS3Client;
 
 namespace TS3AudioBot.Rights.Matchers
 {
 	internal class MatchClientUid : Matcher
 	{
-		private readonly HashSet<string> clientUids;
+		private readonly HashSet<Uid> clientUids;
 
-		public MatchClientUid(IEnumerable<string> clientUids) => this.clientUids = new HashSet<string>(clientUids);
+		public MatchClientUid(IEnumerable<Uid> clientUids) => this.clientUids = new HashSet<Uid>(clientUids);
 
 		public override bool Matches(ExecuteContext ctx) => ctx.ClientUid != null && clientUids.Contains(ctx.ClientUid);
 	}

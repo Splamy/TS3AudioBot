@@ -41,6 +41,12 @@ string GenerateDeserializer(Messages.Field fld)
 }
 
 Dictionary<string, string> BackingTypes = new Dictionary<string, string>() {
+	{ "Uid", "str" },
+	{ "ClientDbId", "u64" },
+	{ "ClientId", "u16" },
+	{ "ChannelId", "u64" },
+	{ "ServerGroupId", "u64" },
+	{ "ChannelGroupId", "u64" },
 	{ "Codec", "u8" },
 	{ "Ts3ErrorCode", "u32" },
 	{ "LicenseType", "u16" },
@@ -68,7 +74,9 @@ string GenerateSingleDeserializer(Messages.Field fld, string input, string outpu
 	case "ChannelId":
 	case "ServerGroupId":
 	case "ChannelGroupId":
-		return $"{{ if(Utf8Parser.TryParse({input}, out {fld.type} oval, out _)) {output} = oval; }}";
+		if(!BackingTypes.TryGetValue(fld.type, out var backType))
+			backType = fld.type;
+		return $"{{ if(Utf8Parser.TryParse({input}, out {backType} oval, out _)) {output} = ({fld.type})oval; }}";
 	case "DurationSeconds":
 		return $"{{ if(Utf8Parser.TryParse({input}, out f64 oval, out _)) {output} = TimeSpan.FromSeconds(oval); }}";
 	case "DurationMilliseconds":
@@ -78,7 +86,7 @@ string GenerateSingleDeserializer(Messages.Field fld, string input, string outpu
 	case "str":
 	case "Uid":
 	case "IpAddr":
-		return $"{output} = Ts3String.Unescape({input});";
+		return $"{output} = ({fld.type})Ts3String.Unescape({input});";
 	case "HostMessageMode":
 	case "CodecEncryptionMode":
 	case "HostBannerMode":
@@ -96,7 +104,7 @@ string GenerateSingleDeserializer(Messages.Field fld, string input, string outpu
 	case "PermissionType":
 	case "ChannelPermissionHint":
 	case "ClientPermissionHint":
-		if(!BackingTypes.TryGetValue(fld.type, out var backType))
+		if(!BackingTypes.TryGetValue(fld.type, out backType))
 			backType = "i32";
 		return $"{{ if(Utf8Parser.TryParse({input}, out {backType} oval, out _)) {output} = ({fld.type})oval; }}";
 	case "IconHash":

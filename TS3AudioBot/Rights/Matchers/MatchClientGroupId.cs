@@ -8,14 +8,15 @@
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
 using System.Collections.Generic;
+using TS3Client;
 
 namespace TS3AudioBot.Rights.Matchers
 {
 	internal class MatchServerGroupId : Matcher
 	{
-		private readonly HashSet<ulong> serverGroupIds;
+		private readonly HashSet<ServerGroupId> serverGroupIds;
 
-		public MatchServerGroupId(IEnumerable<ulong> serverGroupIds) => this.serverGroupIds = new HashSet<ulong>(serverGroupIds);
+		public MatchServerGroupId(IEnumerable<ServerGroupId> serverGroupIds) => this.serverGroupIds = new HashSet<ServerGroupId>(serverGroupIds);
 
 		public override bool Matches(ExecuteContext ctx) => ctx.ServerGroups?.Length > 0 && serverGroupIds.Overlaps(ctx.ServerGroups);
 	}

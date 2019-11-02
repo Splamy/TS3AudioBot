@@ -23,11 +23,11 @@ namespace TS3AudioBot.Audio
 		public GroupWhisperType GroupWhisperType { get; private set; }
 		public GroupWhisperTarget GroupWhisperTarget { get; private set; }
 
-		public IReadOnlyCollection<ushort> WhisperClients
+		public IReadOnlyCollection<ClientId> WhisperClients
 		{
 			get { lock (subscriptionLockObj) { return clientSubscriptionsSetup.ToArray(); } }
 		}
-		public IReadOnlyCollection<ulong> WhisperChannel
+		public IReadOnlyCollection<ChannelId> WhisperChannel
 		{
 			get { lock (subscriptionLockObj) { return channelSubscriptionsSetup.Keys.ToArray(); } }
 		}
@@ -49,10 +49,10 @@ namespace TS3AudioBot.Audio
 			}
 		}
 
-		private readonly Dictionary<ulong, bool> channelSubscriptionsSetup = new Dictionary<ulong, bool>();
-		private readonly HashSet<ushort> clientSubscriptionsSetup = new HashSet<ushort>();
-		private ulong[] channelSubscriptionsCache;
-		private ushort[] clientSubscriptionsCache;
+		private readonly Dictionary<ChannelId, bool> channelSubscriptionsSetup = new Dictionary<ChannelId, bool>();
+		private readonly HashSet<ClientId> clientSubscriptionsSetup = new HashSet<ClientId>();
+		private ChannelId[] channelSubscriptionsCache;
+		private ClientId[] clientSubscriptionsCache;
 		private bool subscriptionSetupChanged;
 		private readonly object subscriptionLockObj = new object();
 
@@ -96,7 +96,7 @@ namespace TS3AudioBot.Audio
 			GroupWhisperTargetId = targetId;
 		}
 
-		public void WhisperChannelSubscribe(bool temp, params ulong[] channels)
+		public void WhisperChannelSubscribe(bool temp, params ChannelId[] channels)
 		{
 			lock (subscriptionLockObj)
 			{
@@ -115,7 +115,7 @@ namespace TS3AudioBot.Audio
 			}
 		}
 
-		public void WhisperChannelUnsubscribe(bool temp, params ulong[] channels)
+		public void WhisperChannelUnsubscribe(bool temp, params ChannelId[] channels)
 		{
 			lock (subscriptionLockObj)
 			{
@@ -137,7 +137,7 @@ namespace TS3AudioBot.Audio
 			}
 		}
 
-		public void WhisperClientSubscribe(params ushort[] userId)
+		public void WhisperClientSubscribe(params ClientId[] userId)
 		{
 			lock (subscriptionLockObj)
 			{
@@ -146,7 +146,7 @@ namespace TS3AudioBot.Audio
 			}
 		}
 
-		public void WhisperClientUnsubscribe(params ushort[] userId)
+		public void WhisperClientUnsubscribe(params ClientId[] userId)
 		{
 			lock (subscriptionLockObj)
 			{
@@ -159,7 +159,7 @@ namespace TS3AudioBot.Audio
 		{
 			lock (subscriptionLockObj)
 			{
-				ulong[] removeList = channelSubscriptionsSetup
+				var removeList = channelSubscriptionsSetup
 					.Where(kvp => kvp.Value)
 					.Select(kvp => kvp.Key)
 					.ToArray();

@@ -205,8 +205,10 @@ namespace TS3AudioBot
 
 			clientConnection.InvalidateClientBuffer();
 
-			ulong? channelId = null, databaseId = null, channelGroup = null;
-			ulong[] serverGroups = null;
+			ChannelId? channelId = null;
+			ClientDbId? databaseId = null;
+			ChannelGroupId? channelGroup = null;
+			ServerGroupId[] serverGroups = null;
 
 			if (tsFullClient.Book.Clients.TryGetValue(textMessage.InvokerId, out var bookClient))
 			{

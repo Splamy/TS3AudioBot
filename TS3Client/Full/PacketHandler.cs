@@ -60,7 +60,7 @@ namespace TS3Client.Full
 
 		public NetworkStats NetworkStats { get; }
 
-		public ushort ClientId { get; set; }
+		public ClientId ClientId { get; set; }
 		private IPEndPoint remoteAddress;
 		private int closed; // bool
 
@@ -113,7 +113,7 @@ namespace TS3Client.Full
 		{
 			lock (sendLoopLock)
 			{
-				ClientId = 0;
+				ClientId = default;
 				closed = 0;
 				smoothedRtt = MaxRetryInterval;
 				smoothedRttVar = TimeSpan.Zero;
@@ -253,7 +253,7 @@ namespace TS3Client.Full
 			if (typeof(TOut) == typeof(C2S)) // TODO: XXX
 			{
 				var meta = (C2S)(object)packet.HeaderExt;
-				meta.ClientId = ClientId;
+				meta.ClientId = ClientId.Value;
 				packet.HeaderExt = (TOut)(object)meta;
 			}
 			packet.PacketFlags |= flags;

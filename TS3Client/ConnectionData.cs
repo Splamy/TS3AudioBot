@@ -35,7 +35,7 @@ namespace TS3Client
 		/// class. Please keep in mind that the version data has to have valid sign
 		/// to be accepted by an official TeamSpeak 3 Server.
 		/// </summary>
-		public VersionSign VersionSign { get; set; } = VersionSign.VER_WIN_3_1_8;
+		public VersionSign VersionSign { get; set; } = VersionSign.VER_WIN_3_X_X;
 		/// <summary>The display username.</summary>
 		public string Username { get; set; }
 		/// <summary>The server password. Leave null if none.</summary>

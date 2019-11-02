@@ -22,21 +22,21 @@ namespace TS3AudioBot.Audio
 		GroupWhisperTarget GroupWhisperTarget { get; }
 		void SetGroupWhisper(GroupWhisperType type, GroupWhisperTarget target, ulong targetId);
 
-		IReadOnlyCollection<ushort> WhisperClients { get; }
-		IReadOnlyCollection<ulong> WhisperChannel { get; }
+		IReadOnlyCollection<ClientId> WhisperClients { get; }
+		IReadOnlyCollection<ChannelId> WhisperChannel { get; }
 
 		/// <summary>Adds a channel to the audio streaming list.</summary>
 		/// <param name="channel">The id of the channel.</param>
 		/// <param name="temp">When set to true this channel will be cleared with
 		/// the next <see cref="ClearTemporary"/> call (unless overwritten with false).</param>
-		void WhisperChannelSubscribe(bool temp, params ulong[] channel);
+		void WhisperChannelSubscribe(bool temp, params ChannelId[] channel);
 		/// <summary>Removes a channel from the audio streaming list.</summary>
 		/// <param name="channel">The id of the channel.</param>
 		/// <param name="temp">When set to true this channel will be cleared with
 		/// the next <see cref="ClearTemporary"/> call (unless overwritten with false).</param>
-		void WhisperChannelUnsubscribe(bool temp, params ulong[] channel);
+		void WhisperChannelUnsubscribe(bool temp, params ChannelId[] channel);
 		void ClearTemporary();
-		void WhisperClientSubscribe(params ushort[] userId);
-		void WhisperClientUnsubscribe(params ushort[] userId);
+		void WhisperClientSubscribe(params ClientId[] userId);
+		void WhisperClientUnsubscribe(params ClientId[] userId);
 	}
 }

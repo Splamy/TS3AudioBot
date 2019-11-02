@@ -15,40 +15,24 @@ using TS3Client.Helper;
 namespace TS3Client.Commands
 {
 	/// <summary>Simple parameter which will be expanded to "Key=Value" and automatically escaped.</summary>
-	public class CommandParameter : ICommandPart
+	public sealed partial class CommandParameter : ICommandPart
 	{
 		public string Key { get; }
 		public string Value { get; }
 		public CommandPartType Type => CommandPartType.SingleParameter;
 
-		[DebuggerStepThrough] public static string Serialize(bool value) { return (value ? "1" : "0"); }
-		[DebuggerStepThrough] public static string Serialize(sbyte value) { return value.ToString(CultureInfo.InvariantCulture); }
-		[DebuggerStepThrough] public static string Serialize(byte value) { return value.ToString(CultureInfo.InvariantCulture); }
-		[DebuggerStepThrough] public static string Serialize(short value) { return value.ToString(CultureInfo.InvariantCulture); }
-		[DebuggerStepThrough] public static string Serialize(ushort value) { return value.ToString(CultureInfo.InvariantCulture); }
-		[DebuggerStepThrough] public static string Serialize(int value) { return value.ToString(CultureInfo.InvariantCulture); }
-		[DebuggerStepThrough] public static string Serialize(uint value) { return value.ToString(CultureInfo.InvariantCulture); }
-		[DebuggerStepThrough] public static string Serialize(long value) { return value.ToString(CultureInfo.InvariantCulture); }
-		[DebuggerStepThrough] public static string Serialize(ulong value) { return value.ToString(CultureInfo.InvariantCulture); }
-		[DebuggerStepThrough] public static string Serialize(float value) { return value.ToString(CultureInfo.InvariantCulture); }
-		[DebuggerStepThrough] public static string Serialize(double value) { return value.ToString(CultureInfo.InvariantCulture); }
-		[DebuggerStepThrough] public static string Serialize(string value) { return Ts3String.Escape(value); }
-		//[DebuggerStepThrough] public static string Serialize(TimeSpan value) { return value.TotalSeconds.ToString("F0", CultureInfo.InvariantCulture); } // ambiguous
-		[DebuggerStepThrough] public static string Serialize(DateTime value) { return Tools.ToUnix(value).ToString(CultureInfo.InvariantCulture); }
-
-		[DebuggerStepThrough] public CommandParameter(string key, bool value) { Key = key; Value = Serialize(value); }
-		[DebuggerStepThrough] public CommandParameter(string key, sbyte value) { Key = key; Value = Serialize(value); }
-		[DebuggerStepThrough] public CommandParameter(string key, byte value) { Key = key; Value = Serialize(value); }
-		[DebuggerStepThrough] public CommandParameter(string key, short value) { Key = key; Value = Serialize(value); }
-		[DebuggerStepThrough] public CommandParameter(string key, ushort value) { Key = key; Value = Serialize(value); }
-		[DebuggerStepThrough] public CommandParameter(string key, int value) { Key = key; Value = Serialize(value); }
-		[DebuggerStepThrough] public CommandParameter(string key, uint value) { Key = key; Value = Serialize(value); }
-		[DebuggerStepThrough] public CommandParameter(string key, long value) { Key = key; Value = Serialize(value); }
-		[DebuggerStepThrough] public CommandParameter(string key, ulong value) { Key = key; Value = Serialize(value); }
-		[DebuggerStepThrough] public CommandParameter(string key, float value) { Key = key; Value = Serialize(value); }
-		[DebuggerStepThrough] public CommandParameter(string key, double value) { Key = key; Value = Serialize(value); }
-		[DebuggerStepThrough] public CommandParameter(string key, string value) { Key = key; Value = Serialize(value); }
-		//[DebuggerStepThrough] public CommandParameter(string key, TimeSpan value) { Key = key; Value = Serialize(value); } // ambiguous
-		[DebuggerStepThrough] public CommandParameter(string key, DateTime value) { Key = key; Value = Serialize(value); }
+		[DebuggerStepThrough] public static string Serialize(bool value) => value ? "1" : "0";
+		[DebuggerStepThrough] public static string Serialize(sbyte value) => value.ToString(CultureInfo.InvariantCulture);
+		[DebuggerStepThrough] public static string Serialize(byte value) => value.ToString(CultureInfo.InvariantCulture);
+		[DebuggerStepThrough] public static string Serialize(short value) => value.ToString(CultureInfo.InvariantCulture);
+		[DebuggerStepThrough] public static string Serialize(ushort value) => value.ToString(CultureInfo.InvariantCulture);
+		[DebuggerStepThrough] public static string Serialize(int value) => value.ToString(CultureInfo.InvariantCulture);
+		[DebuggerStepThrough] public static string Serialize(uint value) => value.ToString(CultureInfo.InvariantCulture);
+		[DebuggerStepThrough] public static string Serialize(long value) => value.ToString(CultureInfo.InvariantCulture);
+		[DebuggerStepThrough] public static string Serialize(ulong value) => value.ToString(CultureInfo.InvariantCulture);
+		[DebuggerStepThrough] public static string Serialize(float value) => value.ToString(CultureInfo.InvariantCulture);
+		[DebuggerStepThrough] public static string Serialize(double value) => value.ToString(CultureInfo.InvariantCulture);
+		[DebuggerStepThrough] public static string Serialize(string value) => Ts3String.Escape(value);
+		[DebuggerStepThrough] public static string Serialize(DateTime value) => Tools.ToUnix(value).ToString(CultureInfo.InvariantCulture);
 	}
 }

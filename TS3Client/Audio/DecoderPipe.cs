@@ -27,7 +27,7 @@ namespace TS3Client.Audio
 		// - Clean up decoders after some time (Control: Tick?)
 		// - Make dispose threadsafe OR redefine thread safety requirements for pipes.
 
-		private readonly Dictionary<ushort, (OpusDecoder, Codec)> decoders = new Dictionary<ushort, (OpusDecoder, Codec)>();
+		private readonly Dictionary<ClientId, (OpusDecoder, Codec)> decoders = new Dictionary<ClientId, (OpusDecoder, Codec)>();
 		private readonly byte[] decodedBuffer;
 
 		public DecoderPipe()
@@ -67,7 +67,7 @@ namespace TS3Client.Audio
 			}
 		}
 
-		private OpusDecoder GetDecoder(ushort sender, Codec codec)
+		private OpusDecoder GetDecoder(ClientId sender, Codec codec)
 		{
 			if (decoders.TryGetValue(sender, out var decoder))
 			{

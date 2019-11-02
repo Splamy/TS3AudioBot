@@ -13,12 +13,7 @@ using System.Linq;
 using System.Net;
 using TS3Client.Commands;
 using TS3Client.Messages;
-using ChannelIdT = System.UInt64;
-using ClientDbIdT = System.UInt64;
-using ClientIdT = System.UInt16;
 using CmdR = System.E<TS3Client.Messages.CommandError>;
-using ServerGroupIdT = System.UInt64;
-using Uid = System.String;
 
 namespace TS3Client
 {
@@ -122,7 +117,7 @@ namespace TS3Client
 				{ "client_badges", newBadges },
 			});
 
-		public CmdR ChangeDescription(string newDescription, ClientIdT clientId)
+		public CmdR ChangeDescription(string newDescription, ClientId clientId)
 			=> Send<ResponseVoid>(new Ts3Command("clientedit") {
 				{ "clid", clientId },
 				{ "client_description", newDescription },
@@ -132,8 +127,8 @@ namespace TS3Client
 		public R<WhoAmI, CommandError> WhoAmI() // Q ?
 			=> Send<WhoAmI>("whoami").WrapSingle();
 
-		public CmdR SendPrivateMessage(string message, ClientIdT clientId)
-			=> SendMessage(message, TextMessageTargetMode.Private, clientId);
+		public CmdR SendPrivateMessage(string message, ClientId clientId)
+			=> SendMessage(message, TextMessageTargetMode.Private, clientId.Value);
 
 		public CmdR SendChannelMessage(string message)
 			=> SendMessage(message, TextMessageTargetMode.Channel, 0);
@@ -158,32 +153,32 @@ namespace TS3Client
 				{ "msg", message },
 			});
 
-		public CmdR KickClientFromServer(ClientIdT clientId, string reasonMsg = null)
+		public CmdR KickClientFromServer(ClientId clientId, string reasonMsg = null)
 			=> KickClient(new[] { clientId }, ReasonIdentifier.Server, reasonMsg);
 
-		public CmdR KickClientFromServer(ClientIdT[] clientIds, string reasonMsg = null)
+		public CmdR KickClientFromServer(ClientId[] clientIds, string reasonMsg = null)
 			=> KickClient(clientIds, ReasonIdentifier.Server, reasonMsg);
 
-		public CmdR KickClientFromChannel(ClientIdT clientId, string reasonMsg = null)
+		public CmdR KickClientFromChannel(ClientId clientId, string reasonMsg = null)
 			=> KickClient(new[] { clientId }, ReasonIdentifier.Channel, reasonMsg);
 
-		public CmdR KickClientFromChannel(ClientIdT[] clientIds, string reasonMsg = null)
+		public CmdR KickClientFromChannel(ClientId[] clientIds, string reasonMsg = null)
 			=> KickClient(clientIds, ReasonIdentifier.Channel, reasonMsg);
 
 		/// <summary>Kicks one or more clients specified with clid from their currently joined channel or from the server, depending on <paramref name="reasonId"/>.
 		/// The reasonmsg parameter specifies a text message sent to the kicked clients.
 		/// This parameter is optional and may only have a maximum of 40 characters.</summary>
-		public CmdR KickClient(ClientIdT[] clientIds, ReasonIdentifier reasonId, string reasonMsg = null)
+		public CmdR KickClient(ClientId[] clientIds, ReasonIdentifier reasonId, string reasonMsg = null)
 			=> Send<ResponseVoid>(new Ts3Command("clientkick") {
 				{ "reasonid", (int)reasonId },
 				{ "clid", clientIds },
 				{ "reasonmsg", reasonMsg },
 			});
 
-		public CmdR BanClient(ClientIdT clientId, TimeSpan? duration = null, string reasonMsg = null)
+		public CmdR BanClient(ushort clientId, TimeSpan? duration = null, string reasonMsg = null)
 			=> BanClient(new CommandParameter("clid", clientId), reasonMsg, duration);
 
-		public CmdR BanClient(Uid clientUid = null, TimeSpan? duration = null, string reasonMsg = null)
+		public CmdR BanClient(Uid clientUid = default, TimeSpan? duration = null, string reasonMsg = null)
 			=> BanClient(new CommandParameter("uid", clientUid), reasonMsg, duration);
 
 		private CmdR BanClient(ICommandPart clientIdentifier, string reasonMsg = null, TimeSpan? duration = null)
@@ -193,9 +188,24 @@ namespace TS3Client
 				{ "time", duration?.TotalSeconds },
 			});
 
+		/// <summary>Displays detailed configuration information about a channel including ID, topic, description, etc.
+		/// For detailed information, see Channel Properties.</summary>
+		public R<ChannelInfoResponse[], CommandError> ChannelInfo(ChannelId channelId)
+			=> Send<ChannelInfoResponse>(new Ts3Command("channelinfo") {
+				{ "cid", channelId },
+			});
+
+		/// <summary>Displays a list of channels created on a virtual server including their ID, order, name, etc.
+		/// The output can be modified using several command options.</summary>
 		public R<ChannelListResponse[], CommandError> ChannelList(ChannelListOptions options = 0)
 			=> Send<ChannelListResponse>("channellist",
 			new CommandOption(options));
+
+		public CmdR ChannelEdit(ChannelId channelId)
+			=> Send<ResponseVoid>(new Ts3Command("channeledit") {
+				{ "cid", channelId },
+				// TODO
+			});
 
 		/// <summary>Displays a list of clients online on a virtual server including their ID, nickname, status flags, etc.
 		/// The output can be modified using several command options.
@@ -205,13 +215,13 @@ namespace TS3Client
 			new CommandOption(options));
 
 		/// <summary>Displays detailed database information about a client including unique ID, creation date, etc.</summary>
-		public R<ClientDbInfo, CommandError> ClientDbInfo(ClientDbIdT clientDbId)
+		public R<ClientDbInfo, CommandError> ClientDbInfo(ClientDbId clientDbId)
 			=> Send<ClientDbInfo>(new Ts3Command("clientdbinfo") {
 				{ "cldbid", clientDbId },
 			}).WrapSingle();
 
 		/// <summary>Displays detailed configuration information about a client including unique ID, nickname, client version, etc.</summary>
-		public R<ClientInfo, CommandError> ClientInfo(ClientIdT clientId)
+		public R<ClientInfo, CommandError> ClientInfo(ClientId clientId)
 			=> Send<ClientInfo>(new Ts3Command("clientinfo") {
 				{ "clid", clientId },
 			}).WrapSingle();
@@ -225,7 +235,7 @@ namespace TS3Client
 
 		/// <summary>Adds a set of specified permissions to the server group specified with <paramref name="serverGroupId"/>.
 		/// Multiple permissions can be added by providing the four parameters of each permission.</summary>
-		public CmdR ServerGroupAddPerm(ServerGroupIdT serverGroupId, Ts3Permission permission, int permissionValue,
+		public CmdR ServerGroupAddPerm(ServerGroupId serverGroupId, Ts3Permission permission, int permissionValue,
 				bool permissionNegated, bool permissionSkip)
 			=> Send<ResponseVoid>(new Ts3Command("servergroupaddperm") {
 				{ "sgid", serverGroupId },
@@ -237,7 +247,7 @@ namespace TS3Client
 
 		/// <summary>Adds a set of specified permissions to the server group specified with <paramref name="serverGroupId"/>.
 		/// Multiple permissions can be added by providing the four parameters of each permission.</summary>
-		public CmdR ServerGroupAddPerm(ServerGroupIdT serverGroupId, Ts3Permission[] permission, int[] permissionValue,
+		public CmdR ServerGroupAddPerm(ServerGroupId serverGroupId, Ts3Permission[] permission, int[] permissionValue,
 				bool[] permissionNegated, bool[] permissionSkip)
 			=> Send<ResponseVoid>(new Ts3Command("servergroupaddperm") {
 				{ "sgid", serverGroupId },
@@ -249,14 +259,14 @@ namespace TS3Client
 
 		/// <summary>Adds a client to the server group specified with <paramref name="serverGroupId"/>. Please note that a
 		/// client cannot be added to default groups or template groups.</summary>
-		public CmdR ServerGroupAddClient(ServerGroupIdT serverGroupId, ClientDbIdT clientDbId)
+		public CmdR ServerGroupAddClient(ServerGroupId serverGroupId, ClientDbId clientDbId)
 			=> Send<ResponseVoid>(new Ts3Command("servergroupaddclient") {
 				{ "sgid", serverGroupId },
 				{ "cldbid", clientDbId },
 			});
 
 		/// <summary>Removes a client specified with cldbid from the server group specified with <paramref name="serverGroupId"/>.</summary>
-		public CmdR ServerGroupDelClient(ServerGroupIdT serverGroupId, ClientDbIdT clientDbId)
+		public CmdR ServerGroupDelClient(ServerGroupId serverGroupId, ClientDbId clientDbId)
 			=> Send<ResponseVoid>(new Ts3Command("servergroupdelclient") {
 				{ "sgid", serverGroupId },
 				{ "cldbid", clientDbId },
@@ -268,22 +278,22 @@ namespace TS3Client
 				{ "delete", delete },
 			});
 
-		public CmdR FileTransferDeleteFile(ChannelIdT channelId, string[] path, string channelPassword = "")
+		public CmdR FileTransferDeleteFile(ChannelId channelId, string[] path, string channelPassword = "")
 			=> Send<ResponseVoid>(new Ts3Command("ftdeletefile") {
 				{ "cid", channelId },
 				{ "cpw", channelPassword },
 				{ "name", path },
 			});
 
-		public CmdR FileTransferCreateDirectory(ChannelIdT channelId, string path, string channelPassword = "")
+		public CmdR FileTransferCreateDirectory(ChannelId channelId, string path, string channelPassword = "")
 			=> Send<ResponseVoid>(new Ts3Command("ftcreatedir") {
 				{ "cid", channelId },
 				{ "dirname", path },
 				{ "cpw", channelPassword },
 			});
 
-		public CmdR FileTransferRenameFile(ChannelIdT channelId, string oldName, string channelPassword, string newName,
-				ChannelIdT? targetChannel = null, string targetChannelPassword = "")
+		public CmdR FileTransferRenameFile(ChannelId channelId, string oldName, string channelPassword, string newName,
+				ChannelId? targetChannel = null, string targetChannelPassword = "")
 			=> Send<ResponseVoid>(new Ts3Command("ftrenamefile") {
 				{ "cid", channelId },
 				{ "oldname", oldName },
@@ -295,7 +305,7 @@ namespace TS3Client
 
 		public CmdR UploadAvatar(System.IO.Stream image)
 		{
-			var token = FileTransferManager.UploadFile(image, 0, "/avatar", overwrite: true, createMd5: true);
+			var token = FileTransferManager.UploadFile(image, ChannelId.Null, "/avatar", overwrite: true, createMd5: true);
 			if (!token.Ok)
 				return token.Error;
 			token.Value.Wait();
@@ -308,13 +318,13 @@ namespace TS3Client
 		/// <summary>Deletes the avatar of a user.
 		/// Can be called without uid to delete own avatar.</summary>
 		/// <param name="clientUid">The client uid where the avatar should be deleted.</param>
-		public CmdR DeleteAvatar(string clientUid = null)
+		public CmdR DeleteAvatar(Uid? clientUid = null)
 		{
 			string path = "/avatar_" + clientUid;
-			return FileTransferDeleteFile(0, new[] { path });
+			return FileTransferDeleteFile(ChannelId.Null, new[] { path });
 		}
 
-		public CmdR ClientMove(ClientIdT clientId, ChannelIdT channelId, string channelPassword = null)
+		public CmdR ClientMove(ClientId clientId, ChannelId channelId, string channelPassword = null)
 			=> Send<ResponseVoid>(new Ts3Command("clientmove") {
 				{ "clid", clientId },
 				{ "cid", channelId },
@@ -326,30 +336,30 @@ namespace TS3Client
 		public abstract R<ServerGroupAddResponse, CommandError> ServerGroupAdd(string name, GroupType? type = null);
 
 		/// <summary>Displays all server groups the client specified with <paramref name="clDbId"/> is currently residing in.</summary>
-		public R<ServerGroupsByClientId[], CommandError> ServerGroupsByClientDbId(ClientDbIdT clDbId)
+		public R<ServerGroupsByClientId[], CommandError> ServerGroupsByClientDbId(ClientDbId clDbId)
 			=> SendHybrid<ServerGroupsByClientId>(new Ts3Command("servergroupsbyclientid")
 			{
 				{ "cldbid", clDbId }
 			}, NotificationType.ServerGroupsByClientId);
 
-		public abstract R<FileUpload, CommandError> FileTransferInitUpload(ChannelIdT channelId, string path, string channelPassword,
+		public abstract R<FileUpload, CommandError> FileTransferInitUpload(ChannelId channelId, string path, string channelPassword,
 			ushort clientTransferId, long fileSize, bool overwrite, bool resume);
 
-		public abstract R<FileDownload, CommandError> FileTransferInitDownload(ChannelIdT channelId, string path, string channelPassword,
+		public abstract R<FileDownload, CommandError> FileTransferInitDownload(ChannelId channelId, string path, string channelPassword,
 			ushort clientTransferId, long seek);
 
 		public R<FileTransfer[], CommandError> FileTransferList()
 			=> SendHybrid<FileTransfer>(new Ts3Command("ftlist"),
 				NotificationType.FileTransfer);
 
-		public R<FileList[], CommandError> FileTransferGetFileList(ChannelIdT channelId, string path, string channelPassword = "")
+		public R<FileList[], CommandError> FileTransferGetFileList(ChannelId channelId, string path, string channelPassword = "")
 			=> SendHybrid<FileList>(new Ts3Command("ftgetfilelist") {
 				{ "cid", channelId },
 				{ "path", path },
 				{ "cpw", channelPassword }
 			}, NotificationType.FileList);
 
-		public R<FileInfo[], CommandError> FileTransferGetFileInfo(ChannelIdT channelId, string[] path, string channelPassword = "")
+		public R<FileInfo[], CommandError> FileTransferGetFileInfo(ChannelId channelId, string[] path, string channelPassword = "")
 			=> SendHybrid<FileInfo>(new Ts3Command("ftgetfileinfo") {
 				{ "cid", channelId },
 				{ "cpw", channelPassword },
@@ -361,9 +371,9 @@ namespace TS3Client
 				{ "cluid", clientUid }
 			}, NotificationType.ClientDbIdFromUid).WrapSingle();
 
-		public R<ClientUidFromClid, CommandError> GetClientUidFromClientId(ClientIdT clientId)
+		public R<ClientUidFromClid, CommandError> GetClientUidFromClientId(ClientId clientId)
 			=> SendHybrid<ClientUidFromClid>(new Ts3Command("clientgetuidfromclid") {
-					{ "clid", clientId }
+				{ "clid", clientId }
 			}, NotificationType.ClientUidFromClid).WrapSingle();
 
 		public R<ClientNameFromUid, CommandError> GetClientNameFromUid(Uid clientUid)
@@ -377,7 +387,7 @@ namespace TS3Client
 				{ "cluid", clientUid }
 			}, NotificationType.ClientIds);
 
-		public R<PermOverview[], CommandError> PermOverview(ClientDbIdT clientDbId, ChannelIdT channelId, params Ts3Permission[] permission)
+		public R<PermOverview[], CommandError> PermOverview(ClientDbId clientDbId, ChannelId channelId, params Ts3Permission[] permission)
 			=> SendHybrid<PermOverview>(new Ts3Command("permoverview") {
 				{ "cldbid", clientDbId },
 				{ "cid", channelId },

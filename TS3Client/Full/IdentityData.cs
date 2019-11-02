@@ -39,9 +39,17 @@ namespace TS3Client.Full
 		/// can be stored here to resume from when continuing to search.</summary>
 		public ulong LastCheckedKeyOffset { get; set; }
 
-		private string clientUid;
+		private Uid? clientUid;
 		/// <summary>The client uid, which can be used in teamspeak for various features.</summary>
-		public string ClientUid => clientUid ?? (clientUid = Ts3Crypt.GetUidFromPublicKey(PublicKeyString));
+		public Uid ClientUid
+		{
+			get
+			{
+				if (clientUid == null)
+					clientUid = (Uid)Ts3Crypt.GetUidFromPublicKey(PublicKeyString);
+				return clientUid.Value;
+			}
+		}
 
 		public IdentityData(BigInteger privateKey, ECPoint publicKey = null)
 		{

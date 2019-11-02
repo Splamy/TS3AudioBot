@@ -7,6 +7,8 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using TS3Client;
+
 namespace TS3AudioBot
 {
 	public class ClientCall : InvokerData
@@ -14,17 +16,18 @@ namespace TS3AudioBot
 		/// <summary>The original unmodified string which was received by the client.</summary>
 		public string TextMessage { get; }
 
-		public ulong? DatabaseId { get; }
-		public ulong? ChannelId { get; }
-		public ushort? ClientId { get; }
+		public ClientDbId? DatabaseId { get; }
+		public ChannelId? ChannelId { get; }
+		public ClientId? ClientId { get; }
 		public string NickName { get; }
-		public ulong[] ServerGroups { get; }
-		public ulong? ChannelGroup { get; }
-		public TS3Client.TextMessageTargetMode? Visibiliy { get; internal set; }
+		public ServerGroupId[] ServerGroups { get; }
+		public ChannelGroupId? ChannelGroup { get; }
+		public TextMessageTargetMode? Visibiliy { get; internal set; }
 
-		public ClientCall(string clientUid, string textMessage, ulong? databaseId = null, ulong? channelId = null,
-			ushort? clientId = null, string nickName = null, TS3Client.TextMessageTargetMode? visibiliy = null,
-			ulong[] serverGroups = null, ulong? channelGroup = null) : base(clientUid)
+		public ClientCall(Uid clientUid, string textMessage, ClientDbId? databaseId = null,
+			ChannelId? channelId = null, ClientId? clientId = null, string nickName = null,
+			TextMessageTargetMode? visibiliy = null, ServerGroupId[] serverGroups = null,
+			ChannelGroupId? channelGroup = null) : base(clientUid)
 		{
 			TextMessage = textMessage;
 			DatabaseId = databaseId;

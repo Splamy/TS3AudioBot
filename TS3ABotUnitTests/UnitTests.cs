@@ -12,6 +12,7 @@ using TS3AudioBot.Helper;
 using TS3AudioBot.History;
 using TS3AudioBot.Playlists.Shuffle;
 using TS3AudioBot.ResourceFactories;
+using TS3Client;
 using TS3Client.Full;
 using TS3Client.Messages;
 
@@ -30,8 +31,8 @@ namespace TS3ABotUnitTests
 			string testFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "history.test");
 			if (File.Exists(testFile)) File.Delete(testFile);
 
-			var inv1 = new ClientList { ClientId = 10, Uid = "Uid1", Name = "Invoker1" };
-			var inv2 = new ClientList { ClientId = 20, Uid = "Uid2", Name = "Invoker2" };
+			var inv1 = new ClientList { ClientId = (ClientId)10, Uid = (Uid)"Uid1", Name = "Invoker1" };
+			var inv2 = new ClientList { ClientId = (ClientId)20, Uid = (Uid)"Uid2", Name = "Invoker2" };
 
 			var ar1 = new AudioResource("asdf", "sc_ar1", "soundcloud");
 			var ar2 = new AudioResource("./File.mp3", "me_ar2", "media");
@@ -39,7 +40,7 @@ namespace TS3ABotUnitTests
 
 			var data1 = new HistorySaveData(ar1, inv1.Uid);
 			var data2 = new HistorySaveData(ar2, inv2.Uid);
-			var data3 = new HistorySaveData(ar3, "Uid3");
+			var data3 = new HistorySaveData(ar3, (Uid)"Uid3");
 
 			var confHistory = ConfigTable.CreateRoot<ConfHistory>();
 			confHistory.FillDeletedIds.Value = false;
@@ -91,7 +92,7 @@ namespace TS3ABotUnitTests
 
 			var ale1 = hf.FindEntryByResource(ar1);
 			hf.RenameEntry(ale1, "sc_ar1X");
-			hf.LogAudioResourceDelayed(new HistorySaveData(ale1.AudioResource, "Uid4"));
+			hf.LogAudioResourceDelayed(new HistorySaveData(ale1.AudioResource, (Uid)"Uid4"));
 
 
 			db.Dispose();
@@ -105,14 +106,14 @@ namespace TS3ABotUnitTests
 
 			var ale2 = hf.FindEntryByResource(ar2);
 			hf.RenameEntry(ale2, "me_ar2_loong1");
-			hf.LogAudioResourceDelayed(new HistorySaveData(ale2.AudioResource, "Uid4"));
+			hf.LogAudioResourceDelayed(new HistorySaveData(ale2.AudioResource, (Uid)"Uid4"));
 
 			ale1 = hf.FindEntryByResource(ar1);
 			hf.RenameEntry(ale1, "sc_ar1X_loong1");
-			hf.LogAudioResourceDelayed(new HistorySaveData(ale1.AudioResource, "Uid4"));
+			hf.LogAudioResourceDelayed(new HistorySaveData(ale1.AudioResource, (Uid)"Uid4"));
 
 			hf.RenameEntry(ale2, "me_ar2_exxxxxtra_loong1");
-			hf.LogAudioResourceDelayed(new HistorySaveData(ale2.AudioResource, "Uid4"));
+			hf.LogAudioResourceDelayed(new HistorySaveData(ale2.AudioResource, (Uid)"Uid4"));
 
 			db.Dispose();
 

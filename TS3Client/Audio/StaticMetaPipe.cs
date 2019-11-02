@@ -9,8 +9,6 @@
 
 using System;
 using System.Collections.Generic;
-using ChannelIdT = System.UInt64;
-using ClientIdT = System.UInt16;
 
 namespace TS3Client.Audio
 {
@@ -40,7 +38,7 @@ namespace TS3Client.Audio
 			SendMode = TargetSendMode.Voice;
 		}
 
-		public void SetWhisper(IReadOnlyList<ChannelIdT> channelIds, IReadOnlyList<ClientIdT> clientIds)
+		public void SetWhisper(IReadOnlyList<ChannelId> channelIds, IReadOnlyList<ClientId> clientIds)
 		{
 			ClearData();
 			SendMode = TargetSendMode.Whisper;

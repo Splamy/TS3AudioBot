@@ -19,6 +19,13 @@
 
 
 
+
+
+
+
+
+
+
 using TS3Client.Messages;
 
 #pragma warning disable CS8019 // Ignore unused imports
@@ -41,12 +48,6 @@ using DurationMilliseconds = System.TimeSpan;
 using SocketAddr = System.String;
 using IpAddr = System.String;
 
-using Uid = System.String;
-using ClientDbId = System.UInt64;
-using ClientId = System.UInt16;
-using ChannelId = System.UInt64;
-using ServerGroupId = System.UInt64;
-using ChannelGroupId = System.UInt64;
 using IconHash = System.Int32;
 using ConnectionId = System.UInt32;
 #pragma warning restore CS8019

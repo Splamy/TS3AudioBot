@@ -16,6 +16,11 @@
 
 
 
+
+
+
+
+
 using System;
 using System.Collections.Generic;
 using System.Buffers.Text;
@@ -42,12 +47,6 @@ using DurationMilliseconds = System.TimeSpan;
 using SocketAddr = System.String;
 using IpAddr = System.String;
 
-using Uid = System.String;
-using ClientDbId = System.UInt64;
-using ClientId = System.UInt16;
-using ChannelId = System.UInt64;
-using ServerGroupId = System.UInt64;
-using ChannelGroupId = System.UInt64;
 using IconHash = System.Int32;
 using ConnectionId = System.UInt32;
 #pragma warning restore CS8019
@@ -71,11 +70,11 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "ip": Ip = Ts3String.Unescape(value); break;
-			case "name": Name = Ts3String.Unescape(value); break;
-			case "uid": Uid = Ts3String.Unescape(value); break;
+			case "ip": Ip = (IpAddr)Ts3String.Unescape(value); break;
+			case "name": Name = (str)Ts3String.Unescape(value); break;
+			case "uid": Uid = (Uid)Ts3String.Unescape(value); break;
 			case "time": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) Time = TimeSpan.FromSeconds(oval); } break;
-			case "banreason": BanReason = Ts3String.Unescape(value); break;
+			case "banreason": BanReason = (str)Ts3String.Unescape(value); break;
 			
 			}
 
@@ -114,9 +113,9 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "clid": { if(Utf8Parser.TryParse(value, out ClientId oval, out _)) ClientId = oval; } break;
+			case "clid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) ClientId = (ClientId)oval; } break;
 			case "time": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) Time = TimeSpan.FromSeconds(oval); } break;
-			case "banreason": BanReason = Ts3String.Unescape(value); break;
+			case "banreason": BanReason = (str)Ts3String.Unescape(value); break;
 			
 			}
 
@@ -151,7 +150,7 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "banid": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) BanId = oval; } break;
+			case "banid": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) BanId = (u32)oval; } break;
 			
 			}
 
@@ -211,20 +210,20 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "banid": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) BanId = oval; } break;
-			case "ip": Ip = Ts3String.Unescape(value); break;
-			case "name": Name = Ts3String.Unescape(value); break;
-			case "uid": Uid = Ts3String.Unescape(value); break;
-			case "mytsid": MyTsId = Ts3String.Unescape(value); break;
-			case "lastnickname": LastNickname = Ts3String.Unescape(value); break;
+			case "banid": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) BanId = (u32)oval; } break;
+			case "ip": Ip = (IpAddr)Ts3String.Unescape(value); break;
+			case "name": Name = (str)Ts3String.Unescape(value); break;
+			case "uid": Uid = (Uid)Ts3String.Unescape(value); break;
+			case "mytsid": MyTsId = (str)Ts3String.Unescape(value); break;
+			case "lastnickname": LastNickname = (str)Ts3String.Unescape(value); break;
 			case "created": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) Created = Tools.FromUnix(oval); } break;
 			case "duration": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) Duration = TimeSpan.FromSeconds(oval); } break;
-			case "invokercldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) InvokerDatabaseId = oval; } break;
-			case "invokername": InvokerName = Ts3String.Unescape(value); break;
-			case "invokeruid": InvokerUid = Ts3String.Unescape(value); break;
-			case "reason": Reason = Ts3String.Unescape(value); break;
-			case "enforcements": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) Enforcements = oval; } break;
-			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
+			case "invokercldbid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) InvokerDatabaseId = (ClientDbId)oval; } break;
+			case "invokername": InvokerName = (str)Ts3String.Unescape(value); break;
+			case "invokeruid": InvokerUid = (Uid)Ts3String.Unescape(value); break;
+			case "reason": Reason = (str)Ts3String.Unescape(value); break;
+			case "enforcements": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) Enforcements = (u32)oval; } break;
+			case "return_code": ReturnCode = (str)Ts3String.Unescape(value); break;
 			}
 
 		}
@@ -283,7 +282,7 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "subsystem": Subsystem = Ts3String.Unescape(value); break;
+			case "subsystem": Subsystem = (str)Ts3String.Unescape(value); break;
 			
 			}
 
@@ -319,10 +318,10 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
+			case "cid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ChannelId = (ChannelId)oval; } break;
 			case "permid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) PermissionId = ser.PermissionTransform.GetName(oval); } break;
-			case "permsid": PermissionNameId = Ts3String.Unescape(value); break;
-			case "permvalue": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionValue = oval; } break;
+			case "permsid": PermissionNameId = (str)Ts3String.Unescape(value); break;
+			case "permvalue": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionValue = (i32)oval; } break;
 			
 			}
 
@@ -358,7 +357,7 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
+			case "cid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ChannelId = (ChannelId)oval; } break;
 			
 			}
 
@@ -395,11 +394,11 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
-			case "cldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) ClientDbId = oval; } break;
+			case "cid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ChannelId = (ChannelId)oval; } break;
+			case "cldbid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ClientDbId = (ClientDbId)oval; } break;
 			case "permid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) PermissionId = ser.PermissionTransform.GetName(oval); } break;
-			case "permsid": PermissionNameId = Ts3String.Unescape(value); break;
-			case "permvalue": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionValue = oval; } break;
+			case "permsid": PermissionNameId = (str)Ts3String.Unescape(value); break;
+			case "permvalue": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionValue = (i32)oval; } break;
 			
 			}
 
@@ -439,10 +438,10 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
-			case "cldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) ClientDbId = oval; } break;
+			case "cid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ChannelId = (ChannelId)oval; } break;
+			case "cldbid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ClientDbId = (ClientDbId)oval; } break;
 			case "permid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) PermissionId = ser.PermissionTransform.GetName(oval); } break;
-			case "permsid": PermissionNameId = Ts3String.Unescape(value); break;
+			case "permsid": PermissionNameId = (str)Ts3String.Unescape(value); break;
 			
 			}
 
@@ -484,14 +483,14 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
-			case "cldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) ClientDbId = oval; } break;
+			case "cid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ChannelId = (ChannelId)oval; } break;
+			case "cldbid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ClientDbId = (ClientDbId)oval; } break;
 			case "permid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) PermissionId = ser.PermissionTransform.GetName(oval); } break;
-			case "permsid": PermissionNameId = Ts3String.Unescape(value); break;
-			case "permvalue": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionValue = oval; } break;
+			case "permsid": PermissionNameId = (str)Ts3String.Unescape(value); break;
+			case "permvalue": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionValue = (i32)oval; } break;
 			case "permnegated": PermissionNegated = value.Length > 0 && value[0] != '0'; break;
 			case "permskip": PermissionSkip = value.Length > 0 && value[0] != '0'; break;
-			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
+			case "return_code": ReturnCode = (str)Ts3String.Unescape(value); break;
 			}
 
 		}
@@ -530,8 +529,8 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
-			case "cldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) ClientDbId = oval; } break;
+			case "cid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ChannelId = (ChannelId)oval; } break;
+			case "cldbid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ClientDbId = (ClientDbId)oval; } break;
 			
 			}
 
@@ -584,23 +583,23 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "cpid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ParentId = oval; } break;
-			case "channel_name": Name = Ts3String.Unescape(value); break;
-			case "channel_topic": Topic = Ts3String.Unescape(value); break;
-			case "channel_description": Description = Ts3String.Unescape(value); break;
-			case "channel_password": Password = Ts3String.Unescape(value); break;
+			case "cpid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ParentId = (ChannelId)oval; } break;
+			case "channel_name": Name = (str)Ts3String.Unescape(value); break;
+			case "channel_topic": Topic = (str)Ts3String.Unescape(value); break;
+			case "channel_description": Description = (str)Ts3String.Unescape(value); break;
+			case "channel_password": Password = (str)Ts3String.Unescape(value); break;
 			case "channel_codec": { if(Utf8Parser.TryParse(value, out u8 oval, out _)) Codec = (Codec)oval; } break;
-			case "channel_codec_quality": { if(Utf8Parser.TryParse(value, out u8 oval, out _)) CodecQuality = oval; } break;
-			case "channel_maxclients": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) MaxClients = oval; } break;
-			case "channel_maxfamilyclients": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) MaxFamilyClients = oval; } break;
-			case "channel_order": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) Order = oval; } break;
+			case "channel_codec_quality": { if(Utf8Parser.TryParse(value, out u8 oval, out _)) CodecQuality = (u8)oval; } break;
+			case "channel_maxclients": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) MaxClients = (i32)oval; } break;
+			case "channel_maxfamilyclients": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) MaxFamilyClients = (i32)oval; } break;
+			case "channel_order": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) Order = (ChannelId)oval; } break;
 			case "channel_flag_password": HasPassword = value.Length > 0 && value[0] != '0'; break;
 			case "channel_codec_is_unencrypted": IsUnencrypted = value.Length > 0 && value[0] != '0'; break;
 			case "channel_delete_delay": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) DeleteDelay = TimeSpan.FromSeconds(oval); } break;
 			case "channel_flag_maxclients_unlimited": IsMaxClientsUnlimited = value.Length > 0 && value[0] != '0'; break;
 			case "channel_flag_maxfamilyclients_unlimited": IsMaxFamilyClientsUnlimited = value.Length > 0 && value[0] != '0'; break;
 			case "channel_flag_maxfamilyclients_inherited": InheritsMaxFamilyClients = value.Length > 0 && value[0] != '0'; break;
-			case "channel_name_phonetic": PhoneticName = Ts3String.Unescape(value); break;
+			case "channel_name_phonetic": PhoneticName = (str)Ts3String.Unescape(value); break;
 			case "channel_flag_permanent": IsPermanent = value.Length > 0 && value[0] != '0'; break;
 			case "channel_flag_semi_permanent": IsSemiPermanent = value.Length > 0 && value[0] != '0'; break;
 			case "channel_flag_default": IsDefault = value.Length > 0 && value[0] != '0'; break;
@@ -679,32 +678,32 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
-			case "invokerid": { if(Utf8Parser.TryParse(value, out ClientId oval, out _)) InvokerId = oval; } break;
-			case "invokername": InvokerName = Ts3String.Unescape(value); break;
-			case "invokeruid": InvokerUid = Ts3String.Unescape(value); break;
-			case "channel_order": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) Order = oval; } break;
-			case "channel_name": Name = Ts3String.Unescape(value); break;
-			case "channel_topic": Topic = Ts3String.Unescape(value); break;
+			case "cid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ChannelId = (ChannelId)oval; } break;
+			case "invokerid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) InvokerId = (ClientId)oval; } break;
+			case "invokername": InvokerName = (str)Ts3String.Unescape(value); break;
+			case "invokeruid": InvokerUid = (Uid)Ts3String.Unescape(value); break;
+			case "channel_order": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) Order = (ChannelId)oval; } break;
+			case "channel_name": Name = (str)Ts3String.Unescape(value); break;
+			case "channel_topic": Topic = (str)Ts3String.Unescape(value); break;
 			case "channel_flag_default": IsDefault = value.Length > 0 && value[0] != '0'; break;
 			case "channel_flag_password": HasPassword = value.Length > 0 && value[0] != '0'; break;
 			case "channel_flag_permanent": IsPermanent = value.Length > 0 && value[0] != '0'; break;
 			case "channel_flag_semi_permanent": IsSemiPermanent = value.Length > 0 && value[0] != '0'; break;
 			case "channel_codec": { if(Utf8Parser.TryParse(value, out u8 oval, out _)) Codec = (Codec)oval; } break;
-			case "channel_codec_quality": { if(Utf8Parser.TryParse(value, out u8 oval, out _)) CodecQuality = oval; } break;
-			case "channel_needed_talk_power": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) NeededTalkPower = oval; } break;
+			case "channel_codec_quality": { if(Utf8Parser.TryParse(value, out u8 oval, out _)) CodecQuality = (u8)oval; } break;
+			case "channel_needed_talk_power": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) NeededTalkPower = (i32)oval; } break;
 			case "channel_icon_id": { if(!value.IsEmpty && value[0] == (u8)'-') { if(Utf8Parser.TryParse(value, out i32 oval, out _)) IconId = oval; } else { if(Utf8Parser.TryParse(value, out u64 oval, out _)) IconId = unchecked((i32)oval); } } break;
-			case "channel_maxclients": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) MaxClients = oval; } break;
-			case "channel_maxfamilyclients": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) MaxFamilyClients = oval; } break;
-			case "channel_codec_latency_factor": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) CodecLatencyFactor = oval; } break;
+			case "channel_maxclients": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) MaxClients = (i32)oval; } break;
+			case "channel_maxfamilyclients": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) MaxFamilyClients = (i32)oval; } break;
+			case "channel_codec_latency_factor": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) CodecLatencyFactor = (i32)oval; } break;
 			case "channel_codec_is_unencrypted": IsUnencrypted = value.Length > 0 && value[0] != '0'; break;
 			case "channel_delete_delay": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) DeleteDelay = TimeSpan.FromSeconds(oval); } break;
 			case "channel_flag_maxclients_unlimited": IsMaxClientsUnlimited = value.Length > 0 && value[0] != '0'; break;
 			case "channel_flag_maxfamilyclients_unlimited": IsMaxFamilyClientsUnlimited = value.Length > 0 && value[0] != '0'; break;
 			case "channel_flag_maxfamilyclients_inherited": InheritsMaxFamilyClients = value.Length > 0 && value[0] != '0'; break;
-			case "channel_name_phonetic": PhoneticName = Ts3String.Unescape(value); break;
-			case "cpid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ParentId = oval; } break;
-			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
+			case "channel_name_phonetic": PhoneticName = (str)Ts3String.Unescape(value); break;
+			case "cpid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ParentId = (ChannelId)oval; } break;
+			case "return_code": ReturnCode = (str)Ts3String.Unescape(value); break;
 			}
 
 		}
@@ -761,7 +760,7 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
+			case "cid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ChannelId = (ChannelId)oval; } break;
 			case "force": Force = value.Length > 0 && value[0] != '0'; break;
 			
 			}
@@ -799,11 +798,11 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
-			case "invokerid": { if(Utf8Parser.TryParse(value, out ClientId oval, out _)) InvokerId = oval; } break;
-			case "invokername": InvokerName = Ts3String.Unescape(value); break;
-			case "invokeruid": InvokerUid = Ts3String.Unescape(value); break;
-			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
+			case "cid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ChannelId = (ChannelId)oval; } break;
+			case "invokerid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) InvokerId = (ClientId)oval; } break;
+			case "invokername": InvokerName = (str)Ts3String.Unescape(value); break;
+			case "invokeruid": InvokerUid = (Uid)Ts3String.Unescape(value); break;
+			case "return_code": ReturnCode = (str)Ts3String.Unescape(value); break;
 			}
 
 		}
@@ -853,7 +852,7 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
+			case "cid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ChannelId = (ChannelId)oval; } break;
 			
 			}
 
@@ -886,7 +885,7 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
+			case "cid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ChannelId = (ChannelId)oval; } break;
 			
 			}
 
@@ -941,29 +940,29 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
-			case "channel_order": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) Order = oval; } break;
-			case "channel_name": Name = Ts3String.Unescape(value); break;
-			case "channel_topic": Topic = Ts3String.Unescape(value); break;
+			case "cid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ChannelId = (ChannelId)oval; } break;
+			case "channel_order": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) Order = (ChannelId)oval; } break;
+			case "channel_name": Name = (str)Ts3String.Unescape(value); break;
+			case "channel_topic": Topic = (str)Ts3String.Unescape(value); break;
 			case "channel_flag_default": IsDefault = value.Length > 0 && value[0] != '0'; break;
 			case "channel_flag_password": HasPassword = value.Length > 0 && value[0] != '0'; break;
 			case "channel_flag_permanent": IsPermanent = value.Length > 0 && value[0] != '0'; break;
 			case "channel_flag_semi_permanent": IsSemiPermanent = value.Length > 0 && value[0] != '0'; break;
 			case "channel_codec": { if(Utf8Parser.TryParse(value, out u8 oval, out _)) Codec = (Codec)oval; } break;
-			case "channel_codec_quality": { if(Utf8Parser.TryParse(value, out u8 oval, out _)) CodecQuality = oval; } break;
-			case "channel_needed_talk_power": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) NeededTalkPower = oval; } break;
+			case "channel_codec_quality": { if(Utf8Parser.TryParse(value, out u8 oval, out _)) CodecQuality = (u8)oval; } break;
+			case "channel_needed_talk_power": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) NeededTalkPower = (i32)oval; } break;
 			case "channel_icon_id": { if(!value.IsEmpty && value[0] == (u8)'-') { if(Utf8Parser.TryParse(value, out i32 oval, out _)) IconId = oval; } else { if(Utf8Parser.TryParse(value, out u64 oval, out _)) IconId = unchecked((i32)oval); } } break;
-			case "channel_maxclients": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) MaxClients = oval; } break;
-			case "channel_maxfamilyclients": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) MaxFamilyClients = oval; } break;
-			case "channel_codec_latency_factor": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) CodecLatencyFactor = oval; } break;
+			case "channel_maxclients": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) MaxClients = (i32)oval; } break;
+			case "channel_maxfamilyclients": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) MaxFamilyClients = (i32)oval; } break;
+			case "channel_codec_latency_factor": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) CodecLatencyFactor = (i32)oval; } break;
 			case "channel_codec_is_unencrypted": IsUnencrypted = value.Length > 0 && value[0] != '0'; break;
 			case "channel_delete_delay": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) DeleteDelay = TimeSpan.FromSeconds(oval); } break;
 			case "channel_flag_maxclients_unlimited": IsMaxClientsUnlimited = value.Length > 0 && value[0] != '0'; break;
 			case "channel_flag_maxfamilyclients_unlimited": IsMaxFamilyClientsUnlimited = value.Length > 0 && value[0] != '0'; break;
 			case "channel_flag_maxfamilyclients_inherited": InheritsMaxFamilyClients = value.Length > 0 && value[0] != '0'; break;
-			case "channel_name_phonetic": PhoneticName = Ts3String.Unescape(value); break;
-			case "cpid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ParentId = oval; } break;
-			case "channel_description": Description = Ts3String.Unescape(value); break;
+			case "channel_name_phonetic": PhoneticName = (str)Ts3String.Unescape(value); break;
+			case "cpid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ParentId = (ChannelId)oval; } break;
+			case "channel_description": Description = (str)Ts3String.Unescape(value); break;
 			
 			}
 
@@ -1044,34 +1043,34 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
-			case "invokerid": { if(Utf8Parser.TryParse(value, out ClientId oval, out _)) InvokerId = oval; } break;
-			case "invokername": InvokerName = Ts3String.Unescape(value); break;
-			case "invokeruid": InvokerUid = Ts3String.Unescape(value); break;
+			case "cid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ChannelId = (ChannelId)oval; } break;
+			case "invokerid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) InvokerId = (ClientId)oval; } break;
+			case "invokername": InvokerName = (str)Ts3String.Unescape(value); break;
+			case "invokeruid": InvokerUid = (Uid)Ts3String.Unescape(value); break;
 			case "reasonid": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) Reason = (Reason)oval; } break;
-			case "channel_order": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) Order = oval; } break;
-			case "channel_name": Name = Ts3String.Unescape(value); break;
-			case "channel_topic": Topic = Ts3String.Unescape(value); break;
+			case "channel_order": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) Order = (ChannelId)oval; } break;
+			case "channel_name": Name = (str)Ts3String.Unescape(value); break;
+			case "channel_topic": Topic = (str)Ts3String.Unescape(value); break;
 			case "channel_flag_default": IsDefault = value.Length > 0 && value[0] != '0'; break;
 			case "channel_flag_password": HasPassword = value.Length > 0 && value[0] != '0'; break;
 			case "channel_flag_permanent": IsPermanent = value.Length > 0 && value[0] != '0'; break;
 			case "channel_flag_semi_permanent": IsSemiPermanent = value.Length > 0 && value[0] != '0'; break;
 			case "channel_codec": { if(Utf8Parser.TryParse(value, out u8 oval, out _)) Codec = (Codec)oval; } break;
-			case "channel_codec_quality": { if(Utf8Parser.TryParse(value, out u8 oval, out _)) CodecQuality = oval; } break;
-			case "channel_needed_talk_power": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) NeededTalkPower = oval; } break;
+			case "channel_codec_quality": { if(Utf8Parser.TryParse(value, out u8 oval, out _)) CodecQuality = (u8)oval; } break;
+			case "channel_needed_talk_power": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) NeededTalkPower = (i32)oval; } break;
 			case "channel_icon_id": { if(!value.IsEmpty && value[0] == (u8)'-') { if(Utf8Parser.TryParse(value, out i32 oval, out _)) IconId = oval; } else { if(Utf8Parser.TryParse(value, out u64 oval, out _)) IconId = unchecked((i32)oval); } } break;
-			case "channel_maxclients": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) MaxClients = oval; } break;
-			case "channel_maxfamilyclients": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) MaxFamilyClients = oval; } break;
-			case "channel_codec_latency_factor": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) CodecLatencyFactor = oval; } break;
+			case "channel_maxclients": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) MaxClients = (i32)oval; } break;
+			case "channel_maxfamilyclients": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) MaxFamilyClients = (i32)oval; } break;
+			case "channel_codec_latency_factor": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) CodecLatencyFactor = (i32)oval; } break;
 			case "channel_codec_is_unencrypted": IsUnencrypted = value.Length > 0 && value[0] != '0'; break;
 			case "channel_delete_delay": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) DeleteDelay = TimeSpan.FromSeconds(oval); } break;
 			case "channel_flag_maxclients_unlimited": IsMaxClientsUnlimited = value.Length > 0 && value[0] != '0'; break;
 			case "channel_flag_maxfamilyclients_unlimited": IsMaxFamilyClientsUnlimited = value.Length > 0 && value[0] != '0'; break;
 			case "channel_flag_maxfamilyclients_inherited": InheritsMaxFamilyClients = value.Length > 0 && value[0] != '0'; break;
-			case "channel_name_phonetic": PhoneticName = Ts3String.Unescape(value); break;
-			case "cpid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ParentId = oval; } break;
-			case "channel_description": Description = Ts3String.Unescape(value); break;
-			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
+			case "channel_name_phonetic": PhoneticName = (str)Ts3String.Unescape(value); break;
+			case "cpid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ParentId = (ChannelId)oval; } break;
+			case "channel_description": Description = (str)Ts3String.Unescape(value); break;
+			case "return_code": ReturnCode = (str)Ts3String.Unescape(value); break;
 			}
 
 		}
@@ -1130,9 +1129,9 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
-			case "channel_name": Name = Ts3String.Unescape(value); break;
-			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
+			case "cid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ChannelId = (ChannelId)oval; } break;
+			case "channel_name": Name = (str)Ts3String.Unescape(value); break;
+			case "return_code": ReturnCode = (str)Ts3String.Unescape(value); break;
 			}
 
 		}
@@ -1165,7 +1164,7 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "pattern": Pattern = Ts3String.Unescape(value); break;
+			case "pattern": Pattern = (str)Ts3String.Unescape(value); break;
 			
 			}
 
@@ -1199,7 +1198,7 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "name": Name = Ts3String.Unescape(value); break;
+			case "name": Name = (str)Ts3String.Unescape(value); break;
 			case "type": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) GroupType = (GroupType)oval; } break;
 			
 			}
@@ -1237,10 +1236,10 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "cgid": { if(Utf8Parser.TryParse(value, out ChannelGroupId oval, out _)) ChannelGroup = oval; } break;
+			case "cgid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ChannelGroup = (ChannelGroupId)oval; } break;
 			case "permid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) PermissionId = ser.PermissionTransform.GetName(oval); } break;
-			case "permsid": PermissionNameId = Ts3String.Unescape(value); break;
-			case "permvalue": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionValue = oval; } break;
+			case "permsid": PermissionNameId = (str)Ts3String.Unescape(value); break;
+			case "permvalue": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionValue = (i32)oval; } break;
 			
 			}
 
@@ -1278,10 +1277,10 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
-			case "cldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) ClientDbId = oval; } break;
-			case "cgid": { if(Utf8Parser.TryParse(value, out ChannelGroupId oval, out _)) ChannelGroup = oval; } break;
-			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
+			case "cid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ChannelId = (ChannelId)oval; } break;
+			case "cldbid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ClientDbId = (ClientDbId)oval; } break;
+			case "cgid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ChannelGroup = (ChannelGroupId)oval; } break;
+			case "return_code": ReturnCode = (str)Ts3String.Unescape(value); break;
 			}
 
 		}
@@ -1317,9 +1316,9 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
-			case "cldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) ClientDbId = oval; } break;
-			case "cgid": { if(Utf8Parser.TryParse(value, out ChannelGroupId oval, out _)) ChannelGroup = oval; } break;
+			case "cid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ChannelId = (ChannelId)oval; } break;
+			case "cldbid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ClientDbId = (ClientDbId)oval; } break;
+			case "cgid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ChannelGroup = (ChannelGroupId)oval; } break;
 			
 			}
 
@@ -1357,9 +1356,9 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "scgid": { if(Utf8Parser.TryParse(value, out ChannelGroupId oval, out _)) SourceChannelGroupId = oval; } break;
-			case "tcgid": { if(Utf8Parser.TryParse(value, out ChannelGroupId oval, out _)) TargetChannelGroupId = oval; } break;
-			case "name": Name = Ts3String.Unescape(value); break;
+			case "scgid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) SourceChannelGroupId = (ChannelGroupId)oval; } break;
+			case "tcgid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) TargetChannelGroupId = (ChannelGroupId)oval; } break;
+			case "name": Name = (str)Ts3String.Unescape(value); break;
 			case "type": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) GroupType = (GroupType)oval; } break;
 			
 			}
@@ -1397,7 +1396,7 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "cgid": { if(Utf8Parser.TryParse(value, out ChannelGroupId oval, out _)) ChannelGroup = oval; } break;
+			case "cgid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ChannelGroup = (ChannelGroupId)oval; } break;
 			case "force": Force = value.Length > 0 && value[0] != '0'; break;
 			
 			}
@@ -1434,9 +1433,9 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "cgid": { if(Utf8Parser.TryParse(value, out ChannelGroupId oval, out _)) ChannelGroup = oval; } break;
+			case "cgid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ChannelGroup = (ChannelGroupId)oval; } break;
 			case "permid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) PermissionId = ser.PermissionTransform.GetName(oval); } break;
-			case "permsid": PermissionNameId = Ts3String.Unescape(value); break;
+			case "permsid": PermissionNameId = (str)Ts3String.Unescape(value); break;
 			
 			}
 
@@ -1480,17 +1479,17 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "cgid": { if(Utf8Parser.TryParse(value, out ChannelGroupId oval, out _)) ChannelGroup = oval; } break;
-			case "name": Name = Ts3String.Unescape(value); break;
+			case "cgid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ChannelGroup = (ChannelGroupId)oval; } break;
+			case "name": Name = (str)Ts3String.Unescape(value); break;
 			case "type": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) GroupType = (GroupType)oval; } break;
 			case "iconid": { if(!value.IsEmpty && value[0] == (u8)'-') { if(Utf8Parser.TryParse(value, out i32 oval, out _)) IconId = oval; } else { if(Utf8Parser.TryParse(value, out u64 oval, out _)) IconId = unchecked((i32)oval); } } break;
 			case "savedb": IsPermanent = value.Length > 0 && value[0] != '0'; break;
-			case "sortid": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) SortId = oval; } break;
+			case "sortid": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) SortId = (i32)oval; } break;
 			case "namemode": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) NamingMode = (GroupNamingMode)oval; } break;
-			case "n_modifyp": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) NeededModifyPower = oval; } break;
-			case "n_member_addp": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) NeededMemberAddPower = oval; } break;
-			case "n_member_remove_p": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) NeededMemberRemovePower = oval; } break;
-			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
+			case "n_modifyp": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) NeededModifyPower = (i32)oval; } break;
+			case "n_member_addp": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) NeededMemberAddPower = (i32)oval; } break;
+			case "n_member_remove_p": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) NeededMemberRemovePower = (i32)oval; } break;
+			case "return_code": ReturnCode = (str)Ts3String.Unescape(value); break;
 			}
 
 		}
@@ -1551,13 +1550,13 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "cgid": { if(Utf8Parser.TryParse(value, out ChannelGroupId oval, out _)) ChannelGroup = oval; } break;
+			case "cgid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ChannelGroup = (ChannelGroupId)oval; } break;
 			case "permid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) PermissionId = ser.PermissionTransform.GetName(oval); } break;
-			case "permsid": PermissionNameId = Ts3String.Unescape(value); break;
-			case "permvalue": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionValue = oval; } break;
+			case "permsid": PermissionNameId = (str)Ts3String.Unescape(value); break;
+			case "permvalue": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionValue = (i32)oval; } break;
 			case "permnegated": PermissionNegated = value.Length > 0 && value[0] != '0'; break;
 			case "permskip": PermissionSkip = value.Length > 0 && value[0] != '0'; break;
-			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
+			case "return_code": ReturnCode = (str)Ts3String.Unescape(value); break;
 			}
 
 		}
@@ -1594,7 +1593,7 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "cgid": { if(Utf8Parser.TryParse(value, out ChannelGroupId oval, out _)) ChannelGroup = oval; } break;
+			case "cgid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ChannelGroup = (ChannelGroupId)oval; } break;
 			
 			}
 
@@ -1628,8 +1627,8 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "cgid": { if(Utf8Parser.TryParse(value, out ChannelGroupId oval, out _)) ChannelGroup = oval; } break;
-			case "name": Name = Ts3String.Unescape(value); break;
+			case "cgid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ChannelGroup = (ChannelGroupId)oval; } break;
+			case "name": Name = (str)Ts3String.Unescape(value); break;
 			
 			}
 
@@ -1663,7 +1662,7 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
+			case "cid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ChannelId = (ChannelId)oval; } break;
 			
 			}
 
@@ -1678,6 +1677,123 @@ namespace TS3Client.Messages
 				{
 
 				case "cid": foreach(var toi in toc) { toi.ChannelId = ChannelId; } break;
+				}
+			}
+
+		}
+	}
+
+	public sealed partial class ChannelInfoResponse : IResponse
+	{
+		
+		public string ReturnCode { get; set; }
+
+		public ChannelId ParentChannelId { get; set; }
+		public str Name { get; set; }
+		public str Topic { get; set; }
+		public str Description { get; set; }
+		public str Password { get; set; }
+		public Codec Codec { get; set; }
+		public u8 CodecQuality { get; set; }
+		public i32 MaxClients { get; set; }
+		public i32 MaxFamilyClients { get; set; }
+		public ChannelId Order { get; set; }
+		public bool IsPermanent { get; set; }
+		public bool IsSemiPermanent { get; set; }
+		public bool IsDefault { get; set; }
+		public bool HasPassword { get; set; }
+		public i32 CodecLatencyFactor { get; set; }
+		public bool IsUnencrypted { get; set; }
+		public str PasswordSalt { get; set; }
+		public DurationSeconds DeleteDelay { get; set; }
+		public bool IsMaxClientsUnlimited { get; set; }
+		public bool IsMaxFamilyClientsUnlimited { get; set; }
+		public bool InheritsMaxFamilyClients { get; set; }
+		public str FilePath { get; set; }
+		public i32 NeededTalkPower { get; set; }
+		public bool ForcedSilence { get; set; }
+		public str PhoneticName { get; set; }
+		public IconHash IconId { get; set; }
+		public str BannerGfxUrl { get; set; }
+		public str BannerMode { get; set; }
+		public DurationSeconds DurationEmpty { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
+		{
+			switch(name)
+			{
+
+			case "pid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ParentChannelId = (ChannelId)oval; } break;
+			case "channel_name": Name = (str)Ts3String.Unescape(value); break;
+			case "channel_topic": Topic = (str)Ts3String.Unescape(value); break;
+			case "channel_description": Description = (str)Ts3String.Unescape(value); break;
+			case "channel_password": Password = (str)Ts3String.Unescape(value); break;
+			case "channel_codec": { if(Utf8Parser.TryParse(value, out u8 oval, out _)) Codec = (Codec)oval; } break;
+			case "channel_codec_quality": { if(Utf8Parser.TryParse(value, out u8 oval, out _)) CodecQuality = (u8)oval; } break;
+			case "channel_maxclients": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) MaxClients = (i32)oval; } break;
+			case "channel_maxfamilyclients": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) MaxFamilyClients = (i32)oval; } break;
+			case "channel_order": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) Order = (ChannelId)oval; } break;
+			case "channel_flag_permanent": IsPermanent = value.Length > 0 && value[0] != '0'; break;
+			case "channel_flag_semi_permanent": IsSemiPermanent = value.Length > 0 && value[0] != '0'; break;
+			case "channel_flag_default": IsDefault = value.Length > 0 && value[0] != '0'; break;
+			case "channel_flag_password": HasPassword = value.Length > 0 && value[0] != '0'; break;
+			case "channel_codec_latency_factor": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) CodecLatencyFactor = (i32)oval; } break;
+			case "channel_codec_is_unencrypted": IsUnencrypted = value.Length > 0 && value[0] != '0'; break;
+			case "channel_security_salt": PasswordSalt = (str)Ts3String.Unescape(value); break;
+			case "channel_delete_delay": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) DeleteDelay = TimeSpan.FromSeconds(oval); } break;
+			case "channel_flag_maxclients_unlimited": IsMaxClientsUnlimited = value.Length > 0 && value[0] != '0'; break;
+			case "channel_flag_maxfamilyclients_unlimited": IsMaxFamilyClientsUnlimited = value.Length > 0 && value[0] != '0'; break;
+			case "channel_flag_maxfamilyclients_inherited": InheritsMaxFamilyClients = value.Length > 0 && value[0] != '0'; break;
+			case "channel_filepath": FilePath = (str)Ts3String.Unescape(value); break;
+			case "channel_needed_talk_power": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) NeededTalkPower = (i32)oval; } break;
+			case "channel_forced_silence": ForcedSilence = value.Length > 0 && value[0] != '0'; break;
+			case "channel_name_phonetic": PhoneticName = (str)Ts3String.Unescape(value); break;
+			case "channel_icon_id": { if(!value.IsEmpty && value[0] == (u8)'-') { if(Utf8Parser.TryParse(value, out i32 oval, out _)) IconId = oval; } else { if(Utf8Parser.TryParse(value, out u64 oval, out _)) IconId = unchecked((i32)oval); } } break;
+			case "channel_banner_gfx_url": BannerGfxUrl = (str)Ts3String.Unescape(value); break;
+			case "channel_banner_mode": BannerMode = (str)Ts3String.Unescape(value); break;
+			case "seconds_empty": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) DurationEmpty = TimeSpan.FromSeconds(oval); } break;
+			case "return_code": ReturnCode = (str)Ts3String.Unescape(value); break;
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ChannelInfoResponse[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "pid": foreach(var toi in toc) { toi.ParentChannelId = ParentChannelId; } break;
+				case "channel_name": foreach(var toi in toc) { toi.Name = Name; } break;
+				case "channel_topic": foreach(var toi in toc) { toi.Topic = Topic; } break;
+				case "channel_description": foreach(var toi in toc) { toi.Description = Description; } break;
+				case "channel_password": foreach(var toi in toc) { toi.Password = Password; } break;
+				case "channel_codec": foreach(var toi in toc) { toi.Codec = Codec; } break;
+				case "channel_codec_quality": foreach(var toi in toc) { toi.CodecQuality = CodecQuality; } break;
+				case "channel_maxclients": foreach(var toi in toc) { toi.MaxClients = MaxClients; } break;
+				case "channel_maxfamilyclients": foreach(var toi in toc) { toi.MaxFamilyClients = MaxFamilyClients; } break;
+				case "channel_order": foreach(var toi in toc) { toi.Order = Order; } break;
+				case "channel_flag_permanent": foreach(var toi in toc) { toi.IsPermanent = IsPermanent; } break;
+				case "channel_flag_semi_permanent": foreach(var toi in toc) { toi.IsSemiPermanent = IsSemiPermanent; } break;
+				case "channel_flag_default": foreach(var toi in toc) { toi.IsDefault = IsDefault; } break;
+				case "channel_flag_password": foreach(var toi in toc) { toi.HasPassword = HasPassword; } break;
+				case "channel_codec_latency_factor": foreach(var toi in toc) { toi.CodecLatencyFactor = CodecLatencyFactor; } break;
+				case "channel_codec_is_unencrypted": foreach(var toi in toc) { toi.IsUnencrypted = IsUnencrypted; } break;
+				case "channel_security_salt": foreach(var toi in toc) { toi.PasswordSalt = PasswordSalt; } break;
+				case "channel_delete_delay": foreach(var toi in toc) { toi.DeleteDelay = DeleteDelay; } break;
+				case "channel_flag_maxclients_unlimited": foreach(var toi in toc) { toi.IsMaxClientsUnlimited = IsMaxClientsUnlimited; } break;
+				case "channel_flag_maxfamilyclients_unlimited": foreach(var toi in toc) { toi.IsMaxFamilyClientsUnlimited = IsMaxFamilyClientsUnlimited; } break;
+				case "channel_flag_maxfamilyclients_inherited": foreach(var toi in toc) { toi.InheritsMaxFamilyClients = InheritsMaxFamilyClients; } break;
+				case "channel_filepath": foreach(var toi in toc) { toi.FilePath = FilePath; } break;
+				case "channel_needed_talk_power": foreach(var toi in toc) { toi.NeededTalkPower = NeededTalkPower; } break;
+				case "channel_forced_silence": foreach(var toi in toc) { toi.ForcedSilence = ForcedSilence; } break;
+				case "channel_name_phonetic": foreach(var toi in toc) { toi.PhoneticName = PhoneticName; } break;
+				case "channel_icon_id": foreach(var toi in toc) { toi.IconId = IconId; } break;
+				case "channel_banner_gfx_url": foreach(var toi in toc) { toi.BannerGfxUrl = BannerGfxUrl; } break;
+				case "channel_banner_mode": foreach(var toi in toc) { toi.BannerMode = BannerMode; } break;
+				case "seconds_empty": foreach(var toi in toc) { toi.DurationEmpty = DurationEmpty; } break;
 				}
 			}
 
@@ -1719,28 +1835,28 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
-			case "cpid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ParentId = oval; } break;
-			case "channel_name": Name = Ts3String.Unescape(value); break;
-			case "channel_topic": Topic = Ts3String.Unescape(value); break;
+			case "cid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ChannelId = (ChannelId)oval; } break;
+			case "cpid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ParentId = (ChannelId)oval; } break;
+			case "channel_name": Name = (str)Ts3String.Unescape(value); break;
+			case "channel_topic": Topic = (str)Ts3String.Unescape(value); break;
 			case "channel_codec": { if(Utf8Parser.TryParse(value, out u8 oval, out _)) Codec = (Codec)oval; } break;
-			case "channel_codec_quality": { if(Utf8Parser.TryParse(value, out u8 oval, out _)) CodecQuality = oval; } break;
-			case "channel_maxclients": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) MaxClients = oval; } break;
-			case "channel_maxfamilyclients": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) MaxFamilyClients = oval; } break;
-			case "channel_order": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) Order = oval; } break;
+			case "channel_codec_quality": { if(Utf8Parser.TryParse(value, out u8 oval, out _)) CodecQuality = (u8)oval; } break;
+			case "channel_maxclients": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) MaxClients = (i32)oval; } break;
+			case "channel_maxfamilyclients": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) MaxFamilyClients = (i32)oval; } break;
+			case "channel_order": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) Order = (ChannelId)oval; } break;
 			case "channel_flag_permanent": IsPermanent = value.Length > 0 && value[0] != '0'; break;
 			case "channel_flag_semi_permanent": IsSemiPermanent = value.Length > 0 && value[0] != '0'; break;
 			case "channel_flag_default": IsDefault = value.Length > 0 && value[0] != '0'; break;
 			case "channel_flag_password": HasPassword = value.Length > 0 && value[0] != '0'; break;
-			case "channel_codec_latency_factor": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) CodecLatencyFactor = oval; } break;
+			case "channel_codec_latency_factor": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) CodecLatencyFactor = (i32)oval; } break;
 			case "channel_codec_is_unencrypted": IsUnencrypted = value.Length > 0 && value[0] != '0'; break;
 			case "channel_delete_delay": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) DeleteDelay = TimeSpan.FromSeconds(oval); } break;
 			case "channel_flag_maxclients_unlimited": IsMaxClientsUnlimited = value.Length > 0 && value[0] != '0'; break;
 			case "channel_flag_maxfamilyclients_unlimited": IsMaxFamilyClientsUnlimited = value.Length > 0 && value[0] != '0'; break;
 			case "channel_flag_maxfamilyclients_inherited": InheritsMaxFamilyClients = value.Length > 0 && value[0] != '0'; break;
-			case "channel_needed_talk_power": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) NeededTalkPower = oval; } break;
+			case "channel_needed_talk_power": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) NeededTalkPower = (i32)oval; } break;
 			case "channel_forced_silence": ForcedSilence = value.Length > 0 && value[0] != '0'; break;
-			case "channel_name_phonetic": PhoneticName = Ts3String.Unescape(value); break;
+			case "channel_name_phonetic": PhoneticName = (str)Ts3String.Unescape(value); break;
 			case "channel_icon_id": { if(!value.IsEmpty && value[0] == (u8)'-') { if(Utf8Parser.TryParse(value, out i32 oval, out _)) IconId = oval; } else { if(Utf8Parser.TryParse(value, out u64 oval, out _)) IconId = unchecked((i32)oval); } } break;
 			case "channel_flag_private": IsPrivate = value.Length > 0 && value[0] != '0'; break;
 			
@@ -1846,26 +1962,26 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
-			case "pid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ParentChannelId = oval; } break;
-			case "channel_order": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) Order = oval; } break;
-			case "channel_name": Name = Ts3String.Unescape(value); break;
-			case "total_clients": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) TotalClients = oval; } break;
-			case "channel_needed_subscribe_power": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) NeededSubscribePower = oval; } break;
-			case "channel_topic": Topic = Ts3String.Unescape(value); break;
+			case "cid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ChannelId = (ChannelId)oval; } break;
+			case "pid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ParentChannelId = (ChannelId)oval; } break;
+			case "channel_order": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) Order = (ChannelId)oval; } break;
+			case "channel_name": Name = (str)Ts3String.Unescape(value); break;
+			case "total_clients": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) TotalClients = (i32)oval; } break;
+			case "channel_needed_subscribe_power": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) NeededSubscribePower = (i32)oval; } break;
+			case "channel_topic": Topic = (str)Ts3String.Unescape(value); break;
 			case "channel_flag_default": IsDefault = value.Length > 0 && value[0] != '0'; break;
 			case "channel_flag_password": HasPassword = value.Length > 0 && value[0] != '0'; break;
 			case "channel_flag_permanent": IsPermanent = value.Length > 0 && value[0] != '0'; break;
 			case "channel_flag_semi_permanent": IsSemiPermanent = value.Length > 0 && value[0] != '0'; break;
 			case "channel_codec": { if(Utf8Parser.TryParse(value, out u8 oval, out _)) Codec = (Codec)oval; } break;
-			case "channel_codec_quality": { if(Utf8Parser.TryParse(value, out u8 oval, out _)) CodecQuality = oval; } break;
-			case "channel_needed_talk_power": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) NeededTalkPower = oval; } break;
-			case "total_clients_family": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) TotalFamilyClients = oval; } break;
-			case "channel_maxclients": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) MaxClients = oval; } break;
-			case "channel_maxfamilyclients": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) MaxFamilyClients = oval; } break;
+			case "channel_codec_quality": { if(Utf8Parser.TryParse(value, out u8 oval, out _)) CodecQuality = (u8)oval; } break;
+			case "channel_needed_talk_power": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) NeededTalkPower = (i32)oval; } break;
+			case "total_clients_family": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) TotalFamilyClients = (i32)oval; } break;
+			case "channel_maxclients": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) MaxClients = (i32)oval; } break;
+			case "channel_maxfamilyclients": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) MaxFamilyClients = (i32)oval; } break;
 			case "channel_icon_id": { if(!value.IsEmpty && value[0] == (u8)'-') { if(Utf8Parser.TryParse(value, out i32 oval, out _)) IconId = oval; } else { if(Utf8Parser.TryParse(value, out u64 oval, out _)) IconId = unchecked((i32)oval); } } break;
 			case "seconds_empty": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) DurationEmpty = TimeSpan.FromSeconds(oval); } break;
-			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
+			case "return_code": ReturnCode = (str)Ts3String.Unescape(value); break;
 			}
 
 		}
@@ -1917,9 +2033,9 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
-			case "cpid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ParentId = oval; } break;
-			case "order": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) Order = oval; } break;
+			case "cid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ChannelId = (ChannelId)oval; } break;
+			case "cpid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ParentId = (ChannelId)oval; } break;
+			case "order": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) Order = (ChannelId)oval; } break;
 			
 			}
 
@@ -1960,13 +2076,13 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "order": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) Order = oval; } break;
-			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
-			case "invokerid": { if(Utf8Parser.TryParse(value, out ClientId oval, out _)) InvokerId = oval; } break;
-			case "invokername": InvokerName = Ts3String.Unescape(value); break;
-			case "invokeruid": InvokerUid = Ts3String.Unescape(value); break;
+			case "order": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) Order = (ChannelId)oval; } break;
+			case "cid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ChannelId = (ChannelId)oval; } break;
+			case "invokerid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) InvokerId = (ClientId)oval; } break;
+			case "invokername": InvokerName = (str)Ts3String.Unescape(value); break;
+			case "invokeruid": InvokerUid = (Uid)Ts3String.Unescape(value); break;
 			case "reasonid": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) Reason = (Reason)oval; } break;
-			case "cpid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ParentId = oval; } break;
+			case "cpid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ParentId = (ChannelId)oval; } break;
 			
 			}
 
@@ -2005,7 +2121,7 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
+			case "cid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ChannelId = (ChannelId)oval; } break;
 			
 			}
 
@@ -2039,7 +2155,7 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
+			case "cid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ChannelId = (ChannelId)oval; } break;
 			case "flags": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) Flags = (ChannelPermissionHint)oval; } break;
 			
 			}
@@ -2078,12 +2194,12 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
+			case "cid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ChannelId = (ChannelId)oval; } break;
 			case "permid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) PermissionId = ser.PermissionTransform.GetName(oval); } break;
-			case "permvalue": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionValue = oval; } break;
+			case "permvalue": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionValue = (i32)oval; } break;
 			case "permnegated": PermissionNegated = value.Length > 0 && value[0] != '0'; break;
 			case "permskip": PermissionSkip = value.Length > 0 && value[0] != '0'; break;
-			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
+			case "return_code": ReturnCode = (str)Ts3String.Unescape(value); break;
 			}
 
 		}
@@ -2119,7 +2235,7 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
+			case "cid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ChannelId = (ChannelId)oval; } break;
 			
 			}
 
@@ -2152,7 +2268,7 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
+			case "cid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ChannelId = (ChannelId)oval; } break;
 			
 			}
 
@@ -2201,7 +2317,7 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
+			case "cid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ChannelId = (ChannelId)oval; } break;
 			case "es": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) EmptySince = TimeSpan.FromSeconds(oval); } break;
 			
 			}
@@ -2236,7 +2352,7 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
+			case "cid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ChannelId = (ChannelId)oval; } break;
 			
 			}
 
@@ -2284,7 +2400,7 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
+			case "cid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ChannelId = (ChannelId)oval; } break;
 			
 			}
 
@@ -2321,10 +2437,10 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "cldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) ClientDbId = oval; } break;
+			case "cldbid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ClientDbId = (ClientDbId)oval; } break;
 			case "permid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) PermissionId = ser.PermissionTransform.GetName(oval); } break;
-			case "permsid": PermissionNameId = Ts3String.Unescape(value); break;
-			case "permvalue": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionValue = oval; } break;
+			case "permsid": PermissionNameId = (str)Ts3String.Unescape(value); break;
+			case "permvalue": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionValue = (i32)oval; } break;
 			case "permskip": PermissionSkip = value.Length > 0 && value[0] != '0'; break;
 			
 			}
@@ -2368,13 +2484,13 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "invokerid": { if(Utf8Parser.TryParse(value, out ClientId oval, out _)) InvokerId = oval; } break;
-			case "invokername": InvokerName = Ts3String.Unescape(value); break;
-			case "invokeruid": InvokerUid = Ts3String.Unescape(value); break;
-			case "cgid": { if(Utf8Parser.TryParse(value, out ChannelGroupId oval, out _)) ChannelGroup = oval; } break;
-			case "cgi": { if(Utf8Parser.TryParse(value, out ChannelGroupId oval, out _)) ChannelGroupIndex = oval; } break;
-			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
-			case "clid": { if(Utf8Parser.TryParse(value, out ClientId oval, out _)) ClientId = oval; } break;
+			case "invokerid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) InvokerId = (ClientId)oval; } break;
+			case "invokername": InvokerName = (str)Ts3String.Unescape(value); break;
+			case "invokeruid": InvokerUid = (Uid)Ts3String.Unescape(value); break;
+			case "cgid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ChannelGroup = (ChannelGroupId)oval; } break;
+			case "cgi": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ChannelGroupIndex = (ChannelGroupId)oval; } break;
+			case "cid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ChannelId = (ChannelId)oval; } break;
+			case "clid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) ClientId = (ClientId)oval; } break;
 			
 			}
 
@@ -2414,8 +2530,8 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "clid": { if(Utf8Parser.TryParse(value, out ClientId oval, out _)) ClientId = oval; } break;
-			case "cluid": ClientUid = Ts3String.Unescape(value); break;
+			case "clid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) ClientId = (ClientId)oval; } break;
+			case "cluid": ClientUid = (Uid)Ts3String.Unescape(value); break;
 			
 			}
 
@@ -2450,8 +2566,8 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "clid": { if(Utf8Parser.TryParse(value, out ClientId oval, out _)) ClientId = oval; } break;
-			case "cluid": ClientUid = Ts3String.Unescape(value); break;
+			case "clid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) ClientId = (ClientId)oval; } break;
+			case "cluid": ClientUid = (Uid)Ts3String.Unescape(value); break;
 			
 			}
 
@@ -2486,8 +2602,8 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "clid": { if(Utf8Parser.TryParse(value, out ClientId oval, out _)) ClientId = oval; } break;
-			case "cluid": ClientUid = Ts3String.Unescape(value); break;
+			case "clid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) ClientId = (ClientId)oval; } break;
+			case "cluid": ClientUid = (Uid)Ts3String.Unescape(value); break;
 			
 			}
 
@@ -2561,46 +2677,46 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "clid": { if(Utf8Parser.TryParse(value, out ClientId oval, out _)) ClientId = oval; } break;
+			case "clid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) ClientId = (ClientId)oval; } break;
 			case "connection_ping": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) Ping = TimeSpan.FromMilliseconds(oval); } break;
 			case "connection_ping_deviation": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) PingDeviation = TimeSpan.FromMilliseconds(oval); } break;
 			case "connection_connected_time": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) ConnectedTime = TimeSpan.FromMilliseconds(oval); } break;
-			case "connection_client_ip": Ip = Ts3String.Unescape(value); break;
-			case "connection_client_port": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) Port = oval; } break;
-			case "connection_packets_sent_speech": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) PacketsSentSpeech = oval; } break;
-			case "connection_packets_sent_keepalive": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) PacketsSentKeepalive = oval; } break;
-			case "connection_packets_sent_control": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) PacketsSentControl = oval; } break;
-			case "connection_bytes_sent_speech": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BytesSentSpeech = oval; } break;
-			case "connection_bytes_sent_keepalive": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BytesSentKeepalive = oval; } break;
-			case "connection_bytes_sent_control": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BytesSentControl = oval; } break;
-			case "connection_packets_received_speech": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) PacketsReceivedSpeech = oval; } break;
-			case "connection_packets_received_keepalive": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) PacketsReceivedKeepalive = oval; } break;
-			case "connection_packets_received_control": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) PacketsReceivedControl = oval; } break;
-			case "connection_bytes_received_speech": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BytesReceivedSpeech = oval; } break;
-			case "connection_bytes_received_keepalive": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BytesReceivedKeepalive = oval; } break;
-			case "connection_bytes_received_control": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BytesReceivedControl = oval; } break;
-			case "connection_server2client_packetloss_speech": { if(Utf8Parser.TryParse(value, out f32 oval, out _)) ServerToClientPacketlossSpeech = oval; } break;
-			case "connection_server2client_packetloss_keepalive": { if(Utf8Parser.TryParse(value, out f32 oval, out _)) ServerToClientPacketlossKeepalive = oval; } break;
-			case "connection_server2client_packetloss_control": { if(Utf8Parser.TryParse(value, out f32 oval, out _)) ServerToClientPacketlossControl = oval; } break;
-			case "connection_server2client_packetloss_total": { if(Utf8Parser.TryParse(value, out f32 oval, out _)) ServerToClientPacketlossTotal = oval; } break;
-			case "connection_client2server_packetloss_speech": { if(Utf8Parser.TryParse(value, out f32 oval, out _)) ClientToServerPacketlossSpeech = oval; } break;
-			case "connection_client2server_packetloss_keepalive": { if(Utf8Parser.TryParse(value, out f32 oval, out _)) ClientToServerPacketlossKeepalive = oval; } break;
-			case "connection_client2server_packetloss_control": { if(Utf8Parser.TryParse(value, out f32 oval, out _)) ClientToServerPacketlossControl = oval; } break;
-			case "connection_client2server_packetloss_total": { if(Utf8Parser.TryParse(value, out f32 oval, out _)) ClientToServerPacketlossTotal = oval; } break;
-			case "connection_bandwidth_sent_last_second_speech": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BandwidthSentLastSecondSpeech = oval; } break;
-			case "connection_bandwidth_sent_last_second_keepalive": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BandwidthSentLastSecondKeepalive = oval; } break;
-			case "connection_bandwidth_sent_last_second_control": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BandwidthSentLastSecondControl = oval; } break;
-			case "connection_bandwidth_sent_last_minute_speech": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BandwidthSentLastMinuteSpeech = oval; } break;
-			case "connection_bandwidth_sent_last_minute_keepalive": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BandwidthSentLastMinuteKeepalive = oval; } break;
-			case "connection_bandwidth_sent_last_minute_control": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BandwidthSentLastMinuteControl = oval; } break;
-			case "connection_bandwidth_received_last_second_speech": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BandwidthReceivedLastSecondSpeech = oval; } break;
-			case "connection_bandwidth_received_last_second_keepalive": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BandwidthReceivedLastSecondKeepalive = oval; } break;
-			case "connection_bandwidth_received_last_second_control": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BandwidthReceivedLastSecondControl = oval; } break;
-			case "connection_bandwidth_received_last_minute_speech": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BandwidthReceivedLastMinuteSpeech = oval; } break;
-			case "connection_bandwidth_received_last_minute_keepalive": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BandwidthReceivedLastMinuteKeepalive = oval; } break;
-			case "connection_bandwidth_received_last_minute_control": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BandwidthReceivedLastMinuteControl = oval; } break;
-			case "connection_filetransfer_bandwidth_sent": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) FiletransferBandwidthSent = oval; } break;
-			case "connection_filetransfer_bandwidth_received": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) FiletransferBandwidthReceived = oval; } break;
+			case "connection_client_ip": Ip = (str)Ts3String.Unescape(value); break;
+			case "connection_client_port": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) Port = (u16)oval; } break;
+			case "connection_packets_sent_speech": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) PacketsSentSpeech = (u64)oval; } break;
+			case "connection_packets_sent_keepalive": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) PacketsSentKeepalive = (u64)oval; } break;
+			case "connection_packets_sent_control": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) PacketsSentControl = (u64)oval; } break;
+			case "connection_bytes_sent_speech": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BytesSentSpeech = (u64)oval; } break;
+			case "connection_bytes_sent_keepalive": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BytesSentKeepalive = (u64)oval; } break;
+			case "connection_bytes_sent_control": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BytesSentControl = (u64)oval; } break;
+			case "connection_packets_received_speech": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) PacketsReceivedSpeech = (u64)oval; } break;
+			case "connection_packets_received_keepalive": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) PacketsReceivedKeepalive = (u64)oval; } break;
+			case "connection_packets_received_control": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) PacketsReceivedControl = (u64)oval; } break;
+			case "connection_bytes_received_speech": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BytesReceivedSpeech = (u64)oval; } break;
+			case "connection_bytes_received_keepalive": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BytesReceivedKeepalive = (u64)oval; } break;
+			case "connection_bytes_received_control": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BytesReceivedControl = (u64)oval; } break;
+			case "connection_server2client_packetloss_speech": { if(Utf8Parser.TryParse(value, out f32 oval, out _)) ServerToClientPacketlossSpeech = (f32)oval; } break;
+			case "connection_server2client_packetloss_keepalive": { if(Utf8Parser.TryParse(value, out f32 oval, out _)) ServerToClientPacketlossKeepalive = (f32)oval; } break;
+			case "connection_server2client_packetloss_control": { if(Utf8Parser.TryParse(value, out f32 oval, out _)) ServerToClientPacketlossControl = (f32)oval; } break;
+			case "connection_server2client_packetloss_total": { if(Utf8Parser.TryParse(value, out f32 oval, out _)) ServerToClientPacketlossTotal = (f32)oval; } break;
+			case "connection_client2server_packetloss_speech": { if(Utf8Parser.TryParse(value, out f32 oval, out _)) ClientToServerPacketlossSpeech = (f32)oval; } break;
+			case "connection_client2server_packetloss_keepalive": { if(Utf8Parser.TryParse(value, out f32 oval, out _)) ClientToServerPacketlossKeepalive = (f32)oval; } break;
+			case "connection_client2server_packetloss_control": { if(Utf8Parser.TryParse(value, out f32 oval, out _)) ClientToServerPacketlossControl = (f32)oval; } break;
+			case "connection_client2server_packetloss_total": { if(Utf8Parser.TryParse(value, out f32 oval, out _)) ClientToServerPacketlossTotal = (f32)oval; } break;
+			case "connection_bandwidth_sent_last_second_speech": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BandwidthSentLastSecondSpeech = (u64)oval; } break;
+			case "connection_bandwidth_sent_last_second_keepalive": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BandwidthSentLastSecondKeepalive = (u64)oval; } break;
+			case "connection_bandwidth_sent_last_second_control": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BandwidthSentLastSecondControl = (u64)oval; } break;
+			case "connection_bandwidth_sent_last_minute_speech": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BandwidthSentLastMinuteSpeech = (u64)oval; } break;
+			case "connection_bandwidth_sent_last_minute_keepalive": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BandwidthSentLastMinuteKeepalive = (u64)oval; } break;
+			case "connection_bandwidth_sent_last_minute_control": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BandwidthSentLastMinuteControl = (u64)oval; } break;
+			case "connection_bandwidth_received_last_second_speech": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BandwidthReceivedLastSecondSpeech = (u64)oval; } break;
+			case "connection_bandwidth_received_last_second_keepalive": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BandwidthReceivedLastSecondKeepalive = (u64)oval; } break;
+			case "connection_bandwidth_received_last_second_control": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BandwidthReceivedLastSecondControl = (u64)oval; } break;
+			case "connection_bandwidth_received_last_minute_speech": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BandwidthReceivedLastMinuteSpeech = (u64)oval; } break;
+			case "connection_bandwidth_received_last_minute_keepalive": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BandwidthReceivedLastMinuteKeepalive = (u64)oval; } break;
+			case "connection_bandwidth_received_last_minute_control": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BandwidthReceivedLastMinuteControl = (u64)oval; } break;
+			case "connection_filetransfer_bandwidth_sent": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) FiletransferBandwidthSent = (u64)oval; } break;
+			case "connection_filetransfer_bandwidth_received": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) FiletransferBandwidthReceived = (u64)oval; } break;
 			case "connection_idle_time": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) IdleTime = TimeSpan.FromMilliseconds(oval); } break;
 			
 			}
@@ -2674,7 +2790,7 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "clid": { if(Utf8Parser.TryParse(value, out ClientId oval, out _)) ClientId = oval; } break;
+			case "clid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) ClientId = (ClientId)oval; } break;
 			
 			}
 
@@ -2722,7 +2838,7 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "cldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) ClientDbId = oval; } break;
+			case "cldbid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ClientDbId = (ClientDbId)oval; } break;
 			
 			}
 
@@ -2755,7 +2871,7 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "cldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) ClientDbId = oval; } break;
+			case "cldbid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ClientDbId = (ClientDbId)oval; } break;
 			
 			}
 
@@ -2792,12 +2908,12 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "cldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) ClientDbId = oval; } break;
-			case "client_unique_identifier": Uid = Ts3String.Unescape(value); break;
-			case "client_nickname": Name = Ts3String.Unescape(value); break;
+			case "cldbid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ClientDbId = (ClientDbId)oval; } break;
+			case "client_unique_identifier": Uid = (Uid)Ts3String.Unescape(value); break;
+			case "client_nickname": Name = (str)Ts3String.Unescape(value); break;
 			case "client_lastconnected": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) LastConnected = Tools.FromUnix(oval); } break;
-			case "client_totalconnections": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) TotalConnections = oval; } break;
-			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
+			case "client_totalconnections": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) TotalConnections = (i32)oval; } break;
+			case "return_code": ReturnCode = (str)Ts3String.Unescape(value); break;
 			}
 
 		}
@@ -2833,7 +2949,7 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "pattern": Pattern = Ts3String.Unescape(value); break;
+			case "pattern": Pattern = (str)Ts3String.Unescape(value); break;
 			
 			}
 
@@ -2867,9 +2983,9 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "cluid": ClientUid = Ts3String.Unescape(value); break;
-			case "cldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) ClientDbId = oval; } break;
-			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
+			case "cluid": ClientUid = (Uid)Ts3String.Unescape(value); break;
+			case "cldbid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ClientDbId = (ClientDbId)oval; } break;
+			case "return_code": ReturnCode = (str)Ts3String.Unescape(value); break;
 			}
 
 		}
@@ -2902,7 +3018,7 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "cluid": ClientUid = Ts3String.Unescape(value); break;
+			case "cluid": ClientUid = (Uid)Ts3String.Unescape(value); break;
 			
 			}
 
@@ -2952,25 +3068,25 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "client_lastip": LastIp = Ts3String.Unescape(value); break;
-			case "clid": { if(Utf8Parser.TryParse(value, out ClientId oval, out _)) ClientId = oval; } break;
-			case "client_unique_identifier": Uid = Ts3String.Unescape(value); break;
-			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
-			case "client_database_id": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) DatabaseId = oval; } break;
-			case "client_nickname": Name = Ts3String.Unescape(value); break;
+			case "client_lastip": LastIp = (str)Ts3String.Unescape(value); break;
+			case "clid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) ClientId = (ClientId)oval; } break;
+			case "client_unique_identifier": Uid = (Uid)Ts3String.Unescape(value); break;
+			case "cid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ChannelId = (ChannelId)oval; } break;
+			case "client_database_id": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) DatabaseId = (ClientDbId)oval; } break;
+			case "client_nickname": Name = (str)Ts3String.Unescape(value); break;
 			case "client_type": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) ClientType = (ClientType)oval; } break;
-			case "client_flag_avatar": AvatarHash = Ts3String.Unescape(value); break;
-			case "client_description": Description = Ts3String.Unescape(value); break;
+			case "client_flag_avatar": AvatarHash = (str)Ts3String.Unescape(value); break;
+			case "client_description": Description = (str)Ts3String.Unescape(value); break;
 			case "client_icon_id": { if(!value.IsEmpty && value[0] == (u8)'-') { if(Utf8Parser.TryParse(value, out i32 oval, out _)) IconId = oval; } else { if(Utf8Parser.TryParse(value, out u64 oval, out _)) IconId = unchecked((i32)oval); } } break;
 			case "client_created": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) CreationDate = Tools.FromUnix(oval); } break;
 			case "client_lastconnected": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) LastConnected = Tools.FromUnix(oval); } break;
-			case "client_totalconnections": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) TotalConnections = oval; } break;
-			case "client_month_bytes_uploaded": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) MonthlyUploadQuota = oval; } break;
-			case "client_month_bytes_downloaded": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) MonthlyDownloadQuota = oval; } break;
-			case "client_total_bytes_uploaded": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) TotalUploadQuota = oval; } break;
-			case "client_total_bytes_downloaded": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) TotalDownloadQuota = oval; } break;
-			case "client_base64HashClientUID": Base64HashClientUid = Ts3String.Unescape(value); break;
-			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
+			case "client_totalconnections": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) TotalConnections = (i32)oval; } break;
+			case "client_month_bytes_uploaded": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) MonthlyUploadQuota = (i64)oval; } break;
+			case "client_month_bytes_downloaded": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) MonthlyDownloadQuota = (i64)oval; } break;
+			case "client_total_bytes_uploaded": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) TotalUploadQuota = (i64)oval; } break;
+			case "client_total_bytes_downloaded": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) TotalDownloadQuota = (i64)oval; } break;
+			case "client_base64HashClientUID": Base64HashClientUid = (str)Ts3String.Unescape(value); break;
+			case "return_code": ReturnCode = (str)Ts3String.Unescape(value); break;
 			}
 
 		}
@@ -3019,7 +3135,7 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "cldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) ClientDbId = oval; } break;
+			case "cldbid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ClientDbId = (ClientDbId)oval; } break;
 			
 			}
 
@@ -3059,15 +3175,15 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "cldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) ClientDbId = oval; } break;
-			case "client_unique_identifier": Uid = Ts3String.Unescape(value); break;
-			case "client_nickname": Name = Ts3String.Unescape(value); break;
+			case "cldbid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ClientDbId = (ClientDbId)oval; } break;
+			case "client_unique_identifier": Uid = (Uid)Ts3String.Unescape(value); break;
+			case "client_nickname": Name = (str)Ts3String.Unescape(value); break;
 			case "client_created": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) CreationDate = Tools.FromUnix(oval); } break;
 			case "client_lastconnected": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) LastConnected = Tools.FromUnix(oval); } break;
-			case "client_totalconnections": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) TotalConnections = oval; } break;
-			case "client_description": Description = Ts3String.Unescape(value); break;
-			case "client_lastip": LastIp = Ts3String.Unescape(value); break;
-			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
+			case "client_totalconnections": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) TotalConnections = (i32)oval; } break;
+			case "client_description": Description = (str)Ts3String.Unescape(value); break;
+			case "client_lastip": LastIp = (str)Ts3String.Unescape(value); break;
+			case "return_code": ReturnCode = (str)Ts3String.Unescape(value); break;
 			}
 
 		}
@@ -3107,8 +3223,8 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "start": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) Offset = oval; } break;
-			case "duration": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) Limit = oval; } break;
+			case "start": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) Offset = (u32)oval; } break;
+			case "duration": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) Limit = (u32)oval; } break;
 			
 			}
 
@@ -3144,9 +3260,9 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "cldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) ClientDbId = oval; } break;
+			case "cldbid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ClientDbId = (ClientDbId)oval; } break;
 			case "permid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) PermissionId = ser.PermissionTransform.GetName(oval); } break;
-			case "permsid": PermissionNameId = Ts3String.Unescape(value); break;
+			case "permsid": PermissionNameId = (str)Ts3String.Unescape(value); break;
 			
 			}
 
@@ -3183,8 +3299,8 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "clid": { if(Utf8Parser.TryParse(value, out ClientId oval, out _)) ClientId = oval; } break;
-			case "client_description": Description = Ts3String.Unescape(value); break;
+			case "clid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) ClientId = (ClientId)oval; } break;
+			case "client_description": Description = (str)Ts3String.Unescape(value); break;
 			case "client_is_talker": TalkPowerGranted = value.Length > 0 && value[0] != '0'; break;
 			
 			}
@@ -3257,42 +3373,42 @@ namespace TS3Client.Messages
 			{
 
 			case "reasonid": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) Reason = (Reason)oval; } break;
-			case "ctid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) TargetChannelId = oval; } break;
-			case "invokerid": { if(Utf8Parser.TryParse(value, out ClientId oval, out _)) InvokerId = oval; } break;
-			case "invokername": InvokerName = Ts3String.Unescape(value); break;
-			case "invokeruid": InvokerUid = Ts3String.Unescape(value); break;
-			case "clid": { if(Utf8Parser.TryParse(value, out ClientId oval, out _)) ClientId = oval; } break;
-			case "client_database_id": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) DatabaseId = oval; } break;
-			case "client_nickname": Name = Ts3String.Unescape(value); break;
+			case "ctid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) TargetChannelId = (ChannelId)oval; } break;
+			case "invokerid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) InvokerId = (ClientId)oval; } break;
+			case "invokername": InvokerName = (str)Ts3String.Unescape(value); break;
+			case "invokeruid": InvokerUid = (Uid)Ts3String.Unescape(value); break;
+			case "clid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) ClientId = (ClientId)oval; } break;
+			case "client_database_id": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) DatabaseId = (ClientDbId)oval; } break;
+			case "client_nickname": Name = (str)Ts3String.Unescape(value); break;
 			case "client_type": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) ClientType = (ClientType)oval; } break;
-			case "cfid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) SourceChannelId = oval; } break;
-			case "client_unique_identifier": Uid = Ts3String.Unescape(value); break;
-			case "client_flag_avatar": AvatarHash = Ts3String.Unescape(value); break;
-			case "client_description": Description = Ts3String.Unescape(value); break;
+			case "cfid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) SourceChannelId = (ChannelId)oval; } break;
+			case "client_unique_identifier": Uid = (Uid)Ts3String.Unescape(value); break;
+			case "client_flag_avatar": AvatarHash = (str)Ts3String.Unescape(value); break;
+			case "client_description": Description = (str)Ts3String.Unescape(value); break;
 			case "client_icon_id": { if(!value.IsEmpty && value[0] == (u8)'-') { if(Utf8Parser.TryParse(value, out i32 oval, out _)) IconId = oval; } else { if(Utf8Parser.TryParse(value, out u64 oval, out _)) IconId = unchecked((i32)oval); } } break;
 			case "client_input_muted": InputMuted = value.Length > 0 && value[0] != '0'; break;
 			case "client_output_muted": OutputMuted = value.Length > 0 && value[0] != '0'; break;
 			case "client_outputonly_muted": OutputOnlyMuted = value.Length > 0 && value[0] != '0'; break;
 			case "client_input_hardware": InputHardwareEnabled = value.Length > 0 && value[0] != '0'; break;
 			case "client_output_hardware": OutputHardwareEnabled = value.Length > 0 && value[0] != '0'; break;
-			case "client_meta_data": Metadata = Ts3String.Unescape(value); break;
+			case "client_meta_data": Metadata = (str)Ts3String.Unescape(value); break;
 			case "client_is_recording": IsRecording = value.Length > 0 && value[0] != '0'; break;
-			case "client_channel_group_id": { if(Utf8Parser.TryParse(value, out ChannelGroupId oval, out _)) ChannelGroup = oval; } break;
-			case "client_channel_group_inherited_channel_id": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) InheritedChannelGroupFromChannel = oval; } break;
-			case "client_servergroups": { if(value.Length == 0) ServerGroups = Array.Empty<ServerGroupId>(); else { var ss = new SpanSplitter<byte>(); ss.First(value, (byte)','); int cnt = 0; for (int i = 0; i < value.Length; i++) if (value[i] == ',') cnt++; ServerGroups = new ServerGroupId[cnt + 1]; for(int i = 0; i < cnt + 1; i++) { { if(Utf8Parser.TryParse(ss.Trim(value), out ServerGroupId oval, out _)) ServerGroups[i] = oval; } if (i < cnt) value = ss.Next(value); } } } break;
+			case "client_channel_group_id": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ChannelGroup = (ChannelGroupId)oval; } break;
+			case "client_channel_group_inherited_channel_id": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) InheritedChannelGroupFromChannel = (ChannelId)oval; } break;
+			case "client_servergroups": { if(value.Length == 0) ServerGroups = Array.Empty<ServerGroupId>(); else { var ss = new SpanSplitter<byte>(); ss.First(value, (byte)','); int cnt = 0; for (int i = 0; i < value.Length; i++) if (value[i] == ',') cnt++; ServerGroups = new ServerGroupId[cnt + 1]; for(int i = 0; i < cnt + 1; i++) { { if(Utf8Parser.TryParse(ss.Trim(value), out u64 oval, out _)) ServerGroups[i] = (ServerGroupId)oval; } if (i < cnt) value = ss.Next(value); } } } break;
 			case "client_away": IsAway = value.Length > 0 && value[0] != '0'; break;
-			case "client_away_message": AwayMessage = Ts3String.Unescape(value); break;
-			case "client_talk_power": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) TalkPower = oval; } break;
+			case "client_away_message": AwayMessage = (str)Ts3String.Unescape(value); break;
+			case "client_talk_power": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) TalkPower = (i32)oval; } break;
 			case "client_talk_request": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) TalkPowerRequestTime = Tools.FromUnix(oval); } break;
-			case "client_talk_request_msg": TalkPowerRequestMessage = Ts3String.Unescape(value); break;
+			case "client_talk_request_msg": TalkPowerRequestMessage = (str)Ts3String.Unescape(value); break;
 			case "client_is_talker": TalkPowerGranted = value.Length > 0 && value[0] != '0'; break;
 			case "client_is_priority_speaker": IsPrioritySpeaker = value.Length > 0 && value[0] != '0'; break;
-			case "client_unread_messages": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) UnreadMessages = oval; } break;
-			case "client_nickname_phonetic": PhoneticName = Ts3String.Unescape(value); break;
-			case "client_needed_serverquery_view_power": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) NeededServerqueryViewPower = oval; } break;
+			case "client_unread_messages": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) UnreadMessages = (u32)oval; } break;
+			case "client_nickname_phonetic": PhoneticName = (str)Ts3String.Unescape(value); break;
+			case "client_needed_serverquery_view_power": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) NeededServerqueryViewPower = (i32)oval; } break;
 			case "client_is_channel_commander": IsChannelCommander = value.Length > 0 && value[0] != '0'; break;
-			case "client_country": CountryCode = Ts3String.Unescape(value); break;
-			case "client_badges": Badges = Ts3String.Unescape(value); break;
+			case "client_country": CountryCode = (str)Ts3String.Unescape(value); break;
+			case "client_badges": Badges = (str)Ts3String.Unescape(value); break;
 			
 			}
 
@@ -3361,7 +3477,7 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "pattern": Pattern = Ts3String.Unescape(value); break;
+			case "pattern": Pattern = (str)Ts3String.Unescape(value); break;
 			
 			}
 
@@ -3396,10 +3512,10 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "cluid": ClientUid = Ts3String.Unescape(value); break;
-			case "clid": { if(Utf8Parser.TryParse(value, out ClientId oval, out _)) ClientId = oval; } break;
-			case "name": Name = Ts3String.Unescape(value); break;
-			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
+			case "cluid": ClientUid = (Uid)Ts3String.Unescape(value); break;
+			case "clid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) ClientId = (ClientId)oval; } break;
+			case "name": Name = (str)Ts3String.Unescape(value); break;
+			case "return_code": ReturnCode = (str)Ts3String.Unescape(value); break;
 			}
 
 		}
@@ -3433,7 +3549,7 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "cluid": ClientUid = Ts3String.Unescape(value); break;
+			case "cluid": ClientUid = (Uid)Ts3String.Unescape(value); break;
 			
 			}
 
@@ -3527,67 +3643,67 @@ namespace TS3Client.Messages
 			{
 
 			case "client_idle_time": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) ClientIdleTime = TimeSpan.FromMilliseconds(oval); } break;
-			case "client_version": ClientVersion = Ts3String.Unescape(value); break;
-			case "client_version_sign": ClientVersionSign = Ts3String.Unescape(value); break;
-			case "client_platform": ClientPlatform = Ts3String.Unescape(value); break;
-			case "client_default_channel": DefaultChannel = Ts3String.Unescape(value); break;
-			case "client_security_hash": SecurityHash = Ts3String.Unescape(value); break;
-			case "client_login_name": LoginName = Ts3String.Unescape(value); break;
-			case "client_default_token": DefaultToken = Ts3String.Unescape(value); break;
-			case "connection_filetransfer_bandwidth_sent": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) FiletransferBandwidthSent = oval; } break;
-			case "connection_filetransfer_bandwidth_received": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) FiletransferBandwidthReceived = oval; } break;
-			case "connection_packets_sent_total": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) PacketsSentTotal = oval; } break;
-			case "connection_packets_received_total": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) PacketsReceivedTotal = oval; } break;
-			case "connection_bytes_sent_total": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BytesSentTotal = oval; } break;
-			case "connection_bytes_received_total": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BytesReceivedTotal = oval; } break;
-			case "connection_bandwidth_sent_last_second_total": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BandwidthSentLastSecondTotal = oval; } break;
-			case "connection_bandwidth_received_last_second_total": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BandwidthReceivedLastSecondTotal = oval; } break;
-			case "connection_bandwidth_sent_last_minute_total": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BandwidthSentLastMinuteTotal = oval; } break;
-			case "connection_bandwidth_received_last_minute_total": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BandwidthReceivedLastMinuteTotal = oval; } break;
+			case "client_version": ClientVersion = (str)Ts3String.Unescape(value); break;
+			case "client_version_sign": ClientVersionSign = (str)Ts3String.Unescape(value); break;
+			case "client_platform": ClientPlatform = (str)Ts3String.Unescape(value); break;
+			case "client_default_channel": DefaultChannel = (str)Ts3String.Unescape(value); break;
+			case "client_security_hash": SecurityHash = (str)Ts3String.Unescape(value); break;
+			case "client_login_name": LoginName = (str)Ts3String.Unescape(value); break;
+			case "client_default_token": DefaultToken = (str)Ts3String.Unescape(value); break;
+			case "connection_filetransfer_bandwidth_sent": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) FiletransferBandwidthSent = (u64)oval; } break;
+			case "connection_filetransfer_bandwidth_received": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) FiletransferBandwidthReceived = (u64)oval; } break;
+			case "connection_packets_sent_total": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) PacketsSentTotal = (u64)oval; } break;
+			case "connection_packets_received_total": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) PacketsReceivedTotal = (u64)oval; } break;
+			case "connection_bytes_sent_total": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BytesSentTotal = (u64)oval; } break;
+			case "connection_bytes_received_total": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BytesReceivedTotal = (u64)oval; } break;
+			case "connection_bandwidth_sent_last_second_total": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BandwidthSentLastSecondTotal = (u64)oval; } break;
+			case "connection_bandwidth_received_last_second_total": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BandwidthReceivedLastSecondTotal = (u64)oval; } break;
+			case "connection_bandwidth_sent_last_minute_total": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BandwidthSentLastMinuteTotal = (u64)oval; } break;
+			case "connection_bandwidth_received_last_minute_total": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BandwidthReceivedLastMinuteTotal = (u64)oval; } break;
 			case "connection_connected_time": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) ConnectedTime = TimeSpan.FromMilliseconds(oval); } break;
-			case "connection_client_ip": Ip = Ts3String.Unescape(value); break;
-			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
-			case "client_unique_identifier": Uid = Ts3String.Unescape(value); break;
-			case "client_database_id": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) DatabaseId = oval; } break;
-			case "client_nickname": Name = Ts3String.Unescape(value); break;
+			case "connection_client_ip": Ip = (str)Ts3String.Unescape(value); break;
+			case "cid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ChannelId = (ChannelId)oval; } break;
+			case "client_unique_identifier": Uid = (Uid)Ts3String.Unescape(value); break;
+			case "client_database_id": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) DatabaseId = (ClientDbId)oval; } break;
+			case "client_nickname": Name = (str)Ts3String.Unescape(value); break;
 			case "client_type": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) ClientType = (ClientType)oval; } break;
 			case "client_input_muted": InputMuted = value.Length > 0 && value[0] != '0'; break;
 			case "client_output_muted": OutputMuted = value.Length > 0 && value[0] != '0'; break;
 			case "client_outputonly_muted": OutputOnlyMuted = value.Length > 0 && value[0] != '0'; break;
 			case "client_input_hardware": InputHardwareEnabled = value.Length > 0 && value[0] != '0'; break;
 			case "client_output_hardware": OutputHardwareEnabled = value.Length > 0 && value[0] != '0'; break;
-			case "client_meta_data": Metadata = Ts3String.Unescape(value); break;
+			case "client_meta_data": Metadata = (str)Ts3String.Unescape(value); break;
 			case "client_is_recording": IsRecording = value.Length > 0 && value[0] != '0'; break;
-			case "client_channel_group_id": { if(Utf8Parser.TryParse(value, out ChannelGroupId oval, out _)) ChannelGroup = oval; } break;
-			case "client_channel_group_inherited_channel_id": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) InheritedChannelGroupFromChannel = oval; } break;
-			case "client_servergroups": { if(value.Length == 0) ServerGroups = Array.Empty<ServerGroupId>(); else { var ss = new SpanSplitter<byte>(); ss.First(value, (byte)','); int cnt = 0; for (int i = 0; i < value.Length; i++) if (value[i] == ',') cnt++; ServerGroups = new ServerGroupId[cnt + 1]; for(int i = 0; i < cnt + 1; i++) { { if(Utf8Parser.TryParse(ss.Trim(value), out ServerGroupId oval, out _)) ServerGroups[i] = oval; } if (i < cnt) value = ss.Next(value); } } } break;
+			case "client_channel_group_id": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ChannelGroup = (ChannelGroupId)oval; } break;
+			case "client_channel_group_inherited_channel_id": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) InheritedChannelGroupFromChannel = (ChannelId)oval; } break;
+			case "client_servergroups": { if(value.Length == 0) ServerGroups = Array.Empty<ServerGroupId>(); else { var ss = new SpanSplitter<byte>(); ss.First(value, (byte)','); int cnt = 0; for (int i = 0; i < value.Length; i++) if (value[i] == ',') cnt++; ServerGroups = new ServerGroupId[cnt + 1]; for(int i = 0; i < cnt + 1; i++) { { if(Utf8Parser.TryParse(ss.Trim(value), out u64 oval, out _)) ServerGroups[i] = (ServerGroupId)oval; } if (i < cnt) value = ss.Next(value); } } } break;
 			case "client_away": IsAway = value.Length > 0 && value[0] != '0'; break;
-			case "client_away_message": AwayMessage = Ts3String.Unescape(value); break;
-			case "client_talk_power": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) TalkPower = oval; } break;
+			case "client_away_message": AwayMessage = (str)Ts3String.Unescape(value); break;
+			case "client_talk_power": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) TalkPower = (i32)oval; } break;
 			case "client_talk_request": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) TalkPowerRequestTime = Tools.FromUnix(oval); } break;
-			case "client_talk_request_msg": TalkPowerRequestMessage = Ts3String.Unescape(value); break;
+			case "client_talk_request_msg": TalkPowerRequestMessage = (str)Ts3String.Unescape(value); break;
 			case "client_is_talker": TalkPowerGranted = value.Length > 0 && value[0] != '0'; break;
 			case "client_is_priority_speaker": IsPrioritySpeaker = value.Length > 0 && value[0] != '0'; break;
-			case "client_unread_messages": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) UnreadMessages = oval; } break;
-			case "client_nickname_phonetic": PhoneticName = Ts3String.Unescape(value); break;
-			case "client_needed_serverquery_view_power": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) NeededServerqueryViewPower = oval; } break;
+			case "client_unread_messages": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) UnreadMessages = (u32)oval; } break;
+			case "client_nickname_phonetic": PhoneticName = (str)Ts3String.Unescape(value); break;
+			case "client_needed_serverquery_view_power": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) NeededServerqueryViewPower = (i32)oval; } break;
 			case "client_is_channel_commander": IsChannelCommander = value.Length > 0 && value[0] != '0'; break;
-			case "client_country": CountryCode = Ts3String.Unescape(value); break;
-			case "client_badges": Badges = Ts3String.Unescape(value); break;
+			case "client_country": CountryCode = (str)Ts3String.Unescape(value); break;
+			case "client_badges": Badges = (str)Ts3String.Unescape(value); break;
 			case "client_created": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) CreationDate = Tools.FromUnix(oval); } break;
 			case "client_lastconnected": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) LastConnected = Tools.FromUnix(oval); } break;
-			case "client_totalconnections": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) TotalConnections = oval; } break;
-			case "client_month_bytes_uploaded": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) MonthlyUploadQuota = oval; } break;
-			case "client_month_bytes_downloaded": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) MonthlyDownloadQuota = oval; } break;
-			case "client_total_bytes_uploaded": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) TotalUploadQuota = oval; } break;
-			case "client_total_bytes_downloaded": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) TotalDownloadQuota = oval; } break;
-			case "client_base64HashClientUID": Base64HashClientUid = Ts3String.Unescape(value); break;
-			case "client_flag_avatar": AvatarHash = Ts3String.Unescape(value); break;
-			case "client_description": Description = Ts3String.Unescape(value); break;
+			case "client_totalconnections": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) TotalConnections = (i32)oval; } break;
+			case "client_month_bytes_uploaded": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) MonthlyUploadQuota = (i64)oval; } break;
+			case "client_month_bytes_downloaded": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) MonthlyDownloadQuota = (i64)oval; } break;
+			case "client_total_bytes_uploaded": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) TotalUploadQuota = (i64)oval; } break;
+			case "client_total_bytes_downloaded": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) TotalDownloadQuota = (i64)oval; } break;
+			case "client_base64HashClientUID": Base64HashClientUid = (str)Ts3String.Unescape(value); break;
+			case "client_flag_avatar": AvatarHash = (str)Ts3String.Unescape(value); break;
+			case "client_description": Description = (str)Ts3String.Unescape(value); break;
 			case "client_icon_id": { if(!value.IsEmpty && value[0] == (u8)'-') { if(Utf8Parser.TryParse(value, out i32 oval, out _)) IconId = oval; } else { if(Utf8Parser.TryParse(value, out u64 oval, out _)) IconId = unchecked((i32)oval); } } break;
-			case "client_myteamspeak_id": MyTeamSpeakId = Ts3String.Unescape(value); break;
-			case "client_integrations": Integrations = Ts3String.Unescape(value); break;
-			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
+			case "client_myteamspeak_id": MyTeamSpeakId = (str)Ts3String.Unescape(value); break;
+			case "client_integrations": Integrations = (str)Ts3String.Unescape(value); break;
+			case "return_code": ReturnCode = (str)Ts3String.Unescape(value); break;
 			}
 
 		}
@@ -3679,7 +3795,7 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "clid": { if(Utf8Parser.TryParse(value, out ClientId oval, out _)) ClientId = oval; } break;
+			case "clid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) ClientId = (ClientId)oval; } break;
 			
 			}
 
@@ -3726,21 +3842,21 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "client_nickname": Name = Ts3String.Unescape(value); break;
-			case "client_version": ClientVersion = Ts3String.Unescape(value); break;
-			case "client_platform": ClientPlatform = Ts3String.Unescape(value); break;
+			case "client_nickname": Name = (str)Ts3String.Unescape(value); break;
+			case "client_version": ClientVersion = (str)Ts3String.Unescape(value); break;
+			case "client_platform": ClientPlatform = (str)Ts3String.Unescape(value); break;
 			case "client_input_hardware": InputHardwareEnabled = value.Length > 0 && value[0] != '0'; break;
 			case "client_output_hardware": OutputHardwareEnabled = value.Length > 0 && value[0] != '0'; break;
-			case "client_default_channel": DefaultChannel = Ts3String.Unescape(value); break;
-			case "client_default_channel_password": DefaultChannelPassword = Ts3String.Unescape(value); break;
-			case "client_server_password": Password = Ts3String.Unescape(value); break;
-			case "client_meta_data": Metadata = Ts3String.Unescape(value); break;
-			case "client_version_sign": ClientVersionSign = Ts3String.Unescape(value); break;
-			case "client_key_offset": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ClientKeyOffset = oval; } break;
-			case "client_nickname_phonetic": PhoneticName = Ts3String.Unescape(value); break;
-			case "client_default_token": DefaultToken = Ts3String.Unescape(value); break;
-			case "hwid": HardwareId = Ts3String.Unescape(value); break;
-			case "client_badges": Badges = Ts3String.Unescape(value); break;
+			case "client_default_channel": DefaultChannel = (str)Ts3String.Unescape(value); break;
+			case "client_default_channel_password": DefaultChannelPassword = (str)Ts3String.Unescape(value); break;
+			case "client_server_password": Password = (str)Ts3String.Unescape(value); break;
+			case "client_meta_data": Metadata = (str)Ts3String.Unescape(value); break;
+			case "client_version_sign": ClientVersionSign = (str)Ts3String.Unescape(value); break;
+			case "client_key_offset": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ClientKeyOffset = (u64)oval; } break;
+			case "client_nickname_phonetic": PhoneticName = (str)Ts3String.Unescape(value); break;
+			case "client_default_token": DefaultToken = (str)Ts3String.Unescape(value); break;
+			case "hwid": HardwareId = (str)Ts3String.Unescape(value); break;
+			case "client_badges": Badges = (str)Ts3String.Unescape(value); break;
 			
 			}
 
@@ -3789,9 +3905,9 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "alpha": Alpha = Ts3String.Unescape(value); break;
-			case "omega": Omega = Ts3String.Unescape(value); break;
-			case "ip": Ip = Ts3String.Unescape(value); break;
+			case "alpha": Alpha = (str)Ts3String.Unescape(value); break;
+			case "omega": Omega = (str)Ts3String.Unescape(value); break;
+			case "ip": Ip = (IpAddr)Ts3String.Unescape(value); break;
 			
 			}
 
@@ -3828,9 +3944,9 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "clid": { if(Utf8Parser.TryParse(value, out ClientId oval, out _)) ClientId = oval; } break;
+			case "clid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) ClientId = (ClientId)oval; } break;
 			case "reasonid": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) Reason = (Reason)oval; } break;
-			case "reasonmsg": ReasonMessage = Ts3String.Unescape(value); break;
+			case "reasonmsg": ReasonMessage = (str)Ts3String.Unescape(value); break;
 			
 			}
 
@@ -3873,15 +3989,15 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "reasonmsg": ReasonMessage = Ts3String.Unescape(value); break;
+			case "reasonmsg": ReasonMessage = (str)Ts3String.Unescape(value); break;
 			case "bantime": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) BanTime = TimeSpan.FromSeconds(oval); } break;
 			case "reasonid": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) Reason = (Reason)oval; } break;
-			case "ctid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) TargetChannelId = oval; } break;
-			case "invokerid": { if(Utf8Parser.TryParse(value, out ClientId oval, out _)) InvokerId = oval; } break;
-			case "invokername": InvokerName = Ts3String.Unescape(value); break;
-			case "invokeruid": InvokerUid = Ts3String.Unescape(value); break;
-			case "clid": { if(Utf8Parser.TryParse(value, out ClientId oval, out _)) ClientId = oval; } break;
-			case "cfid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) SourceChannelId = oval; } break;
+			case "ctid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) TargetChannelId = (ChannelId)oval; } break;
+			case "invokerid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) InvokerId = (ClientId)oval; } break;
+			case "invokername": InvokerName = (str)Ts3String.Unescape(value); break;
+			case "invokeruid": InvokerUid = (Uid)Ts3String.Unescape(value); break;
+			case "clid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) ClientId = (ClientId)oval; } break;
+			case "cfid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) SourceChannelId = (ChannelId)oval; } break;
 			
 			}
 
@@ -3950,20 +4066,20 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "clid": { if(Utf8Parser.TryParse(value, out ClientId oval, out _)) ClientId = oval; } break;
-			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
-			case "client_database_id": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) DatabaseId = oval; } break;
-			case "client_nickname": Name = Ts3String.Unescape(value); break;
+			case "clid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) ClientId = (ClientId)oval; } break;
+			case "cid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ChannelId = (ChannelId)oval; } break;
+			case "client_database_id": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) DatabaseId = (ClientDbId)oval; } break;
+			case "client_nickname": Name = (str)Ts3String.Unescape(value); break;
 			case "client_type": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) ClientType = (ClientType)oval; } break;
-			case "client_unique_identifier": Uid = Ts3String.Unescape(value); break;
+			case "client_unique_identifier": Uid = (Uid)Ts3String.Unescape(value); break;
 			case "client_away": IsAway = value.Length > 0 && value[0] != '0'; break;
-			case "client_away_message": AwayMessage = Ts3String.Unescape(value); break;
+			case "client_away_message": AwayMessage = (str)Ts3String.Unescape(value); break;
 			case "client_flag_talking": IsTalking = value.Length > 0 && value[0] != '0'; break;
 			case "client_input_muted": InputMuted = value.Length > 0 && value[0] != '0'; break;
 			case "client_output_muted": OutputMuted = value.Length > 0 && value[0] != '0'; break;
 			case "client_input_hardware": InputHardwareEnabled = value.Length > 0 && value[0] != '0'; break;
 			case "client_output_hardware": OutputHardwareEnabled = value.Length > 0 && value[0] != '0'; break;
-			case "client_talk_power": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) TalkPower = oval; } break;
+			case "client_talk_power": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) TalkPower = (i32)oval; } break;
 			case "client_is_talker": TalkPowerGranted = value.Length > 0 && value[0] != '0'; break;
 			case "client_is_priority_speaker": IsPrioritySpeaker = value.Length > 0 && value[0] != '0'; break;
 			case "client_is_recording": IsRecording = value.Length > 0 && value[0] != '0'; break;
@@ -3971,15 +4087,15 @@ namespace TS3Client.Messages
 			case "client_idle_time": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) ClientIdleTime = TimeSpan.FromMilliseconds(oval); } break;
 			case "client_created": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) CreationDate = Tools.FromUnix(oval); } break;
 			case "client_lastconnected": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) LastConnected = Tools.FromUnix(oval); } break;
-			case "client_servergroups": { if(value.Length == 0) ServerGroups = Array.Empty<ServerGroupId>(); else { var ss = new SpanSplitter<byte>(); ss.First(value, (byte)','); int cnt = 0; for (int i = 0; i < value.Length; i++) if (value[i] == ',') cnt++; ServerGroups = new ServerGroupId[cnt + 1]; for(int i = 0; i < cnt + 1; i++) { { if(Utf8Parser.TryParse(ss.Trim(value), out ServerGroupId oval, out _)) ServerGroups[i] = oval; } if (i < cnt) value = ss.Next(value); } } } break;
-			case "client_channel_group_id": { if(Utf8Parser.TryParse(value, out ChannelGroupId oval, out _)) ChannelGroup = oval; } break;
-			case "client_channel_group_inherited_channel_id": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) InheritedChannelGroupFromChannel = oval; } break;
-			case "client_version": ClientVersion = Ts3String.Unescape(value); break;
-			case "client_platform": ClientPlatform = Ts3String.Unescape(value); break;
-			case "client_country": CountryCode = Ts3String.Unescape(value); break;
-			case "connection_client_ip": Ip = Ts3String.Unescape(value); break;
-			case "client_badges": Badges = Ts3String.Unescape(value); break;
-			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
+			case "client_servergroups": { if(value.Length == 0) ServerGroups = Array.Empty<ServerGroupId>(); else { var ss = new SpanSplitter<byte>(); ss.First(value, (byte)','); int cnt = 0; for (int i = 0; i < value.Length; i++) if (value[i] == ',') cnt++; ServerGroups = new ServerGroupId[cnt + 1]; for(int i = 0; i < cnt + 1; i++) { { if(Utf8Parser.TryParse(ss.Trim(value), out u64 oval, out _)) ServerGroups[i] = (ServerGroupId)oval; } if (i < cnt) value = ss.Next(value); } } } break;
+			case "client_channel_group_id": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ChannelGroup = (ChannelGroupId)oval; } break;
+			case "client_channel_group_inherited_channel_id": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) InheritedChannelGroupFromChannel = (ChannelId)oval; } break;
+			case "client_version": ClientVersion = (str)Ts3String.Unescape(value); break;
+			case "client_platform": ClientPlatform = (str)Ts3String.Unescape(value); break;
+			case "client_country": CountryCode = (str)Ts3String.Unescape(value); break;
+			case "connection_client_ip": Ip = (str)Ts3String.Unescape(value); break;
+			case "client_badges": Badges = (str)Ts3String.Unescape(value); break;
+			case "return_code": ReturnCode = (str)Ts3String.Unescape(value); break;
 			}
 
 		}
@@ -4056,9 +4172,9 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "clid": { if(Utf8Parser.TryParse(value, out ClientId oval, out _)) ClientId = oval; } break;
-			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
-			case "cpw": ChannelPassword = Ts3String.Unescape(value); break;
+			case "clid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) ClientId = (ClientId)oval; } break;
+			case "cid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ChannelId = (ChannelId)oval; } break;
+			case "cpw": ChannelPassword = (str)Ts3String.Unescape(value); break;
 			
 			}
 
@@ -4099,13 +4215,13 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "clid": { if(Utf8Parser.TryParse(value, out ClientId oval, out _)) ClientId = oval; } break;
+			case "clid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) ClientId = (ClientId)oval; } break;
 			case "reasonid": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) Reason = (Reason)oval; } break;
-			case "ctid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) TargetChannelId = oval; } break;
-			case "invokerid": { if(Utf8Parser.TryParse(value, out ClientId oval, out _)) InvokerId = oval; } break;
-			case "invokername": InvokerName = Ts3String.Unescape(value); break;
-			case "invokeruid": InvokerUid = Ts3String.Unescape(value); break;
-			case "reasonmsg": ReasonMessage = Ts3String.Unescape(value); break;
+			case "ctid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) TargetChannelId = (ChannelId)oval; } break;
+			case "invokerid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) InvokerId = (ClientId)oval; } break;
+			case "invokername": InvokerName = (str)Ts3String.Unescape(value); break;
+			case "invokeruid": InvokerUid = (Uid)Ts3String.Unescape(value); break;
+			case "reasonmsg": ReasonMessage = (str)Ts3String.Unescape(value); break;
 			
 			}
 
@@ -4146,10 +4262,10 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "cluid": ClientUid = Ts3String.Unescape(value); break;
-			case "cldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) ClientDbId = oval; } break;
-			case "name": Name = Ts3String.Unescape(value); break;
-			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
+			case "cluid": ClientUid = (Uid)Ts3String.Unescape(value); break;
+			case "cldbid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ClientDbId = (ClientDbId)oval; } break;
+			case "name": Name = (str)Ts3String.Unescape(value); break;
+			case "return_code": ReturnCode = (str)Ts3String.Unescape(value); break;
 			}
 
 		}
@@ -4183,7 +4299,7 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "cldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) ClientDbId = oval; } break;
+			case "cldbid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ClientDbId = (ClientDbId)oval; } break;
 			
 			}
 
@@ -4218,10 +4334,10 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "cluid": ClientUid = Ts3String.Unescape(value); break;
-			case "cldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) ClientDbId = oval; } break;
-			case "name": Name = Ts3String.Unescape(value); break;
-			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
+			case "cluid": ClientUid = (Uid)Ts3String.Unescape(value); break;
+			case "cldbid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ClientDbId = (ClientDbId)oval; } break;
+			case "name": Name = (str)Ts3String.Unescape(value); break;
+			case "return_code": ReturnCode = (str)Ts3String.Unescape(value); break;
 			}
 
 		}
@@ -4255,7 +4371,7 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "cluid": ClientUid = Ts3String.Unescape(value); break;
+			case "cluid": ClientUid = (Uid)Ts3String.Unescape(value); break;
 			
 			}
 
@@ -4290,7 +4406,7 @@ namespace TS3Client.Messages
 			{
 
 			case "permid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) PermissionId = ser.PermissionTransform.GetName(oval); } break;
-			case "permvalue": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionValue = oval; } break;
+			case "permvalue": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionValue = (i32)oval; } break;
 			
 			}
 
@@ -4325,7 +4441,7 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "clid": { if(Utf8Parser.TryParse(value, out ClientId oval, out _)) ClientId = oval; } break;
+			case "clid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) ClientId = (ClientId)oval; } break;
 			case "flags": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) Flags = (ClientPermissionHint)oval; } break;
 			
 			}
@@ -4365,13 +4481,13 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "cldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) ClientDbId = oval; } break;
+			case "cldbid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ClientDbId = (ClientDbId)oval; } break;
 			case "permid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) PermissionId = ser.PermissionTransform.GetName(oval); } break;
-			case "permsid": PermissionNameId = Ts3String.Unescape(value); break;
-			case "permvalue": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionValue = oval; } break;
+			case "permsid": PermissionNameId = (str)Ts3String.Unescape(value); break;
+			case "permvalue": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionValue = (i32)oval; } break;
 			case "permnegated": PermissionNegated = value.Length > 0 && value[0] != '0'; break;
 			case "permskip": PermissionSkip = value.Length > 0 && value[0] != '0'; break;
-			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
+			case "return_code": ReturnCode = (str)Ts3String.Unescape(value); break;
 			}
 
 		}
@@ -4408,7 +4524,7 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "cldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) ClientDbId = oval; } break;
+			case "cldbid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ClientDbId = (ClientDbId)oval; } break;
 			
 			}
 
@@ -4444,10 +4560,10 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "invokerid": { if(Utf8Parser.TryParse(value, out ClientId oval, out _)) InvokerId = oval; } break;
-			case "invokername": InvokerName = Ts3String.Unescape(value); break;
-			case "invokeruid": InvokerUid = Ts3String.Unescape(value); break;
-			case "msg": Message = Ts3String.Unescape(value); break;
+			case "invokerid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) InvokerId = (ClientId)oval; } break;
+			case "invokername": InvokerName = (str)Ts3String.Unescape(value); break;
+			case "invokeruid": InvokerUid = (Uid)Ts3String.Unescape(value); break;
+			case "msg": Message = (str)Ts3String.Unescape(value); break;
 			
 			}
 
@@ -4484,8 +4600,8 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "clid": { if(Utf8Parser.TryParse(value, out ClientId oval, out _)) ClientId = oval; } break;
-			case "msg": Message = Ts3String.Unescape(value); break;
+			case "clid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) ClientId = (ClientId)oval; } break;
+			case "msg": Message = (str)Ts3String.Unescape(value); break;
 			
 			}
 
@@ -4525,13 +4641,13 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "name": Name = Ts3String.Unescape(value); break;
-			case "sgid": { if(Utf8Parser.TryParse(value, out ServerGroupId oval, out _)) ServerGroupId = oval; } break;
-			case "invokerid": { if(Utf8Parser.TryParse(value, out ClientId oval, out _)) InvokerId = oval; } break;
-			case "invokername": InvokerName = Ts3String.Unescape(value); break;
-			case "invokeruid": InvokerUid = Ts3String.Unescape(value); break;
-			case "clid": { if(Utf8Parser.TryParse(value, out ClientId oval, out _)) ClientId = oval; } break;
-			case "cluid": ClientUid = Ts3String.Unescape(value); break;
+			case "name": Name = (str)Ts3String.Unescape(value); break;
+			case "sgid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ServerGroupId = (ServerGroupId)oval; } break;
+			case "invokerid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) InvokerId = (ClientId)oval; } break;
+			case "invokername": InvokerName = (str)Ts3String.Unescape(value); break;
+			case "invokeruid": InvokerUid = (Uid)Ts3String.Unescape(value); break;
+			case "clid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) ClientId = (ClientId)oval; } break;
+			case "cluid": ClientUid = (Uid)Ts3String.Unescape(value); break;
 			
 			}
 
@@ -4576,13 +4692,13 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "name": Name = Ts3String.Unescape(value); break;
-			case "sgid": { if(Utf8Parser.TryParse(value, out ServerGroupId oval, out _)) ServerGroupId = oval; } break;
-			case "invokerid": { if(Utf8Parser.TryParse(value, out ClientId oval, out _)) InvokerId = oval; } break;
-			case "invokername": InvokerName = Ts3String.Unescape(value); break;
-			case "invokeruid": InvokerUid = Ts3String.Unescape(value); break;
-			case "clid": { if(Utf8Parser.TryParse(value, out ClientId oval, out _)) ClientId = oval; } break;
-			case "cluid": ClientUid = Ts3String.Unescape(value); break;
+			case "name": Name = (str)Ts3String.Unescape(value); break;
+			case "sgid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ServerGroupId = (ServerGroupId)oval; } break;
+			case "invokerid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) InvokerId = (ClientId)oval; } break;
+			case "invokername": InvokerName = (str)Ts3String.Unescape(value); break;
+			case "invokeruid": InvokerUid = (Uid)Ts3String.Unescape(value); break;
+			case "clid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) ClientId = (ClientId)oval; } break;
+			case "cluid": ClientUid = (Uid)Ts3String.Unescape(value); break;
 			
 			}
 
@@ -4621,8 +4737,8 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "client_login_password": LoginPassword = Ts3String.Unescape(value); break;
-			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
+			case "client_login_password": LoginPassword = (str)Ts3String.Unescape(value); break;
+			case "return_code": ReturnCode = (str)Ts3String.Unescape(value); break;
 			}
 
 		}
@@ -4656,9 +4772,9 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "client_login_name": LoginName = Ts3String.Unescape(value); break;
-			case "client_login_password": LoginPassword = Ts3String.Unescape(value); break;
-			case "cldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) ClientDbId = oval; } break;
+			case "client_login_name": LoginName = (str)Ts3String.Unescape(value); break;
+			case "client_login_password": LoginPassword = (str)Ts3String.Unescape(value); break;
+			case "cldbid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ClientDbId = (ClientDbId)oval; } break;
 			
 			}
 
@@ -4695,10 +4811,10 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "cluid": ClientUid = Ts3String.Unescape(value); break;
-			case "clid": { if(Utf8Parser.TryParse(value, out ClientId oval, out _)) ClientId = oval; } break;
-			case "nickname": Nickname = Ts3String.Unescape(value); break;
-			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
+			case "cluid": ClientUid = (Uid)Ts3String.Unescape(value); break;
+			case "clid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) ClientId = (ClientId)oval; } break;
+			case "nickname": Nickname = (str)Ts3String.Unescape(value); break;
+			case "return_code": ReturnCode = (str)Ts3String.Unescape(value); break;
 			}
 
 		}
@@ -4732,7 +4848,7 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "clid": { if(Utf8Parser.TryParse(value, out ClientId oval, out _)) ClientId = oval; } break;
+			case "clid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) ClientId = (ClientId)oval; } break;
 			
 			}
 
@@ -4778,20 +4894,20 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "client_nickname": Name = Ts3String.Unescape(value); break;
+			case "client_nickname": Name = (str)Ts3String.Unescape(value); break;
 			case "client_input_muted": InputMuted = value.Length > 0 && value[0] != '0'; break;
 			case "client_output_muted": OutputMuted = value.Length > 0 && value[0] != '0'; break;
 			case "client_away": IsAway = value.Length > 0 && value[0] != '0'; break;
-			case "client_away_message": AwayMessage = Ts3String.Unescape(value); break;
+			case "client_away_message": AwayMessage = (str)Ts3String.Unescape(value); break;
 			case "client_input_hardware": InputHardwareEnabled = value.Length > 0 && value[0] != '0'; break;
 			case "client_output_hardware": OutputHardwareEnabled = value.Length > 0 && value[0] != '0'; break;
 			case "client_is_channel_commander": IsChannelCommander = value.Length > 0 && value[0] != '0'; break;
-			case "client_flag_avatar": AvatarHash = Ts3String.Unescape(value); break;
-			case "client_nickname_phonetic": PhoneticName = Ts3String.Unescape(value); break;
+			case "client_flag_avatar": AvatarHash = (str)Ts3String.Unescape(value); break;
+			case "client_nickname_phonetic": PhoneticName = (str)Ts3String.Unescape(value); break;
 			case "client_talk_request": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) TalkPowerRequestTime = Tools.FromUnix(oval); } break;
-			case "client_talk_request_msg": TalkPowerRequestMessage = Ts3String.Unescape(value); break;
+			case "client_talk_request_msg": TalkPowerRequestMessage = (str)Ts3String.Unescape(value); break;
 			case "client_is_recording": IsRecording = value.Length > 0 && value[0] != '0'; break;
-			case "client_badges": Badges = Ts3String.Unescape(value); break;
+			case "client_badges": Badges = (str)Ts3String.Unescape(value); break;
 			
 			}
 
@@ -4866,35 +4982,35 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "clid": { if(Utf8Parser.TryParse(value, out ClientId oval, out _)) ClientId = oval; } break;
-			case "client_nickname": Name = Ts3String.Unescape(value); break;
-			case "client_unread_messages": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) UnreadMessages = oval; } break;
-			case "client_version": ClientVersion = Ts3String.Unescape(value); break;
-			case "client_platform": ClientPlatform = Ts3String.Unescape(value); break;
-			case "client_login_name": LoginName = Ts3String.Unescape(value); break;
+			case "clid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) ClientId = (ClientId)oval; } break;
+			case "client_nickname": Name = (str)Ts3String.Unescape(value); break;
+			case "client_unread_messages": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) UnreadMessages = (u32)oval; } break;
+			case "client_version": ClientVersion = (str)Ts3String.Unescape(value); break;
+			case "client_platform": ClientPlatform = (str)Ts3String.Unescape(value); break;
+			case "client_login_name": LoginName = (str)Ts3String.Unescape(value); break;
 			case "client_created": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) CreationDate = Tools.FromUnix(oval); } break;
 			case "client_lastconnected": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) LastConnected = Tools.FromUnix(oval); } break;
-			case "client_totalconnections": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) TotalConnections = oval; } break;
-			case "client_month_bytes_uploaded": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) MonthlyUploadQuota = oval; } break;
-			case "client_month_bytes_downloaded": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) MonthlyDownloadQuota = oval; } break;
-			case "client_total_bytes_uploaded": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) TotalUploadQuota = oval; } break;
-			case "client_total_bytes_downloaded": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) TotalDownloadQuota = oval; } break;
+			case "client_totalconnections": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) TotalConnections = (i32)oval; } break;
+			case "client_month_bytes_uploaded": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) MonthlyUploadQuota = (i64)oval; } break;
+			case "client_month_bytes_downloaded": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) MonthlyDownloadQuota = (i64)oval; } break;
+			case "client_total_bytes_uploaded": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) TotalUploadQuota = (i64)oval; } break;
+			case "client_total_bytes_downloaded": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) TotalDownloadQuota = (i64)oval; } break;
 			case "client_input_muted": InputMuted = value.Length > 0 && value[0] != '0'; break;
 			case "client_input_hardware": InputHardwareEnabled = value.Length > 0 && value[0] != '0'; break;
 			case "client_output_hardware": OutputHardwareEnabled = value.Length > 0 && value[0] != '0'; break;
-			case "client_description": Description = Ts3String.Unescape(value); break;
+			case "client_description": Description = (str)Ts3String.Unescape(value); break;
 			case "client_is_priority_speaker": IsPrioritySpeaker = value.Length > 0 && value[0] != '0'; break;
 			case "client_is_channel_commander": IsChannelCommander = value.Length > 0 && value[0] != '0'; break;
-			case "client_flag_avatar": AvatarHash = Ts3String.Unescape(value); break;
+			case "client_flag_avatar": AvatarHash = (str)Ts3String.Unescape(value); break;
 			case "client_talk_request": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) TalkPowerRequestTime = Tools.FromUnix(oval); } break;
-			case "client_talk_request_msg": TalkPowerRequestMessage = Ts3String.Unescape(value); break;
+			case "client_talk_request_msg": TalkPowerRequestMessage = (str)Ts3String.Unescape(value); break;
 			case "client_is_talker": TalkPowerGranted = value.Length > 0 && value[0] != '0'; break;
-			case "client_nickname_phonetic": PhoneticName = Ts3String.Unescape(value); break;
+			case "client_nickname_phonetic": PhoneticName = (str)Ts3String.Unescape(value); break;
 			case "client_is_recording": IsRecording = value.Length > 0 && value[0] != '0'; break;
-			case "client_servergroups": { if(value.Length == 0) ServerGroups = Array.Empty<ServerGroupId>(); else { var ss = new SpanSplitter<byte>(); ss.First(value, (byte)','); int cnt = 0; for (int i = 0; i < value.Length; i++) if (value[i] == ',') cnt++; ServerGroups = new ServerGroupId[cnt + 1]; for(int i = 0; i < cnt + 1; i++) { { if(Utf8Parser.TryParse(ss.Trim(value), out ServerGroupId oval, out _)) ServerGroups[i] = oval; } if (i < cnt) value = ss.Next(value); } } } break;
-			case "client_myteamspeak_id": MyTeamSpeakId = Ts3String.Unescape(value); break;
-			case "client_badges": Badges = Ts3String.Unescape(value); break;
-			case "client_talk_power": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) TalkPower = oval; } break;
+			case "client_servergroups": { if(value.Length == 0) ServerGroups = Array.Empty<ServerGroupId>(); else { var ss = new SpanSplitter<byte>(); ss.First(value, (byte)','); int cnt = 0; for (int i = 0; i < value.Length; i++) if (value[i] == ',') cnt++; ServerGroups = new ServerGroupId[cnt + 1]; for(int i = 0; i < cnt + 1; i++) { { if(Utf8Parser.TryParse(ss.Trim(value), out u64 oval, out _)) ServerGroups[i] = (ServerGroupId)oval; } if (i < cnt) value = ss.Next(value); } } } break;
+			case "client_myteamspeak_id": MyTeamSpeakId = (str)Ts3String.Unescape(value); break;
+			case "client_badges": Badges = (str)Ts3String.Unescape(value); break;
+			case "client_talk_power": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) TalkPower = (i32)oval; } break;
 			case "client_icon_id": { if(!value.IsEmpty && value[0] == (u8)'-') { if(Utf8Parser.TryParse(value, out i32 oval, out _)) IconId = oval; } else { if(Utf8Parser.TryParse(value, out u64 oval, out _)) IconId = unchecked((i32)oval); } } break;
 			
 			}
@@ -4957,7 +5073,7 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "clid": { if(Utf8Parser.TryParse(value, out ClientId oval, out _)) ClientId = oval; } break;
+			case "clid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) ClientId = (ClientId)oval; } break;
 			
 			}
 
@@ -4995,10 +5111,10 @@ namespace TS3Client.Messages
 			{
 
 			case "id": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) Id = (Ts3ErrorCode)oval; } break;
-			case "msg": Message = Ts3String.Unescape(value); break;
+			case "msg": Message = (str)Ts3String.Unescape(value); break;
 			case "failed_permid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) MissingPermissionId = ser.PermissionTransform.GetName(oval); } break;
-			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
-			case "extra_msg": ExtraMessage = Ts3String.Unescape(value); break;
+			case "return_code": ReturnCode = (str)Ts3String.Unescape(value); break;
+			case "extra_msg": ExtraMessage = (str)Ts3String.Unescape(value); break;
 			
 			}
 
@@ -5036,8 +5152,8 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "tcldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) TargetClientDbId = oval; } break;
-			case "message": Message = Ts3String.Unescape(value); break;
+			case "tcldbid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) TargetClientDbId = (ClientDbId)oval; } break;
+			case "message": Message = (str)Ts3String.Unescape(value); break;
 			
 			}
 
@@ -5072,8 +5188,8 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "tcldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) TargetClientDbId = oval; } break;
-			case "fcldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) FromClientDbId = oval; } break;
+			case "tcldbid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) TargetClientDbId = (ClientDbId)oval; } break;
+			case "fcldbid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) FromClientDbId = (ClientDbId)oval; } break;
 			
 			}
 
@@ -5107,7 +5223,7 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "tcldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) TargetClientDbId = oval; } break;
+			case "tcldbid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) TargetClientDbId = (ClientDbId)oval; } break;
 			
 			}
 
@@ -5145,13 +5261,13 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "tcldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) TargetClientDbId = oval; } break;
-			case "tname": TargetName = Ts3String.Unescape(value); break;
-			case "fcldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) FromClientDbId = oval; } break;
-			case "fname": FromName = Ts3String.Unescape(value); break;
-			case "message": Message = Ts3String.Unescape(value); break;
+			case "tcldbid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) TargetClientDbId = (ClientDbId)oval; } break;
+			case "tname": TargetName = (str)Ts3String.Unescape(value); break;
+			case "fcldbid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) FromClientDbId = (ClientDbId)oval; } break;
+			case "fname": FromName = (str)Ts3String.Unescape(value); break;
+			case "message": Message = (str)Ts3String.Unescape(value); break;
 			case "timestamp": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) Timestamp = Tools.FromUnix(oval); } break;
-			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
+			case "return_code": ReturnCode = (str)Ts3String.Unescape(value); break;
 			}
 
 		}
@@ -5188,7 +5304,7 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "tcldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) TargetClientDbId = oval; } break;
+			case "tcldbid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) TargetClientDbId = (ClientDbId)oval; } break;
 			
 			}
 
@@ -5222,8 +5338,8 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "cldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) ClientDbId = oval; } break;
-			case "ident": ExternalIdentity = Ts3String.Unescape(value); break;
+			case "cldbid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ClientDbId = (ClientDbId)oval; } break;
+			case "ident": ExternalIdentity = (str)Ts3String.Unescape(value); break;
 			
 			}
 
@@ -5257,7 +5373,7 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "cldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) ClientDbId = oval; } break;
+			case "cldbid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ClientDbId = (ClientDbId)oval; } break;
 			
 			}
 
@@ -5291,8 +5407,8 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "ident": ExternalIdentity = Ts3String.Unescape(value); break;
-			case "pattern": Pattern = Ts3String.Unescape(value); break;
+			case "ident": ExternalIdentity = (str)Ts3String.Unescape(value); break;
+			case "pattern": Pattern = (str)Ts3String.Unescape(value); break;
 			
 			}
 
@@ -5328,9 +5444,9 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "cldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) ClientDbId = oval; } break;
-			case "ident": ExternalIdentity = Ts3String.Unescape(value); break;
-			case "value": Value = Ts3String.Unescape(value); break;
+			case "cldbid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ClientDbId = (ClientDbId)oval; } break;
+			case "ident": ExternalIdentity = (str)Ts3String.Unescape(value); break;
+			case "value": Value = (str)Ts3String.Unescape(value); break;
 			
 			}
 
@@ -5367,7 +5483,7 @@ namespace TS3Client.Messages
 			{
 
 			case "reasonid": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) Reason = (Reason)oval; } break;
-			case "reasonmsg": ReasonMessage = Ts3String.Unescape(value); break;
+			case "reasonmsg": ReasonMessage = (str)Ts3String.Unescape(value); break;
 			
 			}
 
@@ -5407,14 +5523,14 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "clientftfid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) ClientFileTransferId = oval; } break;
-			case "serverftfid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) ServerFileTransferId = oval; } break;
-			case "ftkey": FileTransferKey = Ts3String.Unescape(value); break;
-			case "port": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) Port = oval; } break;
-			case "size": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) Size = oval; } break;
-			case "proto": { if(Utf8Parser.TryParse(value, out u8 oval, out _)) Protocol = oval; } break;
-			case "ip": Ip = Ts3String.Unescape(value); break;
-			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
+			case "clientftfid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) ClientFileTransferId = (u16)oval; } break;
+			case "serverftfid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) ServerFileTransferId = (u16)oval; } break;
+			case "ftkey": FileTransferKey = (str)Ts3String.Unescape(value); break;
+			case "port": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) Port = (u16)oval; } break;
+			case "size": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) Size = (u64)oval; } break;
+			case "proto": { if(Utf8Parser.TryParse(value, out u8 oval, out _)) Protocol = (u8)oval; } break;
+			case "ip": Ip = (IpAddr)Ts3String.Unescape(value); break;
+			case "return_code": ReturnCode = (str)Ts3String.Unescape(value); break;
 			}
 
 		}
@@ -5456,12 +5572,12 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
-			case "path": Path = Ts3String.Unescape(value); break;
-			case "name": Name = Ts3String.Unescape(value); break;
-			case "size": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) Size = oval; } break;
+			case "cid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ChannelId = (ChannelId)oval; } break;
+			case "path": Path = (str)Ts3String.Unescape(value); break;
+			case "name": Name = (str)Ts3String.Unescape(value); break;
+			case "size": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) Size = (u64)oval; } break;
 			case "datetime": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) DateTime = Tools.FromUnix(oval); } break;
-			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
+			case "return_code": ReturnCode = (str)Ts3String.Unescape(value); break;
 			}
 
 		}
@@ -5502,13 +5618,13 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
-			case "path": Path = Ts3String.Unescape(value); break;
-			case "name": Name = Ts3String.Unescape(value); break;
-			case "size": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) Size = oval; } break;
+			case "cid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ChannelId = (ChannelId)oval; } break;
+			case "path": Path = (str)Ts3String.Unescape(value); break;
+			case "name": Name = (str)Ts3String.Unescape(value); break;
+			case "size": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) Size = (u64)oval; } break;
 			case "datetime": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) DateTime = Tools.FromUnix(oval); } break;
 			case "type": IsFile = value.Length > 0 && value[0] != '0'; break;
-			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
+			case "return_code": ReturnCode = (str)Ts3String.Unescape(value); break;
 			}
 
 		}
@@ -5546,8 +5662,8 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
-			case "path": Path = Ts3String.Unescape(value); break;
+			case "cid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ChannelId = (ChannelId)oval; } break;
+			case "path": Path = (str)Ts3String.Unescape(value); break;
 			
 			}
 
@@ -5592,19 +5708,19 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "clid": { if(Utf8Parser.TryParse(value, out ClientId oval, out _)) ClientId = oval; } break;
-			case "path": Path = Ts3String.Unescape(value); break;
-			case "name": Name = Ts3String.Unescape(value); break;
-			case "size": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) Size = oval; } break;
-			case "sizedone": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) SizeDone = oval; } break;
-			case "clientftfid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) ClientFileTransferId = oval; } break;
-			case "serverftfid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) ServerFileTransferId = oval; } break;
-			case "sender": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) Sender = oval; } break;
-			case "status": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) Status = oval; } break;
-			case "current_speed": { if(Utf8Parser.TryParse(value, out f32 oval, out _)) CurrentSpeed = oval; } break;
-			case "average_speed": { if(Utf8Parser.TryParse(value, out f32 oval, out _)) AverageSpeed = oval; } break;
+			case "clid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) ClientId = (ClientId)oval; } break;
+			case "path": Path = (str)Ts3String.Unescape(value); break;
+			case "name": Name = (str)Ts3String.Unescape(value); break;
+			case "size": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) Size = (u64)oval; } break;
+			case "sizedone": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) SizeDone = (i64)oval; } break;
+			case "clientftfid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) ClientFileTransferId = (u16)oval; } break;
+			case "serverftfid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) ServerFileTransferId = (u16)oval; } break;
+			case "sender": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) Sender = (u64)oval; } break;
+			case "status": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) Status = (i32)oval; } break;
+			case "current_speed": { if(Utf8Parser.TryParse(value, out f32 oval, out _)) CurrentSpeed = (f32)oval; } break;
+			case "average_speed": { if(Utf8Parser.TryParse(value, out f32 oval, out _)) AverageSpeed = (f32)oval; } break;
 			case "runtime": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) Runtime = TimeSpan.FromSeconds(oval); } break;
-			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
+			case "return_code": ReturnCode = (str)Ts3String.Unescape(value); break;
 			}
 
 		}
@@ -5650,10 +5766,10 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "clientftfid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) ClientFileTransferId = oval; } break;
+			case "clientftfid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) ClientFileTransferId = (u16)oval; } break;
 			case "status": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) Status = (Ts3ErrorCode)oval; } break;
-			case "msg": Message = Ts3String.Unescape(value); break;
-			case "size": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) Size = oval; } break;
+			case "msg": Message = (str)Ts3String.Unescape(value); break;
+			case "size": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) Size = (u64)oval; } break;
 			
 			}
 
@@ -5695,14 +5811,14 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "clientftfid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) ClientFileTransferId = oval; } break;
-			case "serverftfid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) ServerFileTransferId = oval; } break;
-			case "ftkey": FileTransferKey = Ts3String.Unescape(value); break;
-			case "port": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) Port = oval; } break;
-			case "seekpos": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) SeekPosition = oval; } break;
-			case "proto": { if(Utf8Parser.TryParse(value, out u8 oval, out _)) Protocol = oval; } break;
-			case "ip": Ip = Ts3String.Unescape(value); break;
-			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
+			case "clientftfid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) ClientFileTransferId = (u16)oval; } break;
+			case "serverftfid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) ServerFileTransferId = (u16)oval; } break;
+			case "ftkey": FileTransferKey = (str)Ts3String.Unescape(value); break;
+			case "port": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) Port = (u16)oval; } break;
+			case "seekpos": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) SeekPosition = (u64)oval; } break;
+			case "proto": { if(Utf8Parser.TryParse(value, out u8 oval, out _)) Protocol = (u8)oval; } break;
+			case "ip": Ip = (IpAddr)Ts3String.Unescape(value); break;
+			case "return_code": ReturnCode = (str)Ts3String.Unescape(value); break;
 			}
 
 		}
@@ -5742,9 +5858,9 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
-			case "cpw": ChannelPassword = Ts3String.Unescape(value); break;
-			case "dirname": DirectoryName = Ts3String.Unescape(value); break;
+			case "cid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ChannelId = (ChannelId)oval; } break;
+			case "cpw": ChannelPassword = (str)Ts3String.Unescape(value); break;
+			case "dirname": DirectoryName = (str)Ts3String.Unescape(value); break;
 			
 			}
 
@@ -5781,9 +5897,9 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
-			case "cpw": ChannelPassword = Ts3String.Unescape(value); break;
-			case "name": Name = Ts3String.Unescape(value); break;
+			case "cid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ChannelId = (ChannelId)oval; } break;
+			case "cpw": ChannelPassword = (str)Ts3String.Unescape(value); break;
+			case "name": Name = (str)Ts3String.Unescape(value); break;
 			
 			}
 
@@ -5820,9 +5936,9 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
-			case "cpw": ChannelPassword = Ts3String.Unescape(value); break;
-			case "name": Name = Ts3String.Unescape(value); break;
+			case "cid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ChannelId = (ChannelId)oval; } break;
+			case "cpw": ChannelPassword = (str)Ts3String.Unescape(value); break;
+			case "name": Name = (str)Ts3String.Unescape(value); break;
 			
 			}
 
@@ -5859,9 +5975,9 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
-			case "cpw": ChannelPassword = Ts3String.Unescape(value); break;
-			case "path": Path = Ts3String.Unescape(value); break;
+			case "cid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ChannelId = (ChannelId)oval; } break;
+			case "cpw": ChannelPassword = (str)Ts3String.Unescape(value); break;
+			case "path": Path = (str)Ts3String.Unescape(value); break;
 			
 			}
 
@@ -5901,12 +6017,12 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "clientftfid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) ClientFileTransferId = oval; } break;
-			case "name": Name = Ts3String.Unescape(value); break;
-			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
-			case "cpw": ChannelPassword = Ts3String.Unescape(value); break;
-			case "seekpos": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) SeekPosition = oval; } break;
-			case "proto": { if(Utf8Parser.TryParse(value, out u8 oval, out _)) Protocol = oval; } break;
+			case "clientftfid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) ClientFileTransferId = (u16)oval; } break;
+			case "name": Name = (str)Ts3String.Unescape(value); break;
+			case "cid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ChannelId = (ChannelId)oval; } break;
+			case "cpw": ChannelPassword = (str)Ts3String.Unescape(value); break;
+			case "seekpos": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) SeekPosition = (u64)oval; } break;
+			case "proto": { if(Utf8Parser.TryParse(value, out u8 oval, out _)) Protocol = (u8)oval; } break;
 			
 			}
 
@@ -5951,14 +6067,14 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "clientftfid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) ClientFileTransferId = oval; } break;
-			case "name": Name = Ts3String.Unescape(value); break;
-			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
-			case "cpw": ChannelPassword = Ts3String.Unescape(value); break;
-			case "size": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) Size = oval; } break;
+			case "clientftfid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) ClientFileTransferId = (u16)oval; } break;
+			case "name": Name = (str)Ts3String.Unescape(value); break;
+			case "cid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ChannelId = (ChannelId)oval; } break;
+			case "cpw": ChannelPassword = (str)Ts3String.Unescape(value); break;
+			case "size": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) Size = (u64)oval; } break;
 			case "overwrite": Overwrite = value.Length > 0 && value[0] != '0'; break;
 			case "resume": Resume = value.Length > 0 && value[0] != '0'; break;
-			case "proto": { if(Utf8Parser.TryParse(value, out u8 oval, out _)) Protocol = oval; } break;
+			case "proto": { if(Utf8Parser.TryParse(value, out u8 oval, out _)) Protocol = (u8)oval; } break;
 			
 			}
 
@@ -6018,12 +6134,12 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
-			case "cpw": ChannelPassword = Ts3String.Unescape(value); break;
-			case "tcid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) TargetChannelId = oval; } break;
-			case "tcpw": TargetChannelPassword = Ts3String.Unescape(value); break;
-			case "oldname": OldName = Ts3String.Unescape(value); break;
-			case "newname": NewName = Ts3String.Unescape(value); break;
+			case "cid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ChannelId = (ChannelId)oval; } break;
+			case "cpw": ChannelPassword = (str)Ts3String.Unescape(value); break;
+			case "tcid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) TargetChannelId = (ChannelId)oval; } break;
+			case "tcpw": TargetChannelPassword = (str)Ts3String.Unescape(value); break;
+			case "oldname": OldName = (str)Ts3String.Unescape(value); break;
+			case "newname": NewName = (str)Ts3String.Unescape(value); break;
 			
 			}
 
@@ -6062,7 +6178,7 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "serverftfid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) ServerFileTransferId = oval; } break;
+			case "serverftfid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) ServerFileTransferId = (u16)oval; } break;
 			case "delete": Delete = value.Length > 0 && value[0] != '0'; break;
 			
 			}
@@ -6097,7 +6213,7 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "msg": Message = Ts3String.Unescape(value); break;
+			case "msg": Message = (str)Ts3String.Unescape(value); break;
 			
 			}
 
@@ -6147,9 +6263,9 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "alpha": Alpha = Ts3String.Unescape(value); break;
-			case "beta": Beta = Ts3String.Unescape(value); break;
-			case "omega": Omega = Ts3String.Unescape(value); break;
+			case "alpha": Alpha = (str)Ts3String.Unescape(value); break;
+			case "beta": Beta = (str)Ts3String.Unescape(value); break;
+			case "omega": Omega = (str)Ts3String.Unescape(value); break;
 			
 			}
 
@@ -6189,12 +6305,12 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "l": License = Ts3String.Unescape(value); break;
-			case "beta": Beta = Ts3String.Unescape(value); break;
-			case "omega": Omega = Ts3String.Unescape(value); break;
+			case "l": License = (str)Ts3String.Unescape(value); break;
+			case "beta": Beta = (str)Ts3String.Unescape(value); break;
+			case "omega": Omega = (str)Ts3String.Unescape(value); break;
 			case "ot": Ot = value.Length > 0 && value[0] != '0'; break;
-			case "proof": Proof = Ts3String.Unescape(value); break;
-			case "tvd": Tvd = Ts3String.Unescape(value); break;
+			case "proof": Proof = (str)Ts3String.Unescape(value); break;
+			case "tvd": Tvd = (str)Ts3String.Unescape(value); break;
 			
 			}
 
@@ -6262,34 +6378,34 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "virtualserver_welcomemessage": WelcomeMessage = Ts3String.Unescape(value); break;
-			case "virtualserver_platform": ServerPlatform = Ts3String.Unescape(value); break;
-			case "virtualserver_version": ServerVersion = Ts3String.Unescape(value); break;
-			case "virtualserver_maxclients": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) MaxClients = oval; } break;
+			case "virtualserver_welcomemessage": WelcomeMessage = (str)Ts3String.Unescape(value); break;
+			case "virtualserver_platform": ServerPlatform = (str)Ts3String.Unescape(value); break;
+			case "virtualserver_version": ServerVersion = (str)Ts3String.Unescape(value); break;
+			case "virtualserver_maxclients": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) MaxClients = (u16)oval; } break;
 			case "virtualserver_created": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) ServerCreated = Tools.FromUnix(oval); } break;
-			case "virtualserver_hostmessage": Hostmessage = Ts3String.Unescape(value); break;
+			case "virtualserver_hostmessage": Hostmessage = (str)Ts3String.Unescape(value); break;
 			case "virtualserver_hostmessage_mode": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) HostmessageMode = (HostMessageMode)oval; } break;
-			case "virtualserver_id": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) VirtualServerId = oval; } break;
-			case "virtualserver_ip": { if(value.Length == 0) ServerIp = Array.Empty<IpAddr>(); else { var ss = new SpanSplitter<byte>(); ss.First(value, (byte)','); int cnt = 0; for (int i = 0; i < value.Length; i++) if (value[i] == ',') cnt++; ServerIp = new IpAddr[cnt + 1]; for(int i = 0; i < cnt + 1; i++) { ServerIp[i] = Ts3String.Unescape(ss.Trim(value)); if (i < cnt) value = ss.Next(value); } } } break;
+			case "virtualserver_id": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) VirtualServerId = (u64)oval; } break;
+			case "virtualserver_ip": { if(value.Length == 0) ServerIp = Array.Empty<IpAddr>(); else { var ss = new SpanSplitter<byte>(); ss.First(value, (byte)','); int cnt = 0; for (int i = 0; i < value.Length; i++) if (value[i] == ',') cnt++; ServerIp = new IpAddr[cnt + 1]; for(int i = 0; i < cnt + 1; i++) { ServerIp[i] = (IpAddr)Ts3String.Unescape(ss.Trim(value)); if (i < cnt) value = ss.Next(value); } } } break;
 			case "virtualserver_ask_for_privilegekey": AskForPrivilegekey = value.Length > 0 && value[0] != '0'; break;
-			case "acn": ClientName = Ts3String.Unescape(value); break;
-			case "aclid": { if(Utf8Parser.TryParse(value, out ClientId oval, out _)) ClientId = oval; } break;
-			case "pv": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) ProtocolVersion = oval; } break;
+			case "acn": ClientName = (str)Ts3String.Unescape(value); break;
+			case "aclid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) ClientId = (ClientId)oval; } break;
+			case "pv": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) ProtocolVersion = (u16)oval; } break;
 			case "lt": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) LicenseType = (LicenseType)oval; } break;
-			case "client_talk_power": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) TalkPower = oval; } break;
-			case "client_needed_serverquery_view_power": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) NeededServerqueryViewPower = oval; } break;
-			case "virtualserver_name": Name = Ts3String.Unescape(value); break;
+			case "client_talk_power": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) TalkPower = (i32)oval; } break;
+			case "client_needed_serverquery_view_power": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) NeededServerqueryViewPower = (i32)oval; } break;
+			case "virtualserver_name": Name = (str)Ts3String.Unescape(value); break;
 			case "virtualserver_codec_encryption_mode": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) CodecEncryptionMode = (CodecEncryptionMode)oval; } break;
-			case "virtualserver_default_server_group": { if(Utf8Parser.TryParse(value, out ServerGroupId oval, out _)) DefaultServerGroup = oval; } break;
-			case "virtualserver_default_channel_group": { if(Utf8Parser.TryParse(value, out ChannelGroupId oval, out _)) DefaultChannelGroup = oval; } break;
-			case "virtualserver_hostbanner_url": HostbannerUrl = Ts3String.Unescape(value); break;
-			case "virtualserver_hostbanner_gfx_url": HostbannerGfxUrl = Ts3String.Unescape(value); break;
+			case "virtualserver_default_server_group": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) DefaultServerGroup = (ServerGroupId)oval; } break;
+			case "virtualserver_default_channel_group": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) DefaultChannelGroup = (ChannelGroupId)oval; } break;
+			case "virtualserver_hostbanner_url": HostbannerUrl = (str)Ts3String.Unescape(value); break;
+			case "virtualserver_hostbanner_gfx_url": HostbannerGfxUrl = (str)Ts3String.Unescape(value); break;
 			case "virtualserver_hostbanner_gfx_interval": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) HostbannerGfxInterval = TimeSpan.FromSeconds(oval); } break;
-			case "virtualserver_priority_speaker_dimm_modificator": { if(Utf8Parser.TryParse(value, out f32 oval, out _)) PrioritySpeakerDimmModificator = oval; } break;
-			case "virtualserver_hostbutton_tooltip": HostbuttonTooltip = Ts3String.Unescape(value); break;
-			case "virtualserver_hostbutton_url": HostbuttonUrl = Ts3String.Unescape(value); break;
-			case "virtualserver_hostbutton_gfx_url": HostbuttonGfxUrl = Ts3String.Unescape(value); break;
-			case "virtualserver_name_phonetic": PhoneticName = Ts3String.Unescape(value); break;
+			case "virtualserver_priority_speaker_dimm_modificator": { if(Utf8Parser.TryParse(value, out f32 oval, out _)) PrioritySpeakerDimmModificator = (f32)oval; } break;
+			case "virtualserver_hostbutton_tooltip": HostbuttonTooltip = (str)Ts3String.Unescape(value); break;
+			case "virtualserver_hostbutton_url": HostbuttonUrl = (str)Ts3String.Unescape(value); break;
+			case "virtualserver_hostbutton_gfx_url": HostbuttonGfxUrl = (str)Ts3String.Unescape(value); break;
+			case "virtualserver_name_phonetic": PhoneticName = (str)Ts3String.Unescape(value); break;
 			case "virtualserver_icon_id": { if(!value.IsEmpty && value[0] == (u8)'-') { if(Utf8Parser.TryParse(value, out i32 oval, out _)) IconId = oval; } else { if(Utf8Parser.TryParse(value, out u64 oval, out _)) IconId = unchecked((i32)oval); } } break;
 			case "virtualserver_hostbanner_mode": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) HostbannerMode = (HostBannerMode)oval; } break;
 			case "virtualserver_channel_temp_delete_delay_default": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) TempChannelDefaultDeleteDelay = TimeSpan.FromSeconds(oval); } break;
@@ -6387,7 +6503,7 @@ namespace TS3Client.Messages
 			{
 
 			case "loglevel": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) LogLevel = (LogLevel)oval; } break;
-			case "logmsg": LogMessage = Ts3String.Unescape(value); break;
+			case "logmsg": LogMessage = (str)Ts3String.Unescape(value); break;
 			
 			}
 
@@ -6422,8 +6538,8 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "client_login_name": LoginName = Ts3String.Unescape(value); break;
-			case "client_login_password": LoginPassword = Ts3String.Unescape(value); break;
+			case "client_login_name": LoginName = (str)Ts3String.Unescape(value); break;
+			case "client_login_password": LoginPassword = (str)Ts3String.Unescape(value); break;
 			
 			}
 
@@ -6475,10 +6591,10 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "lines": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) Lines = oval; } break;
+			case "lines": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) Lines = (u32)oval; } break;
 			case "reverse": Reverse = value.Length > 0 && value[0] != '0'; break;
 			case "instance": InstanceLog = value.Length > 0 && value[0] != '0'; break;
-			case "begin_pos": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) Offset = oval; } break;
+			case "begin_pos": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) Offset = (u64)oval; } break;
 			
 			}
 
@@ -6518,12 +6634,12 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "msgid": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) MessageId = oval; } break;
-			case "cluid": ClientUid = Ts3String.Unescape(value); break;
-			case "subject": Subject = Ts3String.Unescape(value); break;
-			case "message": Message = Ts3String.Unescape(value); break;
+			case "msgid": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) MessageId = (u32)oval; } break;
+			case "cluid": ClientUid = (Uid)Ts3String.Unescape(value); break;
+			case "subject": Subject = (str)Ts3String.Unescape(value); break;
+			case "message": Message = (str)Ts3String.Unescape(value); break;
 			case "timestamp": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) Timestamp = Tools.FromUnix(oval); } break;
-			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
+			case "return_code": ReturnCode = (str)Ts3String.Unescape(value); break;
 			}
 
 		}
@@ -6561,9 +6677,9 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "cluid": ClientUid = Ts3String.Unescape(value); break;
-			case "subject": Subject = Ts3String.Unescape(value); break;
-			case "message": Message = Ts3String.Unescape(value); break;
+			case "cluid": ClientUid = (Uid)Ts3String.Unescape(value); break;
+			case "subject": Subject = (str)Ts3String.Unescape(value); break;
+			case "message": Message = (str)Ts3String.Unescape(value); break;
 			
 			}
 
@@ -6598,7 +6714,7 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "msgid": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) MessageId = oval; } break;
+			case "msgid": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) MessageId = (u32)oval; } break;
 			
 			}
 
@@ -6631,7 +6747,7 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "msgid": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) MessageId = oval; } break;
+			case "msgid": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) MessageId = (u32)oval; } break;
 			
 			}
 
@@ -6668,12 +6784,12 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "msgid": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) MessageId = oval; } break;
-			case "cluid": ClientUid = Ts3String.Unescape(value); break;
-			case "subject": Subject = Ts3String.Unescape(value); break;
+			case "msgid": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) MessageId = (u32)oval; } break;
+			case "cluid": ClientUid = (Uid)Ts3String.Unescape(value); break;
+			case "subject": Subject = (str)Ts3String.Unescape(value); break;
 			case "timestamp": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) Timestamp = Tools.FromUnix(oval); } break;
 			case "flag_read": IsRead = value.Length > 0 && value[0] != '0'; break;
-			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
+			case "return_code": ReturnCode = (str)Ts3String.Unescape(value); break;
 			}
 
 		}
@@ -6725,7 +6841,7 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "msgid": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) MessageId = oval; } break;
+			case "msgid": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) MessageId = (u32)oval; } break;
 			case "flag": IsRead = value.Length > 0 && value[0] != '0'; break;
 			
 			}
@@ -6764,10 +6880,10 @@ namespace TS3Client.Messages
 			{
 
 			case "t": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionType = (PermissionType)oval; } break;
-			case "id1": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) Id1 = oval; } break;
-			case "id2": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) Id2 = oval; } break;
+			case "id1": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) Id1 = (u64)oval; } break;
+			case "id2": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) Id2 = (u64)oval; } break;
 			case "p": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) PermissionId = ser.PermissionTransform.GetName(oval); } break;
-			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
+			case "return_code": ReturnCode = (str)Ts3String.Unescape(value); break;
 			}
 
 		}
@@ -6804,7 +6920,7 @@ namespace TS3Client.Messages
 			{
 
 			case "permid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) PermissionId = ser.PermissionTransform.GetName(oval); } break;
-			case "permsid": PermissionNameId = Ts3String.Unescape(value); break;
+			case "permsid": PermissionNameId = (str)Ts3String.Unescape(value); break;
 			
 			}
 
@@ -6838,7 +6954,7 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "permsid": PermissionNameId = Ts3String.Unescape(value); break;
+			case "permsid": PermissionNameId = (str)Ts3String.Unescape(value); break;
 			
 			}
 
@@ -6876,9 +6992,9 @@ namespace TS3Client.Messages
 
 			case "group_id_end": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) GroupIdEnd = ser.PermissionTransform.GetName(oval); } break;
 			case "permid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) PermissionId = ser.PermissionTransform.GetName(oval); } break;
-			case "permname": PermissionName = Ts3String.Unescape(value); break;
-			case "permdesc": PermissionDescription = Ts3String.Unescape(value); break;
-			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
+			case "permname": PermissionName = (str)Ts3String.Unescape(value); break;
+			case "permdesc": PermissionDescription = (str)Ts3String.Unescape(value); break;
+			case "return_code": ReturnCode = (str)Ts3String.Unescape(value); break;
 			}
 
 		}
@@ -6936,16 +7052,16 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "cldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) ClientDbId = oval; } break;
-			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
+			case "cldbid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ClientDbId = (ClientDbId)oval; } break;
+			case "cid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ChannelId = (ChannelId)oval; } break;
 			case "t": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionType = (PermissionType)oval; } break;
-			case "id1": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) Id1 = oval; } break;
-			case "id2": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) Id2 = oval; } break;
+			case "id1": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) Id1 = (u64)oval; } break;
+			case "id2": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) Id2 = (u64)oval; } break;
 			case "p": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) PermissionId = ser.PermissionTransform.GetName(oval); } break;
-			case "v": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionValue = oval; } break;
+			case "v": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionValue = (i32)oval; } break;
 			case "n": PermissionNegated = value.Length > 0 && value[0] != '0'; break;
 			case "s": PermissionSkip = value.Length > 0 && value[0] != '0'; break;
-			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
+			case "return_code": ReturnCode = (str)Ts3String.Unescape(value); break;
 			}
 
 		}
@@ -6988,10 +7104,10 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
-			case "cldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) ClientDbId = oval; } break;
+			case "cid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ChannelId = (ChannelId)oval; } break;
+			case "cldbid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ClientDbId = (ClientDbId)oval; } break;
 			case "permid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) PermissionId = ser.PermissionTransform.GetName(oval); } break;
-			case "permsid": PermissionNameId = Ts3String.Unescape(value); break;
+			case "permsid": PermissionNameId = (str)Ts3String.Unescape(value); break;
 			
 			}
 
@@ -7076,8 +7192,8 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "name": Name = Ts3String.Unescape(value); break;
-			case "data": Data = Ts3String.Unescape(value); break;
+			case "name": Name = (str)Ts3String.Unescape(value); break;
+			case "data": Data = (str)Ts3String.Unescape(value); break;
 			
 			}
 
@@ -7113,8 +7229,8 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "name": Name = Ts3String.Unescape(value); break;
-			case "data": Data = Ts3String.Unescape(value); break;
+			case "name": Name = (str)Ts3String.Unescape(value); break;
+			case "data": Data = (str)Ts3String.Unescape(value); break;
 			case "targetmode": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) Target = (PluginTargetMode)oval; } break;
 			
 			}
@@ -7155,10 +7271,10 @@ namespace TS3Client.Messages
 			{
 
 			case "tokentype": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) TokenType = (TokenType)oval; } break;
-			case "tokenid1": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) TokenId1 = oval; } break;
-			case "tokenid2": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) TokenId2 = oval; } break;
-			case "tokendescription": TokenDescription = Ts3String.Unescape(value); break;
-			case "tokencustomset": TokenCustomSet = Ts3String.Unescape(value); break;
+			case "tokenid1": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) TokenId1 = (u64)oval; } break;
+			case "tokenid2": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) TokenId2 = (ChannelId)oval; } break;
+			case "tokendescription": TokenDescription = (str)Ts3String.Unescape(value); break;
+			case "tokencustomset": TokenCustomSet = (str)Ts3String.Unescape(value); break;
 			
 			}
 
@@ -7195,7 +7311,7 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "token": Token = Ts3String.Unescape(value); break;
+			case "token": Token = (str)Ts3String.Unescape(value); break;
 			
 			}
 
@@ -7243,7 +7359,7 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "token": Token = Ts3String.Unescape(value); break;
+			case "token": Token = (str)Ts3String.Unescape(value); break;
 			
 			}
 
@@ -7294,8 +7410,8 @@ namespace TS3Client.Messages
 			{
 
 			case "targetmode": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) Target = (TextMessageTargetMode)oval; } break;
-			case "target": { if(Utf8Parser.TryParse(value, out ClientId oval, out _)) TargetClientId = oval; } break;
-			case "msg": Message = Ts3String.Unescape(value); break;
+			case "target": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) TargetClientId = (ClientId)oval; } break;
+			case "msg": Message = (str)Ts3String.Unescape(value); break;
 			
 			}
 
@@ -7344,22 +7460,22 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "connection_filetransfer_bandwidth_sent": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) FiletransferBandwidthSent = oval; } break;
-			case "connection_filetransfer_bandwidth_received": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) FiletransferBandwidthReceived = oval; } break;
-			case "connection_filetransfer_bytes_sent_total": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) FiletransferBytesSentTotal = oval; } break;
-			case "connection_filetransfer_bytes_received_total": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) FiletransferBytesReceivedTotal = oval; } break;
-			case "connection_packets_sent_total": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) PacketsSentTotal = oval; } break;
-			case "connection_bytes_sent_total": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BytesSentTotal = oval; } break;
-			case "connection_packets_received_total": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) PacketsReceivedTotal = oval; } break;
-			case "connection_bytes_received_total": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BytesReceivedTotal = oval; } break;
-			case "connection_bandwidth_sent_last_second_total": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BandwidthSentLastSecondTotal = oval; } break;
-			case "connection_bandwidth_sent_last_minute_total": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BandwidthSentLastMinuteTotal = oval; } break;
-			case "connection_bandwidth_received_last_second_total": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BandwidthReceivedLastSecondTotal = oval; } break;
-			case "connection_bandwidth_received_last_minute_total": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BandwidthReceivedLastMinuteTotal = oval; } break;
+			case "connection_filetransfer_bandwidth_sent": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) FiletransferBandwidthSent = (u64)oval; } break;
+			case "connection_filetransfer_bandwidth_received": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) FiletransferBandwidthReceived = (u64)oval; } break;
+			case "connection_filetransfer_bytes_sent_total": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) FiletransferBytesSentTotal = (u64)oval; } break;
+			case "connection_filetransfer_bytes_received_total": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) FiletransferBytesReceivedTotal = (u64)oval; } break;
+			case "connection_packets_sent_total": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) PacketsSentTotal = (u64)oval; } break;
+			case "connection_bytes_sent_total": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BytesSentTotal = (u64)oval; } break;
+			case "connection_packets_received_total": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) PacketsReceivedTotal = (u64)oval; } break;
+			case "connection_bytes_received_total": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BytesReceivedTotal = (u64)oval; } break;
+			case "connection_bandwidth_sent_last_second_total": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BandwidthSentLastSecondTotal = (u64)oval; } break;
+			case "connection_bandwidth_sent_last_minute_total": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BandwidthSentLastMinuteTotal = (u64)oval; } break;
+			case "connection_bandwidth_received_last_second_total": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BandwidthReceivedLastSecondTotal = (u64)oval; } break;
+			case "connection_bandwidth_received_last_minute_total": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BandwidthReceivedLastMinuteTotal = (u64)oval; } break;
 			case "connection_connected_time": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) ConnectedTime = TimeSpan.FromMilliseconds(oval); } break;
-			case "connection_packetloss_total": { if(Utf8Parser.TryParse(value, out f32 oval, out _)) PacketlossTotal = oval; } break;
+			case "connection_packetloss_total": { if(Utf8Parser.TryParse(value, out f32 oval, out _)) PacketlossTotal = (f32)oval; } break;
 			case "connection_ping": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) Ping = TimeSpan.FromMilliseconds(oval); } break;
-			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
+			case "return_code": ReturnCode = (str)Ts3String.Unescape(value); break;
 			}
 
 		}
@@ -7420,7 +7536,7 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "virtualserver_name": Name = Ts3String.Unescape(value); break;
+			case "virtualserver_name": Name = (str)Ts3String.Unescape(value); break;
 			
 			}
 
@@ -7441,69 +7557,6 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed partial class ServerData : IResponse
-	{
-		
-		public string ReturnCode { get; set; }
-
-		public u16 ClientsOnline { get; set; }
-		public u16 QueriesOnline { get; set; }
-		public u16 MaxClients { get; set; }
-		public DurationSeconds Uptime { get; set; }
-		public bool Autostart { get; set; }
-		public str MachineId { get; set; }
-		public str Name { get; set; }
-		public u64 VirtualServerId { get; set; }
-		public Uid VirtualServerUid { get; set; }
-		public u16 VirtualServerPort { get; set; }
-		public str VirtualServerStatus { get; set; }
-
-		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
-		{
-			switch(name)
-			{
-
-			case "virtualserver_clientsonline": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) ClientsOnline = oval; } break;
-			case "virtualserver_queryclientsonline": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) QueriesOnline = oval; } break;
-			case "virtualserver_maxclients": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) MaxClients = oval; } break;
-			case "virtualserver_uptime": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) Uptime = TimeSpan.FromSeconds(oval); } break;
-			case "virtualserver_autostart": Autostart = value.Length > 0 && value[0] != '0'; break;
-			case "virtualserver_machine_id": MachineId = Ts3String.Unescape(value); break;
-			case "virtualserver_name": Name = Ts3String.Unescape(value); break;
-			case "virtualserver_id": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) VirtualServerId = oval; } break;
-			case "virtualserver_unique_identifier": VirtualServerUid = Ts3String.Unescape(value); break;
-			case "virtualserver_port": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) VirtualServerPort = oval; } break;
-			case "virtualserver_status": VirtualServerStatus = Ts3String.Unescape(value); break;
-			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
-			}
-
-		}
-
-		public void Expand(IMessage[] to, IEnumerable<string> flds)
-		{
-			var toc = (ServerData[])to;
-			foreach (var fld in flds)
-			{
-				switch(fld)
-				{
-
-				case "virtualserver_clientsonline": foreach(var toi in toc) { toi.ClientsOnline = ClientsOnline; } break;
-				case "virtualserver_queryclientsonline": foreach(var toi in toc) { toi.QueriesOnline = QueriesOnline; } break;
-				case "virtualserver_maxclients": foreach(var toi in toc) { toi.MaxClients = MaxClients; } break;
-				case "virtualserver_uptime": foreach(var toi in toc) { toi.Uptime = Uptime; } break;
-				case "virtualserver_autostart": foreach(var toi in toc) { toi.Autostart = Autostart; } break;
-				case "virtualserver_machine_id": foreach(var toi in toc) { toi.MachineId = MachineId; } break;
-				case "virtualserver_name": foreach(var toi in toc) { toi.Name = Name; } break;
-				case "virtualserver_id": foreach(var toi in toc) { toi.VirtualServerId = VirtualServerId; } break;
-				case "virtualserver_unique_identifier": foreach(var toi in toc) { toi.VirtualServerUid = VirtualServerUid; } break;
-				case "virtualserver_port": foreach(var toi in toc) { toi.VirtualServerPort = VirtualServerPort; } break;
-				case "virtualserver_status": foreach(var toi in toc) { toi.VirtualServerStatus = VirtualServerStatus; } break;
-				}
-			}
-
-		}
-	}
-
 	public sealed partial class ServerDelete : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ServerDelete;
@@ -7516,7 +7569,7 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "sid": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) ServerId = oval; } break;
+			case "sid": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) ServerId = (u32)oval; } break;
 			
 			}
 
@@ -7591,41 +7644,41 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "sid": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) ServerId = oval; } break;
-			case "virtualserver_name": Name = Ts3String.Unescape(value); break;
-			case "virtualserver_welcomemessage": WelcomeMessage = Ts3String.Unescape(value); break;
-			case "virtualserver_maxclients": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) MaxClients = oval; } break;
-			case "virtualserver_password": ServerPassword = Ts3String.Unescape(value); break;
-			case "virtualserver_hostmessage": Hostmessage = Ts3String.Unescape(value); break;
+			case "sid": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) ServerId = (u32)oval; } break;
+			case "virtualserver_name": Name = (str)Ts3String.Unescape(value); break;
+			case "virtualserver_welcomemessage": WelcomeMessage = (str)Ts3String.Unescape(value); break;
+			case "virtualserver_maxclients": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) MaxClients = (u16)oval; } break;
+			case "virtualserver_password": ServerPassword = (str)Ts3String.Unescape(value); break;
+			case "virtualserver_hostmessage": Hostmessage = (str)Ts3String.Unescape(value); break;
 			case "virtualserver_hostmessage_mode": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) HostmessageMode = (HostMessageMode)oval; } break;
-			case "virtualserver_hostbanner_url": HostbannerUrl = Ts3String.Unescape(value); break;
-			case "virtualserver_hostbanner_gfx_url": HostbannerGfxUrl = Ts3String.Unescape(value); break;
+			case "virtualserver_hostbanner_url": HostbannerUrl = (str)Ts3String.Unescape(value); break;
+			case "virtualserver_hostbanner_gfx_url": HostbannerGfxUrl = (str)Ts3String.Unescape(value); break;
 			case "virtualserver_hostbanner_gfx_interval": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) HostbannerGfxInterval = TimeSpan.FromSeconds(oval); } break;
-			case "virtualserver_hostbutton_tooltip": HostbuttonTooltip = Ts3String.Unescape(value); break;
-			case "virtualserver_hostbutton_url": HostbuttonUrl = Ts3String.Unescape(value); break;
-			case "virtualserver_hostbutton_gfx_url": HostbuttonGfxUrl = Ts3String.Unescape(value); break;
+			case "virtualserver_hostbutton_tooltip": HostbuttonTooltip = (str)Ts3String.Unescape(value); break;
+			case "virtualserver_hostbutton_url": HostbuttonUrl = (str)Ts3String.Unescape(value); break;
+			case "virtualserver_hostbutton_gfx_url": HostbuttonGfxUrl = (str)Ts3String.Unescape(value); break;
 			case "virtualserver_icon_id": { if(!value.IsEmpty && value[0] == (u8)'-') { if(Utf8Parser.TryParse(value, out i32 oval, out _)) IconId = oval; } else { if(Utf8Parser.TryParse(value, out u64 oval, out _)) IconId = unchecked((i32)oval); } } break;
-			case "virtualserver_reserved_slots": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) ReservedSlots = oval; } break;
+			case "virtualserver_reserved_slots": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) ReservedSlots = (u16)oval; } break;
 			case "virtualserver_hostbanner_mode": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) HostbannerMode = (HostBannerMode)oval; } break;
-			case "virtualserver_nickname": Nickname = Ts3String.Unescape(value); break;
-			case "virtualserver_max_download_total_bandwidth": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) MaxDownloadTotalBandwidth = oval; } break;
-			case "virtualserver_max_upload_total_bandwidth": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) MaxUploadTotalBandwidth = oval; } break;
-			case "virtualserver_download_quota": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) DownloadQuota = oval; } break;
-			case "virtualserver_upload_quota": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) UploadQuota = oval; } break;
-			case "virtualserver_antiflood_points_tick_reduce": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) AntifloodPointsTickReduce = oval; } break;
-			case "virtualserver_antiflood_points_needed_command_block": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) AntifloodPointsToCommandBlock = oval; } break;
-			case "virtualserver_antiflood_points_needed_ip_block": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) AntifloodPointsToIpBlock = oval; } break;
+			case "virtualserver_nickname": Nickname = (str)Ts3String.Unescape(value); break;
+			case "virtualserver_max_download_total_bandwidth": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) MaxDownloadTotalBandwidth = (u64)oval; } break;
+			case "virtualserver_max_upload_total_bandwidth": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) MaxUploadTotalBandwidth = (u64)oval; } break;
+			case "virtualserver_download_quota": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) DownloadQuota = (u64)oval; } break;
+			case "virtualserver_upload_quota": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) UploadQuota = (u64)oval; } break;
+			case "virtualserver_antiflood_points_tick_reduce": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) AntifloodPointsTickReduce = (u32)oval; } break;
+			case "virtualserver_antiflood_points_needed_command_block": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) AntifloodPointsToCommandBlock = (u32)oval; } break;
+			case "virtualserver_antiflood_points_needed_ip_block": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) AntifloodPointsToIpBlock = (u32)oval; } break;
 			case "virtualserver_codec_encryption_mode": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) CodecEncryptionMode = (CodecEncryptionMode)oval; } break;
-			case "virtualserver_needed_identity_security_level": { if(Utf8Parser.TryParse(value, out u8 oval, out _)) IdentitySecurityLevel = oval; } break;
-			case "virtualserver_default_server_group": { if(Utf8Parser.TryParse(value, out ServerGroupId oval, out _)) DefaultServerGroup = oval; } break;
-			case "virtualserver_default_channel_group": { if(Utf8Parser.TryParse(value, out ChannelGroupId oval, out _)) DefaultChannelGroup = oval; } break;
-			case "virtualserver_default_channel_admin_group": { if(Utf8Parser.TryParse(value, out ChannelGroupId oval, out _)) DefaultChannelAdminGroup = oval; } break;
-			case "virtualserver_complain_autoban_count": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) ComplainAutobanCount = oval; } break;
+			case "virtualserver_needed_identity_security_level": { if(Utf8Parser.TryParse(value, out u8 oval, out _)) IdentitySecurityLevel = (u8)oval; } break;
+			case "virtualserver_default_server_group": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) DefaultServerGroup = (ServerGroupId)oval; } break;
+			case "virtualserver_default_channel_group": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) DefaultChannelGroup = (ChannelGroupId)oval; } break;
+			case "virtualserver_default_channel_admin_group": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) DefaultChannelAdminGroup = (ChannelGroupId)oval; } break;
+			case "virtualserver_complain_autoban_count": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) ComplainAutobanCount = (u32)oval; } break;
 			case "virtualserver_complain_autoban_time": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) ComplainAutobanTime = TimeSpan.FromSeconds(oval); } break;
 			case "virtualserver_complain_remove_time": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) ComplainRemoveTime = TimeSpan.FromSeconds(oval); } break;
-			case "virtualserver_min_clients_in_channel_before_forced_silence": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) MinClientsInChannelBeforeForcedSilence = oval; } break;
-			case "virtualserver_priority_speaker_dimm_modificator": { if(Utf8Parser.TryParse(value, out f32 oval, out _)) PrioritySpeakerDimmModificator = oval; } break;
-			case "virtualserver_name_phonetic": PhoneticName = Ts3String.Unescape(value); break;
+			case "virtualserver_min_clients_in_channel_before_forced_silence": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) MinClientsInChannelBeforeForcedSilence = (u32)oval; } break;
+			case "virtualserver_priority_speaker_dimm_modificator": { if(Utf8Parser.TryParse(value, out f32 oval, out _)) PrioritySpeakerDimmModificator = (f32)oval; } break;
+			case "virtualserver_name_phonetic": PhoneticName = (str)Ts3String.Unescape(value); break;
 			case "virtualserver_channel_temp_delete_delay_default": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) TempChannelDefaultDeleteDelay = TimeSpan.FromSeconds(oval); } break;
 			case "virtualserver_weblist_enabled": WeblistEnabled = value.Length > 0 && value[0] != '0'; break;
 			case "virtualserver_log_client": LogClient = value.Length > 0 && value[0] != '0'; break;
@@ -7727,23 +7780,23 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "invokerid": { if(Utf8Parser.TryParse(value, out ClientId oval, out _)) InvokerId = oval; } break;
-			case "invokername": InvokerName = Ts3String.Unescape(value); break;
-			case "invokeruid": InvokerUid = Ts3String.Unescape(value); break;
+			case "invokerid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) InvokerId = (ClientId)oval; } break;
+			case "invokername": InvokerName = (str)Ts3String.Unescape(value); break;
+			case "invokeruid": InvokerUid = (Uid)Ts3String.Unescape(value); break;
 			case "reasonid": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) Reason = (Reason)oval; } break;
-			case "virtualserver_name": Name = Ts3String.Unescape(value); break;
-			case "virtualserver_nickname": Nickname = Ts3String.Unescape(value); break;
+			case "virtualserver_name": Name = (str)Ts3String.Unescape(value); break;
+			case "virtualserver_nickname": Nickname = (str)Ts3String.Unescape(value); break;
 			case "virtualserver_codec_encryption_mode": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) CodecEncryptionMode = (CodecEncryptionMode)oval; } break;
-			case "virtualserver_default_server_group": { if(Utf8Parser.TryParse(value, out ServerGroupId oval, out _)) DefaultServerGroup = oval; } break;
-			case "virtualserver_default_channel_group": { if(Utf8Parser.TryParse(value, out ChannelGroupId oval, out _)) DefaultChannelGroup = oval; } break;
-			case "virtualserver_hostbanner_url": HostbannerUrl = Ts3String.Unescape(value); break;
-			case "virtualserver_hostbanner_gfx_url": HostbannerGfxUrl = Ts3String.Unescape(value); break;
+			case "virtualserver_default_server_group": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) DefaultServerGroup = (ServerGroupId)oval; } break;
+			case "virtualserver_default_channel_group": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) DefaultChannelGroup = (ChannelGroupId)oval; } break;
+			case "virtualserver_hostbanner_url": HostbannerUrl = (str)Ts3String.Unescape(value); break;
+			case "virtualserver_hostbanner_gfx_url": HostbannerGfxUrl = (str)Ts3String.Unescape(value); break;
 			case "virtualserver_hostbanner_gfx_interval": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) HostbannerGfxInterval = TimeSpan.FromSeconds(oval); } break;
-			case "virtualserver_priority_speaker_dimm_modificator": { if(Utf8Parser.TryParse(value, out f32 oval, out _)) PrioritySpeakerDimmModificator = oval; } break;
-			case "virtualserver_hostbutton_tooltip": HostbuttonTooltip = Ts3String.Unescape(value); break;
-			case "virtualserver_hostbutton_url": HostbuttonUrl = Ts3String.Unescape(value); break;
-			case "virtualserver_hostbutton_gfx_url": HostbuttonGfxUrl = Ts3String.Unescape(value); break;
-			case "virtualserver_name_phonetic": PhoneticName = Ts3String.Unescape(value); break;
+			case "virtualserver_priority_speaker_dimm_modificator": { if(Utf8Parser.TryParse(value, out f32 oval, out _)) PrioritySpeakerDimmModificator = (f32)oval; } break;
+			case "virtualserver_hostbutton_tooltip": HostbuttonTooltip = (str)Ts3String.Unescape(value); break;
+			case "virtualserver_hostbutton_url": HostbuttonUrl = (str)Ts3String.Unescape(value); break;
+			case "virtualserver_hostbutton_gfx_url": HostbuttonGfxUrl = (str)Ts3String.Unescape(value); break;
+			case "virtualserver_name_phonetic": PhoneticName = (str)Ts3String.Unescape(value); break;
 			case "virtualserver_icon_id": { if(!value.IsEmpty && value[0] == (u8)'-') { if(Utf8Parser.TryParse(value, out i32 oval, out _)) IconId = oval; } else { if(Utf8Parser.TryParse(value, out u64 oval, out _)) IconId = unchecked((i32)oval); } } break;
 			case "virtualserver_hostbanner_mode": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) HostbannerMode = (HostBannerMode)oval; } break;
 			case "virtualserver_channel_temp_delete_delay_default": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) TempChannelDefaultDeleteDelay = TimeSpan.FromSeconds(oval); } break;
@@ -7799,7 +7852,7 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "name": Name = Ts3String.Unescape(value); break;
+			case "name": Name = (str)Ts3String.Unescape(value); break;
 			case "type": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) GroupType = (GroupType)oval; } break;
 			
 			}
@@ -7835,8 +7888,8 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "sgid": { if(Utf8Parser.TryParse(value, out ServerGroupId oval, out _)) ServerGroupId = oval; } break;
-			case "cldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) ClientDbId = oval; } break;
+			case "sgid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ServerGroupId = (ServerGroupId)oval; } break;
+			case "cldbid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ClientDbId = (ClientDbId)oval; } break;
 			
 			}
 
@@ -7875,10 +7928,10 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "sgid": { if(Utf8Parser.TryParse(value, out ServerGroupId oval, out _)) ServerGroupId = oval; } break;
+			case "sgid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ServerGroupId = (ServerGroupId)oval; } break;
 			case "permid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) PermissionId = ser.PermissionTransform.GetName(oval); } break;
-			case "permsid": PermissionNameId = Ts3String.Unescape(value); break;
-			case "permvalue": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionValue = oval; } break;
+			case "permsid": PermissionNameId = (str)Ts3String.Unescape(value); break;
+			case "permvalue": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionValue = (i32)oval; } break;
 			case "permnegated": PermissionNegated = value.Length > 0 && value[0] != '0'; break;
 			case "permskip": PermissionSkip = value.Length > 0 && value[0] != '0'; break;
 			
@@ -7918,8 +7971,8 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "sgid": { if(Utf8Parser.TryParse(value, out ServerGroupId oval, out _)) ServerGroupId = oval; } break;
-			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
+			case "sgid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ServerGroupId = (ServerGroupId)oval; } break;
+			case "return_code": ReturnCode = (str)Ts3String.Unescape(value); break;
 			}
 
 		}
@@ -7956,10 +8009,10 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "sgtype": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) ServerGroupType = oval; } break;
+			case "sgtype": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) ServerGroupType = (u32)oval; } break;
 			case "permid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) PermissionId = ser.PermissionTransform.GetName(oval); } break;
-			case "permsid": PermissionNameId = Ts3String.Unescape(value); break;
-			case "permvalue": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionValue = oval; } break;
+			case "permsid": PermissionNameId = (str)Ts3String.Unescape(value); break;
+			case "permvalue": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionValue = (i32)oval; } break;
 			case "permnegated": PermissionNegated = value.Length > 0 && value[0] != '0'; break;
 			case "permskip": PermissionSkip = value.Length > 0 && value[0] != '0'; break;
 			
@@ -8001,9 +8054,9 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "sgtype": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) ServerGroupType = oval; } break;
+			case "sgtype": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) ServerGroupType = (u32)oval; } break;
 			case "permid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) PermissionId = ser.PermissionTransform.GetName(oval); } break;
-			case "permsid": PermissionNameId = Ts3String.Unescape(value); break;
+			case "permsid": PermissionNameId = (str)Ts3String.Unescape(value); break;
 			
 			}
 
@@ -8041,11 +8094,11 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "sgid": { if(Utf8Parser.TryParse(value, out ServerGroupId oval, out _)) ServerGroupId = oval; } break;
-			case "cldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) ClientDbId = oval; } break;
-			case "client_nickname": Name = Ts3String.Unescape(value); break;
-			case "client_unique_identifier": Uid = Ts3String.Unescape(value); break;
-			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
+			case "sgid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ServerGroupId = (ServerGroupId)oval; } break;
+			case "cldbid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ClientDbId = (ClientDbId)oval; } break;
+			case "client_nickname": Name = (str)Ts3String.Unescape(value); break;
+			case "client_unique_identifier": Uid = (Uid)Ts3String.Unescape(value); break;
+			case "return_code": ReturnCode = (str)Ts3String.Unescape(value); break;
 			}
 
 		}
@@ -8080,7 +8133,7 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "sgid": { if(Utf8Parser.TryParse(value, out ServerGroupId oval, out _)) ServerGroupId = oval; } break;
+			case "sgid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ServerGroupId = (ServerGroupId)oval; } break;
 			
 			}
 
@@ -8116,9 +8169,9 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "ssgid": { if(Utf8Parser.TryParse(value, out ServerGroupId oval, out _)) SourceServerGroupId = oval; } break;
-			case "tsgid": { if(Utf8Parser.TryParse(value, out ServerGroupId oval, out _)) TargetServerGroupId = oval; } break;
-			case "name": Name = Ts3String.Unescape(value); break;
+			case "ssgid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) SourceServerGroupId = (ServerGroupId)oval; } break;
+			case "tsgid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) TargetServerGroupId = (ServerGroupId)oval; } break;
+			case "name": Name = (str)Ts3String.Unescape(value); break;
 			case "type": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) GroupType = (GroupType)oval; } break;
 			
 			}
@@ -8156,7 +8209,7 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "sgid": { if(Utf8Parser.TryParse(value, out ServerGroupId oval, out _)) ServerGroupId = oval; } break;
+			case "sgid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ServerGroupId = (ServerGroupId)oval; } break;
 			case "force": Force = value.Length > 0 && value[0] != '0'; break;
 			
 			}
@@ -8192,8 +8245,8 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "sgid": { if(Utf8Parser.TryParse(value, out ServerGroupId oval, out _)) ServerGroupId = oval; } break;
-			case "cldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) ClientDbId = oval; } break;
+			case "sgid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ServerGroupId = (ServerGroupId)oval; } break;
+			case "cldbid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ClientDbId = (ClientDbId)oval; } break;
 			
 			}
 
@@ -8229,9 +8282,9 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "sgid": { if(Utf8Parser.TryParse(value, out ServerGroupId oval, out _)) ServerGroupId = oval; } break;
+			case "sgid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ServerGroupId = (ServerGroupId)oval; } break;
 			case "permid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) PermissionId = ser.PermissionTransform.GetName(oval); } break;
-			case "permsid": PermissionNameId = Ts3String.Unescape(value); break;
+			case "permsid": PermissionNameId = (str)Ts3String.Unescape(value); break;
 			
 			}
 
@@ -8275,17 +8328,17 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "sgid": { if(Utf8Parser.TryParse(value, out ServerGroupId oval, out _)) ServerGroupId = oval; } break;
-			case "name": Name = Ts3String.Unescape(value); break;
+			case "sgid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ServerGroupId = (ServerGroupId)oval; } break;
+			case "name": Name = (str)Ts3String.Unescape(value); break;
 			case "type": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) GroupType = (GroupType)oval; } break;
 			case "iconid": { if(!value.IsEmpty && value[0] == (u8)'-') { if(Utf8Parser.TryParse(value, out i32 oval, out _)) IconId = oval; } else { if(Utf8Parser.TryParse(value, out u64 oval, out _)) IconId = unchecked((i32)oval); } } break;
 			case "savedb": IsPermanent = value.Length > 0 && value[0] != '0'; break;
-			case "sortid": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) SortId = oval; } break;
+			case "sortid": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) SortId = (i32)oval; } break;
 			case "namemode": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) NamingMode = (GroupNamingMode)oval; } break;
-			case "n_modifyp": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) NeededModifyPower = oval; } break;
-			case "n_member_addp": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) NeededMemberAddPower = oval; } break;
-			case "n_member_remove_p": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) NeededMemberRemovePower = oval; } break;
-			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
+			case "n_modifyp": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) NeededModifyPower = (i32)oval; } break;
+			case "n_member_addp": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) NeededMemberAddPower = (i32)oval; } break;
+			case "n_member_remove_p": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) NeededMemberRemovePower = (i32)oval; } break;
+			case "return_code": ReturnCode = (str)Ts3String.Unescape(value); break;
 			}
 
 		}
@@ -8346,13 +8399,13 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "sgid": { if(Utf8Parser.TryParse(value, out ServerGroupId oval, out _)) ServerGroupId = oval; } break;
+			case "sgid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ServerGroupId = (ServerGroupId)oval; } break;
 			case "permid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) PermissionId = ser.PermissionTransform.GetName(oval); } break;
-			case "permsid": PermissionNameId = Ts3String.Unescape(value); break;
-			case "permvalue": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionValue = oval; } break;
+			case "permsid": PermissionNameId = (str)Ts3String.Unescape(value); break;
+			case "permvalue": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionValue = (i32)oval; } break;
 			case "permnegated": PermissionNegated = value.Length > 0 && value[0] != '0'; break;
 			case "permskip": PermissionSkip = value.Length > 0 && value[0] != '0'; break;
-			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
+			case "return_code": ReturnCode = (str)Ts3String.Unescape(value); break;
 			}
 
 		}
@@ -8389,7 +8442,7 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "sgid": { if(Utf8Parser.TryParse(value, out ServerGroupId oval, out _)) ServerGroupId = oval; } break;
+			case "sgid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ServerGroupId = (ServerGroupId)oval; } break;
 			
 			}
 
@@ -8423,8 +8476,8 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "sgid": { if(Utf8Parser.TryParse(value, out ServerGroupId oval, out _)) ServerGroupId = oval; } break;
-			case "name": Name = Ts3String.Unescape(value); break;
+			case "sgid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ServerGroupId = (ServerGroupId)oval; } break;
+			case "name": Name = (str)Ts3String.Unescape(value); break;
 			
 			}
 
@@ -8460,10 +8513,10 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "name": Name = Ts3String.Unescape(value); break;
-			case "sgid": { if(Utf8Parser.TryParse(value, out ServerGroupId oval, out _)) ServerGroupId = oval; } break;
-			case "cldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) ClientDbId = oval; } break;
-			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
+			case "name": Name = (str)Ts3String.Unescape(value); break;
+			case "sgid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ServerGroupId = (ServerGroupId)oval; } break;
+			case "cldbid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ClientDbId = (ClientDbId)oval; } break;
+			case "return_code": ReturnCode = (str)Ts3String.Unescape(value); break;
 			}
 
 		}
@@ -8497,7 +8550,7 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "cldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) ClientDbId = oval; } break;
+			case "cldbid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ClientDbId = (ClientDbId)oval; } break;
 			
 			}
 
@@ -8530,7 +8583,7 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "virtualserver_port": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) VirtualServerPort = oval; } break;
+			case "virtualserver_port": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) VirtualServerPort = (u16)oval; } break;
 			
 			}
 
@@ -8566,9 +8619,9 @@ namespace TS3Client.Messages
 		}
 	}
 
-	public sealed partial class ServerList : INotification
+	public sealed partial class ServerListRequest : INotification
 	{
-		public NotificationType NotifyType { get; } = NotificationType.ServerList;
+		public NotificationType NotifyType { get; } = NotificationType.ServerListRequest;
 		
 
 
@@ -8578,6 +8631,69 @@ namespace TS3Client.Messages
 
 		public void Expand(IMessage[] to, IEnumerable<string> flds)
 		{
+		}
+	}
+
+	public sealed partial class ServerListResponse : IResponse
+	{
+		
+		public string ReturnCode { get; set; }
+
+		public u64 VirtualServerId { get; set; }
+		public u16 VirtualServerPort { get; set; }
+		public str VirtualServerStatus { get; set; }
+		public u16? ClientsOnline { get; set; }
+		public u16? QueriesOnline { get; set; }
+		public u16? MaxClients { get; set; }
+		public DurationSeconds? Uptime { get; set; }
+		public bool? Autostart { get; set; }
+		public str MachineId { get; set; }
+		public str Name { get; set; }
+		public Uid VirtualServerUid { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
+		{
+			switch(name)
+			{
+
+			case "virtualserver_id": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) VirtualServerId = (u64)oval; } break;
+			case "virtualserver_port": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) VirtualServerPort = (u16)oval; } break;
+			case "virtualserver_status": VirtualServerStatus = (str)Ts3String.Unescape(value); break;
+			case "virtualserver_clientsonline": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) ClientsOnline = (u16)oval; } break;
+			case "virtualserver_queryclientsonline": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) QueriesOnline = (u16)oval; } break;
+			case "virtualserver_maxclients": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) MaxClients = (u16)oval; } break;
+			case "virtualserver_uptime": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) Uptime = TimeSpan.FromSeconds(oval); } break;
+			case "virtualserver_autostart": Autostart = value.Length > 0 && value[0] != '0'; break;
+			case "virtualserver_machine_id": MachineId = (str)Ts3String.Unescape(value); break;
+			case "virtualserver_name": Name = (str)Ts3String.Unescape(value); break;
+			case "virtualserver_unique_identifier": VirtualServerUid = (Uid)Ts3String.Unescape(value); break;
+			case "return_code": ReturnCode = (str)Ts3String.Unescape(value); break;
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ServerListResponse[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "virtualserver_id": foreach(var toi in toc) { toi.VirtualServerId = VirtualServerId; } break;
+				case "virtualserver_port": foreach(var toi in toc) { toi.VirtualServerPort = VirtualServerPort; } break;
+				case "virtualserver_status": foreach(var toi in toc) { toi.VirtualServerStatus = VirtualServerStatus; } break;
+				case "virtualserver_clientsonline": foreach(var toi in toc) { toi.ClientsOnline = ClientsOnline; } break;
+				case "virtualserver_queryclientsonline": foreach(var toi in toc) { toi.QueriesOnline = QueriesOnline; } break;
+				case "virtualserver_maxclients": foreach(var toi in toc) { toi.MaxClients = MaxClients; } break;
+				case "virtualserver_uptime": foreach(var toi in toc) { toi.Uptime = Uptime; } break;
+				case "virtualserver_autostart": foreach(var toi in toc) { toi.Autostart = Autostart; } break;
+				case "virtualserver_machine_id": foreach(var toi in toc) { toi.MachineId = MachineId; } break;
+				case "virtualserver_name": foreach(var toi in toc) { toi.Name = Name; } break;
+				case "virtualserver_unique_identifier": foreach(var toi in toc) { toi.VirtualServerUid = VirtualServerUid; } break;
+				}
+			}
+
 		}
 	}
 
@@ -8595,10 +8711,10 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "last_pos": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) LastOffset = oval; } break;
-			case "file_size": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) FileSize = oval; } break;
-			case "l": License = Ts3String.Unescape(value); break;
-			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
+			case "last_pos": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) LastOffset = (u64)oval; } break;
+			case "file_size": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) FileSize = (u64)oval; } break;
+			case "l": License = (str)Ts3String.Unescape(value); break;
+			case "return_code": ReturnCode = (str)Ts3String.Unescape(value); break;
 			}
 
 		}
@@ -8633,8 +8749,8 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "event": EventType = Ts3String.Unescape(value); break;
-			case "id": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) Id = oval; } break;
+			case "event": EventType = (str)Ts3String.Unescape(value); break;
+			case "id": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) Id = (ChannelId)oval; } break;
 			
 			}
 
@@ -8683,7 +8799,7 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "reasonmsg": ReasonMessage = Ts3String.Unescape(value); break;
+			case "reasonmsg": ReasonMessage = (str)Ts3String.Unescape(value); break;
 			
 			}
 
@@ -8746,7 +8862,7 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "sid": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) ServerId = oval; } break;
+			case "sid": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) ServerId = (u32)oval; } break;
 			
 			}
 
@@ -8780,8 +8896,8 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "sid": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) ServerId = oval; } break;
-			case "reasonmsg": ReasonMessage = Ts3String.Unescape(value); break;
+			case "sid": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) ServerId = (u32)oval; } break;
+			case "reasonmsg": ReasonMessage = (str)Ts3String.Unescape(value); break;
 			
 			}
 
@@ -8819,11 +8935,11 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "pw": Password = Ts3String.Unescape(value); break;
-			case "desc": Description = Ts3String.Unescape(value); break;
+			case "pw": Password = (str)Ts3String.Unescape(value); break;
+			case "desc": Description = (str)Ts3String.Unescape(value); break;
 			case "duration": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) Duration = TimeSpan.FromSeconds(oval); } break;
-			case "tcid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) TargetChannelId = oval; } break;
-			case "tcpw": TargetChannelPassword = Ts3String.Unescape(value); break;
+			case "tcid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) TargetChannelId = (ChannelId)oval; } break;
+			case "tcpw": TargetChannelPassword = (str)Ts3String.Unescape(value); break;
 			
 			}
 
@@ -8860,7 +8976,7 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "pw": Password = Ts3String.Unescape(value); break;
+			case "pw": Password = (str)Ts3String.Unescape(value); break;
 			
 			}
 
@@ -8900,14 +9016,14 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "nickname": Nickname = Ts3String.Unescape(value); break;
-			case "uid": Uid = Ts3String.Unescape(value); break;
-			case "desc": Description = Ts3String.Unescape(value); break;
-			case "pw_clear": PasswordClear = Ts3String.Unescape(value); break;
+			case "nickname": Nickname = (str)Ts3String.Unescape(value); break;
+			case "uid": Uid = (Uid)Ts3String.Unescape(value); break;
+			case "desc": Description = (str)Ts3String.Unescape(value); break;
+			case "pw_clear": PasswordClear = (str)Ts3String.Unescape(value); break;
 			case "start": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) Start = Tools.FromUnix(oval); } break;
 			case "end": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) End = Tools.FromUnix(oval); } break;
-			case "tcid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) TargetChannelId = oval; } break;
-			case "tcpw": TargetChannelPassword = Ts3String.Unescape(value); break;
+			case "tcid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) TargetChannelId = (ChannelId)oval; } break;
+			case "tcpw": TargetChannelPassword = (str)Ts3String.Unescape(value); break;
 			
 			}
 
@@ -9009,54 +9125,54 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "virtualserver_welcomemessage": WelcomeMessage = Ts3String.Unescape(value); break;
-			case "virtualserver_maxclients": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) MaxClients = oval; } break;
-			case "virtualserver_clientsonline": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) ClientsOnline = oval; } break;
-			case "virtualserver_channelsonline": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ChannelsOnline = oval; } break;
+			case "virtualserver_welcomemessage": WelcomeMessage = (str)Ts3String.Unescape(value); break;
+			case "virtualserver_maxclients": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) MaxClients = (u16)oval; } break;
+			case "virtualserver_clientsonline": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) ClientsOnline = (u16)oval; } break;
+			case "virtualserver_channelsonline": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ChannelsOnline = (u64)oval; } break;
 			case "virtualserver_uptime": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) Uptime = TimeSpan.FromSeconds(oval); } break;
-			case "virtualserver_hostmessage": Hostmessage = Ts3String.Unescape(value); break;
+			case "virtualserver_hostmessage": Hostmessage = (str)Ts3String.Unescape(value); break;
 			case "virtualserver_hostmessage_mode": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) HostmessageMode = (HostMessageMode)oval; } break;
 			case "virtualserver_flag_password": HasPassword = value.Length > 0 && value[0] != '0'; break;
-			case "virtualserver_default_channel_admin_group": { if(Utf8Parser.TryParse(value, out ChannelGroupId oval, out _)) DefaultChannelAdminGroup = oval; } break;
-			case "virtualserver_max_download_total_bandwidth": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) MaxDownloadTotalBandwidth = oval; } break;
-			case "virtualserver_max_upload_total_bandwidth": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) MaxUploadTotalBandwidth = oval; } break;
-			case "virtualserver_complain_autoban_count": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) ComplainAutobanCount = oval; } break;
+			case "virtualserver_default_channel_admin_group": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) DefaultChannelAdminGroup = (ChannelGroupId)oval; } break;
+			case "virtualserver_max_download_total_bandwidth": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) MaxDownloadTotalBandwidth = (u64)oval; } break;
+			case "virtualserver_max_upload_total_bandwidth": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) MaxUploadTotalBandwidth = (u64)oval; } break;
+			case "virtualserver_complain_autoban_count": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) ComplainAutobanCount = (u32)oval; } break;
 			case "virtualserver_complain_autoban_time": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) ComplainAutobanTime = TimeSpan.FromSeconds(oval); } break;
 			case "virtualserver_complain_remove_time": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) ComplainRemoveTime = TimeSpan.FromSeconds(oval); } break;
-			case "virtualserver_min_clients_in_channel_before_forced_silence": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) MinClientsInChannelBeforeForcedSilence = oval; } break;
-			case "virtualserver_antiflood_points_tick_reduce": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) AntifloodPointsTickReduce = oval; } break;
-			case "virtualserver_antiflood_points_needed_command_block": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) AntifloodPointsToCommandBlock = oval; } break;
-			case "virtualserver_antiflood_points_needed_ip_block": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) AntifloodPointsToIpBlock = oval; } break;
-			case "virtualserver_client_connections": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ClientConnections = oval; } break;
-			case "virtualserver_query_client_connections": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) QueryConnections = oval; } break;
-			case "virtualserver_queryclientsonline": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) QueriesOnline = oval; } break;
-			case "virtualserver_download_quota": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) DownloadQuota = oval; } break;
-			case "virtualserver_upload_quota": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) UploadQuota = oval; } break;
-			case "virtualserver_month_bytes_downloaded": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BytesDownloadedMonth = oval; } break;
-			case "virtualserver_month_bytes_uploaded": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BytesUploadedMonth = oval; } break;
-			case "virtualserver_total_bytes_downloaded": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BytesDownloadedTotal = oval; } break;
-			case "virtualserver_total_bytes_uploaded": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BytesUploadedTotal = oval; } break;
-			case "virtualserver_port": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) VirtualServerPort = oval; } break;
+			case "virtualserver_min_clients_in_channel_before_forced_silence": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) MinClientsInChannelBeforeForcedSilence = (u32)oval; } break;
+			case "virtualserver_antiflood_points_tick_reduce": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) AntifloodPointsTickReduce = (u32)oval; } break;
+			case "virtualserver_antiflood_points_needed_command_block": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) AntifloodPointsToCommandBlock = (u32)oval; } break;
+			case "virtualserver_antiflood_points_needed_ip_block": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) AntifloodPointsToIpBlock = (u32)oval; } break;
+			case "virtualserver_client_connections": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ClientConnections = (u64)oval; } break;
+			case "virtualserver_query_client_connections": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) QueryConnections = (u64)oval; } break;
+			case "virtualserver_queryclientsonline": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) QueriesOnline = (u16)oval; } break;
+			case "virtualserver_download_quota": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) DownloadQuota = (u64)oval; } break;
+			case "virtualserver_upload_quota": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) UploadQuota = (u64)oval; } break;
+			case "virtualserver_month_bytes_downloaded": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BytesDownloadedMonth = (u64)oval; } break;
+			case "virtualserver_month_bytes_uploaded": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BytesUploadedMonth = (u64)oval; } break;
+			case "virtualserver_total_bytes_downloaded": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BytesDownloadedTotal = (u64)oval; } break;
+			case "virtualserver_total_bytes_uploaded": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BytesUploadedTotal = (u64)oval; } break;
+			case "virtualserver_port": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) VirtualServerPort = (u16)oval; } break;
 			case "virtualserver_autostart": Autostart = value.Length > 0 && value[0] != '0'; break;
-			case "virtualserver_machine_id": MachineId = Ts3String.Unescape(value); break;
-			case "virtualserver_needed_identity_security_level": { if(Utf8Parser.TryParse(value, out u8 oval, out _)) IdentitySecurityLevel = oval; } break;
+			case "virtualserver_machine_id": MachineId = (str)Ts3String.Unescape(value); break;
+			case "virtualserver_needed_identity_security_level": { if(Utf8Parser.TryParse(value, out u8 oval, out _)) IdentitySecurityLevel = (u8)oval; } break;
 			case "virtualserver_log_client": LogClient = value.Length > 0 && value[0] != '0'; break;
 			case "virtualserver_log_query": LogQuery = value.Length > 0 && value[0] != '0'; break;
 			case "virtualserver_log_channel": LogChannel = value.Length > 0 && value[0] != '0'; break;
 			case "virtualserver_log_permissions": LogPermissions = value.Length > 0 && value[0] != '0'; break;
 			case "virtualserver_log_server": LogServer = value.Length > 0 && value[0] != '0'; break;
 			case "virtualserver_log_filetransfer": LogFileTransfer = value.Length > 0 && value[0] != '0'; break;
-			case "virtualserver_min_client_version": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) MinClientVersion = oval; } break;
-			case "virtualserver_reserved_slots": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) ReservedSlots = oval; } break;
-			case "virtualserver_total_packetloss_speech": { if(Utf8Parser.TryParse(value, out f32 oval, out _)) PacketlossTotalSpeech = oval; } break;
-			case "virtualserver_total_packetloss_keepalive": { if(Utf8Parser.TryParse(value, out f32 oval, out _)) PacketlossTotalKeepalive = oval; } break;
-			case "virtualserver_total_packetloss_control": { if(Utf8Parser.TryParse(value, out f32 oval, out _)) PacketlossTotalControl = oval; } break;
-			case "virtualserver_total_packetloss_total": { if(Utf8Parser.TryParse(value, out f32 oval, out _)) PacketlossTotal = oval; } break;
-			case "virtualserver_total_ping": { if(Utf8Parser.TryParse(value, out f32 oval, out _)) PingTotal = oval; } break;
+			case "virtualserver_min_client_version": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) MinClientVersion = (u32)oval; } break;
+			case "virtualserver_reserved_slots": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) ReservedSlots = (u16)oval; } break;
+			case "virtualserver_total_packetloss_speech": { if(Utf8Parser.TryParse(value, out f32 oval, out _)) PacketlossTotalSpeech = (f32)oval; } break;
+			case "virtualserver_total_packetloss_keepalive": { if(Utf8Parser.TryParse(value, out f32 oval, out _)) PacketlossTotalKeepalive = (f32)oval; } break;
+			case "virtualserver_total_packetloss_control": { if(Utf8Parser.TryParse(value, out f32 oval, out _)) PacketlossTotalControl = (f32)oval; } break;
+			case "virtualserver_total_packetloss_total": { if(Utf8Parser.TryParse(value, out f32 oval, out _)) PacketlossTotal = (f32)oval; } break;
+			case "virtualserver_total_ping": { if(Utf8Parser.TryParse(value, out f32 oval, out _)) PingTotal = (f32)oval; } break;
 			case "virtualserver_weblist_enabled": WeblistEnabled = value.Length > 0 && value[0] != '0'; break;
-			case "virtualserver_min_android_version": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) MinAndroidVersion = oval; } break;
-			case "virtualserver_min_ios_version": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) MinIosVersion = oval; } break;
-			case "virtualserver_antiflood_points_needed_plugin_block": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) AntifloodPointsToPluginBlock = oval; } break;
+			case "virtualserver_min_android_version": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) MinAndroidVersion = (u32)oval; } break;
+			case "virtualserver_min_ios_version": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) MinIosVersion = (u32)oval; } break;
+			case "virtualserver_antiflood_points_needed_plugin_block": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) AntifloodPointsToPluginBlock = (u32)oval; } break;
 			
 			}
 
@@ -9153,9 +9269,9 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "cgid": { if(Utf8Parser.TryParse(value, out ChannelGroupId oval, out _)) ChannelGroup = oval; } break;
-			case "cid": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
-			case "cldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) ClientDbId = oval; } break;
+			case "cgid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ChannelGroup = (ChannelGroupId)oval; } break;
+			case "cid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ChannelId = (ChannelId)oval; } break;
+			case "cldbid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ClientDbId = (ClientDbId)oval; } break;
 			
 			}
 
@@ -9196,12 +9312,12 @@ namespace TS3Client.Messages
 			{
 
 			case "targetmode": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) Target = (TextMessageTargetMode)oval; } break;
-			case "msg": Message = Ts3String.Unescape(value); break;
-			case "target": { if(Utf8Parser.TryParse(value, out ClientId oval, out _)) TargetClientId = oval; } break;
-			case "invokerid": { if(Utf8Parser.TryParse(value, out ClientId oval, out _)) InvokerId = oval; } break;
-			case "invokername": InvokerName = Ts3String.Unescape(value); break;
-			case "invokeruid": InvokerUid = Ts3String.Unescape(value); break;
-			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
+			case "msg": Message = (str)Ts3String.Unescape(value); break;
+			case "target": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) TargetClientId = (ClientId)oval; } break;
+			case "invokerid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) InvokerId = (ClientId)oval; } break;
+			case "invokername": InvokerName = (str)Ts3String.Unescape(value); break;
+			case "invokeruid": InvokerUid = (Uid)Ts3String.Unescape(value); break;
+			case "return_code": ReturnCode = (str)Ts3String.Unescape(value); break;
 			}
 
 		}
@@ -9238,8 +9354,8 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "token": Token = Ts3String.Unescape(value); break;
-			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
+			case "token": Token = (str)Ts3String.Unescape(value); break;
+			case "return_code": ReturnCode = (str)Ts3String.Unescape(value); break;
 			}
 
 		}
@@ -9276,10 +9392,10 @@ namespace TS3Client.Messages
 			{
 
 			case "tokentype": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) TokenType = (TokenType)oval; } break;
-			case "tokenid1": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) TokenId1 = oval; } break;
-			case "tokenid2": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) TokenId2 = oval; } break;
-			case "tokendescription": TokenDescription = Ts3String.Unescape(value); break;
-			case "tokencustomset": TokenCustomSet = Ts3String.Unescape(value); break;
+			case "tokenid1": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) TokenId1 = (u64)oval; } break;
+			case "tokenid2": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) TokenId2 = (ChannelId)oval; } break;
+			case "tokendescription": TokenDescription = (str)Ts3String.Unescape(value); break;
+			case "tokencustomset": TokenCustomSet = (str)Ts3String.Unescape(value); break;
 			
 			}
 
@@ -9316,7 +9432,7 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "token": Token = Ts3String.Unescape(value); break;
+			case "token": Token = (str)Ts3String.Unescape(value); break;
 			
 			}
 
@@ -9354,13 +9470,13 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "token": Token = Ts3String.Unescape(value); break;
+			case "token": Token = (str)Ts3String.Unescape(value); break;
 			case "token_type": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) TokenType = (TokenType)oval; } break;
-			case "token_id1": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) TokenId1 = oval; } break;
-			case "token_id2": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) TokenId2 = oval; } break;
+			case "token_id1": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) TokenId1 = (u64)oval; } break;
+			case "token_id2": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) TokenId2 = (ChannelId)oval; } break;
 			case "token_created": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) TokenCreateTime = Tools.FromUnix(oval); } break;
-			case "token_description": TokenDescription = Ts3String.Unescape(value); break;
-			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
+			case "token_description": TokenDescription = (str)Ts3String.Unescape(value); break;
+			case "return_code": ReturnCode = (str)Ts3String.Unescape(value); break;
 			}
 
 		}
@@ -9412,7 +9528,7 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "token": Token = Ts3String.Unescape(value); break;
+			case "token": Token = (str)Ts3String.Unescape(value); break;
 			
 			}
 
@@ -9451,13 +9567,13 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "token": Token = Ts3String.Unescape(value); break;
-			case "tokencustomset": TokenCustomSet = Ts3String.Unescape(value); break;
-			case "token1": Token1 = Ts3String.Unescape(value); break;
-			case "token2": Token2 = Ts3String.Unescape(value); break;
-			case "clid": { if(Utf8Parser.TryParse(value, out ClientId oval, out _)) ClientId = oval; } break;
-			case "cldbid": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) ClientDbId = oval; } break;
-			case "cluid": ClientUid = Ts3String.Unescape(value); break;
+			case "token": Token = (str)Ts3String.Unescape(value); break;
+			case "tokencustomset": TokenCustomSet = (str)Ts3String.Unescape(value); break;
+			case "token1": Token1 = (str)Ts3String.Unescape(value); break;
+			case "token2": Token2 = (str)Ts3String.Unescape(value); break;
+			case "clid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) ClientId = (ClientId)oval; } break;
+			case "cldbid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ClientDbId = (ClientDbId)oval; } break;
+			case "cluid": ClientUid = (Uid)Ts3String.Unescape(value); break;
 			
 			}
 
@@ -9497,8 +9613,8 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "sid": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) ServerId = oval; } break;
-			case "port": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) Port = oval; } break;
+			case "sid": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) ServerId = (u32)oval; } break;
+			case "port": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) Port = (u16)oval; } break;
 			
 			}
 
@@ -9557,18 +9673,18 @@ namespace TS3Client.Messages
 			switch(name)
 			{
 
-			case "client_id": { if(Utf8Parser.TryParse(value, out ClientId oval, out _)) ClientId = oval; } break;
-			case "client_channel_id": { if(Utf8Parser.TryParse(value, out ChannelId oval, out _)) ChannelId = oval; } break;
-			case "client_nickname": Name = Ts3String.Unescape(value); break;
-			case "client_database_id": { if(Utf8Parser.TryParse(value, out ClientDbId oval, out _)) DatabaseId = oval; } break;
-			case "client_login_name": LoginName = Ts3String.Unescape(value); break;
-			case "client_origin_server_id": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) OriginServerId = oval; } break;
-			case "virtualserver_id": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) VirtualServerId = oval; } break;
-			case "virtualserver_unique_identifier": VirtualServerUid = Ts3String.Unescape(value); break;
-			case "virtualserver_port": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) VirtualServerPort = oval; } break;
-			case "virtualserver_status": VirtualServerStatus = Ts3String.Unescape(value); break;
-			case "client_unique_identifier": Uid = Ts3String.Unescape(value); break;
-			case "return_code": ReturnCode = Ts3String.Unescape(value); break;
+			case "client_id": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) ClientId = (ClientId)oval; } break;
+			case "client_channel_id": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ChannelId = (ChannelId)oval; } break;
+			case "client_nickname": Name = (str)Ts3String.Unescape(value); break;
+			case "client_database_id": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) DatabaseId = (ClientDbId)oval; } break;
+			case "client_login_name": LoginName = (str)Ts3String.Unescape(value); break;
+			case "client_origin_server_id": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) OriginServerId = (u64)oval; } break;
+			case "virtualserver_id": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) VirtualServerId = (u64)oval; } break;
+			case "virtualserver_unique_identifier": VirtualServerUid = (Uid)Ts3String.Unescape(value); break;
+			case "virtualserver_port": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) VirtualServerPort = (u16)oval; } break;
+			case "virtualserver_status": VirtualServerStatus = (str)Ts3String.Unescape(value); break;
+			case "client_unique_identifier": Uid = (Uid)Ts3String.Unescape(value); break;
+			case "return_code": ReturnCode = (str)Ts3String.Unescape(value); break;
 			}
 
 		}
@@ -9995,7 +10111,7 @@ namespace TS3Client.Messages
 		///<summary>[C2S] ntfy:serverinfo</summary>
 		ServerInfo,
 		///<summary>[C2S] ntfy:serverlist</summary>
-		ServerList,
+		ServerListRequest,
 		///<summary>[S2C] ntfy:notifyserverlog</summary>
 		ServerLog,
 		///<summary>[C2S] ntfy:servernotifyregister</summary>
@@ -10260,7 +10376,7 @@ namespace TS3Client.Messages
 			case "servergroupsbyclientid": return NotificationType.ServerGroupsByClientIdRequest;
 			case "serveridgetbyport": return NotificationType.ServerIdGetByPort;
 			case "serverinfo": return NotificationType.ServerInfo;
-			case "serverlist": return NotificationType.ServerList;
+			case "serverlist": return NotificationType.ServerListRequest;
 			case "servernotifyregister": return NotificationType.ServerNotifyRegister;
 			case "servernotifyunregister": return NotificationType.ServerNotifyUnregister;
 			case "serverprocessstop": return NotificationType.ServerProcessStop;
@@ -10477,7 +10593,7 @@ namespace TS3Client.Messages
 			case NotificationType.ServerGroupsByClientIdRequest: return new ServerGroupsByClientIdRequest();
 			case NotificationType.ServerIdGetByPort: return new ServerIdGetByPort();
 			case NotificationType.ServerInfo: return new ServerInfo();
-			case NotificationType.ServerList: return new ServerList();
+			case NotificationType.ServerListRequest: return new ServerListRequest();
 			case NotificationType.ServerLog: return new ServerLog();
 			case NotificationType.ServerNotifyRegister: return new ServerNotifyRegister();
 			case NotificationType.ServerNotifyUnregister: return new ServerNotifyUnregister();
@@ -10702,7 +10818,7 @@ namespace TS3Client.Messages
 			case NotificationType.ServerGroupsByClientIdRequest: { var arr = new ServerGroupsByClientIdRequest[len]; for (int i = 0; i < len; i++) arr[i] = new ServerGroupsByClientIdRequest(); return arr; }
 			case NotificationType.ServerIdGetByPort: { var arr = new ServerIdGetByPort[len]; for (int i = 0; i < len; i++) arr[i] = new ServerIdGetByPort(); return arr; }
 			case NotificationType.ServerInfo: { var arr = new ServerInfo[len]; for (int i = 0; i < len; i++) arr[i] = new ServerInfo(); return arr; }
-			case NotificationType.ServerList: { var arr = new ServerList[len]; for (int i = 0; i < len; i++) arr[i] = new ServerList(); return arr; }
+			case NotificationType.ServerListRequest: { var arr = new ServerListRequest[len]; for (int i = 0; i < len; i++) arr[i] = new ServerListRequest(); return arr; }
 			case NotificationType.ServerLog: { var arr = new ServerLog[len]; for (int i = 0; i < len; i++) arr[i] = new ServerLog(); return arr; }
 			case NotificationType.ServerNotifyRegister: { var arr = new ServerNotifyRegister[len]; for (int i = 0; i < len; i++) arr[i] = new ServerNotifyRegister(); return arr; }
 			case NotificationType.ServerNotifyUnregister: { var arr = new ServerNotifyUnregister[len]; for (int i = 0; i < len; i++) arr[i] = new ServerNotifyUnregister(); return arr; }

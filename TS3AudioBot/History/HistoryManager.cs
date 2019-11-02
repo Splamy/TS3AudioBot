@@ -14,6 +14,7 @@ using System.Linq;
 using TS3AudioBot.Config;
 using TS3AudioBot.Localization;
 using TS3AudioBot.ResourceFactories;
+using TS3Client;
 using TS3Client.Helper;
 
 namespace TS3AudioBot.History
@@ -170,7 +171,7 @@ namespace TS3AudioBot.History
 
 			var ale = new AudioLogEntry(nextHid, saveData.Resource)
 			{
-				UserUid = saveData.InvokerUid,
+				UserUid = saveData.InvokerUid.Value,
 				Timestamp = Tools.Now,
 				PlayCount = 1,
 			};
@@ -310,7 +311,7 @@ namespace TS3AudioBot.History
 		public void UpdadeDbIdToUid(Ts3Client ts3Client)
 		{
 			var upgradedEntries = new List<AudioLogEntry>();
-			var dbIdCache = new Dictionary<uint, (bool valid, string uid)>();
+			var dbIdCache = new Dictionary<uint, (bool valid, Uid uid)>();
 
 			foreach (var audioLogEntry in audioLogEntries.FindAll())
 			{
@@ -327,8 +328,8 @@ namespace TS3AudioBot.History
 
 				if (!dbIdCache.TryGetValue(audioLogEntry.UserInvokeId.Value, out var data))
 				{
-					var result = ts3Client.GetDbClientByDbId(audioLogEntry.UserInvokeId.Value);
-					data.uid = (data.valid = result.Ok) ? result.Value.Uid : null;
+					var result = ts3Client.GetDbClientByDbId((ClientDbId)audioLogEntry.UserInvokeId.Value);
+					data.uid = (data.valid = result.Ok) ? result.Value.Uid : Uid.Null;
 					if (!data.valid)
 					{
 						Log.Warn("Client DbId {0} could not be found.", audioLogEntry.UserInvokeId.Value);
@@ -340,7 +341,7 @@ namespace TS3AudioBot.History
 					continue;
 
 				audioLogEntry.UserInvokeId = null;
-				audioLogEntry.UserUid = data.uid;
+				audioLogEntry.UserUid = data.uid.Value;
 				upgradedEntries.Add(audioLogEntry);
 #pragma warning restore CS0612
 			}

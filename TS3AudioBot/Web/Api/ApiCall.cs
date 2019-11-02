@@ -9,6 +9,7 @@
 
 using System;
 using System.Net;
+using TS3Client;
 
 namespace TS3AudioBot.Web.Api
 {
@@ -21,7 +22,7 @@ namespace TS3AudioBot.Web.Api
 
 		public static ApiCall CreateAnonymous() => new ApiCall(AnonymousUid);
 
-		public ApiCall(string clientUid, IPAddress ipAddress = null, Uri requestUrl = null, string token = null, string body = null) : base(clientUid)
+		public ApiCall(Uid clientUid, IPAddress ipAddress = null, Uri requestUrl = null, string token = null, string body = null) : base(clientUid)
 		{
 			Token = token;
 			IpAddress = ipAddress;

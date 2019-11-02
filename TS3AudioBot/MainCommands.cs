@@ -118,7 +118,7 @@ namespace TS3AudioBot
 			{
 				throw new CommandException(strings.error_invalid_token_duration, oex, CommandExceptionReason.CommandError);
 			}
-			return tokenManager.GenerateToken(invoker.ClientUid, validSpan);
+			return tokenManager.GenerateToken(invoker.ClientUid.Value, validSpan);
 		}
 
 		[Command("bot avatar set")]
@@ -249,7 +249,7 @@ namespace TS3AudioBot
 		}
 
 		[Command("bot move")]
-		public static void CommandBotMove(Ts3Client ts3Client, ulong channel, string password = null) => ts3Client.MoveTo(channel, password).UnwrapThrow();
+		public static void CommandBotMove(Ts3Client ts3Client, ChannelId channel, string password = null) => ts3Client.MoveTo(channel, password).UnwrapThrow();
 
 		[Command("bot name")]
 		public static void CommandBotName(Ts3Client ts3Client, string name) => ts3Client.ChangeName(name).UnwrapThrow();
@@ -374,39 +374,39 @@ namespace TS3AudioBot
 
 		[Command("getmy id")]
 		public static ushort CommandGetId(ClientCall invoker)
-			=> invoker.ClientId ?? throw new CommandException(strings.error_not_found, CommandExceptionReason.CommandError);
+			=> invoker.ClientId?.Value ?? throw new CommandException(strings.error_not_found, CommandExceptionReason.CommandError);
 		[Command("getmy uid")]
 		public static string CommandGetUid(ClientCall invoker)
-			=> invoker.ClientUid ?? throw new CommandException(strings.error_not_found, CommandExceptionReason.CommandError);
+			=> invoker.ClientUid.Value;
 		[Command("getmy name")]
 		public static string CommandGetName(ClientCall invoker)
 			=> invoker.NickName ?? throw new CommandException(strings.error_not_found, CommandExceptionReason.CommandError);
 		[Command("getmy dbid")]
 		public static ulong CommandGetDbId(ClientCall invoker)
-			=> invoker.DatabaseId ?? throw new CommandException(strings.error_not_found, CommandExceptionReason.CommandError);
+			=> invoker.DatabaseId?.Value ?? throw new CommandException(strings.error_not_found, CommandExceptionReason.CommandError);
 		[Command("getmy channel")]
 		public static ulong CommandGetChannel(ClientCall invoker)
-			=> invoker.ChannelId ?? throw new CommandException(strings.error_not_found, CommandExceptionReason.CommandError);
+			=> invoker.ChannelId?.Value ?? throw new CommandException(strings.error_not_found, CommandExceptionReason.CommandError);
 		[Command("getmy all")]
 		public static JsonValue<ClientCall> CommandGetUser(ClientCall invoker)
 			=> new JsonValue<ClientCall>(invoker, $"Client: Id:{invoker.ClientId} DbId:{invoker.DatabaseId} ChanId:{invoker.ChannelId} Uid:{invoker.ClientUid}"); // LOC: TODO
 
 		[Command("getuser uid byid")]
-		public static string CommandGetUidById(Ts3Client ts3Client, ushort id) => ts3Client.GetFallbackedClientById(id).UnwrapThrow().Uid;
+		public static string CommandGetUidById(Ts3Client ts3Client, ushort id) => ts3Client.GetFallbackedClientById((ClientId)id).UnwrapThrow().Uid.Value;
 		[Command("getuser name byid")]
-		public static string CommandGetNameById(Ts3Client ts3Client, ushort id) => ts3Client.GetFallbackedClientById(id).UnwrapThrow().Name;
+		public static string CommandGetNameById(Ts3Client ts3Client, ushort id) => ts3Client.GetFallbackedClientById((ClientId)id).UnwrapThrow().Name;
 		[Command("getuser dbid byid")]
-		public static ulong CommandGetDbIdById(Ts3Client ts3Client, ushort id) => ts3Client.GetFallbackedClientById(id).UnwrapThrow().DatabaseId;
+		public static ulong CommandGetDbIdById(Ts3Client ts3Client, ushort id) => ts3Client.GetFallbackedClientById((ClientId)id).UnwrapThrow().DatabaseId.Value;
 		[Command("getuser channel byid")]
-		public static ulong CommandGetChannelById(Ts3Client ts3Client, ushort id) => ts3Client.GetFallbackedClientById(id).UnwrapThrow().ChannelId;
+		public static ulong CommandGetChannelById(Ts3Client ts3Client, ushort id) => ts3Client.GetFallbackedClientById((ClientId)id).UnwrapThrow().ChannelId.Value;
 		[Command("getuser all byid")]
 		public static JsonValue<ClientList> CommandGetUserById(Ts3Client ts3Client, ushort id)
 		{
-			var client = ts3Client.GetFallbackedClientById(id).UnwrapThrow();
+			var client = ts3Client.GetFallbackedClientById((ClientId)id).UnwrapThrow();
 			return new JsonValue<ClientList>(client, $"Client: Id:{client.ClientId} DbId:{client.DatabaseId} ChanId:{client.ChannelId} Uid:{client.Uid}");
 		}
 		[Command("getuser id byname")]
-		public static ushort CommandGetIdByName(Ts3Client ts3Client, string username) => ts3Client.GetClientByName(username).UnwrapThrow().ClientId;
+		public static ushort CommandGetIdByName(Ts3Client ts3Client, string username) => ts3Client.GetClientByName(username).UnwrapThrow().ClientId.Value;
 		[Command("getuser all byname")]
 		public static JsonValue<ClientList> CommandGetUserByName(Ts3Client ts3Client, string username)
 		{
@@ -414,9 +414,9 @@ namespace TS3AudioBot
 			return new JsonValue<ClientList>(client, $"Client: Id:{client.ClientId} DbId:{client.DatabaseId} ChanId:{client.ChannelId} Uid:{client.Uid}");
 		}
 		[Command("getuser name bydbid")]
-		public static string CommandGetNameByDbId(Ts3Client ts3Client, ulong dbId) => ts3Client.GetDbClientByDbId(dbId).UnwrapThrow().Name;
+		public static string CommandGetNameByDbId(Ts3Client ts3Client, ulong dbId) => ts3Client.GetDbClientByDbId((ClientDbId)dbId).UnwrapThrow().Name;
 		[Command("getuser uid bydbid")]
-		public static string CommandGetUidByDbId(Ts3Client ts3Client, ulong dbId) => ts3Client.GetDbClientByDbId(dbId).UnwrapThrow().Uid;
+		public static string CommandGetUidByDbId(Ts3Client ts3Client, ulong dbId) => ts3Client.GetDbClientByDbId((ClientDbId)dbId).UnwrapThrow().Uid.Value;
 
 		private static readonly TextMod HelpCommand = new TextMod(TextModFlag.Bold);
 		private static readonly TextMod HelpCommandParam = new TextMod(TextModFlag.Italic);
@@ -1094,7 +1094,7 @@ namespace TS3AudioBot
 		public static void CommandPmServer(Ts3Client ts3Client, string message) => ts3Client.SendServerMessage(message).UnwrapThrow();
 
 		[Command("pm user")]
-		public static void CommandPmUser(Ts3Client ts3Client, ushort clientId, string message) => ts3Client.SendMessage(message, clientId).UnwrapThrow();
+		public static void CommandPmUser(Ts3Client ts3Client, ushort clientId, string message) => ts3Client.SendMessage(message, (ClientId)clientId).UnwrapThrow();
 
 		[Command("pause")]
 		public static void CommandPause(IPlayerConnection playerConnection) => playerConnection.Paused = !playerConnection.Paused;
@@ -1485,18 +1485,18 @@ namespace TS3AudioBot
 		}
 
 		[Command("subscribe tempchannel")]
-		public static void CommandSubscribeTempChannel(IVoiceTarget targetManager, ClientCall invoker = null, ulong? channel = null)
+		public static void CommandSubscribeTempChannel(IVoiceTarget targetManager, ClientCall invoker = null, ChannelId? channel = null)
 		{
-			var subChan = channel ?? invoker?.ChannelId ?? 0;
-			if (subChan != 0)
+			var subChan = channel ?? invoker?.ChannelId ?? ChannelId.Null;
+			if (subChan != ChannelId.Null)
 				targetManager.WhisperChannelSubscribe(true, subChan);
 		}
 
 		[Command("subscribe channel")]
-		public static void CommandSubscribeChannel(IVoiceTarget targetManager, ClientCall invoker = null, ulong? channel = null)
+		public static void CommandSubscribeChannel(IVoiceTarget targetManager, ClientCall invoker = null, ChannelId? channel = null)
 		{
-			var subChan = channel ?? invoker?.ChannelId ?? 0;
-			if (subChan != 0)
+			var subChan = channel ?? invoker?.ChannelId ?? ChannelId.Null;
+			if (subChan != ChannelId.Null)
 				targetManager.WhisperChannelSubscribe(false, subChan);
 		}
 
@@ -1599,7 +1599,7 @@ namespace TS3AudioBot
 		[Command("unsubscribe channel")]
 		public static void CommandUnsubscribeChannel(IVoiceTarget targetManager, ClientCall invoker = null, ulong? channel = null)
 		{
-			var subChan = channel ?? invoker?.ChannelId;
+			var subChan = (ChannelId?)channel ?? invoker?.ChannelId;
 			if (subChan.HasValue)
 				targetManager.WhisperChannelUnsubscribe(false, subChan.Value);
 		}

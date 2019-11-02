@@ -27,6 +27,11 @@
     <None Include="Generated\ErrorParser.ttinclude" />
     <None Include="Generated\M2BParser.ttinclude" />
     <None Include="Generated\MessageParser.ttinclude" />
+    <None Include="Generated\Types.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Types.tt</DependentUpon>
+    </None>
     <None Include="Generated\Util.ttinclude" />
     <None Update="Commands\Ts3CommandSugar.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
@@ -55,6 +60,10 @@
     <None Update="Generated\Ts3FullEvents.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>Ts3FullEvents.cs</LastGenOutput>
+    </None>
+    <None Update="Generated\Types.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>Types.cs</LastGenOutput>
     </None>
     <None Update="Generated\Versions.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
@@ -96,6 +105,11 @@
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
       <DependentUpon>Ts3FullEvents.tt</DependentUpon>
+    </Compile>
+    <Compile Update="Generated\Types.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Types.tt</DependentUpon>
     </Compile>
     <Compile Update="Generated\Versions.cs">
       <DesignTime>True</DesignTime>

@@ -18,7 +18,6 @@ using System.Threading.Tasks;
 using TS3Client.Commands;
 using TS3Client.Helper;
 using TS3Client.Messages;
-using ChannelIdT = System.UInt64;
 using CmdR = System.E<TS3Client.Messages.CommandError>;
 
 namespace TS3Client.Query
@@ -224,13 +223,13 @@ namespace TS3Client.Query
 		public CmdR RegisterNotification(TextMessageTargetMode target)
 			=> RegisterNotification(TargetTypeString[(int)target], null);
 
-		public CmdR RegisterNotificationChannel(ChannelIdT? channel = null)
+		public CmdR RegisterNotificationChannel(ChannelId? channel = null)
 			=> RegisterNotification(TargetTypeString[(int)ReasonIdentifier.Channel], channel);
 
 		public CmdR RegisterNotificationServer()
 			=> RegisterNotification(TargetTypeString[(int)ReasonIdentifier.Server], null);
 
-		private CmdR RegisterNotification(string target, ChannelIdT? channel)
+		private CmdR RegisterNotification(string target, ChannelId? channel)
 			=> Send<ResponseVoid>(new Ts3Command("servernotifyregister") {
 				{ "event", target },
 				{ "id", channel },
@@ -260,7 +259,7 @@ namespace TS3Client.Query
 				{ "type", (int?)type }
 			}).WrapSingle();
 
-		public override R<FileUpload, CommandError> FileTransferInitUpload(ChannelIdT channelId, string path, string channelPassword,
+		public override R<FileUpload, CommandError> FileTransferInitUpload(ChannelId channelId, string path, string channelPassword,
 			ushort clientTransferId, long fileSize, bool overwrite, bool resume)
 			=> Send<FileUpload>(new Ts3Command("ftinitupload") {
 				{ "cid", channelId },
@@ -272,7 +271,7 @@ namespace TS3Client.Query
 				{ "resume", resume }
 			}).WrapSingle();
 
-		public override R<FileDownload, CommandError> FileTransferInitDownload(ChannelIdT channelId, string path, string channelPassword,
+		public override R<FileDownload, CommandError> FileTransferInitDownload(ChannelId channelId, string path, string channelPassword,
 			ushort clientTransferId, long seek)
 			=> Send<FileDownload>(new Ts3Command("ftinitdownload") {
 				{ "cid", channelId },

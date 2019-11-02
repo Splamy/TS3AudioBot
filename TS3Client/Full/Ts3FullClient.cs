@@ -17,8 +17,6 @@ using TS3Client.Audio;
 using TS3Client.Commands;
 using TS3Client.Helper;
 using TS3Client.Messages;
-using ChannelIdT = System.UInt64;
-using ClientIdT = System.UInt16;
 using CmdR = System.E<TS3Client.Messages.CommandError>;
 
 namespace TS3Client.Full
@@ -38,7 +36,7 @@ namespace TS3Client.Full
 		private IEventDispatcher dispatcher;
 		public override ClientType ClientType => ClientType.Full;
 		/// <summary>The client id given to this connection by the server.</summary>
-		public ushort ClientId => packetHandler.ClientId;
+		public ClientId ClientId => packetHandler.ClientId;
 		/// <summary>The disonnect message when leaving.</summary>
 		public string QuitMessage { get; set; } = "Disconnected";
 		/// <summary>The <see cref="Full.VersionSign"/> used to connect.</summary>
@@ -326,7 +324,7 @@ namespace TS3Client.Full
 			connectionDataFull.DefaultChannelPassword.HashedPassword,
 			connectionDataFull.ServerPassword.HashedPassword,
 			string.Empty, string.Empty, string.Empty,
-			connectionDataFull.Identity.ClientUid, VersionSign);
+			connectionDataFull.Identity.ClientUid.Value, VersionSign);
 
 		/// <summary>
 		/// Sends a command to the server. Commands look exactly like query commands and mostly also behave identically.
@@ -513,7 +511,7 @@ namespace TS3Client.Full
 		public CmdR ChannelUnsubscribeAll()
 			=> Send<ResponseVoid>(new Ts3Command("channelunsubscribeall"));
 
-		public CmdR PokeClient(string message, ClientIdT clientId)
+		public CmdR PokeClient(string message, ushort clientId)
 			=> SendNoResponsed(new Ts3Command("clientpoke") {
 				{ "clid", clientId },
 				{ "msg", message },
@@ -532,7 +530,7 @@ namespace TS3Client.Full
 			packetHandler.AddOutgoingPacket(tmpBuffer, PacketType.Voice);
 		}
 
-		public void SendAudioWhisper(in ReadOnlySpan<byte> data, Codec codec, IReadOnlyList<ChannelIdT> channelIds, IReadOnlyList<ClientIdT> clientIds)
+		public void SendAudioWhisper(in ReadOnlySpan<byte> data, Codec codec, IReadOnlyList<ChannelId> channelIds, IReadOnlyList<ClientId> clientIds)
 		{
 			// [X,X,Y,N,M,(U,U,U,U,U,U,U,U)*,(T,T)*,DATA]
 			// > X is a ushort in H2N order of an own audio packet counter
@@ -548,9 +546,9 @@ namespace TS3Client.Full
 			tmpBuffer[3] = (byte)channelIds.Count;
 			tmpBuffer[4] = (byte)clientIds.Count;
 			for (int i = 0; i < channelIds.Count; i++)
-				BinaryPrimitives.WriteUInt64BigEndian(tmpBuffer.Slice(5 + (i * 8)), channelIds[i]);
+				BinaryPrimitives.WriteUInt64BigEndian(tmpBuffer.Slice(5 + (i * 8)), channelIds[i].Value);
 			for (int i = 0; i < clientIds.Count; i++)
-				BinaryPrimitives.WriteUInt16BigEndian(tmpBuffer.Slice(5 + channelIds.Count * 8 + (i * 2)), clientIds[i]);
+				BinaryPrimitives.WriteUInt16BigEndian(tmpBuffer.Slice(5 + channelIds.Count * 8 + (i * 2)), clientIds[i].Value);
 			data.CopyTo(tmpBuffer.Slice(offset));
 
 			packetHandler.AddOutgoingPacket(tmpBuffer, PacketType.VoiceWhisper);
@@ -575,7 +573,7 @@ namespace TS3Client.Full
 			packetHandler.AddOutgoingPacket(tmpBuffer, PacketType.VoiceWhisper, PacketFlags.Newprotocol);
 		}
 
-		public R<ClientConnectionInfo, CommandError> GetClientConnectionInfo(ClientIdT clientId)
+		public R<ClientConnectionInfo, CommandError> GetClientConnectionInfo(ClientId clientId)
 		{
 			var result = SendNotifyCommand(new Ts3Command("getconnectioninfo") {
 				{ "clid", clientId }
@@ -588,7 +586,7 @@ namespace TS3Client.Full
 				.WrapSingle();
 		}
 
-		public R<ClientUpdated, CommandError> GetClientVariables(ClientIdT clientId)
+		public R<ClientUpdated, CommandError> GetClientVariables(ushort clientId)
 			=> SendNotifyCommand(new Ts3Command("clientgetvariables") {
 				{ "clid", clientId }
 			}, NotificationType.ClientUpdated).UnwrapNotification<ClientUpdated>().WrapSingle();
@@ -622,7 +620,7 @@ namespace TS3Client.Full
 				.WrapSingle();
 		}
 
-		public override R<FileUpload, CommandError> FileTransferInitUpload(ChannelIdT channelId, string path, string channelPassword, ushort clientTransferId,
+		public override R<FileUpload, CommandError> FileTransferInitUpload(ChannelId channelId, string path, string channelPassword, ushort clientTransferId,
 			long fileSize, bool overwrite, bool resume)
 		{
 			var result = SendNotifyCommand(new Ts3Command("ftinitupload") {
@@ -647,7 +645,7 @@ namespace TS3Client.Full
 			}
 		}
 
-		public override R<FileDownload, CommandError> FileTransferInitDownload(ChannelIdT channelId, string path, string channelPassword, ushort clientTransferId,
+		public override R<FileDownload, CommandError> FileTransferInitDownload(ChannelId channelId, string path, string channelPassword, ushort clientTransferId,
 			long seek)
 		{
 			var result = SendNotifyCommand(new Ts3Command("ftinitdownload") {

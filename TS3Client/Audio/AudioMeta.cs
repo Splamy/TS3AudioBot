@@ -8,8 +8,6 @@
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
 using System.Collections.Generic;
-using ChannelIdT = System.UInt64;
-using ClientIdT = System.UInt16;
 
 namespace TS3Client.Audio
 {
@@ -23,7 +21,7 @@ namespace TS3Client.Audio
 
 	public struct MetaIn
 	{
-		public ClientIdT Sender { get; set; }
+		public ClientId Sender { get; set; }
 		public bool Whisper { get; set; }
 	}
 
@@ -33,8 +31,8 @@ namespace TS3Client.Audio
 		public ulong TargetId { get; set; }
 		public GroupWhisperTarget GroupWhisperTarget { get; set; }
 		public GroupWhisperType GroupWhisperType { get; set; }
-		public IReadOnlyList<ChannelIdT> ChannelIds { get; set; }
-		public IReadOnlyList<ClientIdT> ClientIds { get; set; }
+		public IReadOnlyList<ChannelId> ChannelIds { get; set; }
+		public IReadOnlyList<ClientId> ClientIds { get; set; }
 	}
 
 	public enum TargetSendMode
