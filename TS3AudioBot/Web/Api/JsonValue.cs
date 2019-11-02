@@ -17,7 +17,7 @@ namespace TS3AudioBot.Web.Api
 	{
 		protected Func<T, string> AsString { get; }
 
-		new public T Value => (T)base.Value;
+		public new T Value => (T)base.Value;
 
 		public JsonValue(T value) : base(value) { }
 		public JsonValue(T value, string msg) : base(value, msg) { }

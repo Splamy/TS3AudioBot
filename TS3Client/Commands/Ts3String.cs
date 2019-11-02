@@ -11,8 +11,8 @@ using System;
 using System.Linq;
 using System.Text;
 #if NETCOREAPP3_0
-	using System.Runtime.Intrinsics;
-	using System.Runtime.Intrinsics.X86;
+using System.Runtime.Intrinsics;
+using System.Runtime.Intrinsics.X86;
 #endif
 
 namespace TS3Client.Commands

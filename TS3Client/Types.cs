@@ -11,7 +11,7 @@ using TS3Client.Full;
 
 namespace TS3Client
 {
-	partial struct Uid
+	public partial struct Uid
 	{
 		public static bool IsValid(string uid)
 		{

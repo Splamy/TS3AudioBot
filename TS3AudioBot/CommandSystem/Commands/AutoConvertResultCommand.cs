@@ -40,7 +40,7 @@ namespace TS3AudioBot.CommandSystem.Commands
 
 					return ResultHelper.ToResult(type, result);
 				}
-				catch(Exception ex)
+				catch (Exception ex)
 				{
 					Log.Debug(ex, "Converting command result {0} to {1} failed", Content, type);
 				}

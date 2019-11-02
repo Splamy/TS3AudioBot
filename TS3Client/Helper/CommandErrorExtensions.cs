@@ -13,7 +13,7 @@ using System.Linq;
 
 namespace TS3Client.Messages
 {
-	partial class CommandError
+	public partial class CommandError
 	{
 		public static CommandError TimeOut { get; } = Custom("Connection closed");
 

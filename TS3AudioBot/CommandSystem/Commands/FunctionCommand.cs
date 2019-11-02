@@ -12,11 +12,11 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
+using TS3AudioBot.CommandSystem.CommandResults;
 using TS3AudioBot.Dependency;
 using TS3AudioBot.Localization;
 using TS3AudioBot.Web.Api;
 using TS3Client.Helper;
-using TS3AudioBot.CommandSystem.CommandResults;
 
 namespace TS3AudioBot.CommandSystem.Commands
 {

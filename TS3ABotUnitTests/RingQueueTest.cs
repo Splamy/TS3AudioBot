@@ -5,7 +5,7 @@ using TS3Client.Full;
 namespace TS3ABotUnitTests
 {
 	[TestFixture]
-	class RingQueueTest
+	internal class RingQueueTest
 	{
 
 		[Test]

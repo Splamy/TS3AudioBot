@@ -242,7 +242,7 @@ namespace TS3AudioBot.Web.Api
 			}
 		}
 
-		class OApiSchema
+		private class OApiSchema
 		{
 			public string type { get; set; }
 			public string format { get; set; }

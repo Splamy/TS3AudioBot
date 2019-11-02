@@ -6,7 +6,7 @@ using TS3AudioBot.ResourceFactories.AudioTags;
 namespace TS3ABotUnitTests
 {
 	[TestFixture]
-	class M3uParserTests
+	internal class M3uParserTests
 	{
 		[Test]
 		public void SimpleListTest()

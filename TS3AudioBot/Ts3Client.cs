@@ -739,7 +739,7 @@ namespace TS3AudioBot
 			tsFullClient.Dispose();
 		}
 
-		enum ReconnectType
+		private enum ReconnectType
 		{
 			None,
 			Timeout,
