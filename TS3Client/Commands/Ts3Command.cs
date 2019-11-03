@@ -52,7 +52,10 @@ namespace TS3Client.Commands
 		public virtual Ts3Command Add(ICommandPart addParameter)
 		{
 			cached = false;
-			parameter = parameter ?? new List<ICommandPart>();
+			if(parameter == null)
+				parameter = new List<ICommandPart>();
+			else if (parameter.IsReadOnly)
+				parameter = new List<ICommandPart>(parameter);
 			parameter.Add(addParameter);
 			return this;
 		}

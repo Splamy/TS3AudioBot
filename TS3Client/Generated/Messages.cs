@@ -747,6 +747,39 @@ namespace TS3Client.Messages
 		}
 	}
 
+	public sealed partial class ChannelCreateResponse : IResponse
+	{
+		
+		public string ReturnCode { get; set; }
+
+		public ChannelId ChannelId { get; set; }
+
+		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
+		{
+			switch(name)
+			{
+
+			case "cid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ChannelId = (ChannelId)oval; } break;
+			case "return_code": ReturnCode = (str)Ts3String.Unescape(value); break;
+			}
+
+		}
+
+		public void Expand(IMessage[] to, IEnumerable<string> flds)
+		{
+			var toc = (ChannelCreateResponse[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "cid": foreach(var toi in toc) { toi.ChannelId = ChannelId; } break;
+				}
+			}
+
+		}
+	}
+
 	public sealed partial class ChannelDelete : INotification
 	{
 		public NotificationType NotifyType { get; } = NotificationType.ChannelDelete;

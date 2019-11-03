@@ -28,10 +28,6 @@ namespace TS3Client.Full.Book
 			return GetChannel(self.Channel);
 		}
 
-		// TODO
-		// Many operations can be checked if they were successful (like remove or get).
-		// In cases which this fails we should print an error.
-
 		private void SetServer(Server server)
 		{
 			Server = server;

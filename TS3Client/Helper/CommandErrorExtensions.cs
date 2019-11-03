@@ -50,11 +50,18 @@ namespace TS3Client.Messages
 			return R<T, CommandError>.Err(CommandError.NoResult);
 		}
 
-		public static R<T[], CommandError> UnwrapNotification<T>(in this R<LazyNotification, CommandError> result) where T : class
+		public static R<T[], CommandError> UnwrapNotification<T>(in this R<LazyNotification, CommandError> result) where T : class, IMessage
 		{
 			if (!result.Ok)
 				return result.Error;
 			return R<T[], CommandError>.OkR((T[])result.Value.Notifications);
+		}
+
+		public static R<TI, CommandError> WrapInterface<TC, TI>(in this R<TC, CommandError> result) where TC : class, IMessage, TI
+		{
+			if (!result.Ok)
+				return result.Error;
+			return result.Value;
 		}
 	}
 }

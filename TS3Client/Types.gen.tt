@@ -39,6 +39,7 @@ namespace TS3Client
 	public readonly partial struct <#= type.alias #> :<#= isStr ? "" : " IFormattable," #> IEquatable<<#= type.alias #>>
 	{
 		public static readonly <#= type.alias #> Null = default;
+		public static <#= type.alias #> To(<#= type.backing #> v) => new <#= type.alias #>(v);
 
 		public <#= type.backing #> Value { get; }
 		public <#= type.alias #>(<#= type.backing #> value) { if (value == null) throw new ArgumentNullException(nameof(value)); Value = value; }

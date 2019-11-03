@@ -27,15 +27,15 @@
     <None Include="Generated\ErrorParser.ttinclude" />
     <None Include="Generated\M2BParser.ttinclude" />
     <None Include="Generated\MessageParser.ttinclude" />
-    <None Include="Generated\Types.cs">
+    <None Include="Generated\Util.ttinclude" />
+    <None Include="Ts3BaseClient.gen.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
-      <DependentUpon>Types.tt</DependentUpon>
+      <DependentUpon>Ts3BaseClient.gen.tt</DependentUpon>
     </None>
-    <None Include="Generated\Util.ttinclude" />
-    <None Update="Commands\Ts3CommandSugar.tt">
+    <None Update="Commands\Ts3Command.gen.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
-      <LastGenOutput>Ts3CommandSugar.cs</LastGenOutput>
+      <LastGenOutput>Ts3Command.gen.cs</LastGenOutput>
     </None>
     <None Update="Generated\Book.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
@@ -61,20 +61,24 @@
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>Ts3FullEvents.cs</LastGenOutput>
     </None>
-    <None Update="Generated\Types.tt">
+    <None Update="Types.gen.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
-      <LastGenOutput>Types.cs</LastGenOutput>
+      <LastGenOutput>Types.gen.cs</LastGenOutput>
     </None>
     <None Update="Generated\Versions.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>Versions.cs</LastGenOutput>
     </None>
+    <None Update="Ts3BaseClient.gen.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>Ts3BaseClient.gen.cs</LastGenOutput>
+    </None>
   </ItemGroup>
   <ItemGroup>
-    <Compile Update="Commands\Ts3CommandSugar.cs">
+    <Compile Update="Commands\Ts3Command.gen.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
-      <DependentUpon>Ts3CommandSugar.tt</DependentUpon>
+      <DependentUpon>Ts3Command.gen.tt</DependentUpon>
     </Compile>
     <Compile Update="Generated\Book.cs">
       <DesignTime>True</DesignTime>
@@ -106,15 +110,20 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>Ts3FullEvents.tt</DependentUpon>
     </Compile>
-    <Compile Update="Generated\Types.cs">
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-      <DependentUpon>Types.tt</DependentUpon>
-    </Compile>
     <Compile Update="Generated\Versions.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
       <DependentUpon>Versions.tt</DependentUpon>
+    </Compile>
+    <Compile Update="Ts3BaseClient.gen.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Ts3BaseClient.gen.tt</DependentUpon>
+    </Compile>
+    <Compile Update="Types.gen.cs">
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Types.gen.tt</DependentUpon>
     </Compile>
   </ItemGroup>
   <ItemGroup>

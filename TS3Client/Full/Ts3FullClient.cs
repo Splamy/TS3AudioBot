@@ -15,6 +15,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using TS3Client.Audio;
 using TS3Client.Commands;
+using TS3Client.Full.Book;
 using TS3Client.Helper;
 using TS3Client.Messages;
 using CmdR = System.E<TS3Client.Messages.CommandError>;
@@ -356,7 +357,7 @@ namespace TS3Client.Full
 		/// </summary>
 		/// <param name="command">The command to send.</param>
 		public CmdR SendNoResponsed(Ts3Command command)
-			=> Send<ResponseVoid>(command.ExpectsResponse(false));
+			=> SendVoid(command.ExpectsResponse(false));
 
 		public override R<T[], CommandError> SendHybrid<T>(Ts3Command com, NotificationType type)
 			=> SendNotifyCommand(com, type).UnwrapNotification<T>();
@@ -458,18 +459,18 @@ namespace TS3Client.Full
 		#region FULLCLIENT SPECIFIC COMMANDS
 
 		public CmdR ChangeIsChannelCommander(bool isChannelCommander)
-			=> Send<ResponseVoid>(new Ts3Command("clientupdate") {
+			=> SendVoid(new Ts3Command("clientupdate") {
 				{ "client_is_channel_commander", isChannelCommander },
 			});
 
 		public CmdR RequestTalkPower(string message = null)
-			=> Send<ResponseVoid>(new Ts3Command("clientupdate") {
+			=> SendVoid(new Ts3Command("clientupdate") {
 				{ "client_talk_request", true },
 				{ "client_talk_request_msg", message },
 			});
 
 		public CmdR CancelTalkPowerRequest()
-			=> Send<ResponseVoid>(new Ts3Command("clientupdate") {
+			=> SendVoid(new Ts3Command("clientupdate") {
 				{ "client_talk_request", false },
 			});
 
@@ -506,10 +507,10 @@ namespace TS3Client.Full
 			});
 
 		public CmdR ChannelSubscribeAll()
-			=> Send<ResponseVoid>(new Ts3Command("channelsubscribeall"));
+			=> SendVoid(new Ts3Command("channelsubscribeall"));
 
 		public CmdR ChannelUnsubscribeAll()
-			=> Send<ResponseVoid>(new Ts3Command("channelunsubscribeall"));
+			=> SendVoid(new Ts3Command("channelunsubscribeall"));
 
 		public CmdR PokeClient(string message, ushort clientId)
 			=> SendNoResponsed(new Ts3Command("clientpoke") {
@@ -596,13 +597,28 @@ namespace TS3Client.Full
 				NotificationType.ServerUpdated).UnwrapNotification<ServerUpdated>().WrapSingle();
 
 		public CmdR SendPluginCommand(string name, string data, PluginTargetMode targetmode)
-			=> Send<ResponseVoid>(new Ts3Command("plugincmd") {
+			=> SendVoid(new Ts3Command("plugincmd") {
 				{ "name", name },
 				{ "data", data },
 				{ "targetmode", (int)targetmode },
-			}).OnlyError();
+			});
 
 		// Splitted base commands
+
+		public override R<IChannelCreateResponse, CommandError> ChannelCreate(string name,
+			string namePhonetic = null, string topic = null, string description = null, string password = null,
+			Codec? codec = null, int? codecQuality = null, int? codecLatencyFactor = null, bool? codecEncrypted = null,
+			int? maxClients = null, int? maxFamilyClients = null, bool? maxClientsUnlimited = null,
+			bool? maxFamilyClientsUnlimited = null, bool? maxFamilyClientsInherited = null, ChannelId? order = null,
+			ChannelId? parent = null, ChannelType? type = null, TimeSpan? deleteDelay = null, int? neededTalkPower = null)
+			=> SendNotifyCommand(ChannelOp("channelcreate", null, name, namePhonetic, topic, description,
+				password, codec, codecQuality, codecLatencyFactor, codecEncrypted,
+				maxClients, maxFamilyClients, maxClientsUnlimited, maxFamilyClientsUnlimited,
+				maxFamilyClientsInherited, order, parent, type, deleteDelay, neededTalkPower),
+				NotificationType.ChannelCreated)
+				.UnwrapNotification<ChannelCreated>()
+				.WrapSingle()
+				.WrapInterface<ChannelCreated, IChannelCreateResponse>();
 
 		public override R<ServerGroupAddResponse, CommandError> ServerGroupAdd(string name, GroupType? type = null)
 		{

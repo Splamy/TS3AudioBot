@@ -16,6 +16,7 @@ using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using TS3Client.Commands;
+using TS3Client.Full.Book;
 using TS3Client.Helper;
 using TS3Client.Messages;
 using CmdR = System.E<TS3Client.Messages.CommandError>;
@@ -230,28 +231,41 @@ namespace TS3Client.Query
 			=> RegisterNotification(TargetTypeString[(int)ReasonIdentifier.Server], null);
 
 		private CmdR RegisterNotification(string target, ChannelId? channel)
-			=> Send<ResponseVoid>(new Ts3Command("servernotifyregister") {
+			=> SendVoid(new Ts3Command("servernotifyregister") {
 				{ "event", target },
 				{ "id", channel },
 			});
 
 		public CmdR Login(string username, string password)
-			=> Send<ResponseVoid>(new Ts3Command("login") {
+			=> SendVoid(new Ts3Command("login") {
 				{ "client_login_name", username },
 				{ "client_login_password", password },
 			});
 
 		public CmdR UseServer(int serverId)
-			=> Send<ResponseVoid>(new Ts3Command("use") {
+			=> SendVoid(new Ts3Command("use") {
 				{ "sid", serverId },
 			});
 
 		public CmdR UseServerPort(ushort port)
-			=> Send<ResponseVoid>(new Ts3Command("use") {
+			=> SendVoid(new Ts3Command("use") {
 				{ "port", port },
 			});
 
 		// Splitted base commands
+
+		public override R<IChannelCreateResponse, CommandError> ChannelCreate(string name,
+			string namePhonetic = null, string topic = null, string description = null, string password = null,
+			Codec? codec = null, int? codecQuality = null, int? codecLatencyFactor = null, bool? codecEncrypted = null,
+			int? maxClients = null, int? maxFamilyClients = null, bool? maxClientsUnlimited = null,
+			bool? maxFamilyClientsUnlimited = null, bool? maxFamilyClientsInherited = null, ChannelId? order = null,
+			ChannelId? parent = null, ChannelType? type = null, TimeSpan? deleteDelay = null, int? neededTalkPower = null)
+			=> Send<ChannelCreateResponse>(ChannelOp("channelcreate", null, name, namePhonetic, topic, description,
+				password, codec, codecQuality, codecLatencyFactor, codecEncrypted,
+				maxClients, maxFamilyClients, maxClientsUnlimited, maxFamilyClientsUnlimited,
+				maxFamilyClientsInherited, order, parent, type, deleteDelay, neededTalkPower))
+				.WrapSingle()
+				.WrapInterface<ChannelCreateResponse, IChannelCreateResponse>();
 
 		public override R<ServerGroupAddResponse, CommandError> ServerGroupAdd(string name, GroupType? type = null)
 			=> Send<ServerGroupAddResponse>(new Ts3Command("servergroupadd") {
