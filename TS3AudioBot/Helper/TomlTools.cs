@@ -175,6 +175,8 @@ namespace TS3AudioBot.Helper
 
 		public static string SerializeTime(TimeSpan time)
 		{
+			if(time.TotalMilliseconds < 1)
+				return "0s";
 			var strb = new StringBuilder();
 			if (time.TotalDays >= 1)
 			{

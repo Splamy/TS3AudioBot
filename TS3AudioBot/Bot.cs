@@ -40,6 +40,7 @@ namespace TS3AudioBot
 
 		private readonly ConfBot config;
 		private TickWorker idleTickWorker;
+		private TickWorker aloneTickWorker;
 
 		internal object SyncRoot { get; } = new object();
 		internal bool IsDisposed { get; private set; }
@@ -278,7 +279,46 @@ namespace TS3AudioBot
 
 		private void OnAloneChanged(object sender, AloneChanged e)
 		{
+			string script;
+			TimeSpan delay;
+			if (e.Alone)
+			{
+				script = config.Events.OnAlone.Value;
+				delay = config.Events.AloneDelay.Value;
+			}
+			else
+			{
+				script = config.Events.OnParty.Value;
+				delay = config.Events.PartyDelay.Value;
+			}
+			if (string.IsNullOrEmpty(script))
+				return;
 
+			void RunEvent()
+			{
+				var info = CreateExecInfo();
+				CallScript(info, script, false, true);
+			};
+
+			SetAloneTickWorker(null);
+			if (delay <= TimeSpan.Zero)
+			{
+				RunEvent();
+			}
+			else
+			{
+				var worker = TickPool.RegisterTickOnce(RunEvent);
+				SetAloneTickWorker(worker);
+			}
+		}
+
+		private void SetAloneTickWorker(TickWorker worker)
+		{
+			var oldWoker = Interlocked.Exchange(ref aloneTickWorker, worker);
+			if (oldWoker != null)
+			{
+				TickPool.UnregisterTicker(oldWoker);
+			}
 		}
 
 		private void LoggedUpdateBotStatus(object sender, EventArgs e)

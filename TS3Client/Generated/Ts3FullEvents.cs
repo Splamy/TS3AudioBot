@@ -191,8 +191,8 @@ namespace TS3Client.Full
 				var ev = OnEachBanList;
 				var book = Book;
 				foreach(var that in ntfc) {
-					ev?.Invoke(this, that);
 					ProcessEachBanList(that);
+					ev?.Invoke(this, that);
 				}
 				break;
 			}
@@ -204,8 +204,8 @@ namespace TS3Client.Full
 				var ev = OnEachChannelChanged;
 				var book = Book;
 				foreach(var that in ntfc) {
-					ev?.Invoke(this, that);
 					ProcessEachChannelChanged(that);
+					ev?.Invoke(this, that);
 				}
 				break;
 			}
@@ -217,8 +217,8 @@ namespace TS3Client.Full
 				var ev = OnEachChannelClientPermList;
 				var book = Book;
 				foreach(var that in ntfc) {
-					ev?.Invoke(this, that);
 					ProcessEachChannelClientPermList(that);
+					ev?.Invoke(this, that);
 				}
 				break;
 			}
@@ -230,9 +230,9 @@ namespace TS3Client.Full
 				var ev = OnEachChannelCreated;
 				var book = Book;
 				foreach(var that in ntfc) {
-					ev?.Invoke(this, that);
-					ProcessEachChannelCreated(that);
 					book?.UpdateChannelCreated(that);
+					ProcessEachChannelCreated(that);
+					ev?.Invoke(this, that);
 				}
 				break;
 			}
@@ -244,9 +244,9 @@ namespace TS3Client.Full
 				var ev = OnEachChannelDeleted;
 				var book = Book;
 				foreach(var that in ntfc) {
-					ev?.Invoke(this, that);
-					ProcessEachChannelDeleted(that);
 					book?.UpdateChannelDeleted(that);
+					ProcessEachChannelDeleted(that);
+					ev?.Invoke(this, that);
 				}
 				break;
 			}
@@ -258,8 +258,8 @@ namespace TS3Client.Full
 				var ev = OnEachChannelDescriptionChanged;
 				var book = Book;
 				foreach(var that in ntfc) {
-					ev?.Invoke(this, that);
 					ProcessEachChannelDescriptionChanged(that);
+					ev?.Invoke(this, that);
 				}
 				break;
 			}
@@ -271,9 +271,9 @@ namespace TS3Client.Full
 				var ev = OnEachChannelEdited;
 				var book = Book;
 				foreach(var that in ntfc) {
-					ev?.Invoke(this, that);
-					ProcessEachChannelEdited(that);
 					book?.UpdateChannelEdited(that);
+					ProcessEachChannelEdited(that);
+					ev?.Invoke(this, that);
 				}
 				break;
 			}
@@ -285,8 +285,8 @@ namespace TS3Client.Full
 				var ev = OnEachChannelGroupClientList;
 				var book = Book;
 				foreach(var that in ntfc) {
-					ev?.Invoke(this, that);
 					ProcessEachChannelGroupClientList(that);
+					ev?.Invoke(this, that);
 				}
 				break;
 			}
@@ -298,8 +298,8 @@ namespace TS3Client.Full
 				var ev = OnEachChannelGroupList;
 				var book = Book;
 				foreach(var that in ntfc) {
-					ev?.Invoke(this, that);
 					ProcessEachChannelGroupList(that);
+					ev?.Invoke(this, that);
 				}
 				break;
 			}
@@ -311,8 +311,8 @@ namespace TS3Client.Full
 				var ev = OnEachChannelGroupPermList;
 				var book = Book;
 				foreach(var that in ntfc) {
-					ev?.Invoke(this, that);
 					ProcessEachChannelGroupPermList(that);
+					ev?.Invoke(this, that);
 				}
 				break;
 			}
@@ -324,9 +324,9 @@ namespace TS3Client.Full
 				var ev = OnEachChannelList;
 				var book = Book;
 				foreach(var that in ntfc) {
-					ev?.Invoke(this, that);
-					ProcessEachChannelList(that);
 					book?.UpdateChannelList(that);
+					ProcessEachChannelList(that);
+					ev?.Invoke(this, that);
 				}
 				break;
 			}
@@ -338,8 +338,8 @@ namespace TS3Client.Full
 				var ev = OnEachChannelListFinished;
 				var book = Book;
 				foreach(var that in ntfc) {
-					ev?.Invoke(this, that);
 					ProcessEachChannelListFinished(that);
+					ev?.Invoke(this, that);
 				}
 				break;
 			}
@@ -351,9 +351,9 @@ namespace TS3Client.Full
 				var ev = OnEachChannelMoved;
 				var book = Book;
 				foreach(var that in ntfc) {
-					ev?.Invoke(this, that);
-					ProcessEachChannelMoved(that);
 					book?.UpdateChannelMoved(that);
+					ProcessEachChannelMoved(that);
+					ev?.Invoke(this, that);
 				}
 				break;
 			}
@@ -365,8 +365,8 @@ namespace TS3Client.Full
 				var ev = OnEachChannelPasswordChanged;
 				var book = Book;
 				foreach(var that in ntfc) {
-					ev?.Invoke(this, that);
 					ProcessEachChannelPasswordChanged(that);
+					ev?.Invoke(this, that);
 				}
 				break;
 			}
@@ -378,9 +378,9 @@ namespace TS3Client.Full
 				var ev = OnEachChannelPermissionHints;
 				var book = Book;
 				foreach(var that in ntfc) {
-					ev?.Invoke(this, that);
-					ProcessEachChannelPermissionHints(that);
 					book?.UpdateChannelPermissionHints(that);
+					ProcessEachChannelPermissionHints(that);
+					ev?.Invoke(this, that);
 				}
 				break;
 			}
@@ -392,8 +392,8 @@ namespace TS3Client.Full
 				var ev = OnEachChannelPermList;
 				var book = Book;
 				foreach(var that in ntfc) {
-					ev?.Invoke(this, that);
 					ProcessEachChannelPermList(that);
+					ev?.Invoke(this, that);
 				}
 				break;
 			}
@@ -405,9 +405,9 @@ namespace TS3Client.Full
 				var ev = OnEachChannelSubscribed;
 				var book = Book;
 				foreach(var that in ntfc) {
-					ev?.Invoke(this, that);
-					ProcessEachChannelSubscribed(that);
 					book?.UpdateChannelSubscribed(that);
+					ProcessEachChannelSubscribed(that);
+					ev?.Invoke(this, that);
 				}
 				break;
 			}
@@ -419,9 +419,9 @@ namespace TS3Client.Full
 				var ev = OnEachChannelUnsubscribed;
 				var book = Book;
 				foreach(var that in ntfc) {
-					ev?.Invoke(this, that);
-					ProcessEachChannelUnsubscribed(that);
 					book?.UpdateChannelUnsubscribed(that);
+					ProcessEachChannelUnsubscribed(that);
+					ev?.Invoke(this, that);
 				}
 				break;
 			}
@@ -433,9 +433,9 @@ namespace TS3Client.Full
 				var ev = OnEachClientChannelGroupChanged;
 				var book = Book;
 				foreach(var that in ntfc) {
-					ev?.Invoke(this, that);
-					ProcessEachClientChannelGroupChanged(that);
 					book?.UpdateClientChannelGroupChanged(that);
+					ProcessEachClientChannelGroupChanged(that);
+					ev?.Invoke(this, that);
 				}
 				break;
 			}
@@ -447,8 +447,8 @@ namespace TS3Client.Full
 				var ev = OnEachClientChatClosed;
 				var book = Book;
 				foreach(var that in ntfc) {
-					ev?.Invoke(this, that);
 					ProcessEachClientChatClosed(that);
+					ev?.Invoke(this, that);
 				}
 				break;
 			}
@@ -460,8 +460,8 @@ namespace TS3Client.Full
 				var ev = OnEachClientChatComposing;
 				var book = Book;
 				foreach(var that in ntfc) {
-					ev?.Invoke(this, that);
 					ProcessEachClientChatComposing(that);
+					ev?.Invoke(this, that);
 				}
 				break;
 			}
@@ -473,9 +473,9 @@ namespace TS3Client.Full
 				var ev = OnEachClientConnectionInfo;
 				var book = Book;
 				foreach(var that in ntfc) {
-					ev?.Invoke(this, that);
-					ProcessEachClientConnectionInfo(that);
 					book?.UpdateClientConnectionInfo(that);
+					ProcessEachClientConnectionInfo(that);
+					ev?.Invoke(this, that);
 				}
 				break;
 			}
@@ -487,8 +487,8 @@ namespace TS3Client.Full
 				var ev = OnEachClientConnectionInfoUpdateRequest;
 				var book = Book;
 				foreach(var that in ntfc) {
-					ev?.Invoke(this, that);
 					ProcessEachClientConnectionInfoUpdateRequest(that);
+					ev?.Invoke(this, that);
 				}
 				break;
 			}
@@ -500,8 +500,8 @@ namespace TS3Client.Full
 				var ev = OnEachClientDbFind;
 				var book = Book;
 				foreach(var that in ntfc) {
-					ev?.Invoke(this, that);
 					ProcessEachClientDbFind(that);
+					ev?.Invoke(this, that);
 				}
 				break;
 			}
@@ -513,8 +513,8 @@ namespace TS3Client.Full
 				var ev = OnEachClientDbIdFromUid;
 				var book = Book;
 				foreach(var that in ntfc) {
-					ev?.Invoke(this, that);
 					ProcessEachClientDbIdFromUid(that);
+					ev?.Invoke(this, that);
 				}
 				break;
 			}
@@ -526,8 +526,8 @@ namespace TS3Client.Full
 				var ev = OnEachClientDbList;
 				var book = Book;
 				foreach(var that in ntfc) {
-					ev?.Invoke(this, that);
 					ProcessEachClientDbList(that);
+					ev?.Invoke(this, that);
 				}
 				break;
 			}
@@ -539,9 +539,9 @@ namespace TS3Client.Full
 				var ev = OnEachClientEnterView;
 				var book = Book;
 				foreach(var that in ntfc) {
-					ev?.Invoke(this, that);
-					ProcessEachClientEnterView(that);
 					book?.UpdateClientEnterView(that);
+					ProcessEachClientEnterView(that);
+					ev?.Invoke(this, that);
 				}
 				break;
 			}
@@ -553,8 +553,8 @@ namespace TS3Client.Full
 				var ev = OnEachClientIds;
 				var book = Book;
 				foreach(var that in ntfc) {
-					ev?.Invoke(this, that);
 					ProcessEachClientIds(that);
+					ev?.Invoke(this, that);
 				}
 				break;
 			}
@@ -566,9 +566,9 @@ namespace TS3Client.Full
 				var ev = OnEachClientLeftView;
 				var book = Book;
 				foreach(var that in ntfc) {
-					ev?.Invoke(this, that);
-					ProcessEachClientLeftView(that);
 					book?.UpdateClientLeftView(that);
+					ProcessEachClientLeftView(that);
+					ev?.Invoke(this, that);
 				}
 				break;
 			}
@@ -580,9 +580,9 @@ namespace TS3Client.Full
 				var ev = OnEachClientMoved;
 				var book = Book;
 				foreach(var that in ntfc) {
-					ev?.Invoke(this, that);
-					ProcessEachClientMoved(that);
 					book?.UpdateClientMoved(that);
+					ProcessEachClientMoved(that);
+					ev?.Invoke(this, that);
 				}
 				break;
 			}
@@ -594,8 +594,8 @@ namespace TS3Client.Full
 				var ev = OnEachClientNameFromDbId;
 				var book = Book;
 				foreach(var that in ntfc) {
-					ev?.Invoke(this, that);
 					ProcessEachClientNameFromDbId(that);
+					ev?.Invoke(this, that);
 				}
 				break;
 			}
@@ -607,8 +607,8 @@ namespace TS3Client.Full
 				var ev = OnEachClientNameFromUid;
 				var book = Book;
 				foreach(var that in ntfc) {
-					ev?.Invoke(this, that);
 					ProcessEachClientNameFromUid(that);
+					ev?.Invoke(this, that);
 				}
 				break;
 			}
@@ -620,8 +620,8 @@ namespace TS3Client.Full
 				var ev = OnEachClientNeededPermissions;
 				var book = Book;
 				foreach(var that in ntfc) {
-					ev?.Invoke(this, that);
 					ProcessEachClientNeededPermissions(that);
+					ev?.Invoke(this, that);
 				}
 				break;
 			}
@@ -633,9 +633,9 @@ namespace TS3Client.Full
 				var ev = OnEachClientPermissionHints;
 				var book = Book;
 				foreach(var that in ntfc) {
-					ev?.Invoke(this, that);
-					ProcessEachClientPermissionHints(that);
 					book?.UpdateClientPermissionHints(that);
+					ProcessEachClientPermissionHints(that);
+					ev?.Invoke(this, that);
 				}
 				break;
 			}
@@ -647,8 +647,8 @@ namespace TS3Client.Full
 				var ev = OnEachClientPermList;
 				var book = Book;
 				foreach(var that in ntfc) {
-					ev?.Invoke(this, that);
 					ProcessEachClientPermList(that);
+					ev?.Invoke(this, that);
 				}
 				break;
 			}
@@ -660,8 +660,8 @@ namespace TS3Client.Full
 				var ev = OnEachClientPoke;
 				var book = Book;
 				foreach(var that in ntfc) {
-					ev?.Invoke(this, that);
 					ProcessEachClientPoke(that);
+					ev?.Invoke(this, that);
 				}
 				break;
 			}
@@ -673,9 +673,9 @@ namespace TS3Client.Full
 				var ev = OnEachClientServerGroupAdded;
 				var book = Book;
 				foreach(var that in ntfc) {
-					ev?.Invoke(this, that);
-					ProcessEachClientServerGroupAdded(that);
 					book?.UpdateClientServerGroupAdded(that);
+					ProcessEachClientServerGroupAdded(that);
+					ev?.Invoke(this, that);
 				}
 				break;
 			}
@@ -687,9 +687,9 @@ namespace TS3Client.Full
 				var ev = OnEachClientServerGroupRemoved;
 				var book = Book;
 				foreach(var that in ntfc) {
-					ev?.Invoke(this, that);
-					ProcessEachClientServerGroupRemoved(that);
 					book?.UpdateClientServerGroupRemoved(that);
+					ProcessEachClientServerGroupRemoved(that);
+					ev?.Invoke(this, that);
 				}
 				break;
 			}
@@ -701,8 +701,8 @@ namespace TS3Client.Full
 				var ev = OnEachClientSetServerQueryLogin;
 				var book = Book;
 				foreach(var that in ntfc) {
-					ev?.Invoke(this, that);
 					ProcessEachClientSetServerQueryLogin(that);
+					ev?.Invoke(this, that);
 				}
 				break;
 			}
@@ -714,8 +714,8 @@ namespace TS3Client.Full
 				var ev = OnEachClientUidFromClid;
 				var book = Book;
 				foreach(var that in ntfc) {
-					ev?.Invoke(this, that);
 					ProcessEachClientUidFromClid(that);
+					ev?.Invoke(this, that);
 				}
 				break;
 			}
@@ -727,9 +727,9 @@ namespace TS3Client.Full
 				var ev = OnEachClientUpdated;
 				var book = Book;
 				foreach(var that in ntfc) {
-					ev?.Invoke(this, that);
-					ProcessEachClientUpdated(that);
 					book?.UpdateClientUpdated(that);
+					ProcessEachClientUpdated(that);
+					ev?.Invoke(this, that);
 				}
 				break;
 			}
@@ -741,8 +741,8 @@ namespace TS3Client.Full
 				var ev = OnEachCommandError;
 				var book = Book;
 				foreach(var that in ntfc) {
-					ev?.Invoke(this, that);
 					ProcessEachCommandError(that);
+					ev?.Invoke(this, that);
 				}
 				break;
 			}
@@ -754,8 +754,8 @@ namespace TS3Client.Full
 				var ev = OnEachComplainList;
 				var book = Book;
 				foreach(var that in ntfc) {
-					ev?.Invoke(this, that);
 					ProcessEachComplainList(that);
+					ev?.Invoke(this, that);
 				}
 				break;
 			}
@@ -767,8 +767,8 @@ namespace TS3Client.Full
 				var ev = OnEachFileDownload;
 				var book = Book;
 				foreach(var that in ntfc) {
-					ev?.Invoke(this, that);
 					ProcessEachFileDownload(that);
+					ev?.Invoke(this, that);
 				}
 				break;
 			}
@@ -780,8 +780,8 @@ namespace TS3Client.Full
 				var ev = OnEachFileInfo;
 				var book = Book;
 				foreach(var that in ntfc) {
-					ev?.Invoke(this, that);
 					ProcessEachFileInfo(that);
+					ev?.Invoke(this, that);
 				}
 				break;
 			}
@@ -793,8 +793,8 @@ namespace TS3Client.Full
 				var ev = OnEachFileList;
 				var book = Book;
 				foreach(var that in ntfc) {
-					ev?.Invoke(this, that);
 					ProcessEachFileList(that);
+					ev?.Invoke(this, that);
 				}
 				break;
 			}
@@ -806,8 +806,8 @@ namespace TS3Client.Full
 				var ev = OnEachFileListFinished;
 				var book = Book;
 				foreach(var that in ntfc) {
-					ev?.Invoke(this, that);
 					ProcessEachFileListFinished(that);
+					ev?.Invoke(this, that);
 				}
 				break;
 			}
@@ -819,8 +819,8 @@ namespace TS3Client.Full
 				var ev = OnEachFileTransfer;
 				var book = Book;
 				foreach(var that in ntfc) {
-					ev?.Invoke(this, that);
 					ProcessEachFileTransfer(that);
+					ev?.Invoke(this, that);
 				}
 				break;
 			}
@@ -832,8 +832,8 @@ namespace TS3Client.Full
 				var ev = OnEachFileTransferStatus;
 				var book = Book;
 				foreach(var that in ntfc) {
-					ev?.Invoke(this, that);
 					ProcessEachFileTransferStatus(that);
+					ev?.Invoke(this, that);
 				}
 				break;
 			}
@@ -845,8 +845,8 @@ namespace TS3Client.Full
 				var ev = OnEachFileUpload;
 				var book = Book;
 				foreach(var that in ntfc) {
-					ev?.Invoke(this, that);
 					ProcessEachFileUpload(that);
+					ev?.Invoke(this, that);
 				}
 				break;
 			}
@@ -858,8 +858,8 @@ namespace TS3Client.Full
 				var ev = OnEachInitIvExpand;
 				var book = Book;
 				foreach(var that in ntfc) {
-					ev?.Invoke(this, that);
 					ProcessEachInitIvExpand(that);
+					ev?.Invoke(this, that);
 				}
 				break;
 			}
@@ -871,8 +871,8 @@ namespace TS3Client.Full
 				var ev = OnEachInitIvExpand2;
 				var book = Book;
 				foreach(var that in ntfc) {
-					ev?.Invoke(this, that);
 					ProcessEachInitIvExpand2(that);
+					ev?.Invoke(this, that);
 				}
 				break;
 			}
@@ -884,9 +884,9 @@ namespace TS3Client.Full
 				var ev = OnEachInitServer;
 				var book = Book;
 				foreach(var that in ntfc) {
-					ev?.Invoke(this, that);
-					ProcessEachInitServer(that);
 					book?.UpdateInitServer(that);
+					ProcessEachInitServer(that);
+					ev?.Invoke(this, that);
 				}
 				break;
 			}
@@ -898,8 +898,8 @@ namespace TS3Client.Full
 				var ev = OnEachOfflineMessage;
 				var book = Book;
 				foreach(var that in ntfc) {
-					ev?.Invoke(this, that);
 					ProcessEachOfflineMessage(that);
+					ev?.Invoke(this, that);
 				}
 				break;
 			}
@@ -911,8 +911,8 @@ namespace TS3Client.Full
 				var ev = OnEachOfflineMessageList;
 				var book = Book;
 				foreach(var that in ntfc) {
-					ev?.Invoke(this, that);
 					ProcessEachOfflineMessageList(that);
+					ev?.Invoke(this, that);
 				}
 				break;
 			}
@@ -924,8 +924,8 @@ namespace TS3Client.Full
 				var ev = OnEachPermFind;
 				var book = Book;
 				foreach(var that in ntfc) {
-					ev?.Invoke(this, that);
 					ProcessEachPermFind(that);
+					ev?.Invoke(this, that);
 				}
 				break;
 			}
@@ -937,8 +937,8 @@ namespace TS3Client.Full
 				var ev = OnEachPermList;
 				var book = Book;
 				foreach(var that in ntfc) {
-					ev?.Invoke(this, that);
 					ProcessEachPermList(that);
+					ev?.Invoke(this, that);
 				}
 				break;
 			}
@@ -950,8 +950,8 @@ namespace TS3Client.Full
 				var ev = OnEachPermOverview;
 				var book = Book;
 				foreach(var that in ntfc) {
-					ev?.Invoke(this, that);
 					ProcessEachPermOverview(that);
+					ev?.Invoke(this, that);
 				}
 				break;
 			}
@@ -963,8 +963,8 @@ namespace TS3Client.Full
 				var ev = OnEachPluginCommand;
 				var book = Book;
 				foreach(var that in ntfc) {
-					ev?.Invoke(this, that);
 					ProcessEachPluginCommand(that);
+					ev?.Invoke(this, that);
 				}
 				break;
 			}
@@ -976,8 +976,8 @@ namespace TS3Client.Full
 				var ev = OnEachServerConnectionInfo;
 				var book = Book;
 				foreach(var that in ntfc) {
-					ev?.Invoke(this, that);
 					ProcessEachServerConnectionInfo(that);
+					ev?.Invoke(this, that);
 				}
 				break;
 			}
@@ -989,9 +989,9 @@ namespace TS3Client.Full
 				var ev = OnEachServerEdited;
 				var book = Book;
 				foreach(var that in ntfc) {
-					ev?.Invoke(this, that);
-					ProcessEachServerEdited(that);
 					book?.UpdateServerEdited(that);
+					ProcessEachServerEdited(that);
+					ev?.Invoke(this, that);
 				}
 				break;
 			}
@@ -1003,8 +1003,8 @@ namespace TS3Client.Full
 				var ev = OnEachServerGroupClientList;
 				var book = Book;
 				foreach(var that in ntfc) {
-					ev?.Invoke(this, that);
 					ProcessEachServerGroupClientList(that);
+					ev?.Invoke(this, that);
 				}
 				break;
 			}
@@ -1016,9 +1016,9 @@ namespace TS3Client.Full
 				var ev = OnEachServerGroupList;
 				var book = Book;
 				foreach(var that in ntfc) {
-					ev?.Invoke(this, that);
-					ProcessEachServerGroupList(that);
 					book?.UpdateServerGroupList(that);
+					ProcessEachServerGroupList(that);
+					ev?.Invoke(this, that);
 				}
 				break;
 			}
@@ -1030,8 +1030,8 @@ namespace TS3Client.Full
 				var ev = OnEachServerGroupPermList;
 				var book = Book;
 				foreach(var that in ntfc) {
-					ev?.Invoke(this, that);
 					ProcessEachServerGroupPermList(that);
+					ev?.Invoke(this, that);
 				}
 				break;
 			}
@@ -1043,8 +1043,8 @@ namespace TS3Client.Full
 				var ev = OnEachServerGroupsByClientId;
 				var book = Book;
 				foreach(var that in ntfc) {
-					ev?.Invoke(this, that);
 					ProcessEachServerGroupsByClientId(that);
+					ev?.Invoke(this, that);
 				}
 				break;
 			}
@@ -1056,8 +1056,8 @@ namespace TS3Client.Full
 				var ev = OnEachServerLog;
 				var book = Book;
 				foreach(var that in ntfc) {
-					ev?.Invoke(this, that);
 					ProcessEachServerLog(that);
+					ev?.Invoke(this, that);
 				}
 				break;
 			}
@@ -1069,8 +1069,8 @@ namespace TS3Client.Full
 				var ev = OnEachServerTempPasswordList;
 				var book = Book;
 				foreach(var that in ntfc) {
-					ev?.Invoke(this, that);
 					ProcessEachServerTempPasswordList(that);
+					ev?.Invoke(this, that);
 				}
 				break;
 			}
@@ -1082,8 +1082,8 @@ namespace TS3Client.Full
 				var ev = OnEachServerUpdated;
 				var book = Book;
 				foreach(var that in ntfc) {
-					ev?.Invoke(this, that);
 					ProcessEachServerUpdated(that);
+					ev?.Invoke(this, that);
 				}
 				break;
 			}
@@ -1095,8 +1095,8 @@ namespace TS3Client.Full
 				var ev = OnEachTextMessage;
 				var book = Book;
 				foreach(var that in ntfc) {
-					ev?.Invoke(this, that);
 					ProcessEachTextMessage(that);
+					ev?.Invoke(this, that);
 				}
 				break;
 			}
@@ -1108,8 +1108,8 @@ namespace TS3Client.Full
 				var ev = OnEachTokenAdd;
 				var book = Book;
 				foreach(var that in ntfc) {
-					ev?.Invoke(this, that);
 					ProcessEachTokenAdd(that);
+					ev?.Invoke(this, that);
 				}
 				break;
 			}
@@ -1121,8 +1121,8 @@ namespace TS3Client.Full
 				var ev = OnEachTokenList;
 				var book = Book;
 				foreach(var that in ntfc) {
-					ev?.Invoke(this, that);
 					ProcessEachTokenList(that);
+					ev?.Invoke(this, that);
 				}
 				break;
 			}
@@ -1134,8 +1134,8 @@ namespace TS3Client.Full
 				var ev = OnEachTokenUsed;
 				var book = Book;
 				foreach(var that in ntfc) {
-					ev?.Invoke(this, that);
 					ProcessEachTokenUsed(that);
+					ev?.Invoke(this, that);
 				}
 				break;
 			}

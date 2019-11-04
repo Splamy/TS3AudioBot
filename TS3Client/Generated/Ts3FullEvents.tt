@@ -66,13 +66,13 @@ namespace TS3Client.Full
 				On<#= ntfy.name #>?.Invoke(this, ntfc);
 				var ev = OnEach<#= ntfy.name #>;
 				var book = Book;
-				foreach(var that in ntfc) {
-					ev?.Invoke(this, that);
-					ProcessEach<#= ntfy.name #>(that);<#
+				foreach(var that in ntfc) {<#
 					var bookitem = genm2b.rule.FirstOrDefault(x => x.from == ntfy.name);
 					if(bookitem != null) {
 					#>
 					book?.Update<#= ntfy.name #>(that);<# } #>
+					ProcessEach<#= ntfy.name #>(that);
+					ev?.Invoke(this, that);
 				}
 				break;
 			}

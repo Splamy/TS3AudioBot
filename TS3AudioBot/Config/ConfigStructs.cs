@@ -266,8 +266,13 @@ namespace TS3AudioBot.Config
 			"Specifies how long the bot has to be idle until the 'onidle' event gets fired.\n" +
 			"You can specify the time in the ISO-8601 format with quotation marks \"PT30S\" or like: 15s, 1h, 3m30s");
 		public ConfigValue<string> OnAlone { get; } = new ConfigValue<string>("onalone", "",
-			"Called when the bot is left alone in his channel for a certain amount of time.");
+			"Called when the last client leaves the channel of the bot. Delay can be specified");
 		public ConfigValue<TimeSpan> AloneDelay { get; } = new ConfigValue<TimeSpan>("alone_delay", TimeSpan.Zero,
+			"Specifies how long the bot has to be alone until the 'onalone' event gets fired.\n" +
+			"You can specify the time in the ISO-8601 format with quotation marks \"PT30S\" or like: 15s, 1h, 3m30s");
+		public ConfigValue<string> OnParty { get; } = new ConfigValue<string>("onparty", "",
+			"Called when the bot was alone and a client joins his channel. Delay can be specified.");
+		public ConfigValue<TimeSpan> PartyDelay { get; } = new ConfigValue<TimeSpan>("party_delay", TimeSpan.Zero,
 			"Specifies how long the bot has to be alone until the 'onalone' event gets fired.\n" +
 			"You can specify the time in the ISO-8601 format with quotation marks \"PT30S\" or like: 15s, 1h, 3m30s");
 	}

@@ -61,6 +61,7 @@ namespace TS3AudioBot
 		private readonly TimedCache<ClientDbId, ClientDbInfo> clientDbNames = new TimedCache<ClientDbId, ClientDbInfo>();
 		private readonly LruCache<Uid, ClientDbId> dbIdCache = new LruCache<Uid, ClientDbId>(1024);
 		private bool alone = true;
+		private ClientId[] ownChannelClients = Array.Empty<ClientId>();
 
 		private readonly StallCheckPipe stallCheckPipe;
 		private readonly VolumePipe volumePipe;
@@ -82,9 +83,20 @@ namespace TS3AudioBot
 			tsFullClient.OnErrorEvent += TsFullClient_OnErrorEvent;
 			tsFullClient.OnConnected += TsFullClient_OnConnected;
 			tsFullClient.OnDisconnected += TsFullClient_OnDisconnected;
-			tsFullClient.OnEachClientMoved += (s, e) => ChannelClientsChanged(e.TargetChannelId);
-			tsFullClient.OnEachClientEnterView += (s, e) => ChannelClientsChanged(e.TargetChannelId);
-			tsFullClient.OnEachClientLeftView += (s, e) => ChannelClientsChanged(e.SourceChannelId);
+			tsFullClient.OnEachClientMoved += (s, e) =>
+			{
+				if (AloneRecheckRequired(e.ClientId, e.TargetChannelId)) IsAloneRecheck();
+			};
+			tsFullClient.OnEachClientEnterView += (s, e) =>
+			{
+				if (AloneRecheckRequired(e.ClientId, e.TargetChannelId)) IsAloneRecheck();
+				else if (AloneRecheckRequired(e.ClientId, e.TargetChannelId)) IsAloneRecheck();
+			};
+			tsFullClient.OnEachClientLeftView += (s, e) =>
+			{
+				if (AloneRecheckRequired(e.ClientId, e.TargetChannelId)) IsAloneRecheck();
+				else if (AloneRecheckRequired(e.ClientId, e.TargetChannelId)) IsAloneRecheck();
+			};
 
 			int ScaleBitrate(int value) => Tools.Clamp(value, 1, 255) * 1000;
 
@@ -245,8 +257,8 @@ namespace TS3AudioBot
 			return tsFullClient.SendServerMessage(message, 1).FormatLocal();
 		}
 
-		public E<LocalStr> KickClientFromServer(ClientId clientId) => tsFullClient.KickClientFromServer(new[] { clientId }).FormatLocal();
-		public E<LocalStr> KickClientFromChannel(ClientId clientId) => tsFullClient.KickClientFromChannel(new[] { clientId }).FormatLocal();
+		public E<LocalStr> KickClientFromServer(params ClientId[] clientId) => tsFullClient.KickClientFromServer(clientId).FormatLocal();
+		public E<LocalStr> KickClientFromChannel(params ClientId[] clientId) => tsFullClient.KickClientFromChannel(clientId).FormatLocal();
 
 		public E<LocalStr> ChangeDescription(string description)
 			=> tsFullClient.ChangeDescription(description, tsFullClient.ClientId).FormatLocal();
@@ -651,17 +663,15 @@ namespace TS3AudioBot
 			OnMessageReceived?.Invoke(sender, textMessage);
 		}
 
-		private void ChannelClientsChanged(ChannelId channelId)
-		{
-			if (channelId != tsFullClient.Book.Self()?.Channel)
-				return;
-			IsAloneRecheck();
-		}
+		private bool AloneRecheckRequired(ClientId clientId, ChannelId channelId)
+			=> ownChannelClients.Contains(clientId) || channelId == tsFullClient.Book.Self()?.Channel;
 
 		private void IsAloneRecheck()
 		{
-			var ownChannel = tsFullClient.Book.Self().Channel;
-			var newAlone = !tsFullClient.Book.Clients.Values.Any(c => c.Channel == ownChannel);
+			var self = tsFullClient.Book.Self();
+			var ownChannel = self.Channel;
+			ownChannelClients = tsFullClient.Book.Clients.Values.Where(c => c.Channel == ownChannel && c != self).Select(c => c.Id).ToArray();
+			var newAlone = ownChannelClients.Length == 0;
 			if (newAlone != alone)
 			{
 				alone = newAlone;
