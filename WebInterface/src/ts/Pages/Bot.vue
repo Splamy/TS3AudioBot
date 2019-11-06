@@ -190,7 +190,7 @@ export default Vue.extend({
 		colorIcon: Util.colorIcon,
 		getCoverUrl(): string {
 			return (
-				Get.EndpointData.baseAddress +
+				Get.Endpoint +
 				bot(cmd("data", "song", "cover", "get"), this.botId).done()
 			);
 		}

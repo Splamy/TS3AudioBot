@@ -307,7 +307,7 @@ namespace TS3AudioBot
 			}
 			else
 			{
-				var worker = TickPool.RegisterTickOnce(RunEvent);
+				var worker = TickPool.RegisterTickOnce(RunEvent, delay);
 				SetAloneTickWorker(worker);
 			}
 		}

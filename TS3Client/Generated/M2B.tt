@@ -119,8 +119,10 @@ namespace TS3Client.Full.Book
 			Remove<#=rule.to#>(<#=idStr#>);<#
 			break;
 		} #>
+			Post<#= msg.name #>(msg);
 		}
 
+		partial void Post<#= msg.name #>(<#= msg.name #> msg);
 	<# } #>
 #pragma warning restore IDE0017, CS0472
 	}

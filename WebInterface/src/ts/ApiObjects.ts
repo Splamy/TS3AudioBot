@@ -64,6 +64,7 @@ export interface CmdServerTreeChannel {
 	Parent: number;
 	Order: number;
 	HasPassword: boolean;
+	Subscribed: boolean;
 	// ...
 }
 
@@ -107,6 +108,17 @@ export class Empty {
 			Name: null,
 			Server: "",
 			Status: BotStatus.Offline,
+		};
+	}
+
+	public static CmdServerTreeChannel(): CmdServerTreeChannel {
+		return {
+			Id: 0,
+			Name: "",
+			Order: 0,
+			Parent: -1,
+			HasPassword: false,
+			Subscribed: false,
 		};
 	}
 

@@ -1,5 +1,4 @@
 import { ApiAuth } from "./ApiAuth";
-import { ApiEndpoint } from "./ApiEndpoint";
 import { ApiError } from "./ApiObjects";
 
 export class ErrorObject<T = any> {
@@ -8,7 +7,8 @@ export class ErrorObject<T = any> {
 
 export class Get {
 	public static AuthData: ApiAuth = ApiAuth.Anonymous;
-	public static EndpointData: ApiEndpoint = ApiEndpoint.SameAddress;
+	public static readonly SameAddressEndpoint: string = "/api";
+	public static Endpoint: string = Get.SameAddressEndpoint;
 
 	public static async site(site: string): Promise<string> {
 		const response = await fetch(site);
@@ -18,7 +18,7 @@ export class Get {
 	public static async api<T extends ApiRet>(
 		site: Api<T>,
 		login: ApiAuth = this.AuthData,
-		ep: ApiEndpoint = this.EndpointData): Promise<T | ApiErr> {
+		ep: string = this.Endpoint): Promise<T | ApiErr> {
 		// TODO endpoint parameter
 
 		const requestData: RequestInit = {
@@ -34,7 +34,7 @@ export class Get {
 			});
 		}
 
-		const apiSite = ep.baseAddress + site.done();
+		const apiSite = ep + site.done();
 		let response: Response;
 		try {
 			response = await fetch(apiSite, requestData);

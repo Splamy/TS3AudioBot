@@ -90,8 +90,10 @@ namespace TS3Client.Full.Book
 			{ var tmpv = msg.TempChannelDefaultDeleteDelay; if (tmpv != null) obj.TempChannelDefaultDeleteDelay = (Duration)tmpv; }
 			SetServer(obj);
 			
+			PostInitServer(msg);
 		}
 
+		partial void PostInitServer(InitServer msg);
 	
 		public void UpdateChannelCreated(ChannelCreated msg)
 		{
@@ -123,15 +125,19 @@ namespace TS3Client.Full.Book
 			{ var tmpv = msg.PhoneticName; if (tmpv != null) obj.PhoneticName = (str)tmpv; }
 			SetChannel(obj, msg.ChannelId);
 			
+			PostChannelCreated(msg);
 		}
 
+		partial void PostChannelCreated(ChannelCreated msg);
 	
 		public void UpdateChannelDeleted(ChannelDeleted msg)
 		{
 			
 			RemoveChannel(msg.ChannelId);
+			PostChannelDeleted(msg);
 		}
 
+		partial void PostChannelDeleted(ChannelDeleted msg);
 	
 		public void UpdateChannelEdited(ChannelEdited msg)
 		{
@@ -160,8 +166,10 @@ namespace TS3Client.Full.Book
 			{ var tmpv = msg.DeleteDelay; if (tmpv != null) obj.DeleteDelay = (Duration)tmpv; }
 			{ var tmpv = msg.PhoneticName; if (tmpv != null) obj.PhoneticName = (str)tmpv; }
 			
+			PostChannelEdited(msg);
 		}
 
+		partial void PostChannelEdited(ChannelEdited msg);
 	
 		public void UpdateChannelList(ChannelList msg)
 		{
@@ -193,8 +201,10 @@ namespace TS3Client.Full.Book
 			{ var tmpv = msg.IsPrivate; if (tmpv != null) obj.IsPrivate = (bool)tmpv; }
 			SetChannel(obj, msg.ChannelId);
 			
+			PostChannelList(msg);
 		}
 
+		partial void PostChannelList(ChannelList msg);
 	
 		public void UpdateChannelMoved(ChannelMoved msg)
 		{
@@ -206,8 +216,10 @@ namespace TS3Client.Full.Book
 			{ var tmpv = msg.ParentId; if (tmpv != null) obj.Parent = (ChannelId)tmpv; }
 			{ var tmpv = ChannelOrderCmFun(msg); if (tmpv != null) obj.Order = (ChannelId)tmpv; }
 			
+			PostChannelMoved(msg);
 		}
 
+		partial void PostChannelMoved(ChannelMoved msg);
 	
 		public void UpdateChannelSubscribed(ChannelSubscribed msg)
 		{
@@ -218,8 +230,10 @@ namespace TS3Client.Full.Book
 			}
 			{ var tmpv = ChannelSubscribeFun(msg); if (tmpv != null) obj.Subscribed = (bool)tmpv; }
 			
+			PostChannelSubscribed(msg);
 		}
 
+		partial void PostChannelSubscribed(ChannelSubscribed msg);
 	
 		public void UpdateChannelUnsubscribed(ChannelUnsubscribed msg)
 		{
@@ -230,8 +244,10 @@ namespace TS3Client.Full.Book
 			}
 			{ var tmpv = ChannelUnsubscribeFun(msg); if (tmpv != null) obj.Subscribed = (bool)tmpv; }
 			
+			PostChannelUnsubscribed(msg);
 		}
 
+		partial void PostChannelUnsubscribed(ChannelUnsubscribed msg);
 	
 		public void UpdateClientChannelGroupChanged(ClientChannelGroupChanged msg)
 		{
@@ -242,8 +258,10 @@ namespace TS3Client.Full.Book
 			}
 			{ var tmpv = msg.ChannelGroup; if (tmpv != null) obj.ChannelGroup = (ChannelGroupId)tmpv; }
 			
+			PostClientChannelGroupChanged(msg);
 		}
 
+		partial void PostClientChannelGroupChanged(ClientChannelGroupChanged msg);
 	
 		public void UpdateClientEnterView(ClientEnterView msg)
 		{
@@ -282,15 +300,19 @@ namespace TS3Client.Full.Book
 			{ var tmpv = msg.Badges; if (tmpv != null) obj.Badges = (str)tmpv; }
 			SetClient(obj, msg.ClientId);
 			
+			PostClientEnterView(msg);
 		}
 
+		partial void PostClientEnterView(ClientEnterView msg);
 	
 		public void UpdateClientLeftView(ClientLeftView msg)
 		{
 			
 			RemoveClient(msg.ClientId);
+			PostClientLeftView(msg);
 		}
 
+		partial void PostClientLeftView(ClientLeftView msg);
 	
 		public void UpdateClientMoved(ClientMoved msg)
 		{
@@ -301,8 +323,10 @@ namespace TS3Client.Full.Book
 			}
 			{ var tmpv = msg.TargetChannelId; if (tmpv != null) obj.Channel = (ChannelId)tmpv; }
 			
+			PostClientMoved(msg);
 		}
 
+		partial void PostClientMoved(ClientMoved msg);
 	
 		public void UpdateClientConnectionInfo(ClientConnectionInfo msg)
 		{
@@ -348,8 +372,10 @@ namespace TS3Client.Full.Book
 			{ var tmpv = msg.IdleTime; if (tmpv != null) obj.IdleTime = (Duration)tmpv; }
 			SetConnectionClientData(obj, msg.ClientId);
 			
+			PostClientConnectionInfo(msg);
 		}
 
+		partial void PostClientConnectionInfo(ClientConnectionInfo msg);
 	
 		public void UpdateClientServerGroupAdded(ClientServerGroupAdded msg)
 		{
@@ -360,8 +386,10 @@ namespace TS3Client.Full.Book
 			}
 			obj.ServerGroups.Add(msg.ServerGroupId);
 			
+			PostClientServerGroupAdded(msg);
 		}
 
+		partial void PostClientServerGroupAdded(ClientServerGroupAdded msg);
 	
 		public void UpdateClientServerGroupRemoved(ClientServerGroupRemoved msg)
 		{
@@ -372,8 +400,10 @@ namespace TS3Client.Full.Book
 			}
 			obj.ServerGroups.Remove(msg.ServerGroupId);
 			
+			PostClientServerGroupRemoved(msg);
 		}
 
+		partial void PostClientServerGroupRemoved(ClientServerGroupRemoved msg);
 	
 		public void UpdateClientUpdated(ClientUpdated msg)
 		{
@@ -401,8 +431,10 @@ namespace TS3Client.Full.Book
 			{ var tmpv = msg.TalkPower; if (tmpv != null) obj.TalkPower = (i32)tmpv; }
 			{ var tmpv = msg.IconId; if (tmpv != null) obj.IconId = (IconHash)tmpv; }
 			
+			PostClientUpdated(msg);
 		}
 
+		partial void PostClientUpdated(ClientUpdated msg);
 	
 		public void UpdateServerGroupList(ServerGroupList msg)
 		{
@@ -418,8 +450,10 @@ namespace TS3Client.Full.Book
 			{ var tmpv = msg.NeededMemberRemovePower; if (tmpv != null) obj.NeededMemberRemovePower = (i32)tmpv; }
 			SetServerGroup(obj, msg.ServerGroupId);
 			
+			PostServerGroupList(msg);
 		}
 
+		partial void PostServerGroupList(ServerGroupList msg);
 	
 		public void UpdateServerEdited(ServerEdited msg)
 		{
@@ -444,8 +478,10 @@ namespace TS3Client.Full.Book
 			{ var tmpv = msg.HostbannerMode; if (tmpv != null) obj.HostbannerMode = (HostBannerMode)tmpv; }
 			{ var tmpv = msg.TempChannelDefaultDeleteDelay; if (tmpv != null) obj.TempChannelDefaultDeleteDelay = (Duration)tmpv; }
 			
+			PostServerEdited(msg);
 		}
 
+		partial void PostServerEdited(ServerEdited msg);
 	
 		public void UpdateChannelPermissionHints(ChannelPermissionHints msg)
 		{
@@ -456,8 +492,10 @@ namespace TS3Client.Full.Book
 			}
 			{ var tmpv = msg.Flags; if (tmpv != null) obj.PermissionHints = (ChannelPermissionHint)tmpv; }
 			
+			PostChannelPermissionHints(msg);
 		}
 
+		partial void PostChannelPermissionHints(ChannelPermissionHints msg);
 	
 		public void UpdateClientPermissionHints(ClientPermissionHints msg)
 		{
@@ -468,8 +506,10 @@ namespace TS3Client.Full.Book
 			}
 			{ var tmpv = msg.Flags; if (tmpv != null) obj.PermissionHints = (ClientPermissionHint)tmpv; }
 			
+			PostClientPermissionHints(msg);
 		}
 
+		partial void PostClientPermissionHints(ClientPermissionHints msg);
 	
 #pragma warning restore IDE0017, CS0472
 	}

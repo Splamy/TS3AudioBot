@@ -69,11 +69,12 @@ namespace TS3Client
 		/// <param name="type">The notification type to wait for and serialize to.</param>
 		public abstract R<T[], CommandError> SendHybrid<T>(Ts3Command com, NotificationType type) where T : class, IResponse, new();
 
+#pragma warning disable CS1998
 		public virtual async Task<R<T[], CommandError>> SendAsync<T>(Ts3Command com) where T : IResponse, new()
 			=> throw new NotImplementedException();
 		public virtual async Task<R<T[], CommandError>> SendHybridAsync<T>(Ts3Command com, NotificationType type) where T : class, IResponse, new()
 			=> throw new NotImplementedException();
-
+#pragma warning restore CS1998
 		#endregion
 
 		private string GenPassword(string password)

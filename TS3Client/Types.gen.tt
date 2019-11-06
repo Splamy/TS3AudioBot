@@ -26,6 +26,7 @@ var types = new (string alias, string backing)[] {
 	//("ConnectionId", "uint"),
 };
 #>
+using Newtonsoft.Json;
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
@@ -36,13 +37,14 @@ namespace TS3Client
 		var isStr = type.backing == "string"; #>
 	[StructLayout(LayoutKind.Sequential, Pack=0)]
 	[DebuggerDisplay("{Value, nq}")]
+	[JsonConverter(typeof(<#= type.alias #>.Converter))]
 	public readonly partial struct <#= type.alias #> :<#= isStr ? "" : " IFormattable," #> IEquatable<<#= type.alias #>>
 	{
 		public static readonly <#= type.alias #> Null = default;
 		public static <#= type.alias #> To(<#= type.backing #> v) => new <#= type.alias #>(v);
 
 		public <#= type.backing #> Value { get; }
-		public <#= type.alias #>(<#= type.backing #> value) { if (value == null) throw new ArgumentNullException(nameof(value)); Value = value; }
+		public <#= type.alias #>(<#= type.backing #> value) { <#= isStr ? "if (value == null) throw new ArgumentNullException(nameof(value));" : "" #> Value = value; }
 		public static explicit operator <#= type.alias #>(<#= type.backing #> v) => new <#= type.alias #>(v);
 		public static bool operator ==(<#= type.alias #> a, <#= type.alias #> b) => a.Value == b.Value;
 		public static bool operator !=(<#= type.alias #> a, <#= type.alias #> b) => a.Value != b.Value;
@@ -55,6 +57,13 @@ namespace TS3Client
 		public bool Equals(<#= type.alias #> other) => Value.Equals(other.Value);
 		public string ToString(string format, IFormatProvider formatProvider) => Value.ToString(format, formatProvider);
 		<# } #>
+		private class Converter : JsonConverter<<#= type.alias #>>
+		{
+			public override void WriteJson(JsonWriter writer, <#= type.alias #> value, JsonSerializer serializer)
+				=> writer.WriteValue(value.Value);
+			public override <#= type.alias #> ReadJson(JsonReader reader, Type objectType, <#= type.alias #> existingValue, bool hasExistingValue, JsonSerializer serializer)
+				=> new <#= type.alias #>(<#= isStr ? "reader.ReadAsString()" : type.backing + ".Parse(reader.ReadAsString())" #>);
+		}
 	}
 	<# } #>
 }

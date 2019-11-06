@@ -190,9 +190,9 @@ namespace TS3AudioBot
 		public static void CommandBotCome(Ts3Client ts3Client, ClientCall invoker, string password = null)
 		{
 			var channel = invoker?.ChannelId;
-			if (!channel.HasValue)
+			if (channel != null)
 				throw new CommandException(strings.error_no_target_channel, CommandExceptionReason.CommandError);
-			CommandBotMove(ts3Client, channel.Value, password);
+			ts3Client.MoveTo(channel.Value, password).UnwrapThrow();
 		}
 
 		[Command("bot connect template")]
@@ -249,7 +249,7 @@ namespace TS3AudioBot
 		}
 
 		[Command("bot move")]
-		public static void CommandBotMove(Ts3Client ts3Client, ChannelId channel, string password = null) => ts3Client.MoveTo(channel, password).UnwrapThrow();
+		public static void CommandBotMove(Ts3Client ts3Client, ulong channel, string password = null) => ts3Client.MoveTo((ChannelId)channel, password).UnwrapThrow();
 
 		[Command("bot name")]
 		public static void CommandBotName(Ts3Client ts3Client, string name) => ts3Client.ChangeName(name).UnwrapThrow();
@@ -1100,8 +1100,13 @@ namespace TS3AudioBot
 		public static void CommandPause(IPlayerConnection playerConnection) => playerConnection.Paused = !playerConnection.Paused;
 
 		[Command("play")]
-		public static void CommandPlay(IPlayerConnection playerConnection)
-			=> playerConnection.Paused = false;
+		public static void CommandPlay(PlayManager playManager, IPlayerConnection playerConnection, InvokerData invoker)
+		{
+			if (!playManager.IsPlaying)
+				playManager.Play(invoker).UnwrapThrow();
+			else
+				playerConnection.Paused = false;
+		}
 
 		[Command("play")]
 		public static void CommandPlay(PlayManager playManager, InvokerData invoker, string url)

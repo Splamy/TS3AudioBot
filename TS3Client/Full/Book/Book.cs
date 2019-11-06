@@ -88,6 +88,22 @@ namespace TS3Client.Full.Book
 			return Server;
 		}
 
+		// Manual post event functions
+
+		partial void PostClientEnterView(ClientEnterView msg) => SetOwnChannelSubscribed(msg.ClientId);
+		partial void PostClientMoved(ClientMoved msg) => SetOwnChannelSubscribed(msg.ClientId);
+		private void SetOwnChannelSubscribed(ClientId clientId)
+		{
+			if (clientId == OwnClient)
+			{
+				var curChan = CurrentChannel();
+				if (curChan != null)
+				{
+					curChan.Subscribed = true;
+				}
+			}
+		}
+
 		// Manual move functions
 
 		private static (MaxClients?, MaxClients?) MaxClientsCcFun(ChannelCreated msg) => MaxClientsFun(msg.MaxClients, msg.IsMaxClientsUnlimited, msg.MaxFamilyClients, msg.IsMaxFamilyClientsUnlimited, msg.InheritsMaxFamilyClients);
@@ -124,8 +140,16 @@ namespace TS3Client.Full.Book
 			else return ChannelType.Temporary;
 		}
 
-		private string AwayCevFun(ClientEnterView msg) => default;
-		private string AwayCuFun(ClientUpdated msg) => default;
+		private string AwayCevFun(ClientEnterView msg) => AwayFun(msg.IsAway, msg.AwayMessage);
+		private string AwayCuFun(ClientUpdated msg) => AwayFun(msg.IsAway, msg.AwayMessage);
+		private string AwayFun(bool? away, string msg)
+		{
+			if (away == true)
+				return msg ?? "";
+			if (away == false)
+				return "";
+			return null;
+		}
 
 		private static TalkPowerRequest? TalkPowerCevFun(ClientEnterView msg)
 		{

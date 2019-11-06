@@ -15,6 +15,7 @@
 
 
 
+using Newtonsoft.Json;
 using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
@@ -24,6 +25,7 @@ namespace TS3Client
 	
 	[StructLayout(LayoutKind.Sequential, Pack=0)]
 	[DebuggerDisplay("{Value, nq}")]
+	[JsonConverter(typeof(Uid.Converter))]
 	public readonly partial struct Uid : IEquatable<Uid>
 	{
 		public static readonly Uid Null = default;
@@ -40,17 +42,25 @@ namespace TS3Client
 		
 		public bool Equals(Uid other) => Value.Equals(other.Value, StringComparison.Ordinal);
 		
+		private class Converter : JsonConverter<Uid>
+		{
+			public override void WriteJson(JsonWriter writer, Uid value, JsonSerializer serializer)
+				=> writer.WriteValue(value.Value);
+			public override Uid ReadJson(JsonReader reader, Type objectType, Uid existingValue, bool hasExistingValue, JsonSerializer serializer)
+				=> new Uid(reader.ReadAsString());
+		}
 	}
 	
 	[StructLayout(LayoutKind.Sequential, Pack=0)]
 	[DebuggerDisplay("{Value, nq}")]
+	[JsonConverter(typeof(ClientDbId.Converter))]
 	public readonly partial struct ClientDbId : IFormattable, IEquatable<ClientDbId>
 	{
 		public static readonly ClientDbId Null = default;
 		public static ClientDbId To(ulong v) => new ClientDbId(v);
 
 		public ulong Value { get; }
-		public ClientDbId(ulong value) { if (value == null) throw new ArgumentNullException(nameof(value)); Value = value; }
+		public ClientDbId(ulong value) {  Value = value; }
 		public static explicit operator ClientDbId(ulong v) => new ClientDbId(v);
 		public static bool operator ==(ClientDbId a, ClientDbId b) => a.Value == b.Value;
 		public static bool operator !=(ClientDbId a, ClientDbId b) => a.Value != b.Value;
@@ -61,17 +71,25 @@ namespace TS3Client
 		public bool Equals(ClientDbId other) => Value.Equals(other.Value);
 		public string ToString(string format, IFormatProvider formatProvider) => Value.ToString(format, formatProvider);
 		
+		private class Converter : JsonConverter<ClientDbId>
+		{
+			public override void WriteJson(JsonWriter writer, ClientDbId value, JsonSerializer serializer)
+				=> writer.WriteValue(value.Value);
+			public override ClientDbId ReadJson(JsonReader reader, Type objectType, ClientDbId existingValue, bool hasExistingValue, JsonSerializer serializer)
+				=> new ClientDbId(ulong.Parse(reader.ReadAsString()));
+		}
 	}
 	
 	[StructLayout(LayoutKind.Sequential, Pack=0)]
 	[DebuggerDisplay("{Value, nq}")]
+	[JsonConverter(typeof(ClientId.Converter))]
 	public readonly partial struct ClientId : IFormattable, IEquatable<ClientId>
 	{
 		public static readonly ClientId Null = default;
 		public static ClientId To(ushort v) => new ClientId(v);
 
 		public ushort Value { get; }
-		public ClientId(ushort value) { if (value == null) throw new ArgumentNullException(nameof(value)); Value = value; }
+		public ClientId(ushort value) {  Value = value; }
 		public static explicit operator ClientId(ushort v) => new ClientId(v);
 		public static bool operator ==(ClientId a, ClientId b) => a.Value == b.Value;
 		public static bool operator !=(ClientId a, ClientId b) => a.Value != b.Value;
@@ -82,17 +100,25 @@ namespace TS3Client
 		public bool Equals(ClientId other) => Value.Equals(other.Value);
 		public string ToString(string format, IFormatProvider formatProvider) => Value.ToString(format, formatProvider);
 		
+		private class Converter : JsonConverter<ClientId>
+		{
+			public override void WriteJson(JsonWriter writer, ClientId value, JsonSerializer serializer)
+				=> writer.WriteValue(value.Value);
+			public override ClientId ReadJson(JsonReader reader, Type objectType, ClientId existingValue, bool hasExistingValue, JsonSerializer serializer)
+				=> new ClientId(ushort.Parse(reader.ReadAsString()));
+		}
 	}
 	
 	[StructLayout(LayoutKind.Sequential, Pack=0)]
 	[DebuggerDisplay("{Value, nq}")]
+	[JsonConverter(typeof(ChannelId.Converter))]
 	public readonly partial struct ChannelId : IFormattable, IEquatable<ChannelId>
 	{
 		public static readonly ChannelId Null = default;
 		public static ChannelId To(ulong v) => new ChannelId(v);
 
 		public ulong Value { get; }
-		public ChannelId(ulong value) { if (value == null) throw new ArgumentNullException(nameof(value)); Value = value; }
+		public ChannelId(ulong value) {  Value = value; }
 		public static explicit operator ChannelId(ulong v) => new ChannelId(v);
 		public static bool operator ==(ChannelId a, ChannelId b) => a.Value == b.Value;
 		public static bool operator !=(ChannelId a, ChannelId b) => a.Value != b.Value;
@@ -103,17 +129,25 @@ namespace TS3Client
 		public bool Equals(ChannelId other) => Value.Equals(other.Value);
 		public string ToString(string format, IFormatProvider formatProvider) => Value.ToString(format, formatProvider);
 		
+		private class Converter : JsonConverter<ChannelId>
+		{
+			public override void WriteJson(JsonWriter writer, ChannelId value, JsonSerializer serializer)
+				=> writer.WriteValue(value.Value);
+			public override ChannelId ReadJson(JsonReader reader, Type objectType, ChannelId existingValue, bool hasExistingValue, JsonSerializer serializer)
+				=> new ChannelId(ulong.Parse(reader.ReadAsString()));
+		}
 	}
 	
 	[StructLayout(LayoutKind.Sequential, Pack=0)]
 	[DebuggerDisplay("{Value, nq}")]
+	[JsonConverter(typeof(ServerGroupId.Converter))]
 	public readonly partial struct ServerGroupId : IFormattable, IEquatable<ServerGroupId>
 	{
 		public static readonly ServerGroupId Null = default;
 		public static ServerGroupId To(ulong v) => new ServerGroupId(v);
 
 		public ulong Value { get; }
-		public ServerGroupId(ulong value) { if (value == null) throw new ArgumentNullException(nameof(value)); Value = value; }
+		public ServerGroupId(ulong value) {  Value = value; }
 		public static explicit operator ServerGroupId(ulong v) => new ServerGroupId(v);
 		public static bool operator ==(ServerGroupId a, ServerGroupId b) => a.Value == b.Value;
 		public static bool operator !=(ServerGroupId a, ServerGroupId b) => a.Value != b.Value;
@@ -124,17 +158,25 @@ namespace TS3Client
 		public bool Equals(ServerGroupId other) => Value.Equals(other.Value);
 		public string ToString(string format, IFormatProvider formatProvider) => Value.ToString(format, formatProvider);
 		
+		private class Converter : JsonConverter<ServerGroupId>
+		{
+			public override void WriteJson(JsonWriter writer, ServerGroupId value, JsonSerializer serializer)
+				=> writer.WriteValue(value.Value);
+			public override ServerGroupId ReadJson(JsonReader reader, Type objectType, ServerGroupId existingValue, bool hasExistingValue, JsonSerializer serializer)
+				=> new ServerGroupId(ulong.Parse(reader.ReadAsString()));
+		}
 	}
 	
 	[StructLayout(LayoutKind.Sequential, Pack=0)]
 	[DebuggerDisplay("{Value, nq}")]
+	[JsonConverter(typeof(ChannelGroupId.Converter))]
 	public readonly partial struct ChannelGroupId : IFormattable, IEquatable<ChannelGroupId>
 	{
 		public static readonly ChannelGroupId Null = default;
 		public static ChannelGroupId To(ulong v) => new ChannelGroupId(v);
 
 		public ulong Value { get; }
-		public ChannelGroupId(ulong value) { if (value == null) throw new ArgumentNullException(nameof(value)); Value = value; }
+		public ChannelGroupId(ulong value) {  Value = value; }
 		public static explicit operator ChannelGroupId(ulong v) => new ChannelGroupId(v);
 		public static bool operator ==(ChannelGroupId a, ChannelGroupId b) => a.Value == b.Value;
 		public static bool operator !=(ChannelGroupId a, ChannelGroupId b) => a.Value != b.Value;
@@ -145,6 +187,13 @@ namespace TS3Client
 		public bool Equals(ChannelGroupId other) => Value.Equals(other.Value);
 		public string ToString(string format, IFormatProvider formatProvider) => Value.ToString(format, formatProvider);
 		
+		private class Converter : JsonConverter<ChannelGroupId>
+		{
+			public override void WriteJson(JsonWriter writer, ChannelGroupId value, JsonSerializer serializer)
+				=> writer.WriteValue(value.Value);
+			public override ChannelGroupId ReadJson(JsonReader reader, Type objectType, ChannelGroupId existingValue, bool hasExistingValue, JsonSerializer serializer)
+				=> new ChannelGroupId(ulong.Parse(reader.ReadAsString()));
+		}
 	}
 	
 }

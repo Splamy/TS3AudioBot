@@ -130,6 +130,8 @@ namespace TS3AudioBot.Audio
 			return StartResource(invoker, item);
 		}
 
+		public E<LocalStr> Play(InvokerData invoker) => StartCurrent(invoker);
+
 		/// <summary>Plays the passed <see cref="PlayResource"/></summary>
 		/// <param name="invoker">The invoker of this resource. Used for responses and association.</param>
 		/// <param name="play">The associated resource type string to a factory.</param>

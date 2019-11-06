@@ -463,6 +463,8 @@ namespace TS3AudioBot
 					Ts3Permission.b_client_use_channel_commander, // + Enable channel commander
 					Ts3Permission.b_client_ignore_bans, // + The bot should be resistent to bans
 					Ts3Permission.b_client_ignore_sticky, // + Should skip weird movement restrictions
+
+					Ts3Permission.i_client_max_channel_subscriptions, // + Required to find user to communicate
 				},
 				new[] {
 					max, max,   1,   1,
@@ -472,6 +474,7 @@ namespace TS3AudioBot
 					  1,   1,   1,   1,
 					  1,   1, max,   1,
 					ava,   1,   1,   1,
+					 -1,
 				},
 				new[] {
 					false, false, false, false,
@@ -481,6 +484,7 @@ namespace TS3AudioBot
 					false, false, false, false,
 					false, false, false, false,
 					false, false, false, false,
+					false,
 				},
 				new[] {
 					false, false, false, false,
@@ -490,6 +494,7 @@ namespace TS3AudioBot
 					false, false, false, false,
 					false, false, false, false,
 					false, false, false, false,
+					false,
 				});
 
 			if (!permresult)
@@ -536,6 +541,8 @@ namespace TS3AudioBot
 			InvalidateClientBuffer();
 			dbIdCache.Clear();
 			clientDbNames.Clear();
+			alone = true;
+			ownChannelClients = Array.Empty<ClientId>();
 		}
 
 		#endregion
@@ -669,6 +676,8 @@ namespace TS3AudioBot
 		private void IsAloneRecheck()
 		{
 			var self = tsFullClient.Book.Self();
+			if (self == null)
+				return;
 			var ownChannel = self.Channel;
 			ownChannelClients = tsFullClient.Book.Clients.Values.Where(c => c.Channel == ownChannel && c != self).Select(c => c.Id).ToArray();
 			var newAlone = ownChannelClients.Length == 0;

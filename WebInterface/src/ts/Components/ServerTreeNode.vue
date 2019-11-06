@@ -15,7 +15,7 @@
 				@mouseleave="hover_channel = false"
 			>
 				<div class="container" style="display:flex;align-items:center;">
-					<b-icon v-if="channel.type == 0" icon="card-bulleted-outline" />
+					<b-icon v-if="channel.type == 0" :icon="node.own.Subscribed ? 'card-bulleted-outline' : 'card-bulleted-off-outline'" />
 					<b-icon v-else icon="dummy" />
 
 					<span class="entry-expand" :class="spacer_css" style="display:flex;">{{channel.name}}</span>

@@ -5009,6 +5009,8 @@ namespace TS3Client.Messages
 		public str Badges { get; set; }
 		public i32? TalkPower { get; set; }
 		public IconHash? IconId { get; set; }
+		public bool? IsAway { get; set; }
+		public str AwayMessage { get; set; }
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -5045,6 +5047,8 @@ namespace TS3Client.Messages
 			case "client_badges": Badges = (str)Ts3String.Unescape(value); break;
 			case "client_talk_power": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) TalkPower = (i32)oval; } break;
 			case "client_icon_id": { if(!value.IsEmpty && value[0] == (u8)'-') { if(Utf8Parser.TryParse(value, out i32 oval, out _)) IconId = oval; } else { if(Utf8Parser.TryParse(value, out u64 oval, out _)) IconId = unchecked((i32)oval); } } break;
+			case "client_away": IsAway = value.Length > 0 && value[0] != '0'; break;
+			case "client_away_message": AwayMessage = (str)Ts3String.Unescape(value); break;
 			
 			}
 
@@ -5088,6 +5092,8 @@ namespace TS3Client.Messages
 				case "client_badges": foreach(var toi in toc) { toi.Badges = Badges; } break;
 				case "client_talk_power": foreach(var toi in toc) { toi.TalkPower = TalkPower; } break;
 				case "client_icon_id": foreach(var toi in toc) { toi.IconId = IconId; } break;
+				case "client_away": foreach(var toi in toc) { toi.IsAway = IsAway; } break;
+				case "client_away_message": foreach(var toi in toc) { toi.AwayMessage = AwayMessage; } break;
 				}
 			}
 
