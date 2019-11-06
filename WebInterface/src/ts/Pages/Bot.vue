@@ -156,8 +156,8 @@ export default Vue.extend({
 				if (!Util.check(this, res, "Failed to get bot information"))
 					return;
 
-				this.info.botInfo = res[0] || Empty.CmdBotInfo();
-				this.info.nowPlaying = res[1] || Empty.CmdQueueInfo();
+				this.info.botInfo = res[0] ?? Empty.CmdBotInfo();
+				this.info.nowPlaying = res[1] ?? Empty.CmdQueueInfo();
 				this.info.song = res[2];
 				this.info.repeat = res[3];
 				this.info.shuffle = res[4];

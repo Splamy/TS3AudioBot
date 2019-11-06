@@ -212,7 +212,7 @@ export default Vue.component("playlist-editor", {
 		},
 		async itemPlay(index: number | undefined) {
 			const res = await bot(
-				cmd<void>("list", "play", this.selectedPlaylist, index || ""),
+				cmd<void>("list", "play", this.selectedPlaylist, index ?? ""),
 				this.botId
 			).get();
 
