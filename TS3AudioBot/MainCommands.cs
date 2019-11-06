@@ -754,10 +754,10 @@ namespace TS3AudioBot
 
 		[Command("info")]
 		public static JsonValue<QueueInfo> CommandInfo(PlayManager playManager, ResourceFactory resourceFactory, PlaylistManager playlistManager, string offset = null, int? count = null)
-			=> CommandInfo(playManager, resourceFactory, playlistManager, GetIndexExpression(playlistManager, offset ?? "@-1"), count);
+			=> CommandInfo(resourceFactory, playlistManager, GetIndexExpression(playlistManager, offset ?? "@-1"), count);
 
 		[Command("info")]
-		public static JsonValue<QueueInfo> CommandInfo(PlayManager playManager, ResourceFactory resourceFactory, PlaylistManager playlistManager, int offset, int? count = null)
+		public static JsonValue<QueueInfo> CommandInfo(ResourceFactory resourceFactory, PlaylistManager playlistManager, int offset, int? count = null)
 		{
 			const int maxSongs = 20;
 			var playIndex = playlistManager.Index;
