@@ -97,7 +97,7 @@ namespace TS3AudioBot.Web.Api
 			pathBuilder.Append(command.InvokeName.Replace(' ', '/'));
 			foreach (var param in command.CommandParameter)
 			{
-				switch (param.kind)
+				switch (param.Kind)
 				{
 				case ParamKind.Unknown:
 					break;
@@ -110,25 +110,25 @@ namespace TS3AudioBot.Web.Api
 				case ParamKind.NormalParam:
 				case ParamKind.NormalArray:
 				case ParamKind.NormalTailString:
-					if (param.kind == ParamKind.NormalArray)
-						pathBuilder.Append("/{").Append(param.param.Name).Append("}...");
+					if (param.Kind == ParamKind.NormalArray)
+						pathBuilder.Append("/{").Append(param.Name).Append("}...");
 					else
-						pathBuilder.Append("/{").Append(param.param.Name).Append("}");
+						pathBuilder.Append("/{").Append(param.Name).Append("}");
 
 					var addparam = new JObject(
-						new JProperty("name", param.param.Name),
+						new JProperty("name", param.Name),
 						new JProperty("in", "path"),
 						new JProperty("description", "useful help"),
 						new JProperty("required", true) // param.optional
 					);
 
-					var paramschema = NormalToSchema(param.type);
+					var paramschema = NormalToSchema(param.Type);
 					if (paramschema != null)
 						addparam.Add("schema", JObject.FromObject(paramschema, seri));
 					parameters.Add(addparam);
 					break;
 				default:
-					throw Tools.UnhandledDefault(param.kind);
+					throw Tools.UnhandledDefault(param.Kind);
 				}
 			}
 

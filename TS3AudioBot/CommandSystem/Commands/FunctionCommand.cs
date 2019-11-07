@@ -50,8 +50,8 @@ namespace TS3AudioBot.CommandSystem.Commands
 
 			callee = obj;
 
-			NormalParameters = CommandParameter.Count(p => p.kind.IsNormal());
-			RequiredParameters = requiredParameters ?? CommandParameter.Count(p => !p.optional && p.kind.IsNormal());
+			NormalParameters = CommandParameter.Count(p => p.Kind.IsNormal());
+			RequiredParameters = requiredParameters ?? CommandParameter.Count(p => !p.Optional && p.Kind.IsNormal());
 		}
 
 		// Provide some constructors that take lambda expressions directly
@@ -93,8 +93,8 @@ namespace TS3AudioBot.CommandSystem.Commands
 			takenArguments = 0;
 			for (int p = 0; p < parameters.Length; p++)
 			{
-				var arg = CommandParameter[p].type;
-				switch (CommandParameter[p].kind)
+				var arg = CommandParameter[p].Type;
+				switch (CommandParameter[p].Kind)
 				{
 				case ParamKind.SpecialArguments:
 					parameters[p] = arguments;
@@ -107,7 +107,7 @@ namespace TS3AudioBot.CommandSystem.Commands
 				case ParamKind.Dependency:
 					if (info.TryGet(arg, out var obj))
 						parameters[p] = obj;
-					else if (CommandParameter[p].optional)
+					else if (CommandParameter[p].Optional)
 						parameters[p] = null;
 					else
 						throw new MissingContextCommandException($"Command '{internCommand.Name}' missing execution context '{arg.Name}'", arg);
@@ -124,7 +124,7 @@ namespace TS3AudioBot.CommandSystem.Commands
 					if (takenArguments >= arguments.Count) { parameters[p] = GetDefault(arg); break; }
 
 					var argResultP = arguments[takenArguments].Execute(info, Array.Empty<ICommand>(), GetTypes(arg));
-					if (CommandParameter[p].kind == ParamKind.NormalTailString && argResultP is TailString tailString)
+					if (CommandParameter[p].Kind == ParamKind.NormalTailString && argResultP is TailString tailString)
 						parameters[p] = tailString.Tail;
 					else
 						parameters[p] = ConvertParam(UnwrapPrimitive(argResultP), arg, filterLazy.Value);
@@ -148,7 +148,7 @@ namespace TS3AudioBot.CommandSystem.Commands
 					break;
 
 				default:
-					throw Tools.UnhandledDefault(CommandParameter[p].kind);
+					throw Tools.UnhandledDefault(CommandParameter[p].Kind);
 				}
 			}
 
@@ -189,7 +189,7 @@ namespace TS3AudioBot.CommandSystem.Commands
 			if (returnTypes[0] == typeof(ICommand))
 			{
 				// Return a command if we can take more arguments
-				if (CommandParameter.Any(p => p.type == typeof(string[])) || availableArguments < NormalParameters)
+				if (CommandParameter.Any(p => p.Type == typeof(string[])) || availableArguments < NormalParameters)
 					return new AppliedCommand(this, arguments);
 			}
 
@@ -257,29 +257,29 @@ namespace TS3AudioBot.CommandSystem.Commands
 			for (int i = 0; i < CommandParameter.Length; i++)
 			{
 				ref var paramInfo = ref CommandParameter[i];
-				var arg = paramInfo.type;
+				var arg = paramInfo.Type;
 				if (arg == typeof(IReadOnlyList<ICommand>))
-					paramInfo.kind = ParamKind.SpecialArguments;
+					paramInfo.Kind = ParamKind.SpecialArguments;
 				else if (arg == typeof(IReadOnlyList<Type>))
-					paramInfo.kind = ParamKind.SpecialReturns;
+					paramInfo.Kind = ParamKind.SpecialReturns;
 				else if (arg == typeof(ICommand))
-					paramInfo.kind = ParamKind.NormalCommand;
+					paramInfo.Kind = ParamKind.NormalCommand;
 				else if (arg.IsArray)
-					paramInfo.kind = ParamKind.NormalArray;
+					paramInfo.Kind = ParamKind.NormalArray;
 				else if (arg.IsEnum
 					|| XCommandSystem.BasicTypes.Contains(arg)
 					|| XCommandSystem.BasicTypes.Contains(UnwrapParamType(arg)))
-					paramInfo.kind = ParamKind.NormalParam;
+					paramInfo.Kind = ParamKind.NormalParam;
 				// TODO How to distinguish between special type and dependency?
 				else if (XCommandSystem.AdvancedTypes.Contains(arg))
-					paramInfo.kind = ParamKind.NormalParam;
+					paramInfo.Kind = ParamKind.NormalParam;
 				else
-					paramInfo.kind = ParamKind.Dependency;
+					paramInfo.Kind = ParamKind.Dependency;
 			}
 
-			var tailStringIndex = Array.FindLastIndex(CommandParameter, c => c.kind == ParamKind.NormalParam);
-			if (tailStringIndex >= 0 && CommandParameter[tailStringIndex].type == typeof(string))
-				CommandParameter[tailStringIndex].kind = ParamKind.NormalTailString;
+			var tailStringIndex = Array.FindLastIndex(CommandParameter, c => c.Kind == ParamKind.NormalParam);
+			if (tailStringIndex >= 0 && CommandParameter[tailStringIndex].Type == typeof(string))
+				CommandParameter[tailStringIndex].Kind = ParamKind.NormalTailString;
 		}
 
 		public static Type UnwrapParamType(Type type)
@@ -413,16 +413,17 @@ namespace TS3AudioBot.CommandSystem.Commands
 
 	public struct ParamInfo
 	{
-		public ParameterInfo param;
-		public Type type => param.ParameterType;
-		public ParamKind kind;
-		public bool optional;
+		public ParameterInfo Param { get; set; }
+		public Type Type => Param.ParameterType;
+		public string Name => Param.Name;
+		public ParamKind Kind;
+		public bool Optional;
 
 		public ParamInfo(ParameterInfo param, ParamKind kind, bool optional)
 		{
-			this.param = param;
-			this.kind = kind;
-			this.optional = optional;
+			Param = param;
+			Kind = kind;
+			Optional = optional;
 		}
 	}
 

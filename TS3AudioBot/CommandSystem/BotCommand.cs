@@ -23,7 +23,8 @@ namespace TS3AudioBot.CommandSystem
 	{
 		private readonly string helpLookupName;
 		private string cachedFullQualifiedName;
-		private object cachedAsJsonObj;
+		private CommandSerializeObj cachedJsonObj;
+		private CommandSerializeObj JsonObj => cachedJsonObj ?? (cachedJsonObj = new CommandSerializeObj(this));
 
 		public string InvokeName { get; }
 		private readonly string[] requiredRights;
@@ -39,9 +40,9 @@ namespace TS3AudioBot.CommandSystem
 					var strb = new StringBuilder();
 					strb.Append(InvokeName);
 					strb.Append(" (");
-					strb.Append(string.Join(", ", CommandParameter.Where(p => !p.kind.IsNormal()).Select(p => p.type.FullName).OrderBy(p => p)));
+					strb.Append(string.Join(", ", CommandParameter.Where(p => !p.Kind.IsNormal()).Select(p => p.Type.FullName).OrderBy(p => p)));
 					strb.Append("|");
-					strb.Append(string.Join(", ", CommandParameter.Where(p => p.kind.IsNormal()).Select(p => p.type.FullName)));
+					strb.Append(string.Join(", ", CommandParameter.Where(p => p.Kind.IsNormal()).Select(p => p.Type.FullName)));
 					strb.Append(")");
 					cachedFullQualifiedName = strb.ToString();
 				}
@@ -62,7 +63,7 @@ namespace TS3AudioBot.CommandSystem
 			}
 		}
 
-		public object AsJsonObj => cachedAsJsonObj ?? (cachedAsJsonObj = new CommandSerializeObj(this));
+		public object AsJsonObj => JsonObj;
 
 		public BotCommand(CommandBuildInfo buildInfo) : base(buildInfo.Method, buildInfo.Parent)
 		{
@@ -75,7 +76,20 @@ namespace TS3AudioBot.CommandSystem
 		public override string ToString()
 		{
 			var strb = new StringBuilder();
-			strb.Append("\n!").Append(InvokeName).Append(": ").Append(Description ?? strings.error_no_help ?? "<No help found>");
+			strb.Append("\n!")
+				.Append(InvokeName);
+
+			foreach (var (name, _, optional) in JsonObj.Parameter)
+			{
+				strb.Append(' ');
+				if (optional)
+					strb.Append("[<").Append(name).Append(">]");
+				else
+					strb.Append('<').Append(name).Append('>');
+			}
+
+			strb.Append(": ")
+				.Append(Description ?? strings.error_no_help ?? "<No help found>");
 
 			if (UsageList.Length > 0)
 			{
@@ -104,8 +118,8 @@ namespace TS3AudioBot.CommandSystem
 			private readonly BotCommand botCmd;
 			public string Name => botCmd.InvokeName;
 			public string Description => botCmd.Description;
-			public string[] Parameter { get; }
-			public string[] Modules { get; }
+			public (string name, string type, bool optional)[] Parameter { get; }
+			public (string type, bool optional)[] Modules { get; }
 			public string Return { get; }
 
 			public CommandSerializeObj(BotCommand botCmd)
@@ -113,12 +127,12 @@ namespace TS3AudioBot.CommandSystem
 				this.botCmd = botCmd;
 				Parameter = (
 					from x in botCmd.CommandParameter
-					where x.kind.IsNormal()
-					select UnwrapParamType(x.type).Name + (x.optional ? "?" : "")).ToArray();
+					where x.Kind.IsNormal()
+					select (x.Name, UnwrapParamType(x.Type).Name, x.Optional)).ToArray();
 				Modules = (
 					from x in botCmd.CommandParameter
-					where x.kind == ParamKind.Dependency
-					select x.type.Name + (x.optional ? "?" : "")).ToArray();
+					where x.Kind == ParamKind.Dependency
+					select (x.Type.Name, x.Optional)).ToArray();
 				Return = UnwrapReturnType(botCmd.CommandReturn).Name;
 			}
 
