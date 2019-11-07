@@ -62,5 +62,11 @@ namespace TS3Client.Audio
 		public void Stop() => stopwatch.Stop();
 
 		public void PushBytes(int count) => AbsoluteBufferLength += count;
+
+		public void ResetRemoteBuffer()
+		{
+			SongPositionOffset = SongPosition;
+			Start();
+		}
 	}
 }

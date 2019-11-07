@@ -89,10 +89,10 @@ namespace TS3Client.Audio
 			{
 				int read = inStream.Read(readBuffer, 0, readBuffer.Length, out var meta);
 				if (read == 0)
-				{
-					AudioTimer.Start();
 					return;
-				}
+
+				if (AudioTimer.RemainingBufferDuration < TimeSpan.Zero)
+					AudioTimer.ResetRemoteBuffer();
 
 				AudioTimer.PushBytes(read);
 
