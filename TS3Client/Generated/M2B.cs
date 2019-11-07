@@ -418,6 +418,7 @@ namespace TS3Client.Full.Book
 			{ var tmpv = msg.UnreadMessages; if (tmpv != null) obj.UnreadMessages = (u32)tmpv; }
 			{ var tmpv = msg.InputMuted; if (tmpv != null) obj.InputMuted = (bool)tmpv; }
 			{ var tmpv = msg.InputHardwareEnabled; if (tmpv != null) obj.InputHardwareEnabled = (bool)tmpv; }
+			{ var tmpv = msg.OutputMuted; if (tmpv != null) obj.OutputMuted = (bool)tmpv; }
 			{ var tmpv = msg.OutputHardwareEnabled; if (tmpv != null) obj.OutputHardwareEnabled = (bool)tmpv; }
 			{ var tmpv = msg.Description; if (tmpv != null) obj.Description = (str)tmpv; }
 			{ var tmpv = msg.IsPrioritySpeaker; if (tmpv != null) obj.IsPrioritySpeaker = (bool)tmpv; }

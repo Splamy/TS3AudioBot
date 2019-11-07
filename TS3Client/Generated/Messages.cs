@@ -4994,6 +4994,7 @@ namespace TS3Client.Messages
 		public i64? TotalDownloadQuota { get; set; }
 		public bool? InputMuted { get; set; }
 		public bool? InputHardwareEnabled { get; set; }
+		public bool? OutputMuted { get; set; }
 		public bool? OutputHardwareEnabled { get; set; }
 		public str Description { get; set; }
 		public bool? IsPrioritySpeaker { get; set; }
@@ -5032,6 +5033,7 @@ namespace TS3Client.Messages
 			case "client_total_bytes_downloaded": { if(Utf8Parser.TryParse(value, out i64 oval, out _)) TotalDownloadQuota = (i64)oval; } break;
 			case "client_input_muted": InputMuted = value.Length > 0 && value[0] != '0'; break;
 			case "client_input_hardware": InputHardwareEnabled = value.Length > 0 && value[0] != '0'; break;
+			case "client_output_muted": OutputMuted = value.Length > 0 && value[0] != '0'; break;
 			case "client_output_hardware": OutputHardwareEnabled = value.Length > 0 && value[0] != '0'; break;
 			case "client_description": Description = (str)Ts3String.Unescape(value); break;
 			case "client_is_priority_speaker": IsPrioritySpeaker = value.Length > 0 && value[0] != '0'; break;
@@ -5077,6 +5079,7 @@ namespace TS3Client.Messages
 				case "client_total_bytes_downloaded": foreach(var toi in toc) { toi.TotalDownloadQuota = TotalDownloadQuota; } break;
 				case "client_input_muted": foreach(var toi in toc) { toi.InputMuted = InputMuted; } break;
 				case "client_input_hardware": foreach(var toi in toc) { toi.InputHardwareEnabled = InputHardwareEnabled; } break;
+				case "client_output_muted": foreach(var toi in toc) { toi.OutputMuted = OutputMuted; } break;
 				case "client_output_hardware": foreach(var toi in toc) { toi.OutputHardwareEnabled = OutputHardwareEnabled; } break;
 				case "client_description": foreach(var toi in toc) { toi.Description = Description; } break;
 				case "client_is_priority_speaker": foreach(var toi in toc) { toi.IsPrioritySpeaker = IsPrioritySpeaker; } break;
