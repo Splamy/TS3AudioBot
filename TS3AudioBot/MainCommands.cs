@@ -190,7 +190,7 @@ namespace TS3AudioBot
 		public static void CommandBotCome(Ts3Client ts3Client, ClientCall invoker, string password = null)
 		{
 			var channel = invoker?.ChannelId;
-			if (channel != null)
+			if (channel == null)
 				throw new CommandException(strings.error_no_target_channel, CommandExceptionReason.CommandError);
 			ts3Client.MoveTo(channel.Value, password).UnwrapThrow();
 		}
