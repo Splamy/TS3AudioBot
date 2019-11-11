@@ -85,6 +85,24 @@ namespace TS3ABotUnitTests
 		}
 
 		[Test]
+		public void TailStringTest()
+		{
+			var execInfo = Utils.GetExecInfo("ic3");
+			var commandSystem = new XCommandSystem();
+			var group = commandSystem.RootCommand;
+			group.AddCommand("cmd", new FunctionCommand(s => s));
+			string CallCommand(string command)
+			{
+				return commandSystem.ExecuteCommand(execInfo, command);
+			}
+
+			Assert.AreEqual("a", CallCommand("!cmd a"));
+			Assert.AreEqual("a b", CallCommand("!cmd a b"));
+			Assert.AreEqual("a", CallCommand("!cmd a \" b"));
+			Assert.AreEqual("a b 1", CallCommand("!cmd a b 1"));
+		}
+
+		[Test]
 		public void XCommandSystemFilterTest()
 		{
 			var filterList = new Dictionary<string, object>

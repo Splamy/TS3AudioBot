@@ -281,7 +281,7 @@ namespace TS3AudioBot.CommandSystem.Commands
 					paramInfo.Kind = ParamKind.Dependency;
 			}
 
-			var tailStringIndex = Array.FindLastIndex(CommandParameter, c => c.Kind == ParamKind.NormalParam);
+			var tailStringIndex = Array.FindLastIndex(CommandParameter, c => c.Kind.IsNormal());
 			if (tailStringIndex >= 0 && CommandParameter[tailStringIndex].Type == typeof(string))
 				CommandParameter[tailStringIndex].Kind = ParamKind.NormalTailString;
 		}
