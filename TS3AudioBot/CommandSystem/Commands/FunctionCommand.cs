@@ -123,7 +123,11 @@ namespace TS3AudioBot.CommandSystem.Commands
 				case ParamKind.NormalTailString:
 					if (takenArguments >= arguments.Count) { parameters[p] = GetDefault(arg); break; }
 
-					var argResultP = arguments[takenArguments].Execute(info, Array.Empty<ICommand>(), GetTypes(arg));
+					var types = GetTypes(arg);
+					if (CommandParameter[p].Kind == ParamKind.NormalTailString)
+						types.Insert(0, typeof(TailString));
+
+					var argResultP = arguments[takenArguments].Execute(info, Array.Empty<ICommand>(), types);
 					if (CommandParameter[p].Kind == ParamKind.NormalTailString && argResultP is TailString tailString)
 						parameters[p] = tailString.Tail;
 					else
@@ -362,7 +366,7 @@ namespace TS3AudioBot.CommandSystem.Commands
 			catch (InvalidCastException ex) { throw new CommandException(string.Format(strings.error_cmd_could_not_convert_to, value, unwrappedTargetType.Name), ex, CommandExceptionReason.MissingParameter); }
 		}
 
-		private static IReadOnlyList<Type> GetTypes(Type targetType)
+		private static List<Type> GetTypes(Type targetType)
 		{
 			var types = new List<Type>();
 			types.Add(targetType);
