@@ -26,7 +26,7 @@ namespace TS3AudioBot.Audio
 		private readonly ConfBot confBot;
 		private readonly IPlayerConnection playerConnection;
 		private readonly PlaylistManager playlistManager;
-		private readonly ResourceFactory resourceFactory;
+		private readonly ResourceResolver resourceResolver;
 
 		public PlayInfoEventArgs CurrentPlayData { get; private set; }
 		public bool IsPlaying => CurrentPlayData != null;
@@ -37,18 +37,18 @@ namespace TS3AudioBot.Audio
 		public event EventHandler<SongEndEventArgs> BeforeResourceStopped;
 		public event EventHandler AfterResourceStopped;
 
-		public PlayManager(ConfBot config, IPlayerConnection playerConnection, PlaylistManager playlistManager, ResourceFactory resourceFactory)
+		public PlayManager(ConfBot config, IPlayerConnection playerConnection, PlaylistManager playlistManager, ResourceResolver resourceFactory)
 		{
 			confBot = config;
 			this.playerConnection = playerConnection;
 			this.playlistManager = playlistManager;
-			this.resourceFactory = resourceFactory;
+			this.resourceResolver = resourceFactory;
 		}
 
 		public E<LocalStr> Enqueue(InvokerData invoker, AudioResource ar) => Enqueue(invoker, new PlaylistItem(ar));
 		public E<LocalStr> Enqueue(InvokerData invoker, string message, string audioType = null)
 		{
-			var result = resourceFactory.Load(message, audioType);
+			var result = resourceResolver.Load(message, audioType);
 			if (!result)
 				return result.Error;
 			return Enqueue(invoker, new PlaylistItem(result.Value.BaseData));
@@ -89,7 +89,7 @@ namespace TS3AudioBot.Audio
 			if (ar is null)
 				throw new ArgumentNullException(nameof(ar));
 
-			var result = resourceFactory.Load(ar);
+			var result = resourceResolver.Load(ar);
 			if (!result)
 				return result.Error;
 			return Play(invoker, result.Value, meta);
@@ -103,7 +103,7 @@ namespace TS3AudioBot.Audio
 		/// <returns>Ok if successful, or an error message otherwise.</returns>
 		public E<LocalStr> Play(InvokerData invoker, string link, string audioType = null, MetaData meta = null)
 		{
-			var result = resourceFactory.Load(link, audioType);
+			var result = resourceResolver.Load(link, audioType);
 			if (!result)
 				return result.Error;
 			return Play(invoker, result.Value, meta ?? new MetaData());
@@ -148,7 +148,7 @@ namespace TS3AudioBot.Audio
 
 		private E<LocalStr> StartResource(InvokerData invoker, PlaylistItem item)
 		{
-			var result = resourceFactory.Load(item.AudioResource);
+			var result = resourceResolver.Load(item.AudioResource);
 			if (!result)
 				return result.Error;
 
@@ -160,7 +160,7 @@ namespace TS3AudioBot.Audio
 			if (meta.From != PlaySource.FromPlaylist)
 				meta.ResourceOwnerUid = invoker.ClientUid;
 
-			var sourceLink = resourceFactory.RestoreLink(play.BaseData).OkOr(null);
+			var sourceLink = resourceResolver.RestoreLink(play.BaseData).OkOr(null);
 			var playInfo = new PlayInfoEventArgs(invoker, play, meta, sourceLink);
 			BeforeResourceStarted?.Invoke(this, playInfo);
 

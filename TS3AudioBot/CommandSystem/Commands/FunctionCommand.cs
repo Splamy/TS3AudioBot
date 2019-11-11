@@ -208,9 +208,9 @@ namespace TS3AudioBot.CommandSystem.Commands
 
 			if (result == null)
 				throw new CommandException("Couldn't find a proper command result for function " + internCommand.Name, CommandExceptionReason.NoReturnMatch);
-			var result2 = UnwrapReturn(result);
+			var unwrapedResult = UnwrapReturn(result);
 			var resultType = result.GetType();
-			var resultType2 = result2.GetType();
+			var unwrapedResultType = unwrapedResult.GetType();
 
 			// Take first fitting command result
 			foreach (var returnType in returnTypes)
@@ -220,8 +220,8 @@ namespace TS3AudioBot.CommandSystem.Commands
 
 				if (returnType.IsAssignableFrom(resultType))
 					return ResultHelper.ToResult(returnType, result);
-				else if (returnType.IsAssignableFrom(resultType2))
-					return ResultHelper.ToResult(returnType, result2);
+				else if (returnType.IsAssignableFrom(unwrapedResultType))
+					return ResultHelper.ToResult(returnType, unwrapedResult);
 				else if (returnType == typeof(string))
 				{
 					Log.Debug("Convert {0} to a string", result);
@@ -231,13 +231,13 @@ namespace TS3AudioBot.CommandSystem.Commands
 				}
 				else if (XCommandSystem.BasicTypes.Contains(returnType))
 				{
-					if (XCommandSystem.BasicTypes.Contains(resultType2) && resultType2 != typeof(string))
+					if (XCommandSystem.BasicTypes.Contains(unwrapedResultType) && unwrapedResultType != typeof(string))
 					{
 						// Automatically try to convert between primitive types
 						try
 						{
 							return ResultHelper.ToResult(resultType,
-								Convert.ChangeType(result2, returnType, CultureInfo.InvariantCulture));
+								Convert.ChangeType(unwrapedResult, returnType, CultureInfo.InvariantCulture));
 						}
 						catch
 						{

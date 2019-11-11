@@ -26,60 +26,60 @@ using TS3AudioBot.Web.Api;
 
 namespace TS3AudioBot.ResourceFactories
 {
-	public sealed class ResourceFactory : IDisposable
+	public sealed class ResourceResolver : IDisposable
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private const string CmdResPrepath = "from ";
 		private const string CmdListPrepath = "list from ";
 		private const string CmdSearchPrepath = "search from ";
 
-		private readonly Dictionary<string, FactoryData> allFacories = new Dictionary<string, FactoryData>();
-		private readonly List<IPlaylistFactory> listFactories = new List<IPlaylistFactory>();
-		private readonly List<IResourceFactory> resFactories = new List<IResourceFactory>();
-		private readonly List<ISearchFactory> searchFactories = new List<ISearchFactory>();
+		private readonly Dictionary<string, ResolverData> allResolvers = new Dictionary<string, ResolverData>();
+		private readonly List<IPlaylistResolver> listResolvers = new List<IPlaylistResolver>();
+		private readonly List<IResourceResolver> resResolvers = new List<IResourceResolver>();
+		private readonly List<ISearchResolver> searchResolvers = new List<ISearchResolver>();
 		private readonly CommandManager commandManager;
 
-		public ResourceFactory(ConfFactories config, CommandManager commandManager)
+		public ResourceResolver(ConfFactories config, CommandManager commandManager)
 		{
 			this.commandManager = commandManager;
 
-			AddFactory(new MediaFactory(config.Media));
-			AddFactory(new YoutubeFactory());
-			AddFactory(new SoundcloudFactory());
-			AddFactory(new TwitchFactory());
-			AddFactory(new BandcampFactory());
+			AddResolver(new MediaResolver(config.Media));
+			AddResolver(new YoutubeResolver());
+			AddResolver(new SoundcloudResolver());
+			AddResolver(new TwitchResolver());
+			AddResolver(new BandcampResolver());
 		}
 
-		private T GetFactoryByType<T>(string audioType) where T : class, IFactory =>
+		private T GetResolverByType<T>(string audioType) where T : class, IResolver =>
 			// ToLower for legacy reasons
-			allFacories.TryGetValue(audioType.ToLowerInvariant(), out var factoryInfo) && factoryInfo.Factory is T factory
-				? factory
+			allResolvers.TryGetValue(audioType.ToLowerInvariant(), out var ResolverInfo) && ResolverInfo.Resolver is T resolver
+				? resolver
 				: null;
 
-		private IEnumerable<(IResourceFactory, MatchCertainty)> GetResFactoryByLink(string uri) =>
-			from fac in resFactories
-			let facCertain = fac.MatchResource(uri)
-			where facCertain != MatchCertainty.Never
-			orderby facCertain descending
-			select (fac, facCertain);
+		private IEnumerable<(IResourceResolver, MatchCertainty)> GetResResolverByLink(string uri) =>
+			from rsv in resResolvers
+			let rsvCertain = rsv.MatchResource(uri)
+			where rsvCertain != MatchCertainty.Never
+			orderby rsvCertain descending
+			select (rsv, rsvCertain);
 
-		private IEnumerable<(IPlaylistFactory, MatchCertainty)> GetListFactoryByLink(string uri) =>
-			from fac in listFactories
-			let facCertain = fac.MatchPlaylist(uri)
-			where facCertain != MatchCertainty.Never
-			orderby facCertain descending
-			select (fac, facCertain);
+		private IEnumerable<(IPlaylistResolver, MatchCertainty)> GetListResolverByLink(string uri) =>
+			from rsv in listResolvers
+			let rsvCertain = rsv.MatchPlaylist(uri)
+			where rsvCertain != MatchCertainty.Never
+			orderby rsvCertain descending
+			select (rsv, rsvCertain);
 
 		private static IEnumerable<T> FilterUsable<T>(IEnumerable<(T, MatchCertainty)> enu)
 		{
 			var highestCertainty = MatchCertainty.Never;
-			foreach (var (fac, cert) in enu)
+			foreach (var (rsv, cert) in enu)
 			{
 				if ((highestCertainty == MatchCertainty.Always && cert < MatchCertainty.Always)
 					|| (highestCertainty > MatchCertainty.Never && cert <= MatchCertainty.OnlyIfLast))
 					yield break;
 
-				yield return fac;
+				yield return rsv;
 
 				if (cert > highestCertainty)
 					highestCertainty = cert;
@@ -95,19 +95,19 @@ namespace TS3AudioBot.ResourceFactories
 			if (resource is null)
 				throw new ArgumentNullException(nameof(resource));
 
-			var factory = GetFactoryByType<IResourceFactory>(resource.AudioType);
-			if (factory is null)
+			var resolver = GetResolverByType<IResourceResolver>(resource.AudioType);
+			if (resolver is null)
 				return CouldNotLoad(string.Format(strings.error_resfac_no_registered_factory, resource.AudioType));
 
 			var sw = Stopwatch.StartNew();
 			R<PlayResource, LocalStr> result;
 			try
 			{
-				result = factory.GetResourceById(resource);
+				result = resolver.GetResourceById(resource);
 			}
 			catch (Exception ex)
 			{
-				Log.Error(ex, "Resource factory '{0}' threw while trying to resolve '{@resource}'", factory.FactoryFor, resource);
+				Log.Error(ex, "Resource resolver '{0}' threw while trying to resolve '{@resource}'", resolver.ResolverFor, resource);
 				return CouldNotLoad(strings.error_playmgr_internal_error);
 			}
 			if (!result.Ok)
@@ -118,10 +118,10 @@ namespace TS3AudioBot.ResourceFactories
 
 		/// <summary>Generates a new <see cref="PlayResource"/> which can be played.
 		/// The message used will be cleared of bb-tags. Also lets you pick an
-		/// <see cref="IResourceFactory"/> identifier to optionally select a factory.
+		/// <see cref="IResourceResolver"/> identifier to optionally select a resolver.
 		/// </summary>
 		/// <param name="message">The link/uri to resolve for the resource.</param>
-		/// <param name="audioType">The associated resource type string to a factory.
+		/// <param name="audioType">The associated resource type string to a resolver.
 		/// Leave null to let it detect automatically.</param>
 		/// <returns>The playable resource if successful, or an error message otherwise.</returns>
 		public R<PlayResource, LocalStr> Load(string message, string audioType = null)
@@ -133,26 +133,26 @@ namespace TS3AudioBot.ResourceFactories
 
 			if (audioType != null)
 			{
-				var factory = GetFactoryByType<IResourceFactory>(audioType);
-				if (factory is null)
+				var resolver = GetResolverByType<IResourceResolver>(audioType);
+				if (resolver is null)
 					return CouldNotLoad(string.Format(strings.error_resfac_no_registered_factory, audioType));
 
-				var result = factory.GetResource(netlinkurl);
+				var result = resolver.GetResource(netlinkurl);
 				if (!result.Ok)
 					return CouldNotLoad(result.Error.Str);
 				return result;
 			}
 
 			var sw = Stopwatch.StartNew();
-			var factories = FilterUsable(GetResFactoryByLink(netlinkurl));
+			var resolvers = FilterUsable(GetResResolverByLink(netlinkurl));
 			List<(string, LocalStr)> errors = null;
-			foreach (var factory in factories)
+			foreach (var resolver in resolvers)
 			{
-				var result = factory.GetResource(netlinkurl);
-				Log.Trace("ResFactory {0} tried, result: {1}", factory.FactoryFor, result.Ok ? "Ok" : result.Error.Str);
+				var result = resolver.GetResource(netlinkurl);
+				Log.Trace("Resolver {0} tried, result: {1}", resolver.ResolverFor, result.Ok ? "Ok" : result.Error.Str);
 				if (result)
 					return result;
-				(errors = errors ?? new List<(string, LocalStr)>()).Add((factory.FactoryFor, result.Error));
+				(errors = errors ?? new List<(string, LocalStr)>()).Add((resolver.ResolverFor, result.Error));
 			}
 			Log.Debug("Took {0}ms to resolve resource.", sw.ElapsedMilliseconds);
 
@@ -161,25 +161,25 @@ namespace TS3AudioBot.ResourceFactories
 
 		public R<Playlist, LocalStr> LoadPlaylistFrom(string message) => LoadPlaylistFrom(message, null);
 
-		private R<Playlist, LocalStr> LoadPlaylistFrom(string message, IPlaylistFactory listFactory)
+		private R<Playlist, LocalStr> LoadPlaylistFrom(string message, IPlaylistResolver listResolver)
 		{
 			if (string.IsNullOrWhiteSpace(message))
 				throw new ArgumentNullException(nameof(message));
 
 			string netlinkurl = TextUtil.ExtractUrlFromBb(message);
 
-			if (listFactory != null)
-				return listFactory.GetPlaylist(netlinkurl);
+			if (listResolver != null)
+				return listResolver.GetPlaylist(netlinkurl);
 
-			var factories = FilterUsable(GetListFactoryByLink(netlinkurl));
+			var resolvers = FilterUsable(GetListResolverByLink(netlinkurl));
 			List<(string, LocalStr)> errors = null;
-			foreach (var factory in factories)
+			foreach (var resolver in resolvers)
 			{
-				var result = factory.GetPlaylist(netlinkurl);
-				Log.Trace("ListFactory {0} tried, result: {1}", factory.FactoryFor, result.Ok ? "Ok" : result.Error.Str);
+				var result = resolver.GetPlaylist(netlinkurl);
+				Log.Trace("ListResolver {0} tried, result: {1}", resolver.ResolverFor, result.Ok ? "Ok" : result.Error.Str);
 				if (result)
 					return result;
-				(errors = errors ?? new List<(string, LocalStr)>()).Add((factory.FactoryFor, result.Error));
+				(errors = errors ?? new List<(string, LocalStr)>()).Add((resolver.ResolverFor, result.Error));
 			}
 
 			return ToErrorString(errors);
@@ -187,68 +187,68 @@ namespace TS3AudioBot.ResourceFactories
 
 		public R<string, LocalStr> RestoreLink(AudioResource res)
 		{
-			var factory = GetFactoryByType<IResourceFactory>(res.AudioType);
-			if (factory is null)
+			var resolver = GetResolverByType<IResourceResolver>(res.AudioType);
+			if (resolver is null)
 				return CouldNotLoad();
-			return factory.RestoreLink(res);
+			return resolver.RestoreLink(res);
 		}
 
 		public R<Stream, LocalStr> GetThumbnail(PlayResource playResource)
 		{
-			var factory = GetFactoryByType<IThumbnailFactory>(playResource.BaseData.AudioType);
-			if (factory is null)
+			var resolver = GetResolverByType<IThumbnailResolver>(playResource.BaseData.AudioType);
+			if (resolver is null)
 				return new LocalStr(string.Format(strings.error_resfac_no_registered_factory, playResource.BaseData.AudioType));
 
 			var sw = Stopwatch.StartNew();
-			var result = factory.GetThumbnail(playResource);
+			var result = resolver.GetThumbnail(playResource);
 			Log.Debug("Took {0}ms to load thumbnail.", sw.ElapsedMilliseconds);
 			return result;
 		}
 
-		public void AddFactory(IFactory factory)
+		public void AddResolver(IResolver resolver)
 		{
-			if (factory.FactoryFor.ToLowerInvariant() != factory.FactoryFor)
-				throw new ArgumentException($"The factory audio type \"{nameof(IFactory.FactoryFor)}\" must be in lower case.", nameof(factory));
-			if (allFacories.ContainsKey(factory.FactoryFor))
-				throw new ArgumentException("A factory for this type already has been registered.", nameof(factory));
+			if (resolver.ResolverFor.ToLowerInvariant() != resolver.ResolverFor)
+				throw new ArgumentException($"The resolver audio type \"{nameof(IResolver.ResolverFor)}\" must be in lower case.", nameof(resolver));
+			if (allResolvers.ContainsKey(resolver.ResolverFor))
+				throw new ArgumentException("A resolver for this type already has been registered.", nameof(resolver));
 
-			var commands = new List<FactoryCommand>();
-			if (factory is IResourceFactory resFactory)
+			var commands = new List<ResolverCommand>();
+			if (resolver is IResourceResolver resResolver)
 			{
-				commands.Add(new PlayCommand(factory.FactoryFor, CmdResPrepath + resFactory.FactoryFor));
-				resFactories.Add(resFactory);
+				commands.Add(new PlayCommand(resolver.ResolverFor, CmdResPrepath + resResolver.ResolverFor));
+				resResolvers.Add(resResolver);
 			}
-			if (factory is IPlaylistFactory listFactory)
+			if (resolver is IPlaylistResolver listResolver)
 			{
-				commands.Add(new PlayListCommand(listFactory, CmdListPrepath + listFactory.FactoryFor));
-				listFactories.Add(listFactory);
+				commands.Add(new PlayListCommand(listResolver, CmdListPrepath + listResolver.ResolverFor));
+				listResolvers.Add(listResolver);
 			}
-			if (factory is ISearchFactory searchFactory)
+			if (resolver is ISearchResolver searchResolver)
 			{
-				commands.Add(new SearchCommand(searchFactory, CmdSearchPrepath + searchFactory.FactoryFor));
-				searchFactories.Add(searchFactory);
+				commands.Add(new SearchCommand(searchResolver, CmdSearchPrepath + searchResolver.ResolverFor));
+				searchResolvers.Add(searchResolver);
 			}
 
-			var factoryInfo = new FactoryData(factory, commands.ToArray());
-			allFacories.Add(factory.FactoryFor, factoryInfo);
-			commandManager.RegisterCollection(factoryInfo);
+			var resolverInfo = new ResolverData(resolver, commands.ToArray());
+			allResolvers.Add(resolver.ResolverFor, resolverInfo);
+			commandManager.RegisterCollection(resolverInfo);
 		}
 
-		public void RemoveFactory(IFactory factory)
+		public void RemoveResolver(IResolver Resolver)
 		{
-			if (!allFacories.TryGetValue(factory.FactoryFor, out var factoryInfo))
+			if (!allResolvers.TryGetValue(Resolver.ResolverFor, out var resolverInfo))
 				return;
 
-			allFacories.Remove(factory.FactoryFor);
+			allResolvers.Remove(Resolver.ResolverFor);
 
-			if (factory is IResourceFactory resFactory)
-				resFactories.Remove(resFactory);
-			if (factory is IPlaylistFactory listFactory)
-				listFactories.Remove(listFactory);
-			if (factory is ISearchFactory searchFactory)
-				searchFactories.Remove(searchFactory);
+			if (Resolver is IResourceResolver resResolver)
+				resResolvers.Remove(resResolver);
+			if (Resolver is IPlaylistResolver listResolver)
+				listResolvers.Remove(listResolver);
+			if (Resolver is ISearchResolver searchResolver)
+				searchResolvers.Remove(searchResolver);
 
-			commandManager.UnregisterCollection(factoryInfo);
+			commandManager.UnregisterCollection(resolverInfo);
 		}
 
 		private static LocalStr CouldNotLoad(string reason = null)
@@ -260,44 +260,44 @@ namespace TS3AudioBot.ResourceFactories
 			return new LocalStr(strb.ToString());
 		}
 
-		private static LocalStr ToErrorString(List<(string fact, LocalStr err)> errors)
+		private static LocalStr ToErrorString(List<(string rsv, LocalStr err)> errors)
 		{
 			if (errors is null || errors.Count == 0)
 				throw new ArgumentException("No errors provided", nameof(errors));
 			if (errors.Count == 1)
-				return CouldNotLoad($"{errors[0].fact}: {errors[0].err}");
+				return CouldNotLoad($"{errors[0].rsv}: {errors[0].err}");
 			return CouldNotLoad(strings.error_resfac_multiple_factories_failed);
 		}
 
 		public void Dispose()
 		{
-			foreach (var factoryInfo in allFacories.Values)
-				factoryInfo.Factory.Dispose();
-			allFacories.Clear();
+			foreach (var resolverInfo in allResolvers.Values)
+				resolverInfo.Resolver.Dispose();
+			allResolvers.Clear();
 		}
 
-		private sealed class FactoryData : ICommandBag
+		private sealed class ResolverData : ICommandBag
 		{
-			private readonly FactoryCommand[] registeredCommands;
+			private readonly ResolverCommand[] registeredCommands;
 
-			public IFactory Factory { get; }
+			public IResolver Resolver { get; }
 			public IReadOnlyCollection<BotCommand> BagCommands { get; }
 			public IReadOnlyCollection<string> AdditionalRights => Array.Empty<string>();
 
-			public FactoryData(IFactory factory, FactoryCommand[] commands)
+			public ResolverData(IResolver resolver, ResolverCommand[] commands)
 			{
-				Factory = factory;
+				Resolver = resolver;
 				registeredCommands = commands;
 				BagCommands = registeredCommands.Select(x => x.Command).ToArray();
 			}
 		}
 
-		private abstract class FactoryCommand
+		private abstract class ResolverCommand
 		{
 			public BotCommand Command { get; protected set; }
 		}
 
-		private sealed class PlayCommand : FactoryCommand
+		private sealed class PlayCommand : ResolverCommand
 		{
 			private static readonly MethodInfo Method = typeof(PlayCommand).GetMethod(nameof(PropagiatePlay));
 			private readonly string audioType;
@@ -318,14 +318,14 @@ namespace TS3AudioBot.ResourceFactories
 			}
 		}
 
-		private sealed class PlayListCommand : FactoryCommand
+		private sealed class PlayListCommand : ResolverCommand
 		{
 			private static readonly MethodInfo Method = typeof(PlayListCommand).GetMethod(nameof(PropagiateLoad));
-			private readonly IPlaylistFactory factory;
+			private readonly IPlaylistResolver resolver;
 
-			public PlayListCommand(IPlaylistFactory factory, string cmdPath)
+			public PlayListCommand(IPlaylistResolver resolver, string cmdPath)
 			{
-				this.factory = factory;
+				this.resolver = resolver;
 				var builder = new CommandBuildInfo(
 					this,
 					Method,
@@ -333,22 +333,22 @@ namespace TS3AudioBot.ResourceFactories
 				Command = new BotCommand(builder);
 			}
 
-			public void PropagiateLoad(ResourceFactory resourceFactory, UserSession session, string url)
+			public void PropagiateLoad(ResourceResolver resourceResolver, UserSession session, string url)
 			{
-				var playlist = resourceFactory.LoadPlaylistFrom(url, factory).UnwrapThrow();
+				var playlist = resourceResolver.LoadPlaylistFrom(url, resolver).UnwrapThrow();
 
 				session.Set(SessionConst.Playlist, playlist);
 			}
 		}
 
-		private sealed class SearchCommand : FactoryCommand
+		private sealed class SearchCommand : ResolverCommand
 		{
 			private static readonly MethodInfo Method = typeof(SearchCommand).GetMethod(nameof(PropagiateSearch));
-			private readonly ISearchFactory factory;
+			private readonly ISearchResolver resolver;
 
-			public SearchCommand(ISearchFactory factory, string cmdPath)
+			public SearchCommand(ISearchResolver resolver, string cmdPath)
 			{
-				this.factory = factory;
+				this.resolver = resolver;
 				var builder = new CommandBuildInfo(
 					this,
 					Method,
@@ -358,7 +358,7 @@ namespace TS3AudioBot.ResourceFactories
 
 			public JsonArray<AudioResource> PropagiateSearch(UserSession session, CallerInfo callerInfo, string keyword)
 			{
-				var result = factory.Search(keyword);
+				var result = resolver.Search(keyword);
 				var list = result.UnwrapThrow();
 				session.Set(SessionConst.SearchResult, list);
 

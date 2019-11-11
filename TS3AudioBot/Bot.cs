@@ -51,7 +51,7 @@ namespace TS3AudioBot
 		public string Name => config.Name;
 		public bool QuizMode { get; set; }
 
-		private readonly ResourceFactory resourceFactory;
+		private readonly ResourceResolver resourceResolver;
 		private readonly CommandManager commandManager;
 		private Ts3Client clientConnection;
 		private Ts3FullClient tsFullClient;
@@ -60,12 +60,12 @@ namespace TS3AudioBot
 		private IVoiceTarget targetManager;
 		private IPlayerConnection playerConnection;
 
-		public Bot(Id id, ConfBot config, BotInjector injector, ResourceFactory resourceFactory, CommandManager commandManager)
+		public Bot(Id id, ConfBot config, BotInjector injector, ResourceResolver resourceFactory, CommandManager commandManager)
 		{
 			this.Id = id;
 			this.config = config;
 			this.Injector = injector;
-			this.resourceFactory = resourceFactory;
+			this.resourceResolver = resourceFactory;
 			this.commandManager = commandManager;
 		}
 
@@ -397,7 +397,7 @@ namespace TS3AudioBot
 				Stream setStream = null;
 				if (e is PlayInfoEventArgs startEvent)
 				{
-					setStream = ImageUtil.ResizeImageSave(resourceFactory.GetThumbnail(startEvent.PlayResource).OkOr(null), out _);
+					setStream = ImageUtil.ResizeImageSave(resourceResolver.GetThumbnail(startEvent.PlayResource).OkOr(null), out _);
 					setStream = setStream ?? GetRandomFile("play*");
 					Upload(setStream);
 				}
@@ -452,23 +452,15 @@ namespace TS3AudioBot
 
 			TryCatchCommand(info, answer, () =>
 			{
-				// parse (and execute) the command
-				var res = commandManager.CommandSystem.Execute(info, command);
+				// parse and execute the command
+				var s = commandManager.CommandSystem.ExecuteCommand(info, command);
 
 				if (!answer)
 					return;
 
 				// Write result to user
-				if (res is IPrimitiveResult<string> sRes)
-				{
-					var s = sRes.Get();
-					if (!string.IsNullOrEmpty(s))
-						info.Write(s).UnwrapToLog(Log);
-				}
-				else if (res != null)
-				{
-					Log.Warn($"Got result which is not a string/empty. Result: {res}");
-				}
+				if (!string.IsNullOrEmpty(s))
+					info.Write(s).UnwrapToLog(Log);
 			});
 		}
 

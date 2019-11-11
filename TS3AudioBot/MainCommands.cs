@@ -151,7 +151,7 @@ namespace TS3AudioBot
 		public static void CommandBotDescriptionSet(Ts3Client ts3Client, string description) => ts3Client.ChangeDescription(description).UnwrapThrow();
 
 		[Command("bot diagnose", "_undocumented")]
-		public static JsonArray<SelfDiagnoseMessage> CommandBotDiagnose(IPlayerConnection player, Connection book)
+		public static JsonArray<SelfDiagnoseMessage> CommandBotDiagnose(IPlayerConnection player, IVoiceTarget target, Connection book)
 		{
 			var problems = new List<SelfDiagnoseMessage>();
 			// ** Diagnose common playback problems and more **
@@ -165,11 +165,23 @@ namespace TS3AudioBot
 
 			// Check volume 0
 			if (player.Volume == 0)
-				problems.Add(new SelfDiagnoseMessage { Description = "The volume level is a 0.", LevelValue = SelfDiagnoseLevel.Warning });
+				problems.Add(new SelfDiagnoseMessage { Description = "The volume level is at 0.", LevelValue = SelfDiagnoseLevel.Warning });
+
+			// Check if send mode hasn't been selected yet
+			if (target.SendMode == TargetSendMode.None)
+				problems.Add(new SelfDiagnoseMessage { Description = "Send mode is currently 'None', use '!whisper off' for example to send via voice.", LevelValue = SelfDiagnoseLevel.Warning });
 
 			// ... more
 
-			return new JsonArray<SelfDiagnoseMessage>(problems, x => string.Join("\n", x.Select(problem => problem.Description)));
+			return new JsonArray<SelfDiagnoseMessage>(problems, x =>
+			{
+				if (x.Count == 0)
+					return "No problems detected";
+				var strb = new StringBuilder("The following issues have been found:");
+				foreach (var prob in x)
+					strb.Append("\n- ").Append(prob.Description);
+				return strb.ToString();
+			});
 		}
 
 		[Command("bot disconnect")]
@@ -318,7 +330,7 @@ namespace TS3AudioBot
 		}
 
 		[Command("data song cover get", "_undocumented")]
-		public static DataStream CommandData(ResourceFactory resourceFactory, PlayManager playManager) =>
+		public static DataStream CommandData(ResourceResolver resourceFactory, PlayManager playManager) =>
 			new DataStream(response =>
 			{
 				var cur = playManager.CurrentPlayData;
@@ -440,7 +452,7 @@ namespace TS3AudioBot
 		[Command("help all", "_undocumented")]
 		public static JsonArray<string> CommandHelpAll(CommandManager commandManager)
 		{
-			var botComList = commandManager.AllCommands.Select(c => c.InvokeName).OrderBy(x => x).GroupBy(n => n.Split(' ')[0]).Select(x => x.Key).ToArray();
+			var botComList = commandManager.CommandSystem.RootCommand.Commands.Select(c => c.Key).ToArray();
 			return new JsonArray<string>(botComList, bcl =>
 			{
 				var strb = new StringBuilder();
@@ -462,6 +474,7 @@ namespace TS3AudioBot
 			CommandGroup group = commandManager.CommandSystem.RootCommand;
 			ICommand target = group;
 			filter = filter ?? Filter.DefaultFilter;
+			var realPath = new List<string>();
 			for (int i = 0; i < command.Length; i++)
 			{
 				var possibilities = filter.Filter(group.Commands, command[i]).ToList();
@@ -470,19 +483,21 @@ namespace TS3AudioBot
 				if (possibilities.Count > 1)
 					throw new CommandException(string.Format(strings.cmd_help_error_ambiguous_command, string.Join(", ", possibilities.Select(kvp => kvp.Key))), CommandExceptionReason.CommandError);
 
+				realPath.Add(possibilities[0].Key);
 				target = possibilities[0].Value;
+
 				if (i < command.Length - 1)
 				{
 					group = target as CommandGroup;
 					if (group is null)
-						throw new CommandException(string.Format(strings.cmd_help_error_no_further_subfunctions, string.Join(" ", command, 0, i)), CommandExceptionReason.CommandError);
+						throw new CommandException(string.Format(strings.cmd_help_error_no_further_subfunctions, string.Join(" ", realPath, 0, i)), CommandExceptionReason.CommandError);
 				}
 			}
 
 			switch (target)
 			{
 			case BotCommand targetB:
-				return new JsonValue<object>(targetB.AsJsonObj);
+				return new JsonValue<BotCommand>(targetB);
 			case CommandGroup targetCg:
 				var subList = targetCg.Commands.Select(g => g.Key).ToArray();
 				return new JsonArray<string>(subList, string.Format(strings.cmd_help_info_contains_subfunctions, string.Join(", ", subList)));
@@ -491,6 +506,8 @@ namespace TS3AudioBot
 				foreach (var botCom in targetOfc.Functions.OfType<BotCommand>())
 					strb.Append(botCom);
 				return new JsonValue<string>(strb.ToString());
+			case AliasCommand targetAlias:
+				return new JsonValue<string>(string.Format("'{0}' is an alias for:\n{1}", string.Join(" ", realPath), targetAlias.AliasString));
 			default:
 				throw new CommandException(strings.cmd_help_error_unknown_error, CommandExceptionReason.CommandError);
 			}
@@ -532,7 +549,7 @@ namespace TS3AudioBot
 		}
 
 		[Command("history clean removedefective")]
-		public static JsonEmpty CommandHistoryCleanRemove(HistoryManager historyManager, ResourceFactory resourceFactory, CallerInfo caller, UserSession session = null)
+		public static JsonEmpty CommandHistoryCleanRemove(HistoryManager historyManager, ResourceResolver resourceFactory, CallerInfo caller, UserSession session = null)
 		{
 			if (caller.ApiCall)
 			{
@@ -753,11 +770,11 @@ namespace TS3AudioBot
 		}
 
 		[Command("info")]
-		public static JsonValue<QueueInfo> CommandInfo(PlayManager playManager, ResourceFactory resourceFactory, PlaylistManager playlistManager, string offset = null, int? count = null)
+		public static JsonValue<QueueInfo> CommandInfo(ResourceResolver resourceFactory, PlaylistManager playlistManager, string offset = null, int? count = null)
 			=> CommandInfo(resourceFactory, playlistManager, GetIndexExpression(playlistManager, offset ?? "@-1"), count);
 
 		[Command("info")]
-		public static JsonValue<QueueInfo> CommandInfo(ResourceFactory resourceFactory, PlaylistManager playlistManager, int offset, int? count = null)
+		public static JsonValue<QueueInfo> CommandInfo(ResourceResolver resourceFactory, PlaylistManager playlistManager, int offset, int? count = null)
 		{
 			const int maxSongs = 20;
 			var playIndex = playlistManager.Index;
@@ -856,7 +873,7 @@ namespace TS3AudioBot
 		}
 
 		[Command("list add")]
-		public static JsonValue<PlaylistItemGetData> CommandListAddInternal(ResourceFactory resourceFactory, InvokerData invoker, PlaylistManager playlistManager, string listId, string link /* TODO param */)
+		public static JsonValue<PlaylistItemGetData> CommandListAddInternal(ResourceResolver resourceFactory, InvokerData invoker, PlaylistManager playlistManager, string listId, string link /* TODO param */)
 		{
 			PlaylistItemGetData getData = null;
 			playlistManager.ModifyPlaylist(listId, plist =>
@@ -895,7 +912,7 @@ namespace TS3AudioBot
 			=> playlistManager.DeletePlaylist(listId).UnwrapThrow();
 
 		[Command("list import", "cmd_list_get_help")] // TODO readjust help texts
-		public static JsonValue<PlaylistInfo> CommandListImport(PlaylistManager playlistManager, ResourceFactory resourceFactory, string listId, string link)
+		public static JsonValue<PlaylistInfo> CommandListImport(PlaylistManager playlistManager, ResourceResolver resourceFactory, string listId, string link)
 		{
 			var getList = resourceFactory.LoadPlaylistFrom(link).UnwrapThrow();
 
@@ -911,7 +928,7 @@ namespace TS3AudioBot
 		}
 
 		[Command("list insert", "_undocumented")]  // TODO Doc
-		public static JsonValue<PlaylistItemGetData> CommandListAddInternal(ResourceFactory resourceFactory, InvokerData invoker, PlaylistManager playlistManager, string listId, int index, string link /* TODO param */)
+		public static JsonValue<PlaylistItemGetData> CommandListAddInternal(ResourceResolver resourceFactory, InvokerData invoker, PlaylistManager playlistManager, string listId, int index, string link /* TODO param */)
 		{
 			PlaylistItemGetData getData = null;
 			playlistManager.ModifyPlaylist(listId, plist =>
@@ -1033,7 +1050,7 @@ namespace TS3AudioBot
 
 		[Command("list show")]
 		[Usage("<name> <index>", "Lets you specify the starting index from which songs should be listed.")]
-		public static JsonValue<PlaylistInfo> CommandListShow(PlaylistManager playlistManager, ResourceFactory resourceFactory, string listId, int? offset = null, int? count = null)
+		public static JsonValue<PlaylistInfo> CommandListShow(PlaylistManager playlistManager, ResourceResolver resourceFactory, string listId, int? offset = null, int? count = null)
 		{
 			const int maxSongs = 20;
 			var plist = playlistManager.LoadPlaylist(listId).UnwrapThrow();

@@ -17,7 +17,7 @@ using TS3AudioBot.Localization;
 
 namespace TS3AudioBot.ResourceFactories
 {
-	public class BandcampFactory : IResourceFactory, IThumbnailFactory
+	public class BandcampResolver : IResourceResolver, IThumbnailResolver
 	{
 		private static readonly Regex BandcampUrlRegex = new Regex(@"([\w_-]+).bandcamp.com/track/([\w_-]+)", Util.DefaultRegexConfig);
 		private static readonly Regex TrackLinkRegex = new Regex(@"""mp3-128""\s*:\s*""([^""]*)""", Util.DefaultRegexConfig);
@@ -28,7 +28,7 @@ namespace TS3AudioBot.ResourceFactories
 		private const string AddArtist = "artist";
 		private const string AddTrack = "track";
 
-		public string FactoryFor => "bandcamp";
+		public string ResolverFor => "bandcamp";
 
 		public MatchCertainty MatchResource(string uri) => BandcampUrlRegex.IsMatch(uri).ToMatchCertainty();
 
@@ -64,7 +64,7 @@ namespace TS3AudioBot.ResourceFactories
 				return new LocalStr(strings.error_media_no_stream_extracted);
 
 			return new BandcampPlayResource(trackObj,
-				new AudioResource(id, title, FactoryFor)
+				new AudioResource(id, title, ResolverFor)
 					.Add(AddArtist, artistName)
 					.Add(AddTrack, trackName),
 				GetTrackArtId(webSite));

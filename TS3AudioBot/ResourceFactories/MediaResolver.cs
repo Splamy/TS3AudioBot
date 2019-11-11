@@ -21,17 +21,17 @@ using TS3AudioBot.ResourceFactories.AudioTags;
 
 namespace TS3AudioBot.ResourceFactories
 {
-	public sealed class MediaFactory : IResourceFactory, IPlaylistFactory, IThumbnailFactory
+	public sealed class MediaResolver : IResourceResolver, IPlaylistResolver, IThumbnailResolver
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private readonly ConfPath config;
 
-		public MediaFactory(ConfPath config)
+		public MediaResolver(ConfPath config)
 		{
 			this.config = config;
 		}
 
-		public string FactoryFor => "media";
+		public string ResolverFor => "media";
 
 		public MatchCertainty MatchResource(string uri) =>
 			File.Exists(uri)
@@ -45,7 +45,7 @@ namespace TS3AudioBot.ResourceFactories
 
 		public R<PlayResource, LocalStr> GetResource(string uri)
 		{
-			return GetResourceById(new AudioResource(uri, null, FactoryFor));
+			return GetResourceById(new AudioResource(uri, null, ResolverFor));
 		}
 
 		public R<PlayResource, LocalStr> GetResourceById(AudioResource resource)
@@ -207,7 +207,7 @@ namespace TS3AudioBot.ResourceFactories
 									select ValidateFromString(file.FullName) into result
 									where result.Ok
 									select result.Value into val
-									select new AudioResource(val.FullUri, string.IsNullOrWhiteSpace(val.Title) ? val.FullUri : val.Title, FactoryFor) into res
+									select new AudioResource(val.FullUri, string.IsNullOrWhiteSpace(val.Title) ? val.FullUri : val.Title, ResolverFor) into res
 									select new PlaylistItem(res);
 					plist.AddRange(resources);
 
@@ -270,7 +270,7 @@ namespace TS3AudioBot.ResourceFactories
 
 					items = new List<PlaylistItem>(
 						from e in list.PlaylistEntries
-						select new PlaylistItem(new AudioResource(e.Path, e.Title, FactoryFor)));
+						select new PlaylistItem(new AudioResource(e.Path, e.Title, ResolverFor)));
 					break;
 				}
 			case ".m3u8":
@@ -286,7 +286,7 @@ namespace TS3AudioBot.ResourceFactories
 
 					items = new List<PlaylistItem>(
 						from e in list.PlaylistEntries
-						select new PlaylistItem(new AudioResource(e.Path, e.Title, FactoryFor)));
+						select new PlaylistItem(new AudioResource(e.Path, e.Title, ResolverFor)));
 					break;
 				}
 			case ".pls":
@@ -299,7 +299,7 @@ namespace TS3AudioBot.ResourceFactories
 
 					items = new List<PlaylistItem>(
 						from e in list.PlaylistEntries
-						select new PlaylistItem(new AudioResource(e.Path, e.Title, FactoryFor)));
+						select new PlaylistItem(new AudioResource(e.Path, e.Title, ResolverFor)));
 					break;
 				}
 			case ".wpl":
@@ -309,7 +309,7 @@ namespace TS3AudioBot.ResourceFactories
 
 					items = new List<PlaylistItem>(
 						from e in list.PlaylistEntries
-						select new PlaylistItem(new AudioResource(e.Path, e.TrackTitle, FactoryFor)));
+						select new PlaylistItem(new AudioResource(e.Path, e.TrackTitle, ResolverFor)));
 					name = list.Title;
 					break;
 				}
@@ -320,7 +320,7 @@ namespace TS3AudioBot.ResourceFactories
 
 					items = new List<PlaylistItem>(
 						from e in list.PlaylistEntries
-						select new PlaylistItem(new AudioResource(e.Path, e.TrackTitle, FactoryFor)));
+						select new PlaylistItem(new AudioResource(e.Path, e.TrackTitle, ResolverFor)));
 					name = list.Title;
 					break;
 				}

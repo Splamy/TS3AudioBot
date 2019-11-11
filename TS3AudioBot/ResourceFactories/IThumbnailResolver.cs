@@ -13,7 +13,7 @@ using TS3AudioBot.Localization;
 
 namespace TS3AudioBot.ResourceFactories
 {
-	public interface IThumbnailFactory : IFactory
+	public interface IThumbnailResolver : IResolver
 	{
 		R<Stream, LocalStr> GetThumbnail(PlayResource playResource);
 	}

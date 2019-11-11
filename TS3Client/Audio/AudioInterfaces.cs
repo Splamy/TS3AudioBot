@@ -13,12 +13,12 @@ namespace TS3Client.Audio
 {
 	public interface IAudioStream { }
 
-	/// <summary>Passive producer will serve audio data that must be requested manually.</summary>
+	/// <summary>Passive producer will serve audio data that must be read.</summary>
 	public interface IAudioPassiveProducer : IAudioStream
 	{
 		int Read(byte[] buffer, int offset, int length, out Meta meta);
 	}
-	/// <summary>Active producer will push audio to the out stream as soon as available.</summary>
+	/// <summary>Active producer will push audio to the out stream.</summary>
 	public interface IAudioActiveProducer : IAudioStream
 	{
 		IAudioPassiveConsumer OutStream { get; set; }
@@ -29,10 +29,15 @@ namespace TS3Client.Audio
 		bool Active { get; }
 		void Write(Span<byte> data, Meta meta);
 	}
-	/// <summary>Active consumer will pull audio data as soon as available.</summary>
+	/// <summary>Active consumer will pull audio data when required.</summary>
 	public interface IAudioActiveConsumer : IAudioStream
 	{
 		IAudioPassiveProducer InStream { get; set; }
+	}
+
+	public interface IAudioPassiveProducerEvent : IAudioPassiveProducer
+	{
+		event EventHandler OnSongEnd;
 	}
 
 	// Best practices for pipes:

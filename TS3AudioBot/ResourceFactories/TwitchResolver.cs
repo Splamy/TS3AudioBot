@@ -17,13 +17,13 @@ using TS3AudioBot.Localization;
 
 namespace TS3AudioBot.ResourceFactories
 {
-	public sealed class TwitchFactory : IResourceFactory
+	public sealed class TwitchResolver : IResourceResolver
 	{
 		private static readonly Regex TwitchMatch = new Regex(@"^(https?://)?(www\.)?twitch\.tv/(\w+)", Util.DefaultRegexConfig);
 		private static readonly Regex M3U8ExtMatch = new Regex(@"#([\w-]+)(:(([\w-]+)=(""[^""]*""|[^,]+),?)*)?", Util.DefaultRegexConfig);
 		private const string TwitchClientId = "t9nlhlxnfux3gk2d6z1p093rj2c71i3";
 
-		public string FactoryFor => "twitch";
+		public string ResolverFor => "twitch";
 
 		public MatchCertainty MatchResource(string uri) => TwitchMatch.IsMatch(uri).ToMatchCertainty();
 
@@ -32,7 +32,7 @@ namespace TS3AudioBot.ResourceFactories
 			var match = TwitchMatch.Match(uri);
 			if (!match.Success)
 				return new LocalStr(strings.error_media_invalid_uri);
-			return GetResourceById(new AudioResource(match.Groups[3].Value, null, FactoryFor));
+			return GetResourceById(new AudioResource(match.Groups[3].Value, null, ResolverFor));
 		}
 
 		public R<PlayResource, LocalStr> GetResourceById(AudioResource resource)

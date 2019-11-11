@@ -29,13 +29,13 @@ namespace TS3AudioBot.Plugins
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 
 		public CoreInjector CoreInjector { get; set; }
-		public ResourceFactory ResourceFactory { get; set; }
+		public ResourceResolver ResourceFactory { get; set; }
 		public CommandManager CommandManager { get; set; }
 
 		private byte[] md5CacheSum;
 		private ICorePlugin pluginObject;
 		private Dictionary<Bot, IBotPlugin> pluginObjectList;
-		private IFactory factoryObject;
+		private IResolver factoryObject;
 		private Type coreType;
 		private readonly bool writeStatus;
 		private PluginStatus status;
@@ -66,8 +66,8 @@ namespace TS3AudioBot.Plugins
 				switch (Type)
 				{
 				case PluginType.Factory:
-					if (factoryObject?.FactoryFor != null)
-						return $"{factoryObject.FactoryFor}-factory";
+					if (factoryObject?.ResolverFor != null)
+						return $"{factoryObject.ResolverFor}-factory";
 					return $"{name} (Factory)";
 				case PluginType.BotPlugin:
 					return $"{name} (BotPlugin)";
@@ -259,7 +259,7 @@ namespace TS3AudioBot.Plugins
 			{
 				var allTypes = assembly.GetExportedTypes();
 				var pluginTypes = allTypes.Where(t => typeof(ICorePlugin).IsAssignableFrom(t)).ToArray();
-				var factoryTypes = allTypes.Where(t => typeof(IFactory).IsAssignableFrom(t)).ToArray();
+				var factoryTypes = allTypes.Where(t => typeof(IResolver).IsAssignableFrom(t)).ToArray();
 				var commandsTypes = allTypes.Where(t => t.GetCustomAttribute<StaticPluginAttribute>() != null).ToArray();
 
 				if (pluginTypes.Length + factoryTypes.Length + commandsTypes.Length > 1)
@@ -392,8 +392,8 @@ namespace TS3AudioBot.Plugins
 					break;
 
 				case PluginType.Factory:
-					factoryObject = (IFactory)Activator.CreateInstance(coreType);
-					ResourceFactory.AddFactory(factoryObject);
+					factoryObject = (IResolver)Activator.CreateInstance(coreType);
+					ResourceFactory.AddResolver(factoryObject);
 					break;
 
 				case PluginType.Commands:
@@ -478,7 +478,7 @@ namespace TS3AudioBot.Plugins
 				break;
 
 			case PluginType.Factory:
-				ResourceFactory.RemoveFactory(factoryObject);
+				ResourceFactory.RemoveResolver(factoryObject);
 				break;
 
 			case PluginType.Commands:

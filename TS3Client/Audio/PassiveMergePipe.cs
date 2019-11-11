@@ -8,14 +8,15 @@
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
 namespace TS3Client.Audio
 {
-	public class PassiveMergePipe : IAudioPassiveProducer
+	public class PassiveMergePipe : IAudioPassiveProducer, IEnumerable<IAudioPassiveProducer>
 	{
-		private readonly List<IAudioPassiveProducer> safeProducerList = new List<IAudioPassiveProducer>();
+		private IAudioPassiveProducer[] safeProducerList = Array.Empty<IAudioPassiveProducer>();
 		private readonly List<IAudioPassiveProducer> producerList = new List<IAudioPassiveProducer>();
 		private readonly object listLock = new object();
 		private bool changed;
@@ -62,8 +63,7 @@ namespace TS3Client.Audio
 				{
 					if (changed)
 					{
-						safeProducerList.Clear();
-						safeProducerList.AddRange(producerList);
+						safeProducerList = producerList.ToArray();
 						changed = false;
 					}
 				}
@@ -71,10 +71,10 @@ namespace TS3Client.Audio
 
 			meta = null;
 
-			if (safeProducerList.Count == 0)
+			if (safeProducerList.Length == 0)
 				return 0;
 
-			if (safeProducerList.Count == 1)
+			if (safeProducerList.Length == 1)
 				return safeProducerList[0].Read(buffer, offset, length, out meta);
 
 			int maxReadLength = Math.Min(accBuffer.Length, length);
@@ -99,5 +99,9 @@ namespace TS3Client.Audio
 
 			return read;
 		}
+
+		IEnumerator<IAudioPassiveProducer> IEnumerable<IAudioPassiveProducer>.GetEnumerator() => ((IEnumerable<IAudioPassiveProducer>)safeProducerList).GetEnumerator();
+
+		IEnumerator IEnumerable.GetEnumerator() => safeProducerList.GetEnumerator();
 	}
 }

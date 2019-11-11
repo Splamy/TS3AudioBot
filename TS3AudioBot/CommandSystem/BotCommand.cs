@@ -7,6 +7,7 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -19,16 +20,17 @@ using TS3AudioBot.Localization;
 namespace TS3AudioBot.CommandSystem
 {
 	[DebuggerDisplay("{DebuggerDisplay, nq}")]
+	[JsonObject(MemberSerialization.OptIn)]
 	public class BotCommand : FunctionCommand
 	{
 		private readonly string helpLookupName;
 		private string cachedFullQualifiedName;
-		private CommandSerializeObj cachedJsonObj;
-		private CommandSerializeObj JsonObj => cachedJsonObj ?? (cachedJsonObj = new CommandSerializeObj(this));
 
+		[JsonProperty(PropertyName = "Name")]
 		public string InvokeName { get; }
 		private readonly string[] requiredRights;
 		public string RequiredRight => requiredRights[0];
+		[JsonProperty(PropertyName = "Description")]
 		public string Description => LocalizationManager.GetString(helpLookupName);
 		public UsageAttribute[] UsageList { get; }
 		public string FullQualifiedName
@@ -50,6 +52,13 @@ namespace TS3AudioBot.CommandSystem
 			}
 		}
 
+		[JsonProperty(PropertyName = "Return")]
+		public string Return { get; set; }
+		[JsonProperty(PropertyName = "Parameter")]
+		public (string name, string type, bool optional)[] Parameter { get; }
+		[JsonProperty(PropertyName = "Modules")]
+		public (string type, bool optional)[] Modules { get; }
+
 		public string DebuggerDisplay
 		{
 			get
@@ -63,14 +72,22 @@ namespace TS3AudioBot.CommandSystem
 			}
 		}
 
-		public object AsJsonObj => JsonObj;
-
 		public BotCommand(CommandBuildInfo buildInfo) : base(buildInfo.Method, buildInfo.Parent)
 		{
 			InvokeName = buildInfo.CommandData.CommandNameSpace;
 			helpLookupName = buildInfo.CommandData.OverrideHelpName ?? ("cmd_" + InvokeName.Replace(" ", "_") + "_help");
 			requiredRights = new[] { "cmd." + string.Join(".", InvokeName.Split(' ')) };
 			UsageList = buildInfo.UsageList?.ToArray() ?? Array.Empty<UsageAttribute>();
+			// Serialization
+			Return = UnwrapReturnType(CommandReturn).Name;
+			Parameter = (
+				from x in CommandParameter
+				where x.Kind.IsNormal()
+				select (x.Name, UnwrapParamType(x.Type).Name, x.Optional)).ToArray();
+			Modules = (
+				from x in CommandParameter
+				where x.Kind == ParamKind.Dependency
+				select (x.Type.Name, x.Optional)).ToArray();
 		}
 
 		public override string ToString()
@@ -79,7 +96,7 @@ namespace TS3AudioBot.CommandSystem
 			strb.Append("\n!")
 				.Append(InvokeName);
 
-			foreach (var (name, _, optional) in JsonObj.Parameter)
+			foreach (var (name, _, optional) in Parameter)
 			{
 				strb.Append(' ');
 				if (optional)
@@ -111,32 +128,6 @@ namespace TS3AudioBot.CommandSystem
 				throw new CommandException(string.Format(strings.error_missing_right, InvokeName, RequiredRight), CommandExceptionReason.MissingRights);
 
 			return base.Execute(info, arguments, returnTypes);
-		}
-
-		private class CommandSerializeObj
-		{
-			private readonly BotCommand botCmd;
-			public string Name => botCmd.InvokeName;
-			public string Description => botCmd.Description;
-			public (string name, string type, bool optional)[] Parameter { get; }
-			public (string type, bool optional)[] Modules { get; }
-			public string Return { get; }
-
-			public CommandSerializeObj(BotCommand botCmd)
-			{
-				this.botCmd = botCmd;
-				Parameter = (
-					from x in botCmd.CommandParameter
-					where x.Kind.IsNormal()
-					select (x.Name, UnwrapParamType(x.Type).Name, x.Optional)).ToArray();
-				Modules = (
-					from x in botCmd.CommandParameter
-					where x.Kind == ParamKind.Dependency
-					select (x.Type.Name, x.Optional)).ToArray();
-				Return = UnwrapReturnType(botCmd.CommandReturn).Name;
-			}
-
-			public override string ToString() => botCmd.ToString();
 		}
 	}
 

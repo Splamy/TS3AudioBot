@@ -182,35 +182,34 @@ namespace TS3AudioBot.CommandSystem
 			// the command to be added.
 			foreach (var comPathPart in comPath)
 			{
-				ICommand currentCommand = group.GetCommand(comPathPart);
-
+				switch (group.GetCommand(comPathPart))
+				{
 				// if a group to hold the next level command doesn't exist
 				// it will be created here
-				if (currentCommand is null)
-				{
+				case null:
 					var nextGroup = new CommandGroup();
 					group.AddCommand(comPathPart, nextGroup);
 					group = nextGroup;
-				}
+					break;
+
 				// if the group already exists we can take it.
-				else if (currentCommand is CommandGroup cgCommand)
-				{
+				case CommandGroup cgCommand:
 					group = cgCommand;
-				}
+					break;
+
 				// if the element is anything else, we have to replace it
 				// with a group and put the old element back into it.
-				else if (currentCommand is FunctionCommand)
-				{
+				case FunctionCommand fnCommand:
 					var subGroup = new CommandGroup();
 					group.RemoveCommand(comPathPart);
 					group.AddCommand(comPathPart, subGroup);
-					var insertResult = InsertInto(group, currentCommand, comPathPart);
+					var insertResult = InsertInto(group, fnCommand, comPathPart);
 					if (!insertResult.Ok)
 						return insertResult.Error;
 					group = subGroup;
-				}
-				else
-				{
+					break;
+
+				default:
 					return "An overloaded command cannot be replaced by a CommandGroup";
 				}
 			}
@@ -309,26 +308,28 @@ namespace TS3AudioBot.CommandSystem
 					Self = nextGroup,
 				};
 			}
+
 			var subGroup = node.Self.GetCommand(comPath.Last());
+
+			switch (subGroup)
+			{
 			// nothing to remove
-			if (subGroup is null)
+			case null:
 				return;
 			// if the subnode is a plain FunctionCommand then we found our command to delete
-			else if (subGroup is FunctionCommand || subGroup is AliasCommand)
-			{
+			case FunctionCommand _:
+			case AliasCommand _:
 				node.Self.RemoveCommand(com);
-			}
+				break;
 			// here we can delete our command from the overloader
-			else if (subGroup is OverloadedFunctionCommand subOverloadGroup)
-			{
+			case OverloadedFunctionCommand subOverloadGroup:
 				if (com is FunctionCommand funcCom)
 					subOverloadGroup.RemoveCommand(funcCom);
 				else
 					return;
-			}
+				break;
 			// now to the special case when a command gets inserted with an empty string
-			else if (subGroup is CommandGroup insertGroup)
-			{
+			case CommandGroup insertGroup:
 				// since we check precisely that only one command and only a simple FunctionCommand
 				// can be added with an empty string, wen can delete it safely this way
 				insertGroup.RemoveCommand(string.Empty);
@@ -338,6 +339,7 @@ namespace TS3AudioBot.CommandSystem
 					ParentNode = node,
 					Self = insertGroup,
 				};
+				break;
 			}
 
 			// and finally clean all empty nodes up

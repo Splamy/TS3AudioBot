@@ -13,7 +13,7 @@ namespace TS3AudioBot.ResourceFactories
 	using System.Collections.Generic;
 	using TS3AudioBot.Localization;
 
-	public interface ISearchFactory : IFactory
+	public interface ISearchResolver : IResolver
 	{
 		R<IList<AudioResource>, LocalStr> Search(string keyword);
 	}

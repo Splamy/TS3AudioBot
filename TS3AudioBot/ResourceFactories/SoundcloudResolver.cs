@@ -20,7 +20,7 @@ using TS3AudioBot.Playlists;
 
 namespace TS3AudioBot.ResourceFactories
 {
-	public sealed class SoundcloudFactory : IResourceFactory, IPlaylistFactory, IThumbnailFactory
+	public sealed class SoundcloudResolver : IResourceResolver, IPlaylistResolver, IThumbnailResolver
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private static readonly Regex SoundcloudLink = new Regex(@"^https?\:\/\/(www\.)?soundcloud\.", Util.DefaultRegexConfig);
@@ -29,7 +29,7 @@ namespace TS3AudioBot.ResourceFactories
 		private const string AddArtist = "artist";
 		private const string AddTrack = "track";
 
-		public string FactoryFor => "soundcloud";
+		public string ResolverFor => "soundcloud";
 
 		public MatchCertainty MatchResource(string uri) => SoundcloudLink.IsMatch(uri).ToMatchCertainty();
 
@@ -99,7 +99,7 @@ namespace TS3AudioBot.ResourceFactories
 			return new AudioResource(
 				track.id.ToString(CultureInfo.InvariantCulture),
 				track.title,
-				FactoryFor)
+				ResolverFor)
 				.Add(AddArtist, track.user.permalink)
 				.Add(AddTrack, track.permalink);
 		}
@@ -118,7 +118,7 @@ namespace TS3AudioBot.ResourceFactories
 
 			Log.Debug("youtube-dl succeeded!");
 
-			return new PlayResource(urls[0], new AudioResource(link, title, FactoryFor));
+			return new PlayResource(urls[0], new AudioResource(link, title, ResolverFor));
 		}
 
 		public R<Playlist, LocalStr> GetPlaylist(string url)

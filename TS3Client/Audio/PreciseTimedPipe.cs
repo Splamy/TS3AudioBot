@@ -96,7 +96,7 @@ namespace TS3Client.Audio
 
 				AudioTimer.PushBytes(read);
 
-				OutStream?.Write(new Span<byte>(readBuffer, 0, read), meta);
+				OutStream?.Write(readBuffer.AsSpan(0, read), meta);
 			}
 		}
 

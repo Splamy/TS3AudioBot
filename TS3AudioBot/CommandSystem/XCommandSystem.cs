@@ -80,7 +80,7 @@ namespace TS3AudioBot.CommandSystem
 					arguments[i] = AstToCommandResult(cmd.Parameter[i]);
 				return new AppliedCommand(RootCommand, arguments);
 			case AstType.Value:
-				AstValue astNode = (AstValue)node;
+				var astNode = (AstValue)node;
 				// Quoted strings are always strings, the rest gets automatically converted
 				if (astNode.StringType == StringType.FreeString)
 					return new AutoConvertResultCommand(astNode.Value);
@@ -91,11 +91,6 @@ namespace TS3AudioBot.CommandSystem
 			}
 		}
 
-		public object Execute(ExecutionInformation info, string command)
-		{
-			return Execute(info, command, ReturnStringOrNothing);
-		}
-
 		public object Execute(ExecutionInformation info, string command, IReadOnlyList<Type> returnTypes)
 		{
 			var ast = CommandParser.ParseCommandRequest(command);
@@ -103,19 +98,17 @@ namespace TS3AudioBot.CommandSystem
 			return cmd.Execute(info, Array.Empty<ICommand>(), returnTypes);
 		}
 
-		public object Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments)
-		{
-			return Execute(info, arguments, ReturnStringOrNothing);
-		}
-
 		public object Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<Type> returnTypes)
-		{
-			return RootCommand.Execute(info, arguments, returnTypes);
-		}
+			=> RootCommand.Execute(info, arguments, returnTypes);
 
 		public string ExecuteCommand(ExecutionInformation info, string command)
+			=> CastResult(Execute(info, command, ReturnStringOrNothing));
+
+		public string ExecuteCommand(ExecutionInformation info, IReadOnlyList<ICommand> arguments)
+			=> CastResult(Execute(info, arguments, ReturnStringOrNothing));
+
+		private static string CastResult(object result)
 		{
-			var result = Execute(info, command);
 			if (result is IPrimitiveResult<string> s)
 				return s.Get();
 			if (result == null)

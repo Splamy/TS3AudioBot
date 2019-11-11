@@ -13,7 +13,7 @@ using TS3AudioBot.Playlists;
 
 namespace TS3AudioBot.ResourceFactories
 {
-	public interface IPlaylistFactory : IFactory
+	public interface IPlaylistResolver : IResolver
 	{
 		MatchCertainty MatchPlaylist(string uri);
 

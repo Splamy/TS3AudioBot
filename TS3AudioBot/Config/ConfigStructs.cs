@@ -238,7 +238,7 @@ namespace TS3AudioBot.Config
 
 	public class ConfPlaylists : ConfigTable
 	{
-		public ConfigValue<int> MaxItemCount { get; } = new ConfigValue<int>("max_item_count", 1000); // TODO
+		//public ConfigValue<int> MaxItemCount { get; } = new ConfigValue<int>("max_item_count", 1000); // TODO
 	}
 
 	public class ConfHistory : ConfigTable
@@ -251,7 +251,7 @@ namespace TS3AudioBot.Config
 
 	public class ConfData : ConfigTable
 	{
-		public ConfigValue<string> MaxItemCount { get; } = new ConfigValue<string>("disk_data", "1M"); // TODO
+		//public ConfigValue<string> MaxItemCount { get; } = new ConfigValue<string>("disk_data", "1M"); // TODO
 	}
 
 	public class ConfEvents : ConfigTable

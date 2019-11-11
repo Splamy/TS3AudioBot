@@ -7,7 +7,6 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
-using System;
 using System.IO;
 
 namespace TS3Client.Audio
@@ -15,15 +14,11 @@ namespace TS3Client.Audio
 	public class StreamAudioProducer : IAudioPassiveProducer
 	{
 		private readonly Stream stream;
-		public event EventHandler HitEnd;
 
 		public int Read(byte[] buffer, int offset, int length, out Meta meta)
 		{
 			meta = default;
-			int read = stream.Read(buffer, offset, length);
-			if (read < length)
-				HitEnd?.Invoke(this, EventArgs.Empty);
-			return read;
+			return stream.Read(buffer, offset, length);
 		}
 		public StreamAudioProducer(Stream stream) { this.stream = stream; }
 	}

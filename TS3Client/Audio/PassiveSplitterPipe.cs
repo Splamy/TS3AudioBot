@@ -69,7 +69,7 @@ namespace TS3Client.Audio
 			if (buffer.Length < data.Length)
 				buffer = new byte[data.Length];
 
-			var bufSpan = new Span<byte>(buffer, 0, data.Length);
+			var bufSpan = buffer.AsSpan(0, data.Length);
 			for (int i = 0; i < safeConsumerList.Count - 1; i++)
 			{
 				data.CopyTo(bufSpan);

@@ -22,7 +22,7 @@ using TS3Client.Helper;
 
 namespace TS3AudioBot.Audio
 {
-	public class FfmpegProducer : IAudioPassiveProducer, ISampleInfo, IDisposable
+	public class FfmpegProducer : IAudioPassiveProducerEvent, ISampleInfo, IDisposable
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private readonly Id id;
@@ -31,7 +31,7 @@ namespace TS3AudioBot.Audio
 		private const string PreLinkConf = "-hide_banner -nostats -threads 1 -i \"";
 		private const string PostLinkConf = "\" -ac 2 -ar 48000 -f s16le -acodec pcm_s16le pipe:1";
 		private const string LinkConfIcy = "-hide_banner -nostats -threads 1 -i pipe:0 -ac 2 -ar 48000 -f s16le -acodec pcm_s16le pipe:1";
-		private readonly TimeSpan retryOnDropBeforeEnd = TimeSpan.FromSeconds(10);
+		private static readonly TimeSpan retryOnDropBeforeEnd = TimeSpan.FromSeconds(10);
 
 		private readonly ConfToolsFfmpeg config;
 
@@ -192,7 +192,7 @@ namespace TS3AudioBot.Audio
 			string arguments;
 			if (offset > TimeSpan.Zero)
 			{
-				var seek = $"-ss {offset.ToString(@"hh\:mm\:ss", CultureInfo.InvariantCulture)}";
+				var seek = string.Format(CultureInfo.InvariantCulture, @"-ss {0:hh\:mm\:ss\.fff}", offset);
 				arguments = string.Concat(seek, " ", PreLinkConf, url, PostLinkConf, " ", seek);
 			}
 			else

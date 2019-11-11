@@ -263,7 +263,7 @@ namespace TS3AudioBot.History
 			audioLogEntries.Update(ale);
 		}
 
-		public void RemoveBrokenLinks(ResourceFactory resourceFactory)
+		public void RemoveBrokenLinks(ResourceResolver resourceFactory)
 		{
 			const int iterations = 3;
 			var currentIter = audioLogEntries.FindAll().ToList();
@@ -289,7 +289,7 @@ namespace TS3AudioBot.History
 		/// </summary>
 		/// <param name="list">The list to iterate.</param>
 		/// <returns>A new list with all working items.</returns>
-		private List<AudioLogEntry> FilterList(ResourceFactory resourceFactory, IReadOnlyCollection<AudioLogEntry> list)
+		private List<AudioLogEntry> FilterList(ResourceResolver resourceFactory, IReadOnlyCollection<AudioLogEntry> list)
 		{
 			int userNotifyCnt = 0;
 			var nextIter = new List<AudioLogEntry>(list.Count);

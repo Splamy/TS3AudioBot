@@ -71,15 +71,7 @@ namespace TS3AudioBot.CommandSystem.Commands
 		}
 
 		private static string SuggestionsJoinTrim(IEnumerable<string> commands)
-		{
-			var commandsArray = commands.Where(x => !string.IsNullOrEmpty(x)).ToArray();
-			var suggestions = string.Join(", ", commandsArray.Take(4));
-			if (commandsArray.Length > 4)
-			{
-				suggestions += ", ...";
-			}
-			return suggestions;
-		}
+			=> string.Join(", ", commands.Where(x => !string.IsNullOrEmpty(x)));
 
 		public override string ToString() => "<group>";
 	}

@@ -12,7 +12,7 @@ using TS3AudioBot.Localization;
 
 namespace TS3AudioBot.ResourceFactories
 {
-	public interface IResourceFactory : IFactory
+	public interface IResourceResolver : IResolver
 	{
 		/// <summary>Check method to ask if a factory can load the given link.</summary>
 		/// <param name="uri">Any link or something similar a user can obtain to pass it here.</param>

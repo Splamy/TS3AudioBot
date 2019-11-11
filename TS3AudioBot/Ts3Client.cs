@@ -111,9 +111,11 @@ namespace TS3AudioBot
 			timePipe = new PreciseTimedPipe { ReadBufferSize = encoderPipe.PacketSize };
 			timePipe.Initialize(encoderPipe, id);
 			TargetPipe = new CustomTargetPipe(tsFullClient);
-			mergePipe = new PassiveMergePipe();
+			mergePipe = new PassiveMergePipe()
+			{
+				ffmpegProducer
+			};
 
-			mergePipe.Add(ffmpegProducer);
 			mergePipe.Into(timePipe).Chain<CheckActivePipe>().Chain(stallCheckPipe).Chain(volumePipe).Chain(encoderPipe).Chain(TargetPipe);
 
 			identity = null;
@@ -227,10 +229,11 @@ namespace TS3AudioBot
 		}
 
 		[Obsolete(AttributeStrings.UnderDevelopment)]
-		public void MixInStreamOnce(StreamAudioProducer producer)
+		public void MixInStreamOnce(IAudioPassiveProducer producer)
 		{
-			mergePipe.Add(producer);
-			producer.HitEnd += (s, e) => mergePipe.Remove(producer);
+			var eventPipe = producer.Into<ProducerEndEventPipe>();
+			eventPipe.OnSongEnd += (s, e) => mergePipe.Remove(eventPipe);
+			mergePipe.Add(eventPipe);
 			timePipe.Paused = false;
 		}
 

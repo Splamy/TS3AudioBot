@@ -19,7 +19,7 @@ using TS3AudioBot.Playlists;
 
 namespace TS3AudioBot.ResourceFactories
 {
-	public sealed class YoutubeFactory : IResourceFactory, IPlaylistFactory, IThumbnailFactory, ISearchFactory
+	public sealed class YoutubeResolver : IResourceResolver, IPlaylistResolver, IThumbnailResolver, ISearchResolver
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private static readonly Regex IdMatch = new Regex(@"((&|\?)v=|youtu\.be\/)([\w\-_]{11})", Util.DefaultRegexConfig);
@@ -29,21 +29,21 @@ namespace TS3AudioBot.ResourceFactories
 		private static readonly Regex StreamBitrateMatch = new Regex(@"BANDWIDTH=(\d+)", Util.DefaultRegexConfig);
 		private const string YoutubeProjectId = "AIzaSyBOqG5LUbGSkBfRUoYfUUea37-5xlEyxNs";
 
-		public string FactoryFor => "youtube";
+		public string ResolverFor => "youtube";
 
-		MatchCertainty IResourceFactory.MatchResource(string uri) =>
+		MatchCertainty IResourceResolver.MatchResource(string uri) =>
 			LinkMatch.IsMatch(uri) || IdMatch.IsMatch(uri)
 				? MatchCertainty.Always
 				: MatchCertainty.Never;
 
-		MatchCertainty IPlaylistFactory.MatchPlaylist(string uri) => ListMatch.IsMatch(uri) ? MatchCertainty.Always : MatchCertainty.Never;
+		MatchCertainty IPlaylistResolver.MatchPlaylist(string uri) => ListMatch.IsMatch(uri) ? MatchCertainty.Always : MatchCertainty.Never;
 
 		public R<PlayResource, LocalStr> GetResource(string uri)
 		{
 			Match matchYtId = IdMatch.Match(uri);
 			if (!matchYtId.Success)
 				return new LocalStr(strings.error_media_failed_to_parse_id);
-			return GetResourceById(new AudioResource(matchYtId.Groups[3].Value, null, FactoryFor));
+			return GetResourceById(new AudioResource(matchYtId.Groups[3].Value, null, ResolverFor));
 		}
 
 		public R<PlayResource, LocalStr> GetResourceById(AudioResource resource)
@@ -303,7 +303,7 @@ namespace TS3AudioBot.ResourceFactories
 							new AudioResource(
 								item.contentDetails.videoId,
 								item.snippet.title,
-								FactoryFor
+								ResolverFor
 							)
 						)
 					)
@@ -403,7 +403,7 @@ namespace TS3AudioBot.ResourceFactories
 			return parsed.items.Select(x => new AudioResource(
 				x.id.videoId,
 				x.snippet.title,
-				FactoryFor)).ToArray();
+				ResolverFor)).ToArray();
 		}
 
 		public void Dispose() { }
