@@ -14,7 +14,7 @@ namespace TS3Client.Audio
 	public interface IAudioStream { }
 
 	/// <summary>Passive producer will serve audio data that must be read.</summary>
-	public interface IAudioPassiveProducer : IAudioStream
+	public interface IAudioPassiveProducer : IAudioStream, IDisposable
 	{
 		int Read(byte[] buffer, int offset, int length, out Meta meta);
 	}
@@ -33,11 +33,6 @@ namespace TS3Client.Audio
 	public interface IAudioActiveConsumer : IAudioStream
 	{
 		IAudioPassiveProducer InStream { get; set; }
-	}
-
-	public interface IAudioPassiveProducerEvent : IAudioPassiveProducer
-	{
-		event EventHandler OnSongEnd;
 	}
 
 	// Best practices for pipes:

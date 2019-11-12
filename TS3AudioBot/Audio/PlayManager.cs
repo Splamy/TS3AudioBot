@@ -24,7 +24,7 @@ namespace TS3AudioBot.Audio
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 
 		private readonly ConfBot confBot;
-		private readonly IPlayerConnection playerConnection;
+		private readonly Player playerConnection;
 		private readonly PlaylistManager playlistManager;
 		private readonly ResourceResolver resourceResolver;
 
@@ -37,7 +37,7 @@ namespace TS3AudioBot.Audio
 		public event EventHandler<SongEndEventArgs> BeforeResourceStopped;
 		public event EventHandler AfterResourceStopped;
 
-		public PlayManager(ConfBot config, IPlayerConnection playerConnection, PlaylistManager playlistManager, ResourceResolver resourceFactory)
+		public PlayManager(ConfBot config, Player playerConnection, PlaylistManager playlistManager, ResourceResolver resourceFactory)
 		{
 			confBot = config;
 			this.playerConnection = playerConnection;
@@ -171,7 +171,7 @@ namespace TS3AudioBot.Audio
 			}
 
 			Log.Debug("AudioResource start: {0}", play);
-			var result = playerConnection.AudioStart(play);
+			var result = playerConnection.Play(play);
 			if (!result)
 			{
 				Log.Error("Error return from player: {0}", result.Error);
@@ -259,7 +259,7 @@ namespace TS3AudioBot.Audio
 			}
 			else
 			{
-				playerConnection.AudioStop();
+				playerConnection.Stop();
 			}
 
 			CurrentPlayData = null;

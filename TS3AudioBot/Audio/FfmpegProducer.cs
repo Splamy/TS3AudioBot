@@ -22,7 +22,7 @@ using TS3Client.Helper;
 
 namespace TS3AudioBot.Audio
 {
-	public class FfmpegProducer : IAudioPassiveProducerEvent, ISampleInfo, IDisposable
+	public class FfmpegProducer : IPlayerSource, ISampleInfo, IDisposable
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private readonly Id id;

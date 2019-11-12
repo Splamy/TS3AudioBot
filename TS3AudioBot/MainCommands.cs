@@ -151,7 +151,7 @@ namespace TS3AudioBot
 		public static void CommandBotDescriptionSet(Ts3Client ts3Client, string description) => ts3Client.ChangeDescription(description).UnwrapThrow();
 
 		[Command("bot diagnose", "_undocumented")]
-		public static JsonArray<SelfDiagnoseMessage> CommandBotDiagnose(IPlayerConnection player, IVoiceTarget target, Connection book)
+		public static JsonArray<SelfDiagnoseMessage> CommandBotDiagnose(Player player, IVoiceTarget target, Connection book)
 		{
 			var problems = new List<SelfDiagnoseMessage>();
 			// ** Diagnose common playback problems and more **
@@ -1114,10 +1114,10 @@ namespace TS3AudioBot
 		public static void CommandPmUser(Ts3Client ts3Client, ushort clientId, string message) => ts3Client.SendMessage(message, (ClientId)clientId).UnwrapThrow();
 
 		[Command("pause")]
-		public static void CommandPause(IPlayerConnection playerConnection) => playerConnection.Paused = !playerConnection.Paused;
+		public static void CommandPause(Player playerConnection) => playerConnection.Paused = !playerConnection.Paused;
 
 		[Command("play")]
-		public static void CommandPlay(PlayManager playManager, IPlayerConnection playerConnection, InvokerData invoker)
+		public static void CommandPlay(PlayManager playManager, Player playerConnection, InvokerData invoker)
 		{
 			if (!playManager.IsPlaying)
 				playManager.Play(invoker).UnwrapThrow();
@@ -1258,7 +1258,7 @@ namespace TS3AudioBot
 		[Command("seek")]
 		[Usage("<sec>", "Time in seconds")]
 		[Usage("<min:sec>", "Time in Minutes:Seconds")]
-		public static void CommandSeek(IPlayerConnection playerConnection, string position)
+		public static void CommandSeek(Player playerConnection, string position)
 		{
 			TimeSpan span;
 			bool parsed = false;
@@ -1464,7 +1464,7 @@ namespace TS3AudioBot
 		}
 
 		[Command("song")]
-		public static JsonValue<SongInfo> CommandSong(PlayManager playManager, IPlayerConnection playerConnection, Bot bot, ClientCall invoker = null)
+		public static JsonValue<SongInfo> CommandSong(PlayManager playManager, Player playerConnection, Bot bot, ClientCall invoker = null)
 		{
 			if (playManager.CurrentPlayData is null)
 				throw new CommandException(strings.info_currently_not_playing, CommandExceptionReason.CommandError);
@@ -1633,13 +1633,13 @@ namespace TS3AudioBot
 		public static JsonValue<BuildData> CommandVersion() => new JsonValue<BuildData>(SystemData.AssemblyData, d => d.ToLongString());
 
 		[Command("volume")]
-		public static JsonValue<float> CommandVolume(IPlayerConnection playerConnection)
+		public static JsonValue<float> CommandVolume(Player playerConnection)
 			=> new JsonValue<float>(playerConnection.Volume, string.Format(strings.cmd_volume_current, playerConnection.Volume.ToString("0.#")));
 
 		[Command("volume")]
 		[Usage("<level>", "A new volume level between 0 and 100.")]
 		[Usage("+/-<level>", "Adds or subtracts a value from the current volume.")]
-		public static JsonValue<float> CommandVolume(ExecutionInformation info, IPlayerConnection playerConnection, CallerInfo caller, ConfBot config, string volume, UserSession session = null)
+		public static JsonValue<float> CommandVolume(ExecutionInformation info, Player playerConnection, CallerInfo caller, ConfBot config, string volume, UserSession session = null)
 		{
 			volume = volume.Trim();
 			bool relPos = volume.StartsWith("+", StringComparison.Ordinal);

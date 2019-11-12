@@ -1,5 +1,5 @@
-// TS3Client - A free TeamSpeak3 client implementation
-// Copyright (C) 2017  TS3Client contributors
+// TS3AudioBot - An advanced Musicbot for Teamspeak 3
+// Copyright (C) 2017  TS3AudioBot contributors
 //
 // This program is free software: you can redistribute it and/or modify
 // it under the terms of the Open Software License v. 3.0
@@ -8,20 +8,24 @@
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
 using System;
+using TS3Client.Audio;
 
-namespace TS3Client.Audio
+namespace TS3AudioBot.Audio
 {
-	public class ProducerEndEventPipe : IAudioPassiveProducerEvent, IAudioActiveConsumer
+	public class StreamAudioPlayerSource : IPlayerSource, IAudioActiveConsumer
 	{
 		private bool hasFired = false;
 
 		public IAudioPassiveProducer InStream { get; set; }
+		public TimeSpan Length => TimeSpan.Zero;
+		public TimeSpan Position { get => TimeSpan.Zero; set { } }
 
 		public event EventHandler OnSongEnd;
+		event EventHandler<SongInfoChanged> IPlayerSource.OnSongUpdated { add { } remove { } }
 
-		public ProducerEndEventPipe() { }
+		public StreamAudioPlayerSource() { }
 
-		public ProducerEndEventPipe(IAudioPassiveProducer stream) : this()
+		public StreamAudioPlayerSource(IAudioPassiveProducer stream) : this()
 		{
 			InStream = stream;
 		}
@@ -46,5 +50,7 @@ namespace TS3Client.Audio
 		}
 
 		public void Reset() => hasFired = false;
+
+		public void Dispose() => InStream?.Dispose();
 	}
 }

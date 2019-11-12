@@ -10,11 +10,12 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.InteropServices;
 
 namespace TS3Client.Audio
 {
-	public class PassiveMergePipe : IAudioPassiveProducer, IEnumerable<IAudioPassiveProducer>
+	public class PassiveMergePipe : IAudioPassiveProducer, IEnumerable<IAudioPassiveProducer>, ICollection<IAudioPassiveProducer>
 	{
 		private IAudioPassiveProducer[] safeProducerList = Array.Empty<IAudioPassiveProducer>();
 		private readonly List<IAudioPassiveProducer> producerList = new List<IAudioPassiveProducer>();
@@ -22,28 +23,36 @@ namespace TS3Client.Audio
 		private bool changed;
 		private readonly int[] accBuffer = new int[4096];
 
+		public int Count => safeProducerList.Length;
+		public bool IsReadOnly => false;
+
 		public void Add(IAudioPassiveProducer addProducer)
 		{
 			if (!producerList.Contains(addProducer) && addProducer != this)
 			{
 				lock (listLock)
 				{
-					producerList.Add(addProducer);
-					changed = true;
+					if (!producerList.Contains(addProducer))
+					{
+						producerList.Add(addProducer);
+						changed = true;
+					}
 				}
 			}
 		}
 
-		public void Remove(IAudioPassiveProducer removeProducer)
+		public bool Remove(IAudioPassiveProducer removeProducer)
 		{
 			if (producerList.Contains(removeProducer) && removeProducer != this)
 			{
 				lock (listLock)
 				{
-					producerList.Remove(removeProducer);
-					changed = true;
+					var removed = producerList.Remove(removeProducer);
+					changed |= removed;
+					return removed;
 				}
 			}
+			return false;
 		}
 
 		public void Clear()
@@ -103,5 +112,17 @@ namespace TS3Client.Audio
 		IEnumerator<IAudioPassiveProducer> IEnumerable<IAudioPassiveProducer>.GetEnumerator() => ((IEnumerable<IAudioPassiveProducer>)safeProducerList).GetEnumerator();
 
 		IEnumerator IEnumerable.GetEnumerator() => safeProducerList.GetEnumerator();
+
+		public bool Contains(IAudioPassiveProducer item) => Enumerable.Contains(safeProducerList, item);
+
+		public void CopyTo(IAudioPassiveProducer[] array, int arrayIndex) => Array.Copy(safeProducerList, 0, array, arrayIndex, array.Length);
+
+		public void Dispose()
+		{
+			var list = safeProducerList;
+			Clear();
+			foreach (var producer in list)
+				producer.Dispose();
+		}
 	}
 }

@@ -1,4 +1,4 @@
-// TS3AudioBot - An advanced Musicbot for Teamspeak 3
+﻿// TS3AudioBot - An advanced Musicbot for Teamspeak 3
 // Copyright (C) 2017  TS3AudioBot contributors
 //
 // This program is free software: you can redistribute it and/or modify
@@ -8,23 +8,16 @@
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
 using System;
-using TS3AudioBot.ResourceFactories;
+using TS3Client.Audio;
 
 namespace TS3AudioBot.Audio
 {
-	/// <summary>Slim interface to control the audio player.</summary>
-	public interface IPlayerConnection : IDisposable
+	public interface IPlayerSource : IAudioPassiveProducer
 	{
 		event EventHandler OnSongEnd;
 		event EventHandler<SongInfoChanged> OnSongUpdated;
 
-		float Volume { get; set; }
-		TimeSpan Position { get; set; }
-		bool Paused { get; set; }
 		TimeSpan Length { get; }
-		bool Playing { get; }
-
-		E<string> AudioStart(PlayResource url);
-		E<string> AudioStop();
+		TimeSpan Position { get; set; }
 	}
 }

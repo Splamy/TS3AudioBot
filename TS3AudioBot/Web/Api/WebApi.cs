@@ -260,7 +260,7 @@ namespace TS3AudioBot.Web.Api
 					{
 						jsonError.HelpMessage += "Creating UserSessions via api is currently not implemented yet.";
 					}
-					else if (mcex.MissingType == typeof(Bot) || mcex.MissingType == typeof(IPlayerConnection)
+					else if (mcex.MissingType == typeof(Bot) || mcex.MissingType == typeof(Player)
 						|| mcex.MissingType == typeof(PlayManager) || mcex.MissingType == typeof(Ts3Client)
 						|| mcex.MissingType == typeof(IVoiceTarget) || mcex.MissingType == typeof(IVoiceTarget)
 						|| mcex.MissingType == typeof(ConfBot))

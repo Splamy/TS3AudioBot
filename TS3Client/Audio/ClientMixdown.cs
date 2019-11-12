@@ -92,6 +92,8 @@ namespace TS3Client.Audio
 					return take;
 				}
 			}
+
+			public void Dispose() { }
 		}
 	}
 }

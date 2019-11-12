@@ -15,11 +15,14 @@ namespace TS3Client.Audio
 	{
 		private readonly Stream stream;
 
+		public StreamAudioProducer(Stream stream) { this.stream = stream; }
+
 		public int Read(byte[] buffer, int offset, int length, out Meta meta)
 		{
 			meta = default;
 			return stream.Read(buffer, offset, length);
 		}
-		public StreamAudioProducer(Stream stream) { this.stream = stream; }
+
+		public void Dispose() => stream.Dispose();
 	}
 }
