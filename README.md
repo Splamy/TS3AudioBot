@@ -121,7 +121,7 @@ Translations need to be manually approved and will then be automatically built a
 This project is licensed under [OSL-3.0](https://opensource.org/licenses/OSL-3.0).
 
 Why OSL-3.0:
-- OSL allows you to link to our libraries without needing to disclose your own project, which might be useful if you want to use the TS3Client as a library.
+- OSL allows you to link to our libraries without needing to disclose your own project, which might be useful if you want to use the TSLib as a library.
 - If you create plugins you do not have to make them public like in GPL. (Although we would be happy if you shared them :)
 - With OSL we want to allow you providing the TS3AB as a service (even commercially). We do not want the software to be sold but the service. We want this software to be free for everyone.
 - TL; DR? https://tldrlegal.com/license/open-software-licence-3.0

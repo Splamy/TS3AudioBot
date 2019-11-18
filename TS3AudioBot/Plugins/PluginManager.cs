@@ -15,7 +15,7 @@ using System.Linq;
 using System.Text;
 using TS3AudioBot.Config;
 using TS3AudioBot.Dependency;
-using TS3Client.Helper;
+using TSLib.Helper;
 
 namespace TS3AudioBot.Plugins
 {

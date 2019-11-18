@@ -25,10 +25,10 @@ using TS3AudioBot.Playlists;
 using TS3AudioBot.Plugins;
 using TS3AudioBot.ResourceFactories;
 using TS3AudioBot.Sessions;
-using TS3Client;
-using TS3Client.Full;
-using TS3Client.Helper;
-using TS3Client.Messages;
+using TSLib;
+using TSLib.Full;
+using TSLib.Helper;
+using TSLib.Messages;
 
 namespace TS3AudioBot
 {
@@ -53,7 +53,7 @@ namespace TS3AudioBot
 		private readonly ResourceResolver resourceResolver;
 		private readonly CommandManager commandManager;
 		private Ts3Client ts3client;
-		private Ts3FullClient ts3FullClient;
+		private TsFullClient ts3FullClient;
 		private SessionManager sessionManager;
 		private PlayManager playManager;
 		private IVoiceTarget targetManager;
@@ -90,8 +90,8 @@ namespace TS3AudioBot
 			builder.RequestModule<PlaylistIO>();
 			builder.RequestModule<PlaylistManager>();
 			builder.AddModule(Id);
-			builder.AddModule(new Ts3FullClient());
-			builder.RequestModule<Ts3BaseFunctions, Ts3FullClient>();
+			builder.AddModule(new TsFullClient());
+			builder.RequestModule<TsBaseFunctions, TsFullClient>();
 			builder.RequestModule<Ts3Client>();
 			builder.RequestModule<Player>();
 			builder.RequestModule<CustomTargetPipe>();
@@ -110,7 +110,7 @@ namespace TS3AudioBot
 				return "Could not load all bot modules";
 			}
 
-			ts3FullClient = Injector.GetModule<Ts3FullClient>();
+			ts3FullClient = Injector.GetModule<TsFullClient>();
 			ts3client = Injector.GetModule<Ts3Client>();
 			player = Injector.GetModule<Player>();
 			player.SetTarget(Injector.GetModule<CustomTargetPipe>());

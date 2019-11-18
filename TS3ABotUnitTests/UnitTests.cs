@@ -12,9 +12,9 @@ using TS3AudioBot.Helper;
 using TS3AudioBot.History;
 using TS3AudioBot.Playlists.Shuffle;
 using TS3AudioBot.ResourceFactories;
-using TS3Client;
-using TS3Client.Full;
-using TS3Client.Messages;
+using TSLib;
+using TSLib.Full;
+using TSLib.Messages;
 
 namespace TS3ABotUnitTests
 {
@@ -235,12 +235,12 @@ namespace TS3ABotUnitTests
 			}
 		}
 
-		/* ======================= TS3Client Tests ========================*/
+		/* ======================= TSLib Tests ========================*/
 
 		[Test]
 		public void VersionSelfCheck()
 		{
-			Ts3Crypt.VersionSelfCheck();
+			TsCrypt.VersionSelfCheck();
 		}
 	}
 

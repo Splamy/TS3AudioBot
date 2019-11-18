@@ -17,7 +17,7 @@ using TS3AudioBot.Dependency;
 using TS3AudioBot.Helper;
 using TS3AudioBot.Localization;
 using TS3AudioBot.Web.Api;
-using TS3Client.Helper;
+using TSLib.Helper;
 
 namespace TS3AudioBot.CommandSystem.Commands
 {

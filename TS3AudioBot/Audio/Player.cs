@@ -11,9 +11,9 @@ using System;
 using TS3AudioBot.Config;
 using TS3AudioBot.Helper;
 using TS3AudioBot.ResourceFactories;
-using TS3Client;
-using TS3Client.Audio;
-using TS3Client.Helper;
+using TSLib;
+using TSLib.Audio;
+using TSLib.Helper;
 
 namespace TS3AudioBot.Audio
 {

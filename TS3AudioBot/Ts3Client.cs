@@ -15,11 +15,11 @@ using TS3AudioBot.Config;
 using TS3AudioBot.Helper;
 using TS3AudioBot.Localization;
 using TS3AudioBot.RExtensions;
-using TS3Client;
-using TS3Client.Commands;
-using TS3Client.Full;
-using TS3Client.Helper;
-using TS3Client.Messages;
+using TSLib;
+using TSLib.Commands;
+using TSLib.Full;
+using TSLib.Helper;
+using TSLib.Messages;
 
 namespace TS3AudioBot
 {
@@ -51,7 +51,7 @@ namespace TS3AudioBot
 		private ReconnectType? lastReconnect;
 
 		private readonly ConfBot config;
-		private readonly Ts3FullClient ts3FullClient;
+		private readonly TsFullClient ts3FullClient;
 		private IdentityData identity;
 		private List<ClientList> clientbuffer = new List<ClientList>();
 		private bool clientbufferOutdated = true;
@@ -63,7 +63,7 @@ namespace TS3AudioBot
 		public bool Connected => ts3FullClient.Connected;
 		public ConnectionData ConnectionData => ts3FullClient.ConnectionData;
 
-		public Ts3Client(ConfBot config, Ts3FullClient ts3FullClient, Id id)
+		public Ts3Client(ConfBot config, TsFullClient ts3FullClient, Id id)
 		{
 			this.id = id;
 
@@ -97,13 +97,13 @@ namespace TS3AudioBot
 			var identityConf = config.Connect.Identity;
 			if (string.IsNullOrEmpty(identityConf.PrivateKey))
 			{
-				identity = Ts3Crypt.GenerateNewIdentity();
+				identity = TsCrypt.GenerateNewIdentity();
 				identityConf.PrivateKey.Value = identity.PrivateKeyString;
 				identityConf.Offset.Value = identity.ValidKeyOffset;
 			}
 			else
 			{
-				var identityResult = Ts3Crypt.LoadIdentityDynamic(identityConf.PrivateKey.Value, identityConf.Offset.Value);
+				var identityResult = TsCrypt.LoadIdentityDynamic(identityConf.PrivateKey.Value, identityConf.Offset.Value);
 				if (!identityResult.Ok)
 				{
 					Log.Error("The identity from the config file is corrupted. Remove it to generate a new one next start; or try to repair it.");
@@ -173,7 +173,7 @@ namespace TS3AudioBot
 				ts3FullClient.Connect(connectionConfig);
 				return R.Ok;
 			}
-			catch (Ts3Exception qcex)
+			catch (TsException qcex)
 			{
 				Log.Error(qcex, "There is either a problem with your connection configuration, or the bot has not all permissions it needs.");
 				return "Connect error";
@@ -182,10 +182,10 @@ namespace TS3AudioBot
 
 		private void UpdateIndentityToSecurityLevel(int targetLevel)
 		{
-			if (Ts3Crypt.GetSecurityLevel(identity) < targetLevel)
+			if (TsCrypt.GetSecurityLevel(identity) < targetLevel)
 			{
 				Log.Info("Calculating up to required security level: {0}", targetLevel);
-				Ts3Crypt.ImproveSecurity(identity, targetLevel);
+				TsCrypt.ImproveSecurity(identity, targetLevel);
 				config.Connect.Identity.Offset.Value = identity.ValidKeyOffset;
 			}
 		}
@@ -198,25 +198,25 @@ namespace TS3AudioBot
 				TickPool.UnregisterTicker(reconnectTickLocal);
 		}
 
-		#region Ts3Client functions wrapper
+		#region TSLib functions wrapper
 
 		public E<LocalStr> SendMessage(string message, ClientId clientId)
 		{
-			if (Ts3String.TokenLength(message) > Ts3Const.MaxSizeTextMessage)
+			if (TsString.TokenLength(message) > TsConst.MaxSizeTextMessage)
 				return new LocalStr(strings.error_ts_msg_too_long);
 			return ts3FullClient.SendPrivateMessage(message, clientId).FormatLocal();
 		}
 
 		public E<LocalStr> SendChannelMessage(string message)
 		{
-			if (Ts3String.TokenLength(message) > Ts3Const.MaxSizeTextMessage)
+			if (TsString.TokenLength(message) > TsConst.MaxSizeTextMessage)
 				return new LocalStr(strings.error_ts_msg_too_long);
 			return ts3FullClient.SendChannelMessage(message).FormatLocal();
 		}
 
 		public E<LocalStr> SendServerMessage(string message)
 		{
-			if (Ts3String.TokenLength(message) > Ts3Const.MaxSizeTextMessage)
+			if (TsString.TokenLength(message) > TsConst.MaxSizeTextMessage)
 				return new LocalStr(strings.error_ts_msg_too_long);
 			return ts3FullClient.SendServerMessage(message, 1).FormatLocal();
 		}
@@ -240,7 +240,7 @@ namespace TS3AudioBot
 			if (result.Ok)
 				return R.Ok;
 
-			if (result.Error.Id == Ts3ErrorCode.parameter_invalid_size)
+			if (result.Error.Id == TsErrorCode.parameter_invalid_size)
 				return new LocalStr(strings.error_ts_invalid_name);
 			else
 				return result.Error.FormatLocal();
@@ -393,42 +393,42 @@ namespace TS3AudioBot
 			// Add various rights to the bot group
 			var permresult = ts3FullClient.ServerGroupAddPerm((ServerGroupId)config.BotGroupId.Value,
 				new[] {
-					Ts3Permission.i_client_whisper_power, // + Required for whisper channel playing
-					Ts3Permission.i_client_private_textmessage_power, // + Communication
-					Ts3Permission.b_client_server_textmessage_send, // + Communication
-					Ts3Permission.b_client_channel_textmessage_send, // + Communication
+					TsPermission.i_client_whisper_power, // + Required for whisper channel playing
+					TsPermission.i_client_private_textmessage_power, // + Communication
+					TsPermission.b_client_server_textmessage_send, // + Communication
+					TsPermission.b_client_channel_textmessage_send, // + Communication
 
-					Ts3Permission.b_client_modify_dbproperties, // ? Dont know but seems also required for the next one
-					Ts3Permission.b_client_modify_description, // + Used to change the description of our bot
-					Ts3Permission.b_client_info_view, // (+) only used as fallback usually
-					Ts3Permission.b_virtualserver_client_list, // ? Dont know but seems also required for the next one
+					TsPermission.b_client_modify_dbproperties, // ? Dont know but seems also required for the next one
+					TsPermission.b_client_modify_description, // + Used to change the description of our bot
+					TsPermission.b_client_info_view, // (+) only used as fallback usually
+					TsPermission.b_virtualserver_client_list, // ? Dont know but seems also required for the next one
 
-					Ts3Permission.i_channel_subscribe_power, // + Required to find user to communicate
-					Ts3Permission.b_virtualserver_client_dbinfo, // + Required to get basic user information for history, api, etc...
-					Ts3Permission.i_client_talk_power, // + Required for normal channel playing
-					Ts3Permission.b_client_modify_own_description, // ? not sure if this makes b_client_modify_description superfluous
+					TsPermission.i_channel_subscribe_power, // + Required to find user to communicate
+					TsPermission.b_virtualserver_client_dbinfo, // + Required to get basic user information for history, api, etc...
+					TsPermission.i_client_talk_power, // + Required for normal channel playing
+					TsPermission.b_client_modify_own_description, // ? not sure if this makes b_client_modify_description superfluous
 
-					Ts3Permission.b_group_is_permanent, // + Group should stay even if bot disconnects
-					Ts3Permission.i_client_kick_from_channel_power, // + Optional for kicking
-					Ts3Permission.i_client_kick_from_server_power, // + Optional for kicking
-					Ts3Permission.i_client_max_clones_uid, // + In case that bot times out and tries to join again
+					TsPermission.b_group_is_permanent, // + Group should stay even if bot disconnects
+					TsPermission.i_client_kick_from_channel_power, // + Optional for kicking
+					TsPermission.i_client_kick_from_server_power, // + Optional for kicking
+					TsPermission.i_client_max_clones_uid, // + In case that bot times out and tries to join again
 
-					Ts3Permission.b_client_ignore_antiflood, // + The bot should be resistent to forced spam attacks
-					Ts3Permission.b_channel_join_ignore_password, // + The noble bot will not abuse this power
-					Ts3Permission.b_channel_join_permanent, // + Allow joining to all channel even on strict servers
-					Ts3Permission.b_channel_join_semi_permanent, // + Allow joining to all channel even on strict servers
+					TsPermission.b_client_ignore_antiflood, // + The bot should be resistent to forced spam attacks
+					TsPermission.b_channel_join_ignore_password, // + The noble bot will not abuse this power
+					TsPermission.b_channel_join_permanent, // + Allow joining to all channel even on strict servers
+					TsPermission.b_channel_join_semi_permanent, // + Allow joining to all channel even on strict servers
 
-					Ts3Permission.b_channel_join_temporary, // + Allow joining to all channel even on strict servers
-					Ts3Permission.b_channel_join_ignore_maxclients, // + Allow joining full channels
-					Ts3Permission.i_channel_join_power, // + Allow joining to all channel even on strict servers
-					Ts3Permission.b_client_permissionoverview_view, // + Scanning through given perms for rights system
+					TsPermission.b_channel_join_temporary, // + Allow joining to all channel even on strict servers
+					TsPermission.b_channel_join_ignore_maxclients, // + Allow joining full channels
+					TsPermission.i_channel_join_power, // + Allow joining to all channel even on strict servers
+					TsPermission.b_client_permissionoverview_view, // + Scanning through given perms for rights system
 
-					Ts3Permission.i_client_max_avatar_filesize, // + Uploading thumbnails as avatar
-					Ts3Permission.b_client_use_channel_commander, // + Enable channel commander
-					Ts3Permission.b_client_ignore_bans, // + The bot should be resistent to bans
-					Ts3Permission.b_client_ignore_sticky, // + Should skip weird movement restrictions
+					TsPermission.i_client_max_avatar_filesize, // + Uploading thumbnails as avatar
+					TsPermission.b_client_use_channel_commander, // + Enable channel commander
+					TsPermission.b_client_ignore_bans, // + The bot should be resistent to bans
+					TsPermission.b_client_ignore_sticky, // + Should skip weird movement restrictions
 
-					Ts3Permission.i_client_max_channel_subscriptions, // + Required to find user to communicate
+					TsPermission.i_client_max_channel_subscriptions, // + Required to find user to communicate
 				},
 				new[] {
 					max, max,   1,   1,
@@ -517,7 +517,7 @@ namespace TS3AudioBot
 		{
 			switch (error.Id)
 			{
-			case Ts3ErrorCode.whisper_no_targets:
+			case TsErrorCode.whisper_no_targets:
 				OnWhisperNoTarget?.Invoke(this, EventArgs.Empty);
 				break;
 
@@ -534,7 +534,7 @@ namespace TS3AudioBot
 				var error = e.Error;
 				switch (error.Id)
 				{
-				case Ts3ErrorCode.client_could_not_validate_identity:
+				case TsErrorCode.client_could_not_validate_identity:
 					if (config.Connect.Identity.Level.Value == -1)
 					{
 						int targetSecLevel = int.Parse(error.ExtraMessage);
@@ -549,13 +549,13 @@ namespace TS3AudioBot
 					}
 					break;
 
-				case Ts3ErrorCode.client_too_many_clones_connected:
+				case TsErrorCode.client_too_many_clones_connected:
 					Log.Warn("Seems like another client with the same identity is already connected.");
 					if (TryReconnect(ReconnectType.Error))
 						return;
 					break;
 
-				case Ts3ErrorCode.connect_failed_banned:
+				case TsErrorCode.connect_failed_banned:
 					Log.Warn("This bot is banned.");
 					if (TryReconnect(ReconnectType.Ban))
 						return;

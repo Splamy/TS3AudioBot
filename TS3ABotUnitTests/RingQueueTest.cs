@@ -1,6 +1,6 @@
 using NUnit.Framework;
 using System;
-using TS3Client.Full;
+using TSLib.Full;
 
 namespace TS3ABotUnitTests
 {

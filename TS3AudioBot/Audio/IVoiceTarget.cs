@@ -8,8 +8,8 @@
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
 using System.Collections.Generic;
-using TS3Client;
-using TS3Client.Audio;
+using TSLib;
+using TSLib.Audio;
 
 namespace TS3AudioBot.Audio
 {

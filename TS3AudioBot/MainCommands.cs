@@ -35,11 +35,11 @@ using TS3AudioBot.Rights;
 using TS3AudioBot.Sessions;
 using TS3AudioBot.Web.Api;
 using TS3AudioBot.Web.Model;
-using TS3Client;
-using TS3Client.Audio;
-using TS3Client.Full.Book;
-using TS3Client.Helper;
-using TS3Client.Messages;
+using TSLib;
+using TSLib.Audio;
+using TSLib.Full.Book;
+using TSLib.Helper;
+using TSLib.Messages;
 
 namespace TS3AudioBot
 {

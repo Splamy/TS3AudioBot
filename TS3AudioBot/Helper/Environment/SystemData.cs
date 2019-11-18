@@ -13,7 +13,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Text.RegularExpressions;
-using TS3Client.Helper;
+using TSLib.Helper;
 using PlatformVersion = System.ValueTuple<TS3AudioBot.Helper.Environment.Runtime, string, System.Version>;
 
 namespace TS3AudioBot.Helper.Environment

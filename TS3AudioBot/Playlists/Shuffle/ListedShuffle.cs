@@ -9,7 +9,7 @@
 
 using System;
 using System.Linq;
-using TS3Client.Helper;
+using TSLib.Helper;
 
 namespace TS3AudioBot.Playlists.Shuffle
 {

@@ -10,8 +10,8 @@
 using System;
 using System.Collections.Generic;
 using System.Net;
-using TS3Client;
-using TS3Client.Messages;
+using TSLib;
+using TSLib.Messages;
 
 namespace TS3AudioBot.Rights
 {

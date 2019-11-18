@@ -14,8 +14,8 @@ using System.Linq;
 using TS3AudioBot.Config;
 using TS3AudioBot.Localization;
 using TS3AudioBot.ResourceFactories;
-using TS3Client;
-using TS3Client.Helper;
+using TSLib;
+using TSLib.Helper;
 
 namespace TS3AudioBot.History
 {

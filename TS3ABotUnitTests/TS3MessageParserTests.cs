@@ -2,8 +2,8 @@ using NUnit.Framework;
 using System.Collections;
 using System.Reflection;
 using System.Text;
-using TS3Client;
-using TS3Client.Messages;
+using TSLib;
+using TSLib.Messages;
 
 namespace TS3ABotUnitTests
 {

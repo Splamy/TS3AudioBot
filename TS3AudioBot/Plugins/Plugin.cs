@@ -20,7 +20,7 @@ using System.Text;
 using TS3AudioBot.CommandSystem;
 using TS3AudioBot.Dependency;
 using TS3AudioBot.ResourceFactories;
-using TS3Client.Helper;
+using TSLib.Helper;
 
 namespace TS3AudioBot.Plugins
 {

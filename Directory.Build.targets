@@ -1,7 +1,8 @@
 <Project>
   <ItemGroup>
     <PackageReference Include="NLog" Version="4.6.8" />
-    <PackageReference Include="Newtonsoft.Json" Version="12.0.2" />
-    <PackageReference Condition="'$(TargetFramework)' != 'netcoreapp2.2'"  Include="System.Memory" Version="4.5.3" />
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
+    <PackageReference Condition="'$(TargetFramework)' == 'net472'" Include="System.Memory" Version="4.5.3" />
+    <PackageReference Condition="'$(TargetFramework)' == 'netstandard2.0'" Include="System.Memory" Version="4.5.3" />
   </ItemGroup>
 </Project>

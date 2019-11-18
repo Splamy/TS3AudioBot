@@ -9,7 +9,7 @@
 
 using System;
 using TS3AudioBot.ResourceFactories;
-using TS3Client;
+using TSLib;
 
 namespace TS3AudioBot.History
 {

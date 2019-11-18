@@ -69,7 +69,7 @@ namespace TS3AudioBot
 
 		public static bool VerifyLibopus()
 		{
-			bool loaded = TS3Client.Audio.Opus.NativeMethods.PreloadLibrary();
+			bool loaded = TSLib.Audio.Opus.NativeMethods.PreloadLibrary();
 			if (!loaded)
 				Log.Error("Couldn't find libopus. Make sure it is installed or placed in the correct folder.");
 			return loaded;
@@ -165,7 +165,7 @@ namespace TS3AudioBot
 			Log.Info("[ Version: {0}", SystemData.AssemblyData);
 			Log.Info("[ Platform: {0}", SystemData.PlatformData);
 			Log.Info("[ Runtime: {0} ServerGC:{1} GC:{2}", SystemData.RuntimeData.FullName, GCSettings.IsServerGC, GCSettings.LatencyMode);
-			Log.Info("[ Opus: {0}", TS3Client.Audio.Opus.NativeMethods.Info);
+			Log.Info("[ Opus: {0}", TSLib.Audio.Opus.NativeMethods.Info);
 			// ffmpeg
 			// youtube-dl
 			Log.Info("[==============================================]");

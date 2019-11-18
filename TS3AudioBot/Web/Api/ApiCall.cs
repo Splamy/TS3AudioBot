@@ -9,7 +9,7 @@
 
 using System;
 using System.Net;
-using TS3Client;
+using TSLib;
 
 namespace TS3AudioBot.Web.Api
 {

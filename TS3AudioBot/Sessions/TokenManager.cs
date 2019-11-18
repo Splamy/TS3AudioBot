@@ -12,7 +12,7 @@ using System;
 using System.Collections.Generic;
 using TS3AudioBot.Helper;
 using TS3AudioBot.Localization;
-using TS3Client.Helper;
+using TSLib.Helper;
 
 namespace TS3AudioBot.Sessions
 {

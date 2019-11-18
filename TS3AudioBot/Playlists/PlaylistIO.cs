@@ -18,7 +18,7 @@ using TS3AudioBot.Config;
 using TS3AudioBot.Localization;
 using TS3AudioBot.ResourceFactories;
 using TS3AudioBot.Web.Model;
-using TS3Client.Helper;
+using TSLib.Helper;
 
 namespace TS3AudioBot.Playlists
 {

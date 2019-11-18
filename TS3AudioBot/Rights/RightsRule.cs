@@ -13,7 +13,7 @@ using System.Linq;
 using System.Net;
 using TS3AudioBot.Helper;
 using TS3AudioBot.Rights.Matchers;
-using TS3Client;
+using TSLib;
 
 namespace TS3AudioBot.Rights
 {

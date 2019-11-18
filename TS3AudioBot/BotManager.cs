@@ -14,7 +14,7 @@ using System.Threading;
 using TS3AudioBot.Config;
 using TS3AudioBot.Dependency;
 using TS3AudioBot.Helper;
-using TS3Client.Helper;
+using TSLib.Helper;
 
 namespace TS3AudioBot
 {
@@ -56,7 +56,7 @@ namespace TS3AudioBot
 
 				string address = Interactive.LoopAction("Please enter the ip, domain or nickname (with port; default: 9987) where to connect to:", addr =>
 				{
-					if (TS3Client.TsDnsResolver.TryResolve(addr, out _))
+					if (TSLib.TsDnsResolver.TryResolve(addr, out _))
 						return true;
 					Console.WriteLine("The address seems invalid or could not be resolved, continue anyway? [y/N]");
 					return Interactive.UserAgree(defaultTo: false);

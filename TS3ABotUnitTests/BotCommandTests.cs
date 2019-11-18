@@ -12,7 +12,7 @@ using TS3AudioBot.CommandSystem.Ast;
 using TS3AudioBot.CommandSystem.CommandResults;
 using TS3AudioBot.CommandSystem.Commands;
 using TS3AudioBot.Dependency;
-using TS3Client;
+using TSLib;
 
 namespace TS3ABotUnitTests
 {

@@ -8,7 +8,7 @@
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
 using System.Linq;
-using TS3Client;
+using TSLib;
 
 namespace TS3AudioBot.Rights.Matchers
 {

@@ -14,7 +14,7 @@ using TS3AudioBot.Helper;
 using TS3AudioBot.Localization;
 using TS3AudioBot.Playlists.Shuffle;
 using TS3AudioBot.Web.Model;
-using TS3Client.Helper;
+using TSLib.Helper;
 
 namespace TS3AudioBot.Playlists
 {

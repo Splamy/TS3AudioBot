@@ -294,13 +294,13 @@ namespace TS3AudioBot.Config
 		public ConfigValue<bool> Hashed { get; } = new ConfigValue<bool>("hashed", false);
 		public ConfigValue<bool> AutoHash { get; } = new ConfigValue<bool>("autohash", false);
 
-		public TS3Client.Password Get()
+		public TSLib.Password Get()
 		{
 			if (string.IsNullOrEmpty(Password))
-				return TS3Client.Password.Empty;
+				return TSLib.Password.Empty;
 			var pass = Hashed
-				? TS3Client.Password.FromHash(Password)
-				: TS3Client.Password.FromPlain(Password);
+				? TSLib.Password.FromHash(Password)
+				: TSLib.Password.FromPlain(Password);
 			if (AutoHash && !Hashed)
 			{
 				Password.Value = pass.HashedPassword;

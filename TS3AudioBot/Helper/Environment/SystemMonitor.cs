@@ -12,7 +12,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
-using TS3Client.Helper;
+using TSLib.Helper;
 
 namespace TS3AudioBot.Helper.Environment
 {

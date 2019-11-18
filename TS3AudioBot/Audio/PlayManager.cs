@@ -15,7 +15,7 @@ using TS3AudioBot.Helper;
 using TS3AudioBot.Localization;
 using TS3AudioBot.Playlists;
 using TS3AudioBot.ResourceFactories;
-using TS3Client.Helper;
+using TSLib.Helper;
 
 namespace TS3AudioBot.Audio
 {

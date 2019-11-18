@@ -11,7 +11,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
-using TS3Client.Helper;
+using TSLib.Helper;
 
 namespace TS3AudioBot.ResourceFactories.AudioTags
 {

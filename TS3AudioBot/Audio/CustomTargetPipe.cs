@@ -10,9 +10,9 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using TS3Client;
-using TS3Client.Audio;
-using TS3Client.Full;
+using TSLib;
+using TSLib.Audio;
+using TSLib.Full;
 
 namespace TS3AudioBot.Audio
 {
@@ -56,9 +56,9 @@ namespace TS3AudioBot.Audio
 		private bool subscriptionSetupChanged;
 		private readonly object subscriptionLockObj = new object();
 
-		private readonly Ts3FullClient client;
+		private readonly TsFullClient client;
 
-		public CustomTargetPipe(Ts3FullClient client)
+		public CustomTargetPipe(TsFullClient client)
 		{
 			this.client = client;
 			subscriptionSetupChanged = true;

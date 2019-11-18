@@ -25,8 +25,8 @@ using TS3AudioBot.Dependency;
 using TS3AudioBot.Helper;
 using TS3AudioBot.Localization;
 using TS3AudioBot.Sessions;
-using TS3Client;
-using TS3Client.Helper;
+using TSLib;
+using TSLib.Helper;
 
 namespace TS3AudioBot.Web.Api
 {

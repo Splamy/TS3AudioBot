@@ -18,9 +18,9 @@ using TS3AudioBot.Dependency;
 using TS3AudioBot.Helper;
 using TS3AudioBot.Rights.Matchers;
 using TS3AudioBot.Web.Api;
-using TS3Client;
-using TS3Client.Helper;
-using TS3Client.Messages;
+using TSLib;
+using TSLib.Helper;
+using TSLib.Messages;
 
 namespace TS3AudioBot.Rights
 {
@@ -42,7 +42,7 @@ namespace TS3AudioBot.Rights
 		// This will save us from making unnecessary query calls.
 		private bool needsAvailableGroups = true;
 		private bool needsAvailableChanGroups = true;
-		private Ts3Permission[] needsPermOverview = Array.Empty<Ts3Permission>();
+		private TsPermission[] needsPermOverview = Array.Empty<TsPermission>();
 
 		public RightsManager(ConfRights config)
 		{
@@ -94,7 +94,7 @@ namespace TS3AudioBot.Rights
 				// For this step we will prefer query calls which can give us more than one information
 				// at once and lazily fall back to other calls as long as needed.
 
-				if (info.TryGet<Ts3Client>(out var ts) && info.TryGet<Ts3BaseFunctions>(out var tsClient))
+				if (info.TryGet<Ts3Client>(out var ts) && info.TryGet<TsBaseFunctions>(out var tsClient))
 				{
 					ServerGroupId[] serverGroups = clientCall.ServerGroups;
 					ChannelId? channelId = clientCall.ChannelId;
@@ -146,7 +146,7 @@ namespace TS3AudioBot.Rights
 						var result = tsClient.PermOverview(databaseId.Value, channelId.Value, 0);
 						if (result.Ok)
 						{
-							execCtx.Permissions = new PermOverview[Enum.GetValues(typeof(Ts3Permission)).Length];
+							execCtx.Permissions = new PermOverview[Enum.GetValues(typeof(TsPermission)).Length];
 							foreach (var perm in result.Value)
 							{
 								if (perm.PermissionId < 0 || (int)perm.PermissionId >= execCtx.Permissions.Length)
@@ -606,7 +606,7 @@ namespace TS3AudioBot.Rights
 		/// <param name="ctx">The parsing context for the current file processing.</param>
 		private static void CheckRequiredCalls(ParseContext ctx)
 		{
-			var needsPermOverview = new HashSet<Ts3Permission>();
+			var needsPermOverview = new HashSet<TsPermission>();
 
 			foreach (var group in ctx.Rules)
 			{
@@ -628,7 +628,7 @@ namespace TS3AudioBot.Rights
 					}
 				}
 			}
-			ctx.NeedsPermOverview = needsPermOverview.Count > 0 ? needsPermOverview.ToArray() : Array.Empty<Ts3Permission>();
+			ctx.NeedsPermOverview = needsPermOverview.Count > 0 ? needsPermOverview.ToArray() : Array.Empty<TsPermission>();
 		}
 	}
 }

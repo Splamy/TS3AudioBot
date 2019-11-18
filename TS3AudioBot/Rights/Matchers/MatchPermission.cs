@@ -11,19 +11,19 @@ using System;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using TS3AudioBot.Helper;
-using TS3Client;
-using TS3Client.Helper;
+using TSLib;
+using TSLib.Helper;
 
 namespace TS3AudioBot.Rights.Matchers
 {
 	internal class MatchPermission : Matcher
 	{
 		private static readonly Regex expressionMatch = new Regex(@"(\w+)\s*(<|>|=|>=|<=|!=)\s*(-?\d+|true|false)", Util.DefaultRegexConfig);
-		private readonly Dictionary<Ts3Permission, (PermCompare, int)> permissions;
+		private readonly Dictionary<TsPermission, (PermCompare, int)> permissions;
 
 		public MatchPermission(string[] permissions, ParseContext ctx)
 		{
-			this.permissions = new Dictionary<Ts3Permission, (PermCompare, int)>(permissions.Length);
+			this.permissions = new Dictionary<TsPermission, (PermCompare, int)>(permissions.Length);
 			foreach (var expression in permissions)
 			{
 				var match = expressionMatch.Match(expression);
@@ -37,7 +37,7 @@ namespace TS3AudioBot.Rights.Matchers
 				var compare = match.Groups[2].Value;
 				var value = match.Groups[3].Value;
 
-				if (!Enum.TryParse<Ts3Permission>(permission, out var permissionId))
+				if (!Enum.TryParse<TsPermission>(permission, out var permissionId))
 				{
 					ctx.Errors.Add($"The teamspeak permission \"{permission}\" was not found");
 					continue;
@@ -73,7 +73,7 @@ namespace TS3AudioBot.Rights.Matchers
 			}
 		}
 
-		public IReadOnlyCollection<Ts3Permission> ComparingPermissions() => permissions.Keys;
+		public IReadOnlyCollection<TsPermission> ComparingPermissions() => permissions.Keys;
 
 		public override bool Matches(ExecuteContext ctx)
 		{

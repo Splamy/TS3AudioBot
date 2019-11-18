@@ -17,7 +17,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\TS3AudioBot\TS3AudioBot.csproj" />
-    <ProjectReference Include="..\TS3Client\TS3Client.csproj" />
+    <ProjectReference Include="..\TSLib\TSLib.csproj" />
   </ItemGroup>
 
 </Project>

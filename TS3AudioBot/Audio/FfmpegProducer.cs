@@ -17,8 +17,8 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using TS3AudioBot.Config;
 using TS3AudioBot.Helper;
-using TS3Client.Audio;
-using TS3Client.Helper;
+using TSLib.Audio;
+using TSLib.Helper;
 
 namespace TS3AudioBot.Audio
 {

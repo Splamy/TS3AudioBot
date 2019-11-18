@@ -70,7 +70,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\TS3Client\TS3Client.csproj" />
+    <ProjectReference Include="..\TSLib\TSLib.csproj" />
   </ItemGroup>
 
   <ItemGroup>

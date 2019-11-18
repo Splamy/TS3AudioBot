@@ -14,7 +14,7 @@ using System.Collections.Generic;
 using System.Text;
 using TS3AudioBot.CommandSystem;
 using TS3AudioBot.CommandSystem.Commands;
-using TS3Client.Helper;
+using TSLib.Helper;
 
 namespace TS3AudioBot.Web.Api
 {

@@ -15,7 +15,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using TS3AudioBot.Localization;
-using TS3Client.Helper;
+using TSLib.Helper;
 
 namespace TS3AudioBot.Config.Deprecated
 {

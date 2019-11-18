@@ -14,7 +14,7 @@ using TS3AudioBot.CommandSystem.CommandResults;
 using TS3AudioBot.CommandSystem.Commands;
 using TS3AudioBot.CommandSystem.Text;
 using TS3AudioBot.Web.Api;
-using TS3Client.Helper;
+using TSLib.Helper;
 
 namespace TS3AudioBot.CommandSystem
 {
