@@ -16,13 +16,15 @@ namespace TS3AudioBot.Playlists
 {
 	public class PlaylistItem : IAudioResourceResult
 	{
-		public MetaData Meta { get; }
-		public AudioResource AudioResource { get; private set; }
+		public MetaData Meta { get; set; }
+		public AudioResource AudioResource { get; }
 
-		private PlaylistItem(MetaData meta) { Meta = meta ?? new MetaData(); }
-		public PlaylistItem(AudioResource resource, MetaData meta = null) : this(meta) { AudioResource = resource; }
+		private PlaylistItem(MetaData meta = null)
+		{
+			Meta = meta;
+		}
 
-		public void Resolve(AudioResource resource)
+		public PlaylistItem(AudioResource resource, MetaData meta = null) : this(meta)
 		{
 			AudioResource = resource ?? throw new ArgumentNullException(nameof(resource));
 		}

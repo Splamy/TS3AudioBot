@@ -9,6 +9,7 @@
 
 using Newtonsoft.Json;
 using System.Collections.Generic;
+using TS3AudioBot.Audio;
 using TS3AudioBot.CommandSystem.CommandResults;
 
 namespace TS3AudioBot.ResourceFactories
@@ -17,11 +18,13 @@ namespace TS3AudioBot.ResourceFactories
 	{
 		public AudioResource BaseData { get; }
 		public string PlayUri { get; }
+		public MetaData Meta { get; set; }
 
-		public PlayResource(string uri, AudioResource baseData)
+		public PlayResource(string uri, AudioResource baseData, MetaData meta = null)
 		{
 			BaseData = baseData;
 			PlayUri = uri;
+			Meta = meta;
 		}
 
 		public override string ToString() => BaseData.ToString();

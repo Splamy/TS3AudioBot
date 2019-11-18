@@ -10,7 +10,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using TS3AudioBot.Audio;
 using TS3AudioBot.Localization;
 
 namespace TS3AudioBot.Playlists
@@ -23,7 +22,7 @@ namespace TS3AudioBot.Playlists
 		private readonly List<PlaylistItem> items;
 		public IReadOnlyList<PlaylistItem> Items => items;
 
-		public PlaylistItem this[int i] => this.Get(i);
+		public PlaylistItem this[int i] => items[i];
 
 		public Playlist() :
 			this(new List<PlaylistItem>())
@@ -88,17 +87,8 @@ namespace TS3AudioBot.Playlists
 
 	public interface IReadOnlyPlaylist
 	{
+		PlaylistItem this[int i] { get; }
 		string Title { get; }
 		IReadOnlyList<PlaylistItem> Items { get; }
-	}
-
-	public static class PlaylistExtensions
-	{
-		public static PlaylistItem Get(this IReadOnlyPlaylist self, int index)
-		{
-			var item = self.Items[index];
-			item.Meta.From = PlaySource.FromPlaylist;
-			return item;
-		}
 	}
 }

@@ -65,12 +65,12 @@ namespace TS3AudioBot
 
 		// ReSharper disable UnusedMember.Global
 		[Command("add")]
-		public static void CommandAdd(PlayManager playManager, InvokerData invoker, string url)
-			=> playManager.Enqueue(invoker, url).UnwrapThrow();
+		public static void CommandAdd(PlayManager playManager, InvokerData invoker, string url, params string[] attributes)
+			=> playManager.Enqueue(invoker, url, meta: PlayManager.ParseAttributes(attributes)).UnwrapThrow();
 
 		[Command("add")]
-		public static void CommandAdd(PlayManager playManager, InvokerData invoker, IAudioResourceResult rsc)
-			=> playManager.Enqueue(invoker, rsc.AudioResource).UnwrapThrow();
+		public static void CommandAdd(PlayManager playManager, InvokerData invoker, IAudioResourceResult rsc, params string[] attributes)
+			=> playManager.Enqueue(invoker, rsc.AudioResource, meta: PlayManager.ParseAttributes(attributes)).UnwrapThrow();
 
 		[Command("alias add")]
 		public static void CommandAliasAdd(CommandManager commandManager, ConfBot confBot, string commandName, string command)
@@ -873,13 +873,13 @@ namespace TS3AudioBot
 		}
 
 		[Command("list add")]
-		public static JsonValue<PlaylistItemGetData> CommandListAddInternal(ResourceResolver resourceFactory, InvokerData invoker, PlaylistManager playlistManager, string listId, string link /* TODO param */)
+		public static JsonValue<PlaylistItemGetData> CommandListAddInternal(ResourceResolver resourceFactory, PlaylistManager playlistManager, string listId, string link /* TODO param */)
 		{
 			PlaylistItemGetData getData = null;
 			playlistManager.ModifyPlaylist(listId, plist =>
 			{
 				var playResource = resourceFactory.Load(link).UnwrapThrow();
-				var item = new PlaylistItem(playResource.BaseData, new MetaData { ResourceOwnerUid = invoker.ClientUid });
+				var item = new PlaylistItem(playResource.BaseData);
 				plist.Add(item).UnwrapThrow();
 				getData = resourceFactory.ToApiFormat(item);
 				//getData.Index = plist.Items.Count - 1;
@@ -928,7 +928,7 @@ namespace TS3AudioBot
 		}
 
 		[Command("list insert", "_undocumented")]  // TODO Doc
-		public static JsonValue<PlaylistItemGetData> CommandListAddInternal(ResourceResolver resourceFactory, InvokerData invoker, PlaylistManager playlistManager, string listId, int index, string link /* TODO param */)
+		public static JsonValue<PlaylistItemGetData> CommandListAddInternal(ResourceResolver resourceFactory, PlaylistManager playlistManager, string listId, int index, string link /* TODO param */)
 		{
 			PlaylistItemGetData getData = null;
 			playlistManager.ModifyPlaylist(listId, plist =>
@@ -937,7 +937,7 @@ namespace TS3AudioBot
 					throw new CommandException(strings.error_playlist_item_index_out_of_range, CommandExceptionReason.CommandError);
 
 				var playResource = resourceFactory.Load(link).UnwrapThrow();
-				var item = new PlaylistItem(playResource.BaseData, new MetaData { ResourceOwnerUid = invoker.ClientUid });
+				var item = new PlaylistItem(playResource.BaseData);
 				plist.Insert(index, item).UnwrapThrow();
 				getData = resourceFactory.ToApiFormat(item);
 				//getData.Index = plist.Items.Count - 1;
@@ -952,7 +952,7 @@ namespace TS3AudioBot
 			if (index < 0 || index >= plist.Items.Count)
 				throw new CommandException(strings.error_playlist_item_index_out_of_range, CommandExceptionReason.CommandError);
 
-			return plist.Get(index);
+			return plist[index];
 		}
 
 		[Command("list item move")] // TODO return modified elements
@@ -1126,12 +1126,12 @@ namespace TS3AudioBot
 		}
 
 		[Command("play")]
-		public static void CommandPlay(PlayManager playManager, InvokerData invoker, string url)
-			=> playManager.Play(invoker, url).UnwrapThrow();
+		public static void CommandPlay(PlayManager playManager, InvokerData invoker, string url, params string[] attributes)
+			=> playManager.Play(invoker, url, meta: PlayManager.ParseAttributes(attributes)).UnwrapThrow();
 
 		[Command("play")]
-		public static void CommandPlay(PlayManager playManager, InvokerData invoker, IAudioResourceResult rsc)
-			=> playManager.Play(invoker, rsc.AudioResource).UnwrapThrow();
+		public static void CommandPlay(PlayManager playManager, InvokerData invoker, IAudioResourceResult rsc, params string[] attributes)
+			=> playManager.Play(invoker, rsc.AudioResource, meta: PlayManager.ParseAttributes(attributes)).UnwrapThrow();
 
 		[Command("plugin list")]
 		public static JsonArray<PluginStatusInfo> CommandPluginList(PluginManager pluginManager, Bot bot = null)
@@ -1258,38 +1258,15 @@ namespace TS3AudioBot
 		[Command("seek")]
 		[Usage("<sec>", "Time in seconds")]
 		[Usage("<min:sec>", "Time in Minutes:Seconds")]
-		public static void CommandSeek(Player playerConnection, string position)
+		[Usage("<0h0m0s>", "Time in hours, minutes and seconds")]
+		public static void CommandSeek(Player playerConnection, TimeSpan position)
 		{
-			TimeSpan span;
-			bool parsed = false;
-			if (position.Contains(":"))
-			{
-				string[] splittime = position.Split(':');
-
-				if (splittime.Length == 2
-					&& int.TryParse(splittime[0], out var minutes)
-					&& float.TryParse(splittime[1], NumberStyles.Integer | NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out var seconds))
-				{
-					parsed = true;
-					span = TimeSpan.FromSeconds(seconds) + TimeSpan.FromMinutes(minutes);
-				}
-				else
-				{
-					span = TimeSpan.MinValue;
-				}
-			}
-			else
-			{
-				parsed = float.TryParse(position, NumberStyles.Integer | NumberStyles.AllowDecimalPoint, CultureInfo.InvariantCulture, out var seconds);
-				span = TimeSpan.FromSeconds(seconds);
-			}
-
-			if (!parsed)
-				throw new CommandException(strings.cmd_seek_invalid_format, CommandExceptionReason.CommandError);
-			else if (span < TimeSpan.Zero || span > playerConnection.Length)
+			//if (!parsed)
+			//	throw new CommandException(strings.cmd_seek_invalid_format, CommandExceptionReason.CommandError);
+			if (position < TimeSpan.Zero || position > playerConnection.Length)
 				throw new CommandException(strings.cmd_seek_out_of_range, CommandExceptionReason.CommandError);
-			else
-				playerConnection.Position = span;
+
+			playerConnection.Position = position;
 		}
 
 		private static AudioResource GetSearchResult(this UserSession session, int index)

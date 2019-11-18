@@ -230,7 +230,7 @@ namespace TS3Client.Full.Book
 			OwnClient = initServer.ClientId;
 		}
 
-		private bool ChannelSubscribeFun(ChannelSubscribed msg) => true;
+		private bool ChannelSubscribeFun(ChannelSubscribed _) => true;
 
 		private bool ChannelUnsubscribeFun(ChannelUnsubscribed msg)
 		{

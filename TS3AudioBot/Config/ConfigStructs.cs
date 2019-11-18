@@ -330,9 +330,9 @@ namespace TS3AudioBot.Config
 			var repeat = last == "repeat" || last == "repeat last"; // "repeat" might get removed for other loops, but for now keep as hidden alternative
 			var max = repeat ? value.Count - 2 : value.Count - 1;
 			if (index <= max)
-				return TomlTools.ParseTime(value[index]);
+				return TextUtil.ParseTime(value[index]);
 			else
-				return TomlTools.ParseTime(value[max]);
+				return TextUtil.ParseTime(value[max]);
 		}
 
 		public static E<string> ValidateTime(IReadOnlyList<string> value)
@@ -347,7 +347,7 @@ namespace TS3AudioBot.Config
 			var max = repeat ? value.Count - 2 : value.Count - 1;
 			for (int i = 0; i <= max; i++)
 			{
-				var r = TomlTools.ValidateTime(value[i]);
+				var r = TextUtil.ValidateTime(value[i]);
 				if (!r.Ok)
 					return r;
 			}

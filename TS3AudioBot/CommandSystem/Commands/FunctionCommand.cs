@@ -14,6 +14,7 @@ using System.Linq;
 using System.Reflection;
 using TS3AudioBot.CommandSystem.CommandResults;
 using TS3AudioBot.Dependency;
+using TS3AudioBot.Helper;
 using TS3AudioBot.Localization;
 using TS3AudioBot.Web.Api;
 using TS3Client.Helper;
@@ -86,7 +87,7 @@ namespace TS3AudioBot.CommandSystem.Commands
 		private object[] FitArguments(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<Type> returnTypes, out int takenArguments)
 		{
 			var parameters = new object[CommandParameter.Length];
-			var filterLazy = new Lazy<Algorithm.IFilter>(() => info.GetFilter(), false);
+			var filterLazy = info.GetFilterLazy();
 
 			// takenArguments: Index through arguments which have been moved into a parameter
 			// p: Iterate through parameters
@@ -131,7 +132,7 @@ namespace TS3AudioBot.CommandSystem.Commands
 					if (CommandParameter[p].Kind == ParamKind.NormalTailString && argResultP is TailString tailString)
 						parameters[p] = tailString.Tail;
 					else
-						parameters[p] = ConvertParam(UnwrapPrimitive(argResultP), arg, filterLazy.Value);
+						parameters[p] = ConvertParam(UnwrapPrimitive(argResultP), arg, filterLazy);
 
 					takenArguments++;
 					break;
@@ -144,7 +145,7 @@ namespace TS3AudioBot.CommandSystem.Commands
 					for (int i = 0; i < args.Length; i++, takenArguments++)
 					{
 						var argResultA = arguments[takenArguments].Execute(info, Array.Empty<ICommand>(), GetTypes(typeArr));
-						var convResult = ConvertParam(UnwrapPrimitive(argResultA), typeArr, filterLazy.Value);
+						var convResult = ConvertParam(UnwrapPrimitive(argResultA), typeArr, filterLazy);
 						args.SetValue(convResult, i);
 					}
 
@@ -344,20 +345,25 @@ namespace TS3AudioBot.CommandSystem.Commands
 			return new CommandException(throwString, CommandExceptionReason.MissingParameter);
 		}
 
-		private static object ConvertParam(object value, Type targetType, Algorithm.IFilter filter)
+		public static object ConvertParam(object value, Type targetType, Lazy<Algorithm.IFilter> filter)
 		{
-			if (targetType.IsAssignableFrom(value.GetType()))
+			var valueType = value.GetType();
+			if (targetType.IsAssignableFrom(valueType))
 				return value;
 			if (targetType.IsEnum)
 			{
 				var strValue = value.ToString();
 				var enumVals = Enum.GetValues(targetType).Cast<Enum>();
-				var result = filter.Filter(enumVals.Select(x => new KeyValuePair<string, Enum>(x.ToString(), x)), strValue).Select(x => x.Value).FirstOrDefault();
+				var result = filter.Value.Filter(enumVals.Select(x => new KeyValuePair<string, Enum>(x.ToString(), x)), strValue).Select(x => x.Value).FirstOrDefault();
 				if (result is null)
 					throw new CommandException(string.Format(strings.error_cmd_could_not_convert_to, strValue, targetType.Name), CommandExceptionReason.MissingParameter);
 				return result;
 			}
 			var unwrappedTargetType = UnwrapParamType(targetType);
+			if (valueType == typeof(string) && unwrappedTargetType == typeof(TimeSpan))
+			{
+				return TextUtil.ParseTime((string)value);
+			}
 
 			// Autoconvert
 			try { return Convert.ChangeType(value, unwrappedTargetType, CultureInfo.InvariantCulture); }

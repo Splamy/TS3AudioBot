@@ -50,7 +50,7 @@ namespace TS3AudioBot.Audio
 			this.id = id;
 		}
 
-		public E<string> AudioStart(string url) => StartFfmpegProcess(url, TimeSpan.Zero);
+		public E<string> AudioStart(string url, TimeSpan? startOff = null) => StartFfmpegProcess(url, startOff ?? TimeSpan.Zero);
 
 		public E<string> AudioStartIcy(string url) => StartFfmpegProcessIcy(url);
 
@@ -184,12 +184,13 @@ namespace TS3AudioBot.Audio
 			return StartFfmpegProcess(lastLink, value);
 		}
 
-		private R<FfmpegInstance, string> StartFfmpegProcess(string url, TimeSpan offset)
+		private R<FfmpegInstance, string> StartFfmpegProcess(string url, TimeSpan? offsetOpt)
 		{
 			StopFfmpegProcess();
 			Log.Trace("Start request {0}", url);
 
 			string arguments;
+			var offset = offsetOpt ?? TimeSpan.Zero;
 			if (offset > TimeSpan.Zero)
 			{
 				var seek = string.Format(CultureInfo.InvariantCulture, @"-ss {0:hh\:mm\:ss\.fff}", offset);

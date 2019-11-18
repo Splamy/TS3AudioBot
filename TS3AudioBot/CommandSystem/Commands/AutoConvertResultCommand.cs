@@ -9,7 +9,6 @@
 
 using System;
 using System.Collections.Generic;
-using System.Globalization;
 using TS3AudioBot.CommandSystem.CommandResults;
 using TS3AudioBot.Localization;
 
@@ -31,11 +30,12 @@ namespace TS3AudioBot.CommandSystem.Commands
 
 		public virtual object Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<Type> returnTypes)
 		{
+			var filterLazy = info.GetFilterLazy();
 			foreach (var type in returnTypes)
 			{
 				try
 				{
-					var result = Convert.ChangeType(Content, type, CultureInfo.InvariantCulture);
+					var result = FunctionCommand.ConvertParam(Content, type, filterLazy);
 					Log.Debug("Converting command result {0} to {1} returns {2}", Content, type, result);
 
 					return ResultHelper.ToResult(type, result);

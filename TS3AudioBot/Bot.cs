@@ -133,7 +133,7 @@ namespace TS3AudioBot
 			playManager.OnResourceUpdated += LoggedUpdateBotStatus;
 			// Log our resource in the history
 			if (Injector.TryGet<HistoryManager>(out var historyManager))
-				playManager.AfterResourceStarted += (s, e) => historyManager.LogAudioResource(new HistorySaveData(e.PlayResource.BaseData, e.Invoker.ClientUid));
+				playManager.AfterResourceStarted += (s, e) => historyManager.LogAudioResource(new HistorySaveData(e.PlayResource.BaseData, e.MetaData.ResourceOwnerUid));
 			// Update our thumbnail
 			playManager.AfterResourceStarted += GenerateStatusImage;
 			playManager.AfterResourceStopped += GenerateStatusImage;
