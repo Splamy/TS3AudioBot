@@ -69,6 +69,7 @@ namespace TS3AudioBot.Audio
 
 		private static PlaylistItem UpdateItem(InvokerData invoker, PlaylistItem item)
 		{
+			item.Meta = item.Meta ?? new MetaData();
 			item.Meta.ResourceOwnerUid = invoker.ClientUid;
 			return item;
 		}
