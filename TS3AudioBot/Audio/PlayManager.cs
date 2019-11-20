@@ -27,7 +27,7 @@ namespace TS3AudioBot.Audio
 		private readonly ConfBot confBot;
 		private readonly Player playerConnection;
 		private readonly PlaylistManager playlistManager;
-		private readonly ResourceResolver resourceResolver;
+		private readonly ResolveContext resourceResolver;
 
 		public PlayInfoEventArgs CurrentPlayData { get; private set; }
 		public bool IsPlaying => CurrentPlayData != null;
@@ -38,7 +38,7 @@ namespace TS3AudioBot.Audio
 		public event EventHandler<SongEndEventArgs> BeforeResourceStopped;
 		public event EventHandler AfterResourceStopped;
 
-		public PlayManager(ConfBot config, Player playerConnection, PlaylistManager playlistManager, ResourceResolver resourceResolver)
+		public PlayManager(ConfBot config, Player playerConnection, PlaylistManager playlistManager, ResolveContext resourceResolver)
 		{
 			confBot = config;
 			this.playerConnection = playerConnection;

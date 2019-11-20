@@ -39,6 +39,9 @@ namespace TS3AudioBot.Plugins
 		private readonly HashSet<int> usedIds = new HashSet<int>();
 		private readonly object pluginsLock = new object();
 
+		// TODO remove after plugin rework
+		internal ICollection<Plugin> Plugins => plugins.Values;
+
 		public PluginManager(ConfPlugins config, CoreInjector coreInjector)
 		{
 			this.config = config;
@@ -84,7 +87,7 @@ namespace TS3AudioBot.Plugins
 					if (IsIgnored(file))
 						continue;
 
-					plugin = new Plugin(file, GetFreeId(), config.WriteStatusFiles);
+					plugin = new Plugin(file, GetFreeId());
 
 					if (plugin.Load() == PluginResponse.Disabled)
 					{

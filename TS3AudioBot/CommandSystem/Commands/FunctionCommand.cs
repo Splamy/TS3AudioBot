@@ -18,6 +18,7 @@ using TS3AudioBot.Helper;
 using TS3AudioBot.Localization;
 using TS3AudioBot.Web.Api;
 using TSLib.Helper;
+using static TS3AudioBot.CommandSystem.CommandSystemTypes;
 
 namespace TS3AudioBot.CommandSystem.Commands
 {
@@ -230,9 +231,9 @@ namespace TS3AudioBot.CommandSystem.Commands
 					if (!string.IsNullOrEmpty(resultStr))
 						return new PrimitiveResult<string>(resultStr);
 				}
-				else if (XCommandSystem.BasicTypes.Contains(returnType))
+				else if (BasicTypes.Contains(returnType))
 				{
-					if (XCommandSystem.BasicTypes.Contains(unwrapedResultType) && unwrapedResultType != typeof(string))
+					if (BasicTypes.Contains(unwrapedResultType) && unwrapedResultType != typeof(string))
 					{
 						// Automatically try to convert between primitive types
 						try
@@ -272,11 +273,11 @@ namespace TS3AudioBot.CommandSystem.Commands
 				else if (arg.IsArray)
 					paramInfo.Kind = ParamKind.NormalArray;
 				else if (arg.IsEnum
-					|| XCommandSystem.BasicTypes.Contains(arg)
-					|| XCommandSystem.BasicTypes.Contains(UnwrapParamType(arg)))
+					|| BasicTypes.Contains(arg)
+					|| BasicTypes.Contains(UnwrapParamType(arg)))
 					paramInfo.Kind = ParamKind.NormalParam;
 				// TODO How to distinguish between special type and dependency?
-				else if (XCommandSystem.AdvancedTypes.Contains(arg))
+				else if (AdvancedTypes.Contains(arg))
 					paramInfo.Kind = ParamKind.NormalParam;
 				else
 					paramInfo.Kind = ParamKind.Dependency;

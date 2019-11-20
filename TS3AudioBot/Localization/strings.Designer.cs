@@ -2548,7 +2548,7 @@ namespace TS3AudioBot.Localization {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to &lt;number&gt;.
+        ///   Looks up a localized string similar to number.
         /// </summary>
         internal static string info_number {
             get {

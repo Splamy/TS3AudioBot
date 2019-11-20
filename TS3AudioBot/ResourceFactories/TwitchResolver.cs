@@ -25,17 +25,17 @@ namespace TS3AudioBot.ResourceFactories
 
 		public string ResolverFor => "twitch";
 
-		public MatchCertainty MatchResource(string uri) => TwitchMatch.IsMatch(uri).ToMatchCertainty();
+		public MatchCertainty MatchResource(ResolveContext _, string uri) => TwitchMatch.IsMatch(uri).ToMatchCertainty();
 
-		public R<PlayResource, LocalStr> GetResource(string uri)
+		public R<PlayResource, LocalStr> GetResource(ResolveContext _, string uri)
 		{
 			var match = TwitchMatch.Match(uri);
 			if (!match.Success)
 				return new LocalStr(strings.error_media_invalid_uri);
-			return GetResourceById(new AudioResource(match.Groups[3].Value, null, ResolverFor));
+			return GetResourceById(null, new AudioResource(match.Groups[3].Value, null, ResolverFor));
 		}
 
-		public R<PlayResource, LocalStr> GetResourceById(AudioResource resource)
+		public R<PlayResource, LocalStr> GetResourceById(ResolveContext _, AudioResource resource)
 		{
 			var channel = resource.ResourceId;
 
@@ -127,7 +127,7 @@ namespace TS3AudioBot.ResourceFactories
 
 		private static int SelectStream(List<StreamData> list) => list.FindIndex(s => s.QualityType == StreamQuality.audio_only);
 
-		public string RestoreLink(AudioResource resource) => "https://www.twitch.tv/" + resource.ResourceId;
+		public string RestoreLink(ResolveContext _, AudioResource resource) => "https://www.twitch.tv/" + resource.ResourceId;
 
 		public void Dispose() { }
 	}

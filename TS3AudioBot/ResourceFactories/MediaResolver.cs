@@ -24,33 +24,27 @@ namespace TS3AudioBot.ResourceFactories
 	public sealed class MediaResolver : IResourceResolver, IPlaylistResolver, IThumbnailResolver
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
-		private readonly ConfPath config;
-
-		public MediaResolver(ConfPath config)
-		{
-			this.config = config;
-		}
 
 		public string ResolverFor => "media";
 
-		public MatchCertainty MatchResource(string uri) =>
+		public MatchCertainty MatchResource(ResolveContext _, string uri) =>
 			File.Exists(uri)
 			? MatchCertainty.Always
 			: MatchCertainty.OnlyIfLast;
 
-		public MatchCertainty MatchPlaylist(string uri) =>
+		public MatchCertainty MatchPlaylist(ResolveContext _, string uri) =>
 			Directory.Exists(uri) ? MatchCertainty.Always :
 			File.Exists(uri) ? MatchCertainty.Always
 			: MatchCertainty.OnlyIfLast;
 
-		public R<PlayResource, LocalStr> GetResource(string uri)
+		public R<PlayResource, LocalStr> GetResource(ResolveContext ctx, string uri)
 		{
-			return GetResourceById(new AudioResource(uri, null, ResolverFor));
+			return GetResourceById(ctx, new AudioResource(uri, null, ResolverFor));
 		}
 
-		public R<PlayResource, LocalStr> GetResourceById(AudioResource resource)
+		public R<PlayResource, LocalStr> GetResourceById(ResolveContext ctx, AudioResource resource)
 		{
-			var result = ValidateFromString(resource.ResourceId);
+			var result = ValidateFromString(ctx.Config, resource.ResourceId);
 			if (!result)
 				return result.Error;
 
@@ -72,11 +66,11 @@ namespace TS3AudioBot.ResourceFactories
 			return new MediaPlayResource(resData.FullUri, resource, resData.Image, false);
 		}
 
-		public string RestoreLink(AudioResource resource) => resource.ResourceId;
+		public string RestoreLink(ResolveContext _, AudioResource resource) => resource.ResourceId;
 
-		private R<ResData, LocalStr> ValidateFromString(string uriStr)
+		private R<ResData, LocalStr> ValidateFromString(ConfBot config, string uriStr)
 		{
-			if (TryGetUri(uriStr).GetOk(out var uri))
+			if (TryGetUri(config, uriStr).GetOk(out var uri))
 				return ValidateUri(uri);
 			return new LocalStr(strings.error_media_invalid_uri);
 		}
@@ -157,7 +151,7 @@ namespace TS3AudioBot.ResourceFactories
 			}
 		}
 
-		private R<Uri, LocalStr> TryGetUri(string uri)
+		private R<Uri, LocalStr> TryGetUri(ConfBot conf, string uri)
 		{
 			if (Uri.TryCreate(uri, UriKind.Absolute, out Uri uriResult))
 			{
@@ -165,14 +159,14 @@ namespace TS3AudioBot.ResourceFactories
 			}
 			else
 			{
-				var file = FindFile(uri);
+				var file = FindFile(conf, uri);
 				if (file == null)
 					return new LocalStr(strings.error_media_file_not_found);
 				return file;
 			}
 		}
 
-		private Uri FindFile(string path)
+		private Uri FindFile(ConfBot conf, string path)
 		{
 			Log.Trace("Finding media path: '{0}'", path);
 
@@ -181,7 +175,7 @@ namespace TS3AudioBot.ResourceFactories
 				var fullPath = Path.GetFullPath(path);
 				if (File.Exists(fullPath))
 					return new Uri(fullPath, UriKind.Absolute);
-				fullPath = Path.GetFullPath(Path.Combine(config.Path.Value, path));
+				fullPath = Path.GetFullPath(Path.Combine(conf.LocalConfigDir, BotPaths.Playlists, path));
 				if (File.Exists(fullPath))
 					return new Uri(fullPath, UriKind.Absolute);
 			}
@@ -195,7 +189,7 @@ namespace TS3AudioBot.ResourceFactories
 
 		public void Dispose() { }
 
-		public R<Playlist, LocalStr> GetPlaylist(string url)
+		public R<Playlist, LocalStr> GetPlaylist(ResolveContext ctx, string url)
 		{
 			if (Directory.Exists(url))
 			{
@@ -204,7 +198,7 @@ namespace TS3AudioBot.ResourceFactories
 					var di = new DirectoryInfo(url);
 					var plist = new Playlist().SetTitle(di.Name);
 					var resources = from file in di.EnumerateFiles()
-									select ValidateFromString(file.FullName) into result
+									select ValidateFromString(ctx.Config, file.FullName) into result
 									where result.Ok
 									select result.Value into val
 									select new AudioResource(val.FullUri, string.IsNullOrWhiteSpace(val.Title) ? val.FullUri : val.Title, ResolverFor) into res
@@ -229,7 +223,7 @@ namespace TS3AudioBot.ResourceFactories
 					using (var stream = File.OpenRead(url))
 						plistResult = GetPlaylistContent(stream, url);
 				}
-				else if (TryGetUri(url).GetOk(out var uri))
+				else if (TryGetUri(ctx.Config, url).GetOk(out var uri))
 				{
 					plistResult = WebWrapper.GetResponse(uri, response =>
 					{
@@ -349,7 +343,7 @@ namespace TS3AudioBot.ResourceFactories
 			return new LocalStr(strings.error_media_invalid_uri);
 		}
 
-		public R<Stream, LocalStr> GetThumbnail(PlayResource playResource)
+		public R<Stream, LocalStr> GetThumbnail(ResolveContext _, PlayResource playResource)
 		{
 			byte[] rawImgData;
 

@@ -50,8 +50,7 @@ namespace TS3AudioBot
 		public string Name => config.Name;
 		public bool QuizMode { get; set; }
 
-		private readonly ResourceResolver resourceResolver;
-		private readonly CommandManager commandManager;
+		private ResolveContext resourceResolver;
 		private Ts3Client ts3client;
 		private TsFullClient ts3FullClient;
 		private SessionManager sessionManager;
@@ -59,13 +58,11 @@ namespace TS3AudioBot
 		private IVoiceTarget targetManager;
 		private Player player;
 
-		public Bot(Id id, ConfBot config, BotInjector injector, ResourceResolver resourceFactory, CommandManager commandManager)
+		public Bot(Id id, ConfBot config, BotInjector injector)
 		{
 			this.Id = id;
 			this.config = config;
 			this.Injector = injector;
-			this.resourceResolver = resourceFactory;
-			this.commandManager = commandManager;
 		}
 
 		public E<string> InitializeBot()
@@ -97,6 +94,10 @@ namespace TS3AudioBot
 			builder.RequestModule<CustomTargetPipe>();
 			builder.RequestModule<IVoiceTarget, CustomTargetPipe>();
 			builder.RequestModule<SessionManager>();
+			builder.RequestModule<ResolveContext>();
+			if (!builder.TryCreate<CommandManager>(out var commandManager))
+				return "Failed to create commandManager";
+			builder.AddModule(commandManager);
 			if (config.History.Enabled)
 			{
 				builder.AddModule(config.History);
@@ -110,6 +111,7 @@ namespace TS3AudioBot
 				return "Could not load all bot modules";
 			}
 
+			resourceResolver = Injector.GetModule<ResolveContext>();
 			ts3FullClient = Injector.GetModule<TsFullClient>();
 			ts3client = Injector.GetModule<Ts3Client>();
 			player = Injector.GetModule<Player>();
@@ -148,6 +150,12 @@ namespace TS3AudioBot
 			// Whisper stall
 			ts3client.OnWhisperNoTarget += (s, e) => player.SetStall();
 
+			commandManager.RegisterCollection(MainCommands.Bag);
+			// TODO remove after plugin rework
+			var pluginManager = Injector.GetModule<PluginManager>();
+			foreach (var plugin in pluginManager.Plugins)
+				if (plugin.Type == PluginType.CorePlugin || plugin.Type == PluginType.Commands)
+					commandManager.RegisterCollection(plugin.CorePlugin.Bag);
 			// Restore all alias from the config
 			foreach (var alias in config.Commands.Alias.GetAllItems())
 				commandManager.RegisterAlias(alias.Key, alias.Value).UnwrapToLog(Log);
@@ -456,7 +464,7 @@ namespace TS3AudioBot
 			TryCatchCommand(info, answer, () =>
 			{
 				// parse and execute the command
-				var s = commandManager.CommandSystem.ExecuteCommand(info, command);
+				var s = CommandManager.ExecuteCommand(info, command);
 
 				if (!answer)
 					return;

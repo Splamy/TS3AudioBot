@@ -15,8 +15,8 @@ namespace TS3AudioBot.ResourceFactories
 {
 	public interface IPlaylistResolver : IResolver
 	{
-		MatchCertainty MatchPlaylist(string uri);
+		MatchCertainty MatchPlaylist(ResolveContext ctx, string uri);
 
-		R<Playlist, LocalStr> GetPlaylist(string url);
+		R<Playlist, LocalStr> GetPlaylist(ResolveContext ctx, string url);
 	}
 }

@@ -14,7 +14,7 @@ namespace TS3AudioBot.Playlists
 {
 	public static class PlaylistApiExtensions
 	{
-		public static PlaylistItemGetData ToApiFormat(this ResourceResolver resourceFactory, PlaylistItem item)
+		public static PlaylistItemGetData ToApiFormat(this ResolveContext resourceFactory, PlaylistItem item)
 		{
 			var resource = item.AudioResource;
 			return new PlaylistItemGetData

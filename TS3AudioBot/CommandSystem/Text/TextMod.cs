@@ -7,9 +7,11 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System;
+
 namespace TS3AudioBot.CommandSystem.Text
 {
-	public readonly struct TextMod
+	public readonly struct TextMod : IEquatable<TextMod>
 	{
 		public static readonly TextMod None = new TextMod(0, null);
 
@@ -35,5 +37,11 @@ namespace TS3AudioBot.CommandSystem.Text
 		{
 			return color ? Format(format, para) : string.Format(format.Text, para);
 		}
+
+		public bool Equals(TextMod other) => Flags == other.Flags && HasColor == other.HasColor;
+		public override bool Equals(object obj) => obj is TextMod tm && Equals(tm);
+		public static bool operator ==(TextMod a, TextMod b) => a.Flags == b.Flags && a.HasColor == b.HasColor;
+		public static bool operator !=(TextMod a, TextMod b) => a.Flags != b.Flags || a.HasColor != b.HasColor;
+		public override int GetHashCode() => ((int)Flags << 28) | HasColor.GetHashCode();
 	}
 }

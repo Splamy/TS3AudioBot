@@ -76,8 +76,6 @@ namespace TS3AudioBot.Config
 	{
 		public ConfigValue<string> Path { get; } = new ConfigValue<string>("path", "plugins",
 			"The path to the plugins folder.");
-		public ConfigValue<bool> WriteStatusFiles { get; } = new ConfigValue<bool>("write_status_files", false,
-			"Write to .status files to store a plugin enable status persistently and restart them on launch."); // TODO deprecate
 
 		public ConfPluginsLoad Load { get; } = Create<ConfPluginsLoad>("load");
 	}

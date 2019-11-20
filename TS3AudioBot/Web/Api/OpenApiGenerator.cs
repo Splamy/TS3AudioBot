@@ -143,7 +143,7 @@ namespace TS3AudioBot.Web.Api
 			var tags = new JArray();
 			int spaceIndex = command.InvokeName.IndexOf(' ');
 			string baseName = spaceIndex >= 0 ? command.InvokeName.Substring(0, spaceIndex) : command.InvokeName;
-			var commandroot = commandManager.CommandSystem.RootCommand.GetCommand(baseName);
+			var commandroot = commandManager.RootGroup.GetCommand(baseName);
 			switch (commandroot)
 			{
 			case null:

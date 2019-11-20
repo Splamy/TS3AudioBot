@@ -970,7 +970,7 @@ with the id {1}?</value>
     <value>Your value is out of range. Select one between {0} and {1}.</value>
   </data>
   <data name="info_number" xml:space="preserve">
-    <value>&lt;number&gt;</value>
+    <value>number</value>
   </data>
   <data name="cmd_select_help" xml:space="preserve">
     <value>Selects a song from a previous search and plays it.</value>

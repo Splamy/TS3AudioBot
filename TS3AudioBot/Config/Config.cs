@@ -18,8 +18,6 @@ namespace TS3AudioBot.Config
 {
 	public partial class ConfRoot
 	{
-		private const string BotFileName = "bot.toml";
-
 		private string fileName;
 		private readonly Dictionary<string, ConfBot> botConfCache = new Dictionary<string, ConfBot>();
 
@@ -90,7 +88,7 @@ namespace TS3AudioBot.Config
 			var nameResult = Util.IsSafeFileName(name);
 			if (!nameResult.Ok)
 				return nameResult.Error;
-			return new FileInfo(Path.Combine(Configs.BotsPath.Value, name, BotFileName));
+			return new FileInfo(Path.Combine(Configs.BotsPath.Value, name, FilesConst.BotConfig));
 		}
 
 		public ConfBot CreateBot()

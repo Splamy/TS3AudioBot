@@ -220,6 +220,19 @@ namespace TS3AudioBot
 			return bot.GetBotLock();
 		}
 
+		internal void IterateAll(Action<Bot> body)
+		{
+			lock (lockObj)
+			{
+				if (activeBots is null)
+					return;
+				foreach (var bot in activeBots)
+				{
+					body(bot);
+				}
+			}
+		}
+
 		public void StopBot(Bot bot)
 		{
 			RemoveBot(bot);

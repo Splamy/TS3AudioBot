@@ -7,11 +7,14 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
-namespace TS3AudioBot.Config
+using TS3AudioBot.CommandSystem;
+
+namespace TS3AudioBot.Plugins
 {
-	public static class BotPaths
+	internal class PluginObjects
 	{
-		public const string Playlists = "playlists";
-		public const string Avatars = "avatars";
+		public PluginCommandBag Bag { get; set; }
+		public ITabPlugin Plugin { get; set; }
+		public CommandManager CommandManager { get; set; }
 	}
 }

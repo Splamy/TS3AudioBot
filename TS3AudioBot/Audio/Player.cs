@@ -114,12 +114,16 @@ namespace TS3AudioBot.Audio
 			MergePipe.Dispose();
 		}
 
-		public TimeSpan Length => CurrentPlayerSource.Length;
+		public TimeSpan Length => CurrentPlayerSource?.Length ?? TimeSpan.Zero;
 
 		public TimeSpan Position
 		{
-			get => CurrentPlayerSource.Position;
-			set => CurrentPlayerSource.Position = value;
+			get => CurrentPlayerSource?.Position ?? TimeSpan.Zero;
+			set
+			{
+				if (CurrentPlayerSource != null)
+					CurrentPlayerSource.Position = value;
+			}
 		}
 
 		public float Volume

@@ -24,30 +24,30 @@ using TSLib.Helper;
 
 namespace TS3AudioBot.Plugins
 {
-	internal class Plugin : ICommandBag
+	internal class Plugin
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 
 		public CoreInjector CoreInjector { get; set; }
-		public ResourceResolver ResourceFactory { get; set; }
-		public CommandManager CommandManager { get; set; }
+		public ResourceResolver ResourceResolver { get; set; }
+		public BotManager BotManager { get; set; }
 
 		private byte[] md5CacheSum;
-		private ICorePlugin pluginObject;
-		private Dictionary<Bot, IBotPlugin> pluginObjectList;
+		private PluginObjects corePlugin;
+		private readonly Dictionary<Bot, PluginObjects> botPluginList = new Dictionary<Bot, PluginObjects>();
 		private IResolver factoryObject;
-		private Type coreType;
-		private readonly bool writeStatus;
+		private Type pluginType;
 		private PluginStatus status;
 
 		internal PluginType Type { get; private set; }
 		public int Id { get; }
 		public FileInfo File { get; }
+		// TODO remove after plugin rework
+		internal PluginObjects CorePlugin => corePlugin;
 
-		public Plugin(FileInfo file, int id, bool writeStatus)
+		public Plugin(FileInfo file, int id)
 		{
-			pluginObject = null;
-			this.writeStatus = writeStatus;
+			corePlugin = null;
 			File = file;
 			Id = id;
 			status = PluginStatus.Off;
@@ -61,7 +61,7 @@ namespace TS3AudioBot.Plugins
 				if (CheckStatus(null) == PluginStatus.Error)
 					return $"{File.Name} (Error)";
 
-				var name = coreType?.Name ?? File.Name;
+				var name = pluginType?.Name ?? File.Name;
 
 				switch (Type)
 				{
@@ -83,25 +83,6 @@ namespace TS3AudioBot.Plugins
 			}
 		}
 
-		public bool PersistentEnabled
-		{
-			get
-			{
-				if (!System.IO.File.Exists(File.FullName + ".status"))
-					return false;
-				return System.IO.File.ReadAllText(File.FullName + ".status") != "0";
-			}
-			set
-			{
-				if (!System.IO.File.Exists(File.FullName + ".status"))
-					return;
-				System.IO.File.WriteAllText(File.FullName + ".status", value ? "1" : "0");
-			}
-		}
-
-		public IReadOnlyCollection<BotCommand> BagCommands { get; private set; }
-		public IReadOnlyCollection<string> AdditionalRights => Array.Empty<string>();
-
 		public PluginStatus CheckStatus(Bot bot)
 		{
 			if (Type != PluginType.BotPlugin)
@@ -113,7 +94,7 @@ namespace TS3AudioBot.Plugins
 			if (bot is null)
 				return PluginStatus.NotAvailable;
 			if (status == PluginStatus.Ready)
-				return pluginObjectList.ContainsKey(bot) ? PluginStatus.Active : PluginStatus.Ready;
+				return botPluginList.ContainsKey(bot) ? PluginStatus.Active : PluginStatus.Ready;
 			if (status == PluginStatus.Active)
 				throw new InvalidOperationException("BotPlugin must not be active");
 			throw Tools.UnhandledDefault(status);
@@ -258,9 +239,11 @@ namespace TS3AudioBot.Plugins
 			try
 			{
 				var allTypes = assembly.GetExportedTypes();
-				var pluginTypes = allTypes.Where(t => typeof(ICorePlugin).IsAssignableFrom(t)).ToArray();
+				var pluginTypes = allTypes.Where(t => typeof(ITabPlugin).IsAssignableFrom(t)).ToArray();
 				var factoryTypes = allTypes.Where(t => typeof(IResolver).IsAssignableFrom(t)).ToArray();
+#pragma warning disable CS0618 // Type or member is obsolete
 				var commandsTypes = allTypes.Where(t => t.GetCustomAttribute<StaticPluginAttribute>() != null).ToArray();
+#pragma warning restore CS0618 // Type or member is obsolete
 
 				if (pluginTypes.Length + factoryTypes.Length + commandsTypes.Length > 1)
 				{
@@ -275,25 +258,22 @@ namespace TS3AudioBot.Plugins
 
 				if (pluginTypes.Length == 1)
 				{
-					coreType = pluginTypes[0];
-					if (typeof(IBotPlugin).IsAssignableFrom(coreType))
-					{
+					pluginType = pluginTypes[0];
+					if (typeof(IBotPlugin).IsAssignableFrom(pluginType))
 						Type = PluginType.BotPlugin;
-						pluginObjectList = new Dictionary<Bot, IBotPlugin>();
-					}
-					else
-					{
+					else if (typeof(ICorePlugin).IsAssignableFrom(pluginType))
 						Type = PluginType.CorePlugin;
-					}
+					else
+						throw new InvalidOperationException("Do not inherit from 'ITabPlugin', instead use 'IBotPlugin' or 'ICorePlugin'");
 				}
 				else if (factoryTypes.Length == 1)
 				{
-					coreType = factoryTypes[0];
+					pluginType = factoryTypes[0];
 					Type = PluginType.Factory;
 				}
 				else if (commandsTypes.Length == 1)
 				{
-					coreType = commandsTypes[0];
+					pluginType = commandsTypes[0];
 					Type = PluginType.Commands;
 				}
 				else
@@ -324,9 +304,6 @@ namespace TS3AudioBot.Plugins
 		/// <param name="bot">The bot instance where this plugin should be started. Can be null when not required.</param>
 		public PluginResponse Start(Bot bot)
 		{
-			if (writeStatus)
-				PersistentEnabled = true;
-
 			switch (CheckStatus(bot))
 			{
 			case PluginStatus.Disabled:
@@ -374,30 +351,35 @@ namespace TS3AudioBot.Plugins
 						status = PluginStatus.Error;
 						return false;
 					}
-					if (pluginObjectList.ContainsKey(bot))
+					if (botPluginList.ContainsKey(bot))
 						throw new InvalidOperationException("Plugin is already instantiated on this bot");
-					var pluginInstance = (IBotPlugin)Activator.CreateInstance(coreType);
-					if (pluginObjectList.Count == 0)
-						RegisterCommands(pluginInstance, coreType);
-					pluginObjectList.Add(bot, pluginInstance);
-					bot.Injector.FillProperties(pluginInstance);
-					pluginInstance.Initialize();
+
+					var botPluginObjs = CreatePluginObjects(bot.Injector, false);
+					botPluginList.Add(bot, botPluginObjs);
+					botPluginObjs.Plugin.Initialize();
 					break;
 
 				case PluginType.CorePlugin:
-					pluginObject = (ICorePlugin)Activator.CreateInstance(coreType);
-					RegisterCommands(pluginObject, coreType);
-					CoreInjector.FillProperties(pluginObject);
-					pluginObject.Initialize();
+					corePlugin = CreatePluginObjects(CoreInjector, false);
+					BotManager.IterateAll(b =>
+					{
+						try
+						{
+							if (b.Injector.TryGet<CommandManager>(out var commandManager))
+								commandManager.RegisterCollection(corePlugin.Bag);
+						}
+						catch (Exception ex) { Log.Error(ex, "Faile to register commands from plugin '{0}' for bot '{1}'", Name, b.Id); }
+					});
+					corePlugin.Plugin.Initialize();
 					break;
 
 				case PluginType.Factory:
-					factoryObject = (IResolver)Activator.CreateInstance(coreType);
-					ResourceFactory.AddResolver(factoryObject);
+					factoryObject = (IResolver)Activator.CreateInstance(pluginType);
+					ResourceResolver.AddResolver(factoryObject);
 					break;
 
 				case PluginType.Commands:
-					RegisterCommands(null, coreType);
+					corePlugin = CreatePluginObjects(CoreInjector, true);
 					break;
 
 				default:
@@ -407,7 +389,7 @@ namespace TS3AudioBot.Plugins
 			catch (Exception ex)
 			{
 				if (ex is MissingMethodException)
-					Log.Error(ex, "Plugins and Factories needs a parameterless constructor.");
+					Log.Error(ex, "Factories needs a parameterless constructor.");
 				else
 					Log.Error(ex, "Plugin '{0}' failed to load: {1}.", Name, ex.Message);
 				Stop(bot);
@@ -422,19 +404,30 @@ namespace TS3AudioBot.Plugins
 			return true;
 		}
 
-		private void RegisterCommands(object obj, Type t)
+		// Note, the 'isStatic' flag is only temporary while StaticPlugins are being
+		// deprecated, after that this distinction is not necessary anymore and
+		// can be removed.
+		public PluginObjects CreatePluginObjects(IInjector injector, bool isStatic)
 		{
-			BagCommands = CommandManager.GetBotCommands(obj, t).ToArray();
-			CommandManager.RegisterCollection(this);
-		}
-
-		private void UnregisterCommands()
-		{
-			if (BagCommands != null)
+			object pluginInstance = null;
+			if (!isStatic)
 			{
-				CommandManager.UnregisterCollection(this);
-				BagCommands = null;
+				if (!injector.TryCreate(pluginType, out pluginInstance))
+					return null; // TODO
+				injector.FillProperties(pluginInstance);
 			}
+			if (!injector.TryGet<CommandManager>(out var commandManager))
+				return null; //TODO
+
+			var pluginObjs = new PluginObjects
+			{
+				Plugin = (ITabPlugin)pluginInstance,
+				Bag = new PluginCommandBag(pluginInstance, pluginType),
+				CommandManager = commandManager,
+			};
+
+			pluginObjs.CommandManager.RegisterCollection(pluginObjs.Bag);
+			return pluginObjs;
 		}
 
 		/// <summary>
@@ -444,9 +437,6 @@ namespace TS3AudioBot.Plugins
 		/// <param name="bot">The bot instance where this plugin should be stopped. Can be null when not required.</param>
 		public PluginResponse Stop(Bot bot)
 		{
-			if (writeStatus)
-				PersistentEnabled = false;
-
 			switch (Type)
 			{
 			case PluginType.None:
@@ -455,34 +445,40 @@ namespace TS3AudioBot.Plugins
 			case PluginType.BotPlugin:
 				if (bot is null)
 				{
-					foreach (var plugin in pluginObjectList.Values)
-						plugin.Dispose();
-					pluginObjectList.Clear();
+					foreach (var pluginObjs in botPluginList.Values)
+						DestroyPluginObjects(pluginObjs);
+					botPluginList.Clear();
 				}
 				else
 				{
-					if (pluginObjectList.TryGetValue(bot, out var plugin))
+					if (botPluginList.TryGetValue(bot, out var pluginObjs))
 					{
-						SaveDisposePlugin(plugin);
-						pluginObjectList.Remove(bot);
+						botPluginList.Remove(bot);
+						DestroyPluginObjects(pluginObjs);
 					}
 				}
-				if (pluginObjectList.Count == 0)
-					UnregisterCommands();
 				break;
 
 			case PluginType.CorePlugin:
-				SaveDisposePlugin(pluginObject);
-				UnregisterCommands();
-				pluginObject = null;
+				if (corePlugin != null)
+				{
+					BotManager.IterateAll(b =>
+					{
+						if (b.Injector.TryGet<CommandManager>(out var commandManager))
+							commandManager.UnregisterCollection(corePlugin.Bag);
+					});
+					DestroyPluginObjects(corePlugin);
+					corePlugin = null;
+				}
 				break;
 
 			case PluginType.Factory:
-				ResourceFactory.RemoveResolver(factoryObject);
+				ResourceResolver.RemoveResolver(factoryObject);
 				break;
 
 			case PluginType.Commands:
-				UnregisterCommands();
+				if (corePlugin != null)
+					DestroyPluginObjects(corePlugin);
 				break;
 
 			default:
@@ -494,11 +490,13 @@ namespace TS3AudioBot.Plugins
 			return PluginResponse.Ok;
 		}
 
-		private void SaveDisposePlugin(ICorePlugin plugin)
+		private void DestroyPluginObjects(PluginObjects pluginObjs)
 		{
+			pluginObjs.CommandManager.UnregisterCollection(pluginObjs.Bag);
+
 			try
 			{
-				plugin?.Dispose();
+				pluginObjs.Plugin?.Dispose();
 			}
 			catch (Exception ex)
 			{
@@ -510,7 +508,7 @@ namespace TS3AudioBot.Plugins
 		{
 			Stop(null);
 
-			coreType = null;
+			pluginType = null;
 
 			if (CheckStatus(null) == PluginStatus.Ready)
 				status = PluginStatus.Off;

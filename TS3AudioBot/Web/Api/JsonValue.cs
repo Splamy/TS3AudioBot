@@ -58,7 +58,7 @@ namespace TS3AudioBot.Web.Api
 		public override string Serialize()
 		{
 			var seriObj = GetSerializeObject();
-			if (seriObj != null && XCommandSystem.BasicTypes.Contains(seriObj.GetType()))
+			if (seriObj != null && CommandSystemTypes.BasicTypes.Contains(seriObj.GetType()))
 				return JsonConvert.SerializeObject(this);
 			return base.Serialize();
 		}

@@ -31,22 +31,22 @@ namespace TS3AudioBot.ResourceFactories
 
 		public string ResolverFor => "youtube";
 
-		MatchCertainty IResourceResolver.MatchResource(string uri) =>
+		public MatchCertainty MatchResource(ResolveContext _, string uri) =>
 			LinkMatch.IsMatch(uri) || IdMatch.IsMatch(uri)
 				? MatchCertainty.Always
 				: MatchCertainty.Never;
 
-		MatchCertainty IPlaylistResolver.MatchPlaylist(string uri) => ListMatch.IsMatch(uri) ? MatchCertainty.Always : MatchCertainty.Never;
+		public MatchCertainty MatchPlaylist(ResolveContext _, string uri) => ListMatch.IsMatch(uri) ? MatchCertainty.Always : MatchCertainty.Never;
 
-		public R<PlayResource, LocalStr> GetResource(string uri)
+		public R<PlayResource, LocalStr> GetResource(ResolveContext _, string uri)
 		{
 			Match matchYtId = IdMatch.Match(uri);
 			if (!matchYtId.Success)
 				return new LocalStr(strings.error_media_failed_to_parse_id);
-			return GetResourceById(new AudioResource(matchYtId.Groups[3].Value, null, ResolverFor));
+			return GetResourceById(null, new AudioResource(matchYtId.Groups[3].Value, null, ResolverFor));
 		}
 
-		public R<PlayResource, LocalStr> GetResourceById(AudioResource resource)
+		public R<PlayResource, LocalStr> GetResourceById(ResolveContext _, AudioResource resource)
 		{
 			var result = ResolveResourceInternal(resource);
 			if (result.Ok)
@@ -213,7 +213,7 @@ namespace TS3AudioBot.ResourceFactories
 			}
 		}
 
-		public string RestoreLink(AudioResource resource) => "https://youtu.be/" + resource.ResourceId;
+		public string RestoreLink(ResolveContext _, AudioResource resource) => "https://youtu.be/" + resource.ResourceId;
 
 		private static int SelectStream(List<VideoData> list)
 		{
@@ -272,7 +272,7 @@ namespace TS3AudioBot.ResourceFactories
 			}
 		}
 
-		public R<Playlist, LocalStr> GetPlaylist(string url)
+		public R<Playlist, LocalStr> GetPlaylist(ResolveContext _, string url)
 		{
 			Match matchYtId = ListMatch.Match(url);
 			if (!matchYtId.Success)
@@ -370,7 +370,7 @@ namespace TS3AudioBot.ResourceFactories
 			return rc;
 		}
 
-		public R<Stream, LocalStr> GetThumbnail(PlayResource playResource)
+		public R<Stream, LocalStr> GetThumbnail(ResolveContext _, PlayResource playResource)
 		{
 			if (!WebWrapper.DownloadString(out string response,
 				new Uri($"https://www.googleapis.com/youtube/v3/videos?part=snippet&id={playResource.BaseData.ResourceId}&key={YoutubeProjectId}")))
@@ -384,7 +384,7 @@ namespace TS3AudioBot.ResourceFactories
 			return WebWrapper.GetResponseUnsafe(imgurl);
 		}
 
-		public R<IList<AudioResource>, LocalStr> Search(string keyword)
+		public R<IList<AudioResource>, LocalStr> Search(ResolveContext _, string keyword)
 		{
 			// TODO checkout https://developers.google.com/youtube/v3/docs/search/list ->relatedToVideoId for auto radio play
 			const int maxResults = 10;

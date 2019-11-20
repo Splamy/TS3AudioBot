@@ -56,8 +56,8 @@ namespace TS3AudioBot.CommandSystem.Commands
 					if (i >= params2.Count)
 						return -1;
 					// Not found returns -1, so more important than any found index
-					int i1 = Array.IndexOf(XCommandSystem.TypeOrder, params1[i]);
-					int i2 = Array.IndexOf(XCommandSystem.TypeOrder, params2[i]);
+					int i1 = Array.IndexOf(CommandSystemTypes.TypeOrder, params1[i]);
+					int i2 = Array.IndexOf(CommandSystemTypes.TypeOrder, params2[i]);
 					// Prefer lower argument
 					if (i1 < i2)
 						return -1;

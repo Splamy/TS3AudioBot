@@ -73,7 +73,6 @@ namespace TS3AudioBot.Config.Deprecated
 			to.Tools.YoutubeDl.Path.Value = ytd.YoutubedlPath;
 			to.Tools.Ffmpeg.Path.Value = qcd.FfmpegPath;
 			to.Plugins.Path.Value = pmd.PluginPath;
-			to.Plugins.WriteStatusFiles.Value = pmd.WriteStatusFiles;
 			to.Factories.Media.Path.Value = mfd.DefaultPath;
 			to.Db.Path.Value = hmd.HistoryFile;
 

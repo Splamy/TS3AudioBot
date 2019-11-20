@@ -33,7 +33,7 @@ namespace TS3AudioBot.Rights
 		private bool needsRecalculation;
 		private readonly ConfRights config;
 		private RightsRule rootRule;
-		private readonly HashSet<string> registeredRights = new HashSet<string>();
+		private HashSet<string> registeredRights = new HashSet<string>();
 		private readonly object rootRuleLock = new object();
 
 		// Required Matcher Data:
@@ -52,10 +52,13 @@ namespace TS3AudioBot.Rights
 
 		public void SetRightsList(IEnumerable<string> rights)
 		{
-			// TODO validate right names
-			registeredRights.Clear();
-			registeredRights.UnionWith(rights);
-			needsRecalculation = true;
+			var newRights = new HashSet<string>(rights);
+			if (!registeredRights.SetEquals(newRights))
+			{
+				// TODO validate right names
+				registeredRights = newRights;
+				needsRecalculation = true;
+			}
 		}
 
 		public bool HasAllRights(ExecutionInformation info, params string[] requestedRights)

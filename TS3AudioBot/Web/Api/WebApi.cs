@@ -44,14 +44,12 @@ namespace TS3AudioBot.Web.Api
 		public bool AllowAnonymousRequest { get; set; } = true;
 		private readonly ConfWebApi config;
 		private readonly CoreInjector coreInjector;
-		private readonly CommandManager commandManager;
 		private readonly TokenManager tokenManager;
 
-		public WebApi(ConfWebApi config, CoreInjector coreInjector, CommandManager commandManager, TokenManager tokenManager)
+		public WebApi(ConfWebApi config, CoreInjector coreInjector, TokenManager tokenManager)
 		{
 			this.config = config;
 			this.coreInjector = coreInjector;
-			this.commandManager = commandManager;
 			this.tokenManager = tokenManager;
 		}
 
@@ -110,7 +108,7 @@ namespace TS3AudioBot.Web.Api
 			try
 			{
 				Thread.CurrentThread.CurrentUICulture = CultureInfo.InvariantCulture;
-				var res = command.Execute(execInfo, Array.Empty<ICommand>(), XCommandSystem.ReturnJsonOrDataOrNothing);
+				var res = command.Execute(execInfo, Array.Empty<ICommand>(), CommandSystemTypes.ReturnJsonOrDataOrNothing);
 
 				if (res == null)
 				{
@@ -150,7 +148,7 @@ namespace TS3AudioBot.Web.Api
 			var ast = CommandParser.ParseCommandRequest(apirequest, '/', '/');
 			UnescapeAstTree(ast);
 			Log.Trace(ast.ToString);
-			return commandManager.CommandSystem.AstToCommandResult(ast);
+			return CommandManager.AstToCommandResult(ast);
 		}
 
 		private ExecutionInformation BuildContext(ApiCall apiCallData)

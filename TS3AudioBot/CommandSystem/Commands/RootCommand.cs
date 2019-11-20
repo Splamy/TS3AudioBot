@@ -9,7 +9,7 @@
 
 using System;
 using System.Collections.Generic;
-using TS3AudioBot.CommandSystem.CommandResults;
+using TS3AudioBot.Dependency;
 
 namespace TS3AudioBot.CommandSystem.Commands
 {
@@ -19,25 +19,25 @@ namespace TS3AudioBot.CommandSystem.Commands
 	/// This command is needed to enable easy use of higher order functions.
 	/// E.g. `!(!if 1 > 2 (!vol) (!print)) 10`
 	/// </summary>
-	public class RootCommand : CommandGroup
+	public class RootCommand : ICommand
 	{
-		public override object Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<Type> returnTypes)
-		{
-			if (arguments.Count == 0)
-				return base.Execute(info, arguments, returnTypes);
+		private readonly IReadOnlyList<ICommand> internArguments;
 
-			var result = arguments[0].Execute(info, Array.Empty<ICommand>(), XCommandSystem.ReturnCommandOrString);
-			if (result is IPrimitiveResult<string>)
-			{
-				// Use cached result so we don't execute the first argument twice
-				var passArgs = new ICommand[arguments.Count];
-				passArgs[0] = new ResultCommand(result);
-				arguments.CopyTo(1, passArgs, 1);
-				return base.Execute(info, passArgs, returnTypes);
-			}
-			return ((ICommand)result).Execute(info, arguments.TrySegment(1), returnTypes);
+		public RootCommand(IReadOnlyList<ICommand> arguments)
+		{
+			internArguments = arguments;
 		}
 
-		public override string ToString() => "<root>";
+		public virtual object Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<Type> returnTypes)
+		{
+			var merged = new ICommand[internArguments.Count + arguments.Count];
+			internArguments.CopyTo(0, merged, 0);
+			arguments.CopyTo(0, merged, internArguments.Count);
+			if (!info.TryGet<CommandManager>(out var cmdSys))
+				throw new CommandException("Could not find local commandsystem tree", CommandExceptionReason.MissingContext);
+			return cmdSys.RootGroup.Execute(info, merged, returnTypes);
+		}
+
+		public override string ToString() => $"RootCmd({string.Join(", ", internArguments)})";
 	}
 }

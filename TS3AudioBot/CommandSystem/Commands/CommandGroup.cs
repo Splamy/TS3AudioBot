@@ -44,7 +44,7 @@ namespace TS3AudioBot.CommandSystem.Commands
 			}
 			else
 			{
-				var comResult = arguments[0].Execute(info, Array.Empty<ICommand>(), XCommandSystem.ReturnString);
+				var comResult = arguments[0].Execute(info, Array.Empty<ICommand>(), CommandSystemTypes.ReturnString);
 				result = ((IPrimitiveResult<string>)comResult).Get();
 			}
 

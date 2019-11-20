@@ -13,14 +13,9 @@ namespace TSLib.Helper
 {
 	public readonly struct Id : IEquatable<Id>
 	{
-		public static readonly Id Null = new Id(null);
+		public static readonly Id Null = new Id(-1);
 
 		public int Value { get; }
-
-		private Id(object _)
-		{
-			Value = -1;
-		}
 
 		public Id(int id)
 		{

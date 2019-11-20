@@ -31,11 +31,11 @@ namespace TS3AudioBot.ResourceFactories
 
 		public string ResolverFor => "soundcloud";
 
-		public MatchCertainty MatchResource(string uri) => SoundcloudLink.IsMatch(uri).ToMatchCertainty();
+		public MatchCertainty MatchResource(ResolveContext _, string uri) => SoundcloudLink.IsMatch(uri).ToMatchCertainty();
 
-		public MatchCertainty MatchPlaylist(string uri) => MatchResource(uri);
+		public MatchCertainty MatchPlaylist(ResolveContext _, string uri) => MatchResource(null, uri);
 
-		public R<PlayResource, LocalStr> GetResource(string uri)
+		public R<PlayResource, LocalStr> GetResource(ResolveContext _, string uri)
 		{
 			var uriObj = new Uri($"https://api.soundcloud.com/resolve.json?url={Uri.EscapeUriString(uri)}&client_id={SoundcloudClientId}");
 			if (!WebWrapper.DownloadString(out string jsonResponse, uriObj))
@@ -51,26 +51,26 @@ namespace TS3AudioBot.ResourceFactories
 			return GetResourceById(resource, false);
 		}
 
-		public R<PlayResource, LocalStr> GetResourceById(AudioResource resource) => GetResourceById(resource, true);
+		public R<PlayResource, LocalStr> GetResourceById(ResolveContext _, AudioResource resource) => GetResourceById(resource, true);
 
 		private R<PlayResource, LocalStr> GetResourceById(AudioResource resource, bool allowNullName)
 		{
 			if (SoundcloudLink.IsMatch(resource.ResourceId))
-				return GetResource(resource.ResourceId);
+				return GetResource(null, resource.ResourceId);
 
 			if (resource.ResourceTitle is null)
 			{
 				if (!allowNullName) return new LocalStr(strings.error_media_internal_missing + " (title)");
-				string link = RestoreLink(resource);
+				string link = RestoreLink(null, resource);
 				if (link is null) return new LocalStr(strings.error_media_internal_missing + " (link)");
-				return GetResource(link);
+				return GetResource(null, link);
 			}
 
 			string finalRequest = $"https://api.soundcloud.com/tracks/{resource.ResourceId}/stream?client_id={SoundcloudClientId}";
 			return new PlayResource(finalRequest, resource);
 		}
 
-		public string RestoreLink(AudioResource resource)
+		public string RestoreLink(ResolveContext _, AudioResource resource)
 		{
 			var artistName = resource.Get(AddArtist);
 			var trackName = resource.Get(AddTrack);
@@ -121,7 +121,7 @@ namespace TS3AudioBot.ResourceFactories
 			return new PlayResource(urls[0], new AudioResource(link, title, ResolverFor));
 		}
 
-		public R<Playlist, LocalStr> GetPlaylist(string url)
+		public R<Playlist, LocalStr> GetPlaylist(ResolveContext _, string url)
 		{
 			var uri = new Uri($"https://api.soundcloud.com/resolve.json?url={Uri.EscapeUriString(url)}&client_id={SoundcloudClientId}");
 			if (!WebWrapper.DownloadString(out string jsonResponse, uri))
@@ -149,7 +149,7 @@ namespace TS3AudioBot.ResourceFactories
 			return plist;
 		}
 
-		public R<Stream, LocalStr> GetThumbnail(PlayResource playResource)
+		public R<Stream, LocalStr> GetThumbnail(ResolveContext _, PlayResource playResource)
 		{
 			var uri = new Uri($"https://api.soundcloud.com/tracks/{playResource.BaseData.ResourceId}?client_id={SoundcloudClientId}");
 			if (!WebWrapper.DownloadString(out string jsonResponse, uri))

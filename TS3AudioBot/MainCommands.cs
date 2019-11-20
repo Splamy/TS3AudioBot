@@ -40,6 +40,7 @@ using TSLib.Audio;
 using TSLib.Full.Book;
 using TSLib.Helper;
 using TSLib.Messages;
+using static TS3AudioBot.CommandSystem.CommandSystemTypes;
 
 namespace TS3AudioBot
 {
@@ -326,11 +327,11 @@ namespace TS3AudioBot
 		[Command("command tree", "_undocumented")]
 		public static string CommandTree(CommandManager commandManager)
 		{
-			return XCommandSystem.GetTree(commandManager.CommandSystem.RootCommand);
+			return CommandManager.GetTree(commandManager.RootGroup);
 		}
 
 		[Command("data song cover get", "_undocumented")]
-		public static DataStream CommandData(ResourceResolver resourceFactory, PlayManager playManager) =>
+		public static DataStream CommandData(ResolveContext resourceFactory, PlayManager playManager) =>
 			new DataStream(response =>
 			{
 				var cur = playManager.CurrentPlayData;
@@ -352,21 +353,27 @@ namespace TS3AudioBot
 		[Command("eval")]
 		[Usage("<command> <arguments...>", "Executes the given command on arguments")]
 		[Usage("<strings...>", "Concat the strings and execute them with the command system")]
-		public static object CommandEval(ExecutionInformation info, CommandManager commandManager, IReadOnlyList<ICommand> arguments, IReadOnlyList<Type> returnTypes)
+		public static object CommandEval(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<Type> returnTypes)
 		{
 			// Evaluate the first argument on the rest of the arguments
 			if (arguments.Count == 0)
 				throw new CommandException(strings.error_cmd_at_least_one_argument, CommandExceptionReason.MissingParameter);
 			var leftArguments = arguments.TrySegment(1);
-			var arg0 = arguments[0].Execute(info, Array.Empty<ICommand>(), XCommandSystem.ReturnCommandOrString);
+			var arg0 = arguments[0].Execute(info, Array.Empty<ICommand>(), ReturnCommandOrString);
 			if (arg0 is ICommand cmd)
 				return cmd.Execute(info, leftArguments, returnTypes);
 
 			// We got a string back so parse and evaluate it
 			var args = ((IPrimitiveResult<string>)arg0).Get();
 
-			cmd = commandManager.CommandSystem.AstToCommandResult(CommandParser.ParseCommandRequest(args));
+			cmd = CommandManager.AstToCommandResult(CommandParser.ParseCommandRequest(args));
 			return cmd.Execute(info, leftArguments, returnTypes);
+		}
+
+		[Command("from")]
+		public static void CommandFrom(PlayManager playManager, InvokerData invoker, string factoryName, string url)
+		{
+			playManager.Play(invoker, url, factoryName).UnwrapThrow();
 		}
 
 		[Command("get", "_undocumented")]
@@ -450,7 +457,7 @@ namespace TS3AudioBot
 		[Command("help all", "_undocumented")]
 		public static JsonArray<string> CommandHelpAll(CommandManager commandManager)
 		{
-			var botComList = commandManager.CommandSystem.RootCommand.Commands.Select(c => c.Key).ToArray();
+			var botComList = commandManager.RootGroup.Commands.Select(c => c.Key).ToArray();
 			return new JsonArray<string>(botComList, bcl =>
 			{
 				var strb = new StringBuilder();
@@ -469,7 +476,7 @@ namespace TS3AudioBot
 				return new JsonEmpty(strings.error_cmd_at_least_one_argument);
 			}
 
-			CommandGroup group = commandManager.CommandSystem.RootCommand;
+			CommandGroup group = commandManager.RootGroup;
 			ICommand target = group;
 			filter = filter ?? Filter.DefaultFilter;
 			var realPath = new List<string>();
@@ -547,7 +554,7 @@ namespace TS3AudioBot
 		}
 
 		[Command("history clean removedefective")]
-		public static JsonEmpty CommandHistoryCleanRemove(HistoryManager historyManager, ResourceResolver resourceFactory, CallerInfo caller, UserSession session = null)
+		public static JsonEmpty CommandHistoryCleanRemove(HistoryManager historyManager, ResolveContext resourceFactory, CallerInfo caller, UserSession session = null)
 		{
 			if (caller.ApiCall)
 			{
@@ -768,11 +775,11 @@ namespace TS3AudioBot
 		}
 
 		[Command("info")]
-		public static JsonValue<QueueInfo> CommandInfo(ResourceResolver resourceFactory, PlaylistManager playlistManager, string offset = null, int? count = null)
+		public static JsonValue<QueueInfo> CommandInfo(ResolveContext resourceFactory, PlaylistManager playlistManager, string offset = null, int? count = null)
 			=> CommandInfo(resourceFactory, playlistManager, GetIndexExpression(playlistManager, offset ?? "@-1"), count);
 
 		[Command("info")]
-		public static JsonValue<QueueInfo> CommandInfo(ResourceResolver resourceFactory, PlaylistManager playlistManager, int offset, int? count = null)
+		public static JsonValue<QueueInfo> CommandInfo(ResolveContext resourceFactory, PlaylistManager playlistManager, int offset, int? count = null)
 		{
 			const int maxSongs = 20;
 			var playIndex = playlistManager.Index;
@@ -830,7 +837,7 @@ namespace TS3AudioBot
 				.Select(arg =>
 				{
 					object res;
-					try { res = arg.Execute(info, Array.Empty<ICommand>(), XCommandSystem.ReturnJson); }
+					try { res = arg.Execute(info, Array.Empty<ICommand>(), ReturnJson); }
 					catch (CommandException) { return null; }
 					if (res is JsonObject o)
 						return o.GetSerializeObject();
@@ -871,7 +878,7 @@ namespace TS3AudioBot
 		}
 
 		[Command("list add")]
-		public static JsonValue<PlaylistItemGetData> CommandListAddInternal(ResourceResolver resourceFactory, PlaylistManager playlistManager, string listId, string link /* TODO param */)
+		public static JsonValue<PlaylistItemGetData> CommandListAddInternal(ResolveContext resourceFactory, PlaylistManager playlistManager, string listId, string link /* TODO param */)
 		{
 			PlaylistItemGetData getData = null;
 			playlistManager.ModifyPlaylist(listId, plist =>
@@ -909,24 +916,35 @@ namespace TS3AudioBot
 		public static void CommandListDelete(PlaylistManager playlistManager, ApiCall _, string listId)
 			=> playlistManager.DeletePlaylist(listId).UnwrapThrow();
 
-		[Command("list import", "cmd_list_get_help")] // TODO readjust help texts
-		public static JsonValue<PlaylistInfo> CommandListImport(PlaylistManager playlistManager, ResourceResolver resourceFactory, string listId, string link)
+		[Command("list from")]
+		public static JsonValue<PlaylistInfo> PropagiateLoad(PlaylistManager playlistManager, ResolveContext resolver, string resolverName, string listId, string url)
 		{
-			var getList = resourceFactory.LoadPlaylistFrom(link).UnwrapThrow();
+			var getList = resolver.LoadPlaylistFrom(url, resolverName).UnwrapThrow();
+			return ImportMerge(playlistManager, resolver, getList, listId);
+		}
 
+		[Command("list import", "cmd_list_get_help")] // TODO readjust help texts
+		public static JsonValue<PlaylistInfo> CommandListImport(PlaylistManager playlistManager, ResolveContext resolver, string listId, string link)
+		{
+			var getList = resolver.LoadPlaylistFrom(link).UnwrapThrow();
+			return ImportMerge(playlistManager, resolver, getList, listId); ;
+		}
+
+		private static JsonValue<PlaylistInfo> ImportMerge(PlaylistManager playlistManager, ResolveContext resolver, Playlist addList, string listId)
+		{
 			if (!playlistManager.ExistsPlaylist(listId))
 				playlistManager.CreatePlaylist(listId).UnwrapThrow();
 
 			playlistManager.ModifyPlaylist(listId, playlist =>
 			{
-				playlist.AddRange(getList.Items).UnwrapThrow();
+				playlist.AddRange(addList.Items).UnwrapThrow();
 			}).UnwrapThrow();
 
-			return CommandListShow(playlistManager, resourceFactory, listId, null, null);
+			return CommandListShow(playlistManager, resolver, listId, null, null);
 		}
 
 		[Command("list insert", "_undocumented")]  // TODO Doc
-		public static JsonValue<PlaylistItemGetData> CommandListAddInternal(ResourceResolver resourceFactory, PlaylistManager playlistManager, string listId, int index, string link /* TODO param */)
+		public static JsonValue<PlaylistItemGetData> CommandListAddInternal(PlaylistManager playlistManager, ResolveContext resourceFactory, string listId, int index, string link /* TODO param */)
 		{
 			PlaylistItemGetData getData = null;
 			playlistManager.ModifyPlaylist(listId, plist =>
@@ -1048,7 +1066,7 @@ namespace TS3AudioBot
 
 		[Command("list show")]
 		[Usage("<name> <index>", "Lets you specify the starting index from which songs should be listed.")]
-		public static JsonValue<PlaylistInfo> CommandListShow(PlaylistManager playlistManager, ResourceResolver resourceFactory, string listId, int? offset = null, int? count = null)
+		public static JsonValue<PlaylistInfo> CommandListShow(PlaylistManager playlistManager, ResolveContext resourceFactory, string listId, int? offset = null, int? count = null)
 		{
 			const int maxSongs = 20;
 			var plist = playlistManager.LoadPlaylist(listId).UnwrapThrow();
@@ -1086,7 +1104,7 @@ namespace TS3AudioBot
 				throw new CommandException("No parameter available", CommandExceptionReason.CommandError);
 
 			if (index < 0 || index >= ctx.Arguments.Count)
-				return XCommandSystem.GetEmpty(resultTypes);
+				return CommandManager.GetEmpty(resultTypes);
 
 			var backup = ctx.Arguments;
 			ctx.Arguments = null;
@@ -1282,13 +1300,39 @@ namespace TS3AudioBot
 		public static void CommandSearchAdd(PlayManager playManager, InvokerData invoker, UserSession session, int index)
 			=> playManager.Enqueue(invoker, session.GetSearchResult(index)).UnwrapThrow();
 
-		[Command("search play", "_undocumented")] // TODO Doc
-		public static void CommandSeachPlay(PlayManager playManager, ClientCall clientCall, UserSession session, int index)
-			=> playManager.Play(clientCall, session.GetSearchResult(index)).UnwrapThrow();
+		[Command("search from", "_undocumented")] // TODO Doc
+		public static JsonArray<AudioResource> PropagiateSearch(UserSession session, CallerInfo callerInfo, ResolveContext resolver, string resolverName, string query)
+		{
+			var result = resolver.Search(resolverName, query);
+			var list = result.UnwrapThrow();
+			session.Set(SessionConst.SearchResult, list);
+
+			return new JsonArray<AudioResource>(list, searchResults =>
+			{
+				if (searchResults.Count == 0)
+					return strings.cmd_search_no_result;
+
+				var tmb = new TextModBuilder(callerInfo.IsColor);
+				tmb.AppendFormat(
+					strings.cmd_search_header.Mod().Bold(),
+					$"!search play <{strings.info_number}>".Mod().Italic(),
+					$"!search add <{strings.info_number}>".Mod().Italic()).Append("\n");
+				for (int i = 0; i < searchResults.Count; i++)
+				{
+					tmb.AppendFormat("{0}: {1}\n", i.ToString().Mod().Bold(), searchResults[i].ResourceTitle);
+				}
+
+				return tmb.ToString();
+			});
+		}
 
 		[Command("search get", "_undocumented")] // TODO Doc
 		public static void CommandSearchGet(UserSession session, int index)
 			=> session.GetSearchResult(index);
+
+		[Command("search play", "_undocumented")] // TODO Doc
+		public static void CommandSeachPlay(PlayManager playManager, ClientCall clientCall, UserSession session, int index)
+			=> playManager.Play(clientCall, session.GetSearchResult(index)).UnwrapThrow();
 
 		[Command("server tree", "_undocumented")]
 		public static JsonValue<Connection> CommandServerTree(Connection book, ApiCall _)
@@ -1550,24 +1594,24 @@ namespace TS3AudioBot
 			string delimiter = null;
 
 			// Get count
-			var res = ((IPrimitiveResult<string>)arguments[0].Execute(info, Array.Empty<ICommand>(), XCommandSystem.ReturnString)).Get();
+			var res = ((IPrimitiveResult<string>)arguments[0].Execute(info, Array.Empty<ICommand>(), ReturnString)).Get();
 			if (!int.TryParse(res, out int count) || count < 0)
 				throw new CommandException("Count must be an integer >= 0", CommandExceptionReason.CommandError); // LOC: TODO
 
 			if (arguments.Count > 2)
 			{
 				// Get start
-				res = ((IPrimitiveResult<string>)arguments[1].Execute(info, Array.Empty<ICommand>(), XCommandSystem.ReturnString)).Get();
+				res = ((IPrimitiveResult<string>)arguments[1].Execute(info, Array.Empty<ICommand>(), ReturnString)).Get();
 				if (!int.TryParse(res, out start) || start < 0)
 					throw new CommandException("Start must be an integer >= 0", CommandExceptionReason.CommandError); // LOC: TODO
 			}
 
 			// Get delimiter if exists
 			if (arguments.Count > 3)
-				delimiter = ((IPrimitiveResult<string>)arguments[2].Execute(info, Array.Empty<ICommand>(), XCommandSystem.ReturnString)).Get();
+				delimiter = ((IPrimitiveResult<string>)arguments[2].Execute(info, Array.Empty<ICommand>(), ReturnString)).Get();
 
 			string text = ((IPrimitiveResult<string>)arguments[Math.Min(arguments.Count - 1, 3)]
-				.Execute(info, Array.Empty<ICommand>(), XCommandSystem.ReturnString)).Get();
+				.Execute(info, Array.Empty<ICommand>(), ReturnString)).Get();
 
 			var splitted = delimiter is null
 				? text.Split()
@@ -1729,7 +1773,7 @@ namespace TS3AudioBot
 		public static void CommandXecute(ExecutionInformation info, IReadOnlyList<ICommand> arguments)
 		{
 			foreach (var arg in arguments)
-				arg.Execute(info, Array.Empty<ICommand>(), XCommandSystem.ReturnAnyPreferNothing);
+				arg.Execute(info, Array.Empty<ICommand>(), ReturnAnyPreferNothing);
 		}
 		// ReSharper enable UnusedMember.Global
 

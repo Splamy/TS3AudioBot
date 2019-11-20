@@ -30,9 +30,9 @@ namespace TS3AudioBot.ResourceFactories
 
 		public string ResolverFor => "bandcamp";
 
-		public MatchCertainty MatchResource(string uri) => BandcampUrlRegex.IsMatch(uri).ToMatchCertainty();
+		public MatchCertainty MatchResource(ResolveContext _, string uri) => BandcampUrlRegex.IsMatch(uri).ToMatchCertainty();
 
-		public R<PlayResource, LocalStr> GetResource(string url)
+		public R<PlayResource, LocalStr> GetResource(ResolveContext _, string url)
 		{
 			var match = BandcampUrlRegex.Match(url);
 			if (!match.Success)
@@ -70,7 +70,7 @@ namespace TS3AudioBot.ResourceFactories
 				GetTrackArtId(webSite));
 		}
 
-		public R<PlayResource, LocalStr> GetResourceById(AudioResource resource)
+		public R<PlayResource, LocalStr> GetResourceById(ResolveContext _, AudioResource resource)
 		{
 			var result = DownloadEmbeddedSite(resource.ResourceId);
 			if (!result.Ok) return result.Error;
@@ -91,7 +91,7 @@ namespace TS3AudioBot.ResourceFactories
 			return new BandcampPlayResource(match.Groups[1].Value, resource, GetTrackArtId(webSite));
 		}
 
-		public string RestoreLink(AudioResource resource)
+		public string RestoreLink(ResolveContext _, AudioResource resource)
 		{
 			var artistName = resource.Get(AddArtist);
 			var trackName = resource.Get(AddTrack);
@@ -111,7 +111,7 @@ namespace TS3AudioBot.ResourceFactories
 			return webSite;
 		}
 
-		public R<Stream, LocalStr> GetThumbnail(PlayResource playResource)
+		public R<Stream, LocalStr> GetThumbnail(ResolveContext _, PlayResource playResource)
 		{
 			string artId;
 			if (playResource is BandcampPlayResource bandcampPlayResource)

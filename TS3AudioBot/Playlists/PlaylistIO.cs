@@ -15,6 +15,7 @@ using System.Linq;
 using System.Threading;
 using TS3AudioBot.Algorithm;
 using TS3AudioBot.Config;
+using TS3AudioBot.Helper;
 using TS3AudioBot.Localization;
 using TS3AudioBot.ResourceFactories;
 using TS3AudioBot.Web.Model;

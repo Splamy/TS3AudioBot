@@ -10,6 +10,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using static TS3AudioBot.CommandSystem.CommandSystemTypes;
 
 namespace TS3AudioBot.CommandSystem.CommandResults
 {
@@ -29,7 +30,7 @@ namespace TS3AudioBot.CommandSystem.CommandResults
 			{
 				if (t == null)
 					return false;
-				if (XCommandSystem.BasicTypes.Contains(t))
+				if (BasicTypes.Contains(t))
 				{
 					var genType = typeof(IPrimitiveResult<>).MakeGenericType(t);
 					return genType.IsAssignableFrom(resultType);
@@ -48,7 +49,7 @@ namespace TS3AudioBot.CommandSystem.CommandResults
 		/// <param name="result">The result value.</param>
 		public static object ToResult(Type resultType, object result)
 		{
-			if (XCommandSystem.BasicTypes.Contains(resultType))
+			if (BasicTypes.Contains(resultType))
 			{
 				var genType = typeof(PrimitiveResult<>).MakeGenericType(resultType);
 				return Activator.CreateInstance(genType, new object[] { result });

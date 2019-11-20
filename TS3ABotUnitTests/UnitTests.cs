@@ -222,16 +222,17 @@ namespace TS3ABotUnitTests
 		[Test]
 		public void Factory_YoutubeFactoryTest()
 		{
+			var ctx = new ResolveContext(null, null);
 			using (IResourceResolver rfac = new YoutubeResolver())
 			{
 				// matching links
-				Assert.AreEqual(rfac.MatchResource(@"https://www.youtube.com/watch?v=robqdGEhQWo"), MatchCertainty.Always);
-				Assert.AreEqual(rfac.MatchResource(@"https://youtu.be/robqdGEhQWo"), MatchCertainty.Always);
-				Assert.AreEqual(rfac.MatchResource(@"https://discarded-ideas.org/sites/discarded-ideas.org/files/music/darkforestkeep_symphonic.mp3"), MatchCertainty.Never);
-				Assert.AreNotEqual(rfac.MatchResource(@"http://splamy.de/youtube.com/youtu.be/fake.mp3"), MatchCertainty.Always);
+				Assert.AreEqual(rfac.MatchResource(ctx, @"https://www.youtube.com/watch?v=robqdGEhQWo"), MatchCertainty.Always);
+				Assert.AreEqual(rfac.MatchResource(ctx, @"https://youtu.be/robqdGEhQWo"), MatchCertainty.Always);
+				Assert.AreEqual(rfac.MatchResource(ctx, @"https://discarded-ideas.org/sites/discarded-ideas.org/files/music/darkforestkeep_symphonic.mp3"), MatchCertainty.Never);
+				Assert.AreNotEqual(rfac.MatchResource(ctx, @"http://splamy.de/youtube.com/youtu.be/fake.mp3"), MatchCertainty.Always);
 
 				// restoring links
-				Assert.AreEqual("https://youtu.be/robqdGEhQWo", rfac.RestoreLink(new AudioResource { ResourceId = "robqdGEhQWo" }));
+				Assert.AreEqual("https://youtu.be/robqdGEhQWo", rfac.RestoreLink(ctx, new AudioResource { ResourceId = "robqdGEhQWo" }));
 			}
 		}
 

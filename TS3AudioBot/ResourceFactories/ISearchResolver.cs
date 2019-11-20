@@ -15,6 +15,6 @@ namespace TS3AudioBot.ResourceFactories
 
 	public interface ISearchResolver : IResolver
 	{
-		R<IList<AudioResource>, LocalStr> Search(string keyword);
+		R<IList<AudioResource>, LocalStr> Search(ResolveContext ctx, string keyword);
 	}
 }

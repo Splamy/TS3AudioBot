@@ -26,7 +26,6 @@ namespace TS3AudioBot
 	public sealed class Core : IDisposable
 	{
 		private static readonly Logger Log = LogManager.GetCurrentClassLogger();
-		private const string DefaultConfigFileName = "ts3audiobot.toml";
 		private readonly string configFilePath;
 		private bool forceNextExit;
 		private readonly CoreInjector injector;
@@ -65,7 +64,7 @@ namespace TS3AudioBot
 		public Core(string configFilePath = null)
 		{
 			// setting defaults
-			this.configFilePath = configFilePath ?? DefaultConfigFileName;
+			this.configFilePath = configFilePath ?? FilesConst.CoreConfig;
 
 			injector = new CoreInjector();
 		}
@@ -99,9 +98,6 @@ namespace TS3AudioBot
 			builder.RequestModule<BotManager>();
 			builder.RequestModule<TokenManager>();
 			builder.RequestModule<CommandManager>();
-			builder.AddModule(config.Factories);
-			// TODO fix interaction: rfm needs to be in the same injector as the commandsystem, otherwise duplicate error
-			// Also TODO find solution to move commandsystem to bot, without breaking api
 			builder.RequestModule<ResourceResolver>();
 
 			if (!builder.Build())
