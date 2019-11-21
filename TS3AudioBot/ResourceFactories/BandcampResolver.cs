@@ -57,10 +57,10 @@ namespace TS3AudioBot.ResourceFactories
 				return new LocalStr(strings.error_media_no_stream_extracted);
 
 			var firstTrack = jarr[0];
-			var id = firstTrack.TryCast<string>("track_id").OkOr(null);
-			var title = firstTrack.TryCast<string>("title").OkOr(null);
-			var trackObj = firstTrack["file"]?.TryCast<string>("mp3-128").OkOr("");
-			if (id is null || title is null || trackObj is null)
+			if (!firstTrack.TryCast<string>("track_id", out var id)
+				|| !firstTrack.TryCast<string>("title", out var title)
+				|| firstTrack["file"] == null
+				|| !firstTrack["file"].TryCast<string>("mp3-128", out var trackObj))
 				return new LocalStr(strings.error_media_no_stream_extracted);
 
 			return new BandcampPlayResource(trackObj,

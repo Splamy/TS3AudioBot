@@ -10,11 +10,11 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using TS3AudioBot.Algorithm;
 using TS3AudioBot.Config;
 using TS3AudioBot.Helper;
 using TS3AudioBot.Localization;
-using TS3AudioBot.RExtensions;
 using TSLib;
 using TSLib.Commands;
 using TSLib.Full;
@@ -323,7 +323,7 @@ namespace TS3AudioBot
 			return clientData;
 		}
 
-		public R<ClientInfo, LocalStr> GetClientInfoById(ClientId id) => ts3FullClient.ClientInfo(id).FormatLocal(() => strings.error_ts_no_client_found);
+		public R<ClientInfo, LocalStr> GetClientInfoById(ClientId id) => ts3FullClient.ClientInfo(id).FormatLocal(_ => (strings.error_ts_no_client_found, true));
 
 		public R<ClientDbId, LocalStr> GetClientDbIdByUid(Uid uid)
 		{
@@ -478,15 +478,17 @@ namespace TS3AudioBot
 			return true;
 		}
 
-		public E<LocalStr> UploadAvatar(System.IO.Stream stream) => ts3FullClient.UploadAvatar(stream).FormatLocal();
+		public E<LocalStr> UploadAvatar(System.IO.Stream stream) => ts3FullClient.UploadAvatar(stream).FormatLocal(e =>
+			(e == TsErrorCode.permission_invalid_size ? strings.error_ts_file_too_big : null, false)
+		); // TODO C# 8 switch expressions
 
 		public E<LocalStr> DeleteAvatar() => ts3FullClient.DeleteAvatar().FormatLocal();
 
 		public E<LocalStr> MoveTo(ChannelId channelId, string password = null)
-			=> ts3FullClient.ClientMove(ts3FullClient.ClientId, channelId, password).FormatLocal(() => strings.error_ts_cannot_move);
+			=> ts3FullClient.ClientMove(ts3FullClient.ClientId, channelId, password).FormatLocal(_ => (strings.error_ts_cannot_move, true));
 
 		public E<LocalStr> SetChannelCommander(bool isCommander)
-			=> ts3FullClient.ChangeIsChannelCommander(isCommander).FormatLocal(() => strings.error_ts_cannot_set_commander);
+			=> ts3FullClient.ChangeIsChannelCommander(isCommander).FormatLocal(_ => (strings.error_ts_cannot_set_commander, true));
 
 		public R<bool, LocalStr> IsChannelCommander()
 		{
@@ -682,33 +684,58 @@ namespace TS3AudioBot
 		}
 	}
 
-	namespace RExtensions
+	internal static class CommandErrorExtentions
 	{
-		internal static class RExtentions
+		public static R<T, LocalStr> FormatLocal<T>(this R<T, CommandError> cmdErr, Func<TsErrorCode, (string loc, bool msg)> prefix = null)
 		{
-			public static R<T, LocalStr> FormatLocal<T>(this R<T, CommandError> cmdErr, Func<string> prefix = null)
+			if (cmdErr.Ok)
+				return cmdErr.Value;
+			return cmdErr.Error.FormatLocal(prefix);
+		}
+
+		public static E<LocalStr> FormatLocal(this E<CommandError> cmdErr, Func<TsErrorCode, (string loc, bool msg)> prefix = null)
+		{
+			if (cmdErr.Ok)
+				return R.Ok;
+			return cmdErr.Error.FormatLocal(prefix);
+		}
+
+		public static LocalStr FormatLocal(this CommandError err, Func<TsErrorCode, (string loc, bool msg)> prefix = null)
+		{
+			var strb = new StringBuilder();
+			bool msg = true;
+
+			if (prefix != null)
 			{
-				if (cmdErr.Ok)
-					return cmdErr.Value;
-				return cmdErr.Error.FormatLocal(prefix);
+				string prefixStr;
+				(prefixStr, msg) = prefix(err.Id);
+				if (prefixStr != null)
+				{
+					strb.Append(prefixStr);
+				}
 			}
 
-			public static E<LocalStr> FormatLocal(this E<CommandError> cmdErr, Func<string> prefix = null)
+			if (strb.Length == 0)
 			{
-				if (cmdErr.Ok)
-					return R.Ok;
-				return cmdErr.Error.FormatLocal(prefix);
+				strb.Append(strings.error_ts_unknown_error);
 			}
 
-			public static LocalStr FormatLocal(this CommandError err, Func<string> prefix = null)
+			if (msg)
 			{
-				var str = LocalizationManager.GetString("error_ts_code_" + (uint)err.Id)
-					?? $"{strings.error_ts_unknown_error} ({err.Message})";
-
-				if (prefix != null)
-					str = $"{prefix()} ({str})";
-				return new LocalStr(str);
+				if (strb.Length > 0)
+					strb.Append(" (");
+				var localStr = LocalizationManager.GetString("error_ts_code_" + (uint)err.Id);
+				if (localStr != null)
+					strb.Append(localStr);
+				else
+					strb.Append(err.Message);
+				strb.Append(')');
 			}
+
+			if (err.MissingPermissionId != TsPermission.undefined)
+				strb.Append(" (").Append(err.MissingPermissionId).Append(')');
+
+			return new LocalStr(strb.ToString());
 		}
 	}
 }

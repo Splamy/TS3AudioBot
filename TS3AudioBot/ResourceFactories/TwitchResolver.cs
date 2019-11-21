@@ -46,12 +46,10 @@ namespace TS3AudioBot.ResourceFactories
 			var jObj = JObject.Parse(jsonResponse);
 
 			// request m3u8 file
-			var tokenResult = jObj.TryCast<string>("token");
-			var sigResult = jObj.TryCast<string>("sig");
-			if (!tokenResult.Ok || !sigResult.Ok)
+			if (!jObj.TryCast<string>("token", out var tokenUnescaped)
+				|| !jObj.TryCast<string>("sig", out var sig))
 				return new LocalStr(strings.error_media_internal_invalid + " (tokenResult|sigResult)");
-			var token = Uri.EscapeUriString(tokenResult.Value);
-			var sig = sigResult.Value;
+			var token = Uri.EscapeUriString(tokenUnescaped);
 			// guaranteed to be random, chosen by fair dice roll.
 			const int random = 4;
 			if (!WebWrapper.DownloadString(out string m3u8, new Uri($"http://usher.twitch.tv/api/channel/hls/{channel}.m3u8?player=twitchweb&&token={token}&sig={sig}&allow_audio_only=true&allow_source=true&type=any&p={random}")))

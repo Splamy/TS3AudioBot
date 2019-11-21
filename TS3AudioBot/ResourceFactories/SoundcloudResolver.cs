@@ -159,8 +159,7 @@ namespace TS3AudioBot.ResourceFactories
 			if (parsedDict is null)
 				return new LocalStr(strings.error_media_internal_missing + " (parsedDict)");
 
-			var imgUrl = parsedDict.TryCast<string>("artwork_url").OkOr(null);
-			if (imgUrl is null)
+			if (!parsedDict.TryCast<string>("artwork_url", out var imgUrl))
 				return new LocalStr(strings.error_media_internal_missing + " (artwork_url)");
 
 			// t500x500: 500px×500px

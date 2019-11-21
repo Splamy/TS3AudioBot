@@ -184,4 +184,21 @@ namespace System
 			return new R<TSuccess, TError>(isError, value, Error);
 		}
 	}
+
+	public static class RExtensions
+	{
+		public static R<TSuccess, TError> Flat<TSuccess, TError>(this R<R<TSuccess, TError>, TError> boxedR)
+		{
+			if (!boxedR.Ok)
+				return boxedR.Error;
+			return boxedR.Value;
+		}
+
+		public static E<TError> Flat<TError>(this R<E<TError>, TError> boxedR)
+		{
+			if (!boxedR.Ok)
+				return boxedR.Error;
+			return boxedR.Value;
+		}
+	}
 }

@@ -41,20 +41,22 @@ namespace TS3AudioBot.Sessions
 			ResponseProcessor = null;
 		}
 
-		public R<TData> Get<TData>(string key)
+		public bool Get<TData>(string key, out TData value)
 		{
 			VerifyLock();
+			value = default;
 
 			if (assocMap is null)
-				return R.Err;
+				return false;
 
-			if (!assocMap.TryGetValue(key, out object value))
-				return R.Err;
+			if (!assocMap.TryGetValue(key, out object valueObj))
+				return false;
 
-			if (!(value is TData))
-				return R.Err;
+			if (!(valueObj is TData valueT))
+				return false;
 
-			return (TData)value;
+			value = valueT;
+			return true;
 		}
 
 		public void Set<TData>(string key, TData data)

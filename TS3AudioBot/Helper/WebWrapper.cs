@@ -88,7 +88,7 @@ namespace TS3AudioBot.Helper
 				using (var response = request.GetResponse())
 				{
 					var result = body.Invoke(response);
-					if (result == null)
+					if ((object)result is null)
 						return new LocalStr(strings.error_net_unknown);
 					return result;
 				}
@@ -98,6 +98,11 @@ namespace TS3AudioBot.Helper
 				return ToLoggedError(ex);
 			}
 		}
+
+		public static E<LocalStr> GetResponseLoc(Uri link, Func<WebResponse, E<LocalStr>> body)
+			=> GetResponse(link, body).Flat();
+		public static E<LocalStr> GetResponseLoc(Uri link, Func<WebResponse, E<LocalStr>> body, TimeSpan timeout)
+			=> GetResponse(link, body, timeout).Flat();
 
 		public static R<Stream, LocalStr> GetResponseUnsafe(string link)
 		{

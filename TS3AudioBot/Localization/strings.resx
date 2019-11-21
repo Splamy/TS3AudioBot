@@ -975,4 +975,10 @@ with the id {1}?</value>
   <data name="cmd_select_help" xml:space="preserve">
     <value>Selects a song from a previous search and plays it.</value>
   </data>
+  <data name="error_ts_file_too_big" xml:space="preserve">
+    <value>The file to upload is too big.</value>
+  </data>
+  <data name="error_ts_code_781" xml:space="preserve">
+    <value>Invalid channel password.</value>
+  </data>
 </root>

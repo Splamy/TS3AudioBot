@@ -14,6 +14,7 @@ using SixLabors.ImageSharp.Formats.Jpeg;
 using SixLabors.ImageSharp.Processing;
 using System;
 using System.IO;
+using TS3AudioBot.Localization;
 
 namespace TS3AudioBot.Helper
 {
@@ -23,7 +24,7 @@ namespace TS3AudioBot.Helper
 
 		public const int ResizeMaxWidthDefault = 320;
 
-		public static Stream ResizeImageSave(Stream imgStream, out string mime, int resizeMaxWidth = ResizeMaxWidthDefault)
+		public static R<Stream, LocalStr> ResizeImageSave(Stream imgStream, out string mime, int resizeMaxWidth = ResizeMaxWidthDefault)
 		{
 			mime = null;
 			if (imgStream == null)
@@ -36,12 +37,12 @@ namespace TS3AudioBot.Helper
 			catch (NotSupportedException)
 			{
 				Log.Debug("Dropping image because of unknown format");
-				return null;
+				return new LocalStr("Dropping image because of unknown format"); // TODO
 			}
 			catch (EntityTooLargeException)
 			{
 				Log.Debug("Dropping image because too large");
-				return null;
+				return new LocalStr("Dropping image because too large"); // TODO
 			}
 		}
 

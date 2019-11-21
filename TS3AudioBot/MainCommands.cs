@@ -129,14 +129,14 @@ namespace TS3AudioBot
 			try { uri = new Uri(url); }
 			catch (Exception ex) { throw new CommandException(strings.error_media_invalid_uri, ex, CommandExceptionReason.CommandError); }
 
-			WebWrapper.GetResponse(uri, x =>
+			WebWrapper.GetResponseLoc(uri, x =>
 			{
 				using (var stream = x.GetResponseStream())
-				using (var image = ImageUtil.ResizeImageSave(stream, out _))
 				{
-					if (image is null)
-						throw new CommandException(strings.error_media_internal_invalid, CommandExceptionReason.CommandError);
-					ts3Client.UploadAvatar(image).UnwrapThrow();
+					var imageResult = ImageUtil.ResizeImageSave(stream, out _);
+					if (!imageResult.Ok)
+						return imageResult.Error;
+					return ts3Client.UploadAvatar(imageResult.Value);
 				}
 			}).UnwrapThrow();
 		}
@@ -336,13 +336,11 @@ namespace TS3AudioBot
 				var cur = playManager.CurrentPlayData;
 				if (cur == null)
 					return false;
-				if (resourceFactory.GetThumbnail(cur.PlayResource).GetOk(out var stream))
+				if (resourceFactory.GetThumbnail(cur.PlayResource).GetOk(out var stream)
+					&& ImageUtil.ResizeImageSave(stream, out var mime).GetOk(out var image))
 				{
-					using (var image = ImageUtil.ResizeImageSave(stream, out var mime))
+					using (image)
 					{
-						if (image is null)
-							return false;
-
 						response.ContentType = mime;
 						image.CopyTo(response.Body);
 						return true;
@@ -1271,14 +1269,13 @@ namespace TS3AudioBot
 
 		private static AudioResource GetSearchResult(this UserSession session, int index)
 		{
-			var result = session.Get<IList<AudioResource>>(SessionConst.SearchResult);
-			if (!result.Ok)
+			if (!session.Get<IList<AudioResource>>(SessionConst.SearchResult, out var sessionList))
 				throw new CommandException(strings.error_select_empty, CommandExceptionReason.CommandError);
 
-			if (index < 0 || index >= result.Value.Count)
-				throw new CommandException(string.Format(strings.error_value_not_in_range, 0, result.Value.Count), CommandExceptionReason.CommandError);
+			if (index < 0 || index >= sessionList.Count)
+				throw new CommandException(string.Format(strings.error_value_not_in_range, 0, sessionList.Count), CommandExceptionReason.CommandError);
 
-			return result.Value[index];
+			return sessionList[index];
 		}
 
 		[Command("search add", "_undocumented")] // TODO Doc

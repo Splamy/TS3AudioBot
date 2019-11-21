@@ -124,21 +124,23 @@ namespace TS3AudioBot.Helper
 			return assembly.GetManifestResourceStream(name);
 		}
 
-		public static R<T> TryCast<T>(this JToken token, string key)
+		public static bool TryCast<T>(this JToken token, string key, out T value)
 		{
+			value = default;
 			if (token is null)
-				return R.Err;
-			var value = token.SelectToken(key);
-			if (value is null)
-				return R.Err;
+				return false;
+			var jValue = token.SelectToken(key);
+			if (jValue is null)
+				return false;
 			try
 			{
-				var t = value.ToObject<T>();
+				var t = jValue.ToObject<T>();
 				if ((object)t is null)
-					return R.Err;
-				return t;
+					return false;
+				value = t;
+				return true;
 			}
-			catch (JsonReaderException) { return R.Err; }
+			catch (JsonReaderException) { return false; }
 		}
 
 		public static E<LocalStr> IsSafeFileName(string name)

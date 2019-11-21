@@ -400,7 +400,7 @@ namespace TS3AudioBot
 				Stream setStream = null;
 				if (e is PlayInfoEventArgs startEvent)
 				{
-					setStream = ImageUtil.ResizeImageSave(resourceResolver.GetThumbnail(startEvent.PlayResource).OkOr(null), out _);
+					setStream = ImageUtil.ResizeImageSave(resourceResolver.GetThumbnail(startEvent.PlayResource).OkOr(null), out _).OkOr(null);
 					setStream = setStream ?? GetRandomFile("play*");
 					Upload(setStream);
 				}

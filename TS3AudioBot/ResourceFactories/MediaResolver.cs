@@ -231,17 +231,15 @@ namespace TS3AudioBot.ResourceFactories
 				}
 				else if (TryGetUri(url).GetOk(out var uri))
 				{
-					var status = WebWrapper.GetResponse(uri, response =>
+					plistResult = WebWrapper.GetResponse(uri, response =>
 					{
 						var contentType = response.Headers.Get("Content-Type");
 						int index = url.LastIndexOf('.');
 						string anyId = index >= 0 ? url.Substring(index) : url;
 
 						using (var stream = response.GetResponseStream())
-							plistResult = GetPlaylistContent(stream, url, contentType);
-					});
-					if (!status.Ok)
-						return status.Error;
+							return GetPlaylistContent(stream, url, contentType);
+					}).Flat();
 				}
 			}
 			catch (Exception ex)

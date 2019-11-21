@@ -2359,11 +2359,29 @@ namespace TS3AudioBot.Localization {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Invalid channel password..
+        /// </summary>
+        internal static string error_ts_code_781 {
+            get {
+                return ResourceManager.GetString("error_ts_code_781", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Teamspeak Error: {0}.
         /// </summary>
         internal static string error_ts_error {
             get {
                 return ResourceManager.GetString("error_ts_error", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The file to upload is too big..
+        /// </summary>
+        internal static string error_ts_file_too_big {
+            get {
+                return ResourceManager.GetString("error_ts_file_too_big", resourceCulture);
             }
         }
         
