@@ -145,7 +145,7 @@ namespace TS3ABotUnitTests
 		[Test]
 		public void XCommandSystemTest()
 		{
-			var execInfo = Utils.GetExecInfo("ic3");
+			var execInfo = Utils.GetExecInfo("ic3", false);
 			var group = execInfo.GetModule<CommandManager>().RootGroup;
 			group.AddCommand("one", new FunctionCommand(() => "ONE"));
 			group.AddCommand("two", new FunctionCommand(() => "TWO"));
@@ -230,10 +230,14 @@ namespace TS3ABotUnitTests
 
 			var execInfo = Utils.GetExecInfo("exact");
 			var cmdMgr = execInfo.GetModule<CommandManager>();
+			var errors = new List<string>();
 			foreach (var cmd in cmdMgr.AllCommands)
 			{
-				Assert.IsFalse(string.IsNullOrEmpty(cmd.Description), $"Command {cmd.FullQualifiedName} has no documentation");
+				if (string.IsNullOrEmpty(cmd.Description))
+					errors.Add($"Command {cmd.FullQualifiedName} has no documentation");
 			}
+			if (errors.Count > 0)
+				Assert.Fail(string.Join("\n", errors));
 		}
 
 		[Test]
@@ -268,10 +272,11 @@ namespace TS3ABotUnitTests
 
 	internal static class Utils
 	{
-		public static ExecutionInformation GetExecInfo(string matcher)
+		public static ExecutionInformation GetExecInfo(string matcher, bool addMainCommands = true)
 		{
 			var cmdMgr = new CommandManager(null);
-			cmdMgr.RegisterCollection(MainCommands.Bag);
+			if (addMainCommands)
+				cmdMgr.RegisterCollection(MainCommands.Bag);
 
 			var execInfo = new ExecutionInformation();
 			execInfo.AddModule(new CallerInfo(false) { SkipRightsChecks = true, CommandComplexityMax = int.MaxValue });

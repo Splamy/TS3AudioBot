@@ -370,7 +370,7 @@ namespace TS3AudioBot
 			return cmd.Execute(info, leftArguments, returnTypes);
 		}
 
-		[Command("from")]
+		[Command("from", "_undocumented")]
 		public static void CommandFrom(PlayManager playManager, InvokerData invoker, string factoryName, string url)
 		{
 			playManager.Play(invoker, url, factoryName).UnwrapThrow();
@@ -916,7 +916,7 @@ namespace TS3AudioBot
 		public static void CommandListDelete(PlaylistManager playlistManager, ApiCall _, string listId)
 			=> playlistManager.DeletePlaylist(listId).UnwrapThrow();
 
-		[Command("list from")]
+		[Command("list from", "_undocumented")]
 		public static JsonValue<PlaylistInfo> PropagiateLoad(PlaylistManager playlistManager, ResolveContext resolver, string resolverName, string listId, string url)
 		{
 			var getList = resolver.LoadPlaylistFrom(url, resolverName).UnwrapThrow();
