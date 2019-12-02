@@ -22,11 +22,9 @@ namespace TS3AudioBot.Playlists.Parser
 		public XspfPlaylist GetFromStream(Stream stream)
 		{
 			var serializer = new JsonSerializer();
-			using (var sr = new StreamReader(stream))
-			using (var jsonTextReader = new JsonTextReader(sr))
-			{
-				return serializer.Deserialize<XspfPlaylist>(jsonTextReader);
-			}
+			using var sr = new StreamReader(stream);
+			using var jsonTextReader = new JsonTextReader(sr);
+			return serializer.Deserialize<XspfPlaylist>(jsonTextReader);
 		}
 
 		public string ToText(XspfPlaylist playlist)

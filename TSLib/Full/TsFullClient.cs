@@ -339,16 +339,14 @@ namespace TSLib.Full
 		/// Or <code>R(ERR)</code> with the returned error if no response is expected.</returns>
 		public override R<T[], CommandError> Send<T>(TsCommand com)
 		{
-			using (var wb = new WaitBlock(msgProc.Deserializer, false))
-			{
-				var result = SendCommandBase(wb, com);
-				if (!result.Ok)
-					return result.Error;
-				if (com.ExpectResponse)
-					return wb.WaitForMessage<T>();
-				else
-					return Array.Empty<T>();
-			}
+			using var wb = new WaitBlock(msgProc.Deserializer, false);
+			var result = SendCommandBase(wb, com);
+			if (!result.Ok)
+				return result.Error;
+			if (com.ExpectResponse)
+				return wb.WaitForMessage<T>();
+			else
+				return Array.Empty<T>();
 		}
 
 		/// <summary>
@@ -367,13 +365,11 @@ namespace TSLib.Full
 			if (!com.ExpectResponse)
 				throw new ArgumentException("A special command must take a response");
 
-			using (var wb = new WaitBlock(msgProc.Deserializer, false, dependsOn))
-			{
-				var result = SendCommandBase(wb, com);
-				if (!result.Ok)
-					return result.Error;
-				return wb.WaitForNotification();
-			}
+			using var wb = new WaitBlock(msgProc.Deserializer, false, dependsOn);
+			var result = SendCommandBase(wb, com);
+			if (!result.Ok)
+				return result.Error;
+			return wb.WaitForNotification();
 		}
 
 		private E<CommandError> SendCommandBase(WaitBlock wb, TsCommand com)
@@ -401,18 +397,16 @@ namespace TSLib.Full
 
 		public async Task<R<T[], CommandError>> SendCommandAsync<T>(TsCommand com) where T : IResponse, new()
 		{
-			using (var wb = new WaitBlock(msgProc.Deserializer, true))
-			{
-				var result = SendCommandBase(wb, com);
-				if (!result.Ok)
-					return result.Error;
-				if (com.ExpectResponse)
-					return await wb.WaitForMessageAsync<T>().ConfigureAwait(false);
-				else
-					// This might not be the nicest way to return in this case
-					// but we don't know what the response is, so this acceptable.
-					return CommandError.NoResult;
-			}
+			using var wb = new WaitBlock(msgProc.Deserializer, true);
+			var result = SendCommandBase(wb, com);
+			if (!result.Ok)
+				return result.Error;
+			if (com.ExpectResponse)
+				return await wb.WaitForMessageAsync<T>().ConfigureAwait(false);
+			else
+				// This might not be the nicest way to return in this case
+				// but we don't know what the response is, so this acceptable.
+				return CommandError.NoResult;
 		}
 
 		/// <summary>Release all resources. Will try to disconnect before disposing.</summary>

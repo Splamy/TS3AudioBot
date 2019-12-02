@@ -157,21 +157,17 @@ namespace TS3AudioBot.Plugins
 
 		private bool Md5EqualsCache()
 		{
-			using (var md5 = MD5.Create())
+			using var md5 = MD5.Create();
+			using var stream = System.IO.File.OpenRead(File.FullName);
+			var newHashSum = md5.ComputeHash(stream);
+			if (md5CacheSum is null)
 			{
-				using (var stream = System.IO.File.OpenRead(File.FullName))
-				{
-					var newHashSum = md5.ComputeHash(stream);
-					if (md5CacheSum is null)
-					{
-						md5CacheSum = newHashSum;
-						return false;
-					}
-					var equals = md5CacheSum.SequenceEqual(newHashSum);
-					md5CacheSum = newHashSum;
-					return equals;
-				}
+				md5CacheSum = newHashSum;
+				return false;
 			}
+			var equals = md5CacheSum.SequenceEqual(newHashSum);
+			md5CacheSum = newHashSum;
+			return equals;
 		}
 
 		private PluginResponse PrepareBinary()
@@ -190,47 +186,43 @@ namespace TS3AudioBot.Plugins
 				.Select(asm => MetadataReference.CreateFromFile(asm.Location))
 				.Concat(new[] { MetadataReference.CreateFromFile(Assembly.GetExecutingAssembly().Location) }).ToArray();
 
-			using (var pluginFileStream = System.IO.File.OpenRead(File.FullName))
+			using var pluginFileStream = System.IO.File.OpenRead(File.FullName);
+			var sourceTree = CSharpSyntaxTree.ParseText(SourceText.From(pluginFileStream));
+
+			var compilation = CSharpCompilation.Create($"plugin_{File.Name}_{Tools.Random.Next()}")
+				.WithOptions(new CSharpCompilationOptions(
+					outputKind: OutputKind.DynamicallyLinkedLibrary,
+					optimizationLevel: OptimizationLevel.Release))
+				.AddReferences(param)
+				.AddSyntaxTrees(sourceTree);
+
+			using var ms = new MemoryStream();
+			var result = compilation.Emit(ms);
+
+			if (result.Success)
 			{
-				var sourceTree = CSharpSyntaxTree.ParseText(SourceText.From(pluginFileStream));
-
-				var compilation = CSharpCompilation.Create($"plugin_{File.Name}_{Tools.Random.Next()}")
-					.WithOptions(new CSharpCompilationOptions(
-						outputKind: OutputKind.DynamicallyLinkedLibrary,
-						optimizationLevel: OptimizationLevel.Release))
-					.AddReferences(param)
-					.AddSyntaxTrees(sourceTree);
-
-				using (var ms = new MemoryStream())
+				ms.Seek(0, SeekOrigin.Begin);
+				var assembly = Assembly.Load(ms.ToArray());
+				return InitializeAssembly(assembly);
+			}
+			else
+			{
+				bool containsErrors = false;
+				var strb = new StringBuilder();
+				strb.AppendFormat("Plugin \"{0}\" [{1}] compiler notifications:\n", File.Name, Id);
+				foreach (var error in result.Diagnostics)
 				{
-					var result = compilation.Emit(ms);
-
-					if (result.Success)
-					{
-						ms.Seek(0, SeekOrigin.Begin);
-						var assembly = Assembly.Load(ms.ToArray());
-						return InitializeAssembly(assembly);
-					}
-					else
-					{
-						bool containsErrors = false;
-						var strb = new StringBuilder();
-						strb.AppendFormat("Plugin \"{0}\" [{1}] compiler notifications:\n", File.Name, Id);
-						foreach (var error in result.Diagnostics)
-						{
-							var position = error.Location.GetLineSpan();
-							containsErrors |= error.WarningLevel == 0;
-							strb.AppendFormat("{0} L{1}/C{2}: {3}\n",
-								error.WarningLevel == 0 ? "Error" : ((DiagnosticSeverity)(error.WarningLevel - 1)).ToString(),
-								position.StartLinePosition.Line + 1,
-								position.StartLinePosition.Character,
-								error.GetMessage());
-						}
-						strb.Length--; // remove last linebreak
-						Log.Warn(strb.ToString());
-						return PluginResponse.CompileError;
-					}
+					var position = error.Location.GetLineSpan();
+					containsErrors |= error.WarningLevel == 0;
+					strb.AppendFormat("{0} L{1}/C{2}: {3}\n",
+						error.WarningLevel == 0 ? "Error" : ((DiagnosticSeverity)(error.WarningLevel - 1)).ToString(),
+						position.StartLinePosition.Line + 1,
+						position.StartLinePosition.Character,
+						error.GetMessage());
 				}
+				strb.Length--; // remove last linebreak
+				Log.Warn(strb.ToString());
+				return PluginResponse.CompileError;
 			}
 		}
 

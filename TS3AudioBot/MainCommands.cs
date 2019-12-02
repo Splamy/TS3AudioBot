@@ -132,13 +132,11 @@ namespace TS3AudioBot
 
 			WebWrapper.GetResponseLoc(uri, x =>
 			{
-				using (var stream = x.GetResponseStream())
-				{
-					var imageResult = ImageUtil.ResizeImageSave(stream, out _);
-					if (!imageResult.Ok)
-						return imageResult.Error;
-					return ts3Client.UploadAvatar(imageResult.Value);
-				}
+				using var stream = x.GetResponseStream();
+				var imageResult = ImageUtil.ResizeImageSave(stream, out _);
+				if (!imageResult.Ok)
+					return imageResult.Error;
+				return ts3Client.UploadAvatar(imageResult.Value);
 			}).UnwrapThrow();
 		}
 
@@ -280,15 +278,15 @@ namespace TS3AudioBot
 		[Command("bot template", "cmd_bot_use_help")]
 		public static object CommandBotTemplate(ExecutionInformation info, IReadOnlyList<Type> returnTypes, BotManager bots, string botName, ICommand cmd)
 		{
-			using (var botLock = bots.GetBotLock(botName))
-				return CommandBotUseInternal(info, returnTypes, botLock, cmd);
+			using var botLock = bots.GetBotLock(botName);
+			return CommandBotUseInternal(info, returnTypes, botLock, cmd);
 		}
 
 		[Command("bot use")]
 		public static object CommandBotUse(ExecutionInformation info, IReadOnlyList<Type> returnTypes, BotManager bots, int botId, ICommand cmd)
 		{
-			using (var botLock = bots.GetBotLock(botId))
-				return CommandBotUseInternal(info, returnTypes, botLock, cmd);
+			using var botLock = bots.GetBotLock(botId);
+			return CommandBotUseInternal(info, returnTypes, botLock, cmd);
 		}
 
 		private static object CommandBotUseInternal(ExecutionInformation info, IReadOnlyList<Type> returnTypes, BotLock botLock, ICommand cmd)
@@ -478,7 +476,7 @@ namespace TS3AudioBot
 
 			CommandGroup group = commandManager.RootGroup;
 			ICommand target = group;
-			filter = filter ?? Filter.DefaultFilter;
+			filter ??= Filter.DefaultFilter;
 			var realPath = new List<string>();
 			for (int i = 0; i < command.Length; i++)
 			{
@@ -684,15 +682,14 @@ namespace TS3AudioBot
 		[Command("history till", "cmd_history_till_string_help")]
 		public static JsonArray<AudioLogEntry> CommandHistoryTill(HistoryManager historyManager, string time)
 		{
-			DateTime tillTime;
-			switch (time.ToLowerInvariant())
+			var tillTime = (time.ToLowerInvariant()) switch
 			{
-			case "hour": tillTime = DateTime.Now.AddHours(-1); break;
-			case "today": tillTime = DateTime.Today; break;
-			case "yesterday": tillTime = DateTime.Today.AddDays(-1); break;
-			case "week": tillTime = DateTime.Today.AddDays(-7); break;
-			default: throw new CommandException(strings.error_unrecognized_descriptor, CommandExceptionReason.CommandError);
-			}
+				"hour" => DateTime.Now.AddHours(-1),
+				"today" => DateTime.Today,
+				"yesterday" => DateTime.Today.AddDays(-1),
+				"week" => DateTime.Today.AddDays(-7),
+				_ => throw new CommandException(strings.error_unrecognized_descriptor, CommandExceptionReason.CommandError),
+			};
 			var query = new SeachQuery { LastInvokedAfter = tillTime };
 			var results = historyManager.Search(query).ToArray();
 			return new JsonArray<AudioLogEntry>(results, historyManager.Format);
@@ -711,18 +708,16 @@ namespace TS3AudioBot
 		[Usage("<argument0> <comparator> <argument1> <then> <else>", "Same as before and return the else-arguments if the condition is false")]
 		public static object CommandIf(ExecutionInformation info, IReadOnlyList<Type> returnTypes, string arg0, string cmp, string arg1, ICommand then, ICommand other = null)
 		{
-			Func<double, double, bool> comparer;
-			switch (cmp)
+			Func<double, double, bool> comparer = cmp switch
 			{
-			case "<": comparer = (a, b) => a < b; break;
-			case ">": comparer = (a, b) => a > b; break;
-			case "<=": comparer = (a, b) => a <= b; break;
-			case ">=": comparer = (a, b) => a >= b; break;
-			case "==": comparer = (a, b) => Math.Abs(a - b) < 1e-6; break;
-			case "!=": comparer = (a, b) => Math.Abs(a - b) > 1e-6; break;
-			default: throw new CommandException(strings.cmd_if_unknown_operator, CommandExceptionReason.CommandError);
-			}
-
+				"<" => (a, b) => a < b,
+				">" => (a, b) => a > b,
+				"<=" => (a, b) => a <= b,
+				">=" => (a, b) => a >= b,
+				"==" => (a, b) => Math.Abs(a - b) < 1e-6,
+				"!=" => (a, b) => Math.Abs(a - b) > 1e-6,
+				_ => throw new CommandException(strings.cmd_if_unknown_operator, CommandExceptionReason.CommandError),
+			};
 			bool cmpResult;
 			// Try to parse arguments into doubles
 			if (double.TryParse(arg0, NumberStyles.Number, CultureInfo.InvariantCulture, out var d0)
@@ -1371,21 +1366,17 @@ namespace TS3AudioBot
 		[Command("settings bot get", "cmd_settings_get_help")]
 		public static ConfigPart CommandSettingsBotGet(BotManager bots, ConfRoot config, string bot, string path = null)
 		{
-			using (var botlock = bots.GetBotLock(bot))
-			{
-				var confBot = GetConf(botlock?.Bot, config, bot);
-				return CommandSettingsGet(confBot, path);
-			}
+			using var botlock = bots.GetBotLock(bot);
+			var confBot = GetConf(botlock?.Bot, config, bot);
+			return CommandSettingsGet(confBot, path);
 		}
 
 		[Command("settings bot set", "cmd_settings_set_help")]
 		public static void CommandSettingsBotSet(BotManager bots, ConfRoot config, string bot, string path, string value = null)
 		{
-			using (var botlock = bots.GetBotLock(bot))
-			{
-				var confBot = GetConf(botlock?.Bot, config, bot);
-				CommandSettingsSet(confBot, path, value);
-			}
+			using var botlock = bots.GetBotLock(bot);
+			var confBot = GetConf(botlock?.Bot, config, bot);
+			CommandSettingsSet(confBot, path, value);
 		}
 
 		[Command("settings bot reload")]
@@ -1819,22 +1810,13 @@ namespace TS3AudioBot
 
 			foreach (var msgPart in LongTextTransform.Transform(message, behaviour, limit))
 			{
-				E<LocalStr> result;
-				switch (invoker.Visibiliy.Value)
+				var result = invoker.Visibiliy.Value switch
 				{
-				case TextMessageTargetMode.Private:
-					result = ts3Client.SendMessage(msgPart, invoker.ClientId.Value);
-					break;
-				case TextMessageTargetMode.Channel:
-					result = ts3Client.SendChannelMessage(msgPart);
-					break;
-				case TextMessageTargetMode.Server:
-					result = ts3Client.SendServerMessage(msgPart);
-					break;
-				default:
-					throw Tools.UnhandledDefault(invoker.Visibiliy.Value);
-				}
-
+					TextMessageTargetMode.Private => ts3Client.SendMessage(msgPart, invoker.ClientId.Value),
+					TextMessageTargetMode.Channel => ts3Client.SendChannelMessage(msgPart),
+					TextMessageTargetMode.Server => ts3Client.SendServerMessage(msgPart),
+					_ => throw Tools.UnhandledDefault(invoker.Visibiliy.Value),
+				};
 				if (!result.Ok)
 					return result;
 			}

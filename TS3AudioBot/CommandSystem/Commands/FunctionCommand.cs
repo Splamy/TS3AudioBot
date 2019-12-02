@@ -333,16 +333,14 @@ namespace TS3AudioBot.CommandSystem.Commands
 		{
 			if (count <= 0)
 				throw new ArgumentOutOfRangeException(nameof(count), count, "The count must be at least 1");
-
-			string throwString;
-			switch (count)
+			var throwString = count switch
 			{
-			case 1: throwString = strings.error_cmd_at_least_one_argument; break;
-			case 2: throwString = strings.error_cmd_at_least_two_argument; break;
-			case 3: throwString = strings.error_cmd_at_least_three_argument; break;
-			case 4: throwString = strings.error_cmd_at_least_four_argument; break;
-			default: throwString = string.Format(strings.error_cmd_at_least_n_arguments, count); break;
-			}
+				1 => strings.error_cmd_at_least_one_argument,
+				2 => strings.error_cmd_at_least_two_argument,
+				3 => strings.error_cmd_at_least_three_argument,
+				4 => strings.error_cmd_at_least_four_argument,
+				_ => string.Format(strings.error_cmd_at_least_n_arguments, count),
+			};
 			return new CommandException(throwString, CommandExceptionReason.MissingParameter);
 		}
 
@@ -375,8 +373,7 @@ namespace TS3AudioBot.CommandSystem.Commands
 
 		private static List<Type> GetTypes(Type targetType)
 		{
-			var types = new List<Type>();
-			types.Add(targetType);
+			var types = new List<Type> { targetType };
 			var unwrappedTargetType = UnwrapParamType(targetType);
 			if (unwrappedTargetType != targetType)
 				types.Add(unwrappedTargetType);

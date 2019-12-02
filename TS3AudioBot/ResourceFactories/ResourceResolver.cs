@@ -139,7 +139,7 @@ namespace TS3AudioBot.ResourceFactories
 				Log.Trace("Resolver {0} tried, result: {1}", resolver.ResolverFor, result.Ok ? "Ok" : result.Error.Str);
 				if (result)
 					return result;
-				(errors = errors ?? new List<(string, LocalStr)>()).Add((resolver.ResolverFor, result.Error));
+				(errors ??= new List<(string, LocalStr)>()).Add((resolver.ResolverFor, result.Error));
 			}
 			Log.Debug("Took {0}ms to resolve resource.", sw.ElapsedMilliseconds);
 
@@ -173,7 +173,7 @@ namespace TS3AudioBot.ResourceFactories
 				Log.Trace("ListResolver {0} tried, result: {1}", resolver.ResolverFor, result.Ok ? "Ok" : result.Error.Str);
 				if (result)
 					return result;
-				(errors = errors ?? new List<(string, LocalStr)>()).Add((resolver.ResolverFor, result.Error));
+				(errors ??= new List<(string, LocalStr)>()).Add((resolver.ResolverFor, result.Error));
 			}
 
 			return ToErrorString(errors);
@@ -232,10 +232,8 @@ namespace TS3AudioBot.ResourceFactories
 
 		public void RemoveResolver(IResolver Resolver)
 		{
-			if (!allResolvers.TryGetValue(Resolver.ResolverFor, out var resolverInfo))
+			if (!allResolvers.Remove(Resolver.ResolverFor))
 				return;
-
-			allResolvers.Remove(Resolver.ResolverFor);
 
 			if (Resolver is IResourceResolver resResolver)
 				resResolvers.Remove(resResolver);

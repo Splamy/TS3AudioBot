@@ -98,7 +98,7 @@ namespace TSLib.Audio
 			for (int i = 0; i < segmentCount; i++)
 			{
 				var encodedData = opusEncoder.Encode(soundBuffer.Slice(i * PacketSize, PacketSize), PacketSize, encodedBuffer);
-				meta = meta ?? new Meta();
+				meta ??= new Meta();
 				meta.Codec = Codec; // TODO copy ?
 				OutStream?.Write(encodedData, meta);
 			}

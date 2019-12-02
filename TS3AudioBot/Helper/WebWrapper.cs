@@ -36,13 +36,11 @@ namespace TS3AudioBot.Helper
 			try
 			{
 				request.Timeout = (int)DefaultTimeout.TotalMilliseconds;
-				using (var response = request.GetResponse())
-				using (var stream = response.GetResponseStream())
-				using (var reader = new StreamReader(stream))
-				{
-					site = reader.ReadToEnd();
-					return R.Ok;
-				}
+				using var response = request.GetResponse();
+				using var stream = response.GetResponseStream();
+				using var reader = new StreamReader(stream);
+				site = reader.ReadToEnd();
+				return R.Ok;
 			}
 			catch (Exception ex)
 			{
@@ -85,13 +83,11 @@ namespace TS3AudioBot.Helper
 
 			try
 			{
-				using (var response = request.GetResponse())
-				{
-					var result = body.Invoke(response);
-					if ((object)result is null)
-						return new LocalStr(strings.error_net_unknown);
-					return result;
-				}
+				using var response = request.GetResponse();
+				var result = body.Invoke(response);
+				if ((object)result is null)
+					return new LocalStr(strings.error_net_unknown);
+				return result;
 			}
 			catch (Exception ex)
 			{

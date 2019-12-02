@@ -69,7 +69,7 @@ namespace TS3AudioBot.Audio
 
 		private static PlaylistItem UpdateItem(InvokerData invoker, PlaylistItem item)
 		{
-			item.Meta = item.Meta ?? new MetaData();
+			item.Meta ??= new MetaData();
 			item.Meta.ResourceOwnerUid = invoker.ClientUid;
 			return item;
 		}
@@ -142,7 +142,7 @@ namespace TS3AudioBot.Audio
 		/// <returns>Ok if successful, or an error message otherwise.</returns>
 		public E<LocalStr> Play(InvokerData invoker, PlayResource play, MetaData meta = null)
 		{
-			meta = meta ?? new MetaData();
+			meta ??= new MetaData();
 			playlistManager.Clear();
 			playlistManager.Queue(new PlaylistItem(play.BaseData, meta));
 			playlistManager.Index = 0;

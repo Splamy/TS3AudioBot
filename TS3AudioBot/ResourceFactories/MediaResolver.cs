@@ -88,7 +88,7 @@ namespace TS3AudioBot.ResourceFactories
 		private static HeaderData GetStreamHeaderData(Stream stream)
 		{
 			var headerData = AudioTagReader.GetData(stream) ?? new HeaderData();
-			headerData.Title = headerData.Title ?? string.Empty;
+			headerData.Title ??= string.Empty;
 			return headerData;
 		}
 
@@ -104,26 +104,22 @@ namespace TS3AudioBot.ResourceFactories
 
 			try
 			{
-				using (var response = request.GetResponse())
+				using var response = request.GetResponse();
+				if (response.Headers["icy-metaint"] != null)
 				{
-					if (response.Headers["icy-metaint"] != null)
-					{
-						return new ResData(link.AbsoluteUri, null) { IsIcyStream = true };
-					}
-					var contentType = response.Headers[HttpResponseHeader.ContentType];
-					if (contentType == "application/vnd.apple.mpegurl"
-						|| contentType == "application/vnd.apple.mpegurl.audio")
-					{
-						return new ResData(link.AbsoluteUri, null); // No title meta info
-					}
-					else
-					{
-						using (var stream = response.GetResponseStream())
-						{
-							var headerData = GetStreamHeaderData(stream);
-							return new ResData(link.AbsoluteUri, headerData.Title) { Image = headerData.Picture };
-						}
-					}
+					return new ResData(link.AbsoluteUri, null) { IsIcyStream = true };
+				}
+				var contentType = response.Headers[HttpResponseHeader.ContentType];
+				if (contentType == "application/vnd.apple.mpegurl"
+					|| contentType == "application/vnd.apple.mpegurl.audio")
+				{
+					return new ResData(link.AbsoluteUri, null); // No title meta info
+				}
+				else
+				{
+					using var stream = response.GetResponseStream();
+					var headerData = GetStreamHeaderData(stream);
+					return new ResData(link.AbsoluteUri, headerData.Title) { Image = headerData.Picture };
 				}
 			}
 			catch (Exception ex)
@@ -137,11 +133,9 @@ namespace TS3AudioBot.ResourceFactories
 		{
 			try
 			{
-				using (var stream = File.Open(foundPath.LocalPath, FileMode.Open, FileAccess.Read, FileShare.Read))
-				{
-					var headerData = GetStreamHeaderData(stream);
-					return new ResData(foundPath.LocalPath, headerData.Title) { Image = headerData.Picture };
-				}
+				using var stream = File.Open(foundPath.LocalPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+				var headerData = GetStreamHeaderData(stream);
+				return new ResData(foundPath.LocalPath, headerData.Title) { Image = headerData.Picture };
 			}
 			catch (UnauthorizedAccessException) { return new LocalStr(strings.error_io_missing_permission); }
 			catch (Exception ex)
@@ -220,8 +214,8 @@ namespace TS3AudioBot.ResourceFactories
 			{
 				if (File.Exists(url))
 				{
-					using (var stream = File.OpenRead(url))
-						plistResult = GetPlaylistContent(stream, url);
+					using var stream = File.OpenRead(url);
+					plistResult = GetPlaylistContent(stream, url);
 				}
 				else if (TryGetUri(ctx.Config, url).GetOk(out var uri))
 				{
@@ -231,8 +225,8 @@ namespace TS3AudioBot.ResourceFactories
 						int index = url.LastIndexOf('.');
 						string anyId = index >= 0 ? url.Substring(index) : url;
 
-						using (var stream = response.GetResponseStream())
-							return GetPlaylistContent(stream, url, contentType);
+						using var stream = response.GetResponseStream();
+						return GetPlaylistContent(stream, url, contentType);
 					}).Flat();
 				}
 			}
@@ -358,10 +352,8 @@ namespace TS3AudioBot.ResourceFactories
 				if (!result)
 					return result.Error;
 
-				using (var stream = result.Value)
-				{
-					rawImgData = AudioTagReader.GetData(stream)?.Picture;
-				}
+				using var stream = result.Value;
+				rawImgData = AudioTagReader.GetData(stream)?.Picture;
 			}
 
 			if (rawImgData is null)

@@ -28,11 +28,9 @@ namespace TS3AudioBot.Helper
 			if (jsonConfig.ExpectsString)
 				json = JsonConvert.SerializeObject(json);
 
-			using (var sr = new StringReader(json))
-			using (var reader = new JsonTextReader(sr))
-			{
-				return jsonConfig.FromJson(reader);
-			}
+			using var sr = new StringReader(json);
+			using var reader = new JsonTextReader(sr);
+			return jsonConfig.FromJson(reader);
 		}
 
 		public static string ToJson(this IJsonSerializable jsonConfig)

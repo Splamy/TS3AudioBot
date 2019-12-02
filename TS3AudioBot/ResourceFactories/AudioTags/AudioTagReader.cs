@@ -87,6 +87,7 @@ namespace TS3AudioBot.ResourceFactories.AudioTags
 			public override string TagId => "ID3";
 
 			// ReSharper disable UnusedVariable
+#pragma warning disable IDE0059 // Unnecessary assignment of a value
 			public override HeaderData GetData(BinaryReader fileStream)
 			{
 				var retdata = new HeaderData();
@@ -192,6 +193,7 @@ namespace TS3AudioBot.ResourceFactories.AudioTags
 
 				return retdata;
 			}
+#pragma warning restore IDE0059 // Unnecessary assignment of a value
 			// ReSharper restore UnusedVariable
 
 			private static int ReadNullTermString(BinaryReader fileStream, byte encoding, List<byte> text)
@@ -225,19 +227,14 @@ namespace TS3AudioBot.ResourceFactories.AudioTags
 			private static readonly Encoding UnicodeBeEncoding = new UnicodeEncoding(true, false);
 			private static Encoding GetEncoding(byte type)
 			{
-				switch (type)
+				return type switch
 				{
-				case 0:
-					return Encoding.GetEncoding(28591);
-				case 1:
-					return Encoding.Unicode;
-				case 2:
-					return UnicodeBeEncoding;
-				case 3:
-					return Encoding.UTF8;
-				default:
-					throw new FormatException("The id3 tag is damaged");
-				}
+					0 => Encoding.GetEncoding(28591),
+					1 => Encoding.Unicode,
+					2 => UnicodeBeEncoding,
+					3 => Encoding.UTF8,
+					_ => throw new FormatException("The id3 tag is damaged"),
+				};
 			}
 
 			private static string DecodeString(byte type, byte[] textBuffer, int offset, int length)

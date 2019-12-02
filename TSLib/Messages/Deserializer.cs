@@ -49,7 +49,7 @@ namespace TSLib.Messages
 			List<int> pipes = null;
 			for (int i = 0; i < line.Length; i++)
 				if (line[i] == AsciiPipe)
-					(pipes = pipes ?? new List<int>()).Add(i);
+					(pipes ??= new List<int>()).Add(i);
 			return pipes;
 		}
 

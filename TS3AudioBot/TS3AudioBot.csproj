@@ -1,9 +1,9 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFrameworks>net472;netcoreapp2.2;netcoreapp3.0;netstandard2.0</TargetFrameworks>
-    <LangVersion>7.3</LangVersion>
+    <TargetFrameworks>netcoreapp2.2;netcoreapp3.0</TargetFrameworks>
+    <LangVersion>8.0</LangVersion>
     <RootNamespace>TS3AudioBot</RootNamespace>
     <AssemblyName>TS3AudioBot</AssemblyName>
 

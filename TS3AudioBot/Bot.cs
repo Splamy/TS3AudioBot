@@ -409,13 +409,13 @@ namespace TS3AudioBot
 				if (e is PlayInfoEventArgs startEvent)
 				{
 					setStream = ImageUtil.ResizeImageSave(resourceResolver.GetThumbnail(startEvent.PlayResource).OkOr(null), out _).OkOr(null);
-					setStream = setStream ?? GetRandomFile("play*");
+					setStream ??= GetRandomFile("play*");
 					Upload(setStream);
 				}
 				else
 				{
 					setStream = GetRandomFile("sleep*");
-					setStream = setStream ?? Util.GetEmbeddedFile("TS3AudioBot.Media.SleepingKitty.png");
+					setStream ??= Util.GetEmbeddedFile("TS3AudioBot.Media.SleepingKitty.png");
 					Upload(setStream);
 				}
 

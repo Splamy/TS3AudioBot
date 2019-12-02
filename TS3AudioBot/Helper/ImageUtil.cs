@@ -31,8 +31,8 @@ namespace TS3AudioBot.Helper
 				return null;
 			try
 			{
-				using (var limitStream = new LimitStream(imgStream, Limits.MaxImageStreamSize))
-					return ResizeImage(limitStream, out mime, resizeMaxWidth);
+				using var limitStream = new LimitStream(imgStream, Limits.MaxImageStreamSize);
+				return ResizeImage(limitStream, out mime, resizeMaxWidth);
 			}
 			catch (NotSupportedException)
 			{
@@ -49,20 +49,18 @@ namespace TS3AudioBot.Helper
 		private static Stream ResizeImage(Stream imgStream, out string mime, int resizeMaxWidth = ResizeMaxWidthDefault)
 		{
 			mime = null;
-			using (var img = Image.Load(imgStream))
-			{
-				if (img.Width > Limits.MaxImageDimension || img.Height > Limits.MaxImageDimension
-					|| img.Width == 0 || img.Height == 0)
-					return null;
+			using var img = Image.Load(imgStream);
+			if (img.Width > Limits.MaxImageDimension || img.Height > Limits.MaxImageDimension
+				|| img.Width == 0 || img.Height == 0)
+				return null;
 
-				if (img.Width <= resizeMaxWidth)
-					return SaveAdaptive(img, out mime);
-
-				float ratio = img.Width / (float)img.Height;
-				img.Mutate(x => x.Resize(resizeMaxWidth, (int)(resizeMaxWidth / ratio)));
-
+			if (img.Width <= resizeMaxWidth)
 				return SaveAdaptive(img, out mime);
-			}
+
+			float ratio = img.Width / (float)img.Height;
+			img.Mutate(x => x.Resize(resizeMaxWidth, (int)(resizeMaxWidth / ratio)));
+
+			return SaveAdaptive(img, out mime);
 		}
 
 		private static Stream SaveAdaptive(Image img, out string mime)

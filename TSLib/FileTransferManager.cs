@@ -220,55 +220,51 @@ namespace TSLib
 					}
 
 					Log.Trace("Creating new file transfer connection to {0}", parent.remoteAddress);
-					using (var client = new TcpClient(parent.remoteAddress.AddressFamily))
+					using var client = new TcpClient(parent.remoteAddress.AddressFamily);
+					try { client.Connect(parent.remoteAddress.Address, token.Port); }
+					catch (SocketException)
 					{
-						try { client.Connect(parent.remoteAddress.Address, token.Port); }
-						catch (SocketException)
+						token.Status = TransferStatus.Failed;
+						continue;
+					}
+					using var md5Dig = token.CreateMd5 ? MD5.Create() : null;
+					using var stream = client.GetStream();
+					byte[] keyBytes = Encoding.ASCII.GetBytes(token.TransferKey);
+					stream.Write(keyBytes, 0, keyBytes.Length);
+
+					if (token.SeekPosition >= 0 && token.LocalStream.Position != token.SeekPosition)
+						token.LocalStream.Seek(token.SeekPosition, SeekOrigin.Begin);
+
+					if (token.Direction == TransferDirection.Upload)
+					{
+						// https://referencesource.microsoft.com/#mscorlib/system/io/stream.cs,2a0f078c2e0c0aa8,references
+						const int bufferSize = 81920;
+						var buffer = new byte[bufferSize];
+						int read;
+						md5Dig?.Initialize();
+						while ((read = token.LocalStream.Read(buffer, 0, buffer.Length)) != 0)
 						{
-							token.Status = TransferStatus.Failed;
-							continue;
+							stream.Write(buffer, 0, read);
+							md5Dig?.TransformBlock(buffer, 0, read, buffer, 0);
 						}
-						using (var md5Dig = token.CreateMd5 ? MD5.Create() : null)
-						using (var stream = client.GetStream())
+						md5Dig?.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
+						token.Md5Sum = md5Dig?.Hash;
+					}
+					else // Download
+					{
+						// try to preallocate space
+						try { token.LocalStream.SetLength(token.Size); }
+						catch (NotSupportedException) { }
+
+						stream.CopyTo(token.LocalStream);
+					}
+					lock (token)
+					{
+						if (token.Status == TransferStatus.Transfering && token.LocalStream.Position == token.Size)
 						{
-							byte[] keyBytes = Encoding.ASCII.GetBytes(token.TransferKey);
-							stream.Write(keyBytes, 0, keyBytes.Length);
-
-							if (token.SeekPosition >= 0 && token.LocalStream.Position != token.SeekPosition)
-								token.LocalStream.Seek(token.SeekPosition, SeekOrigin.Begin);
-
-							if (token.Direction == TransferDirection.Upload)
-							{
-								// https://referencesource.microsoft.com/#mscorlib/system/io/stream.cs,2a0f078c2e0c0aa8,references
-								const int bufferSize = 81920;
-								var buffer = new byte[bufferSize];
-								int read;
-								md5Dig?.Initialize();
-								while ((read = token.LocalStream.Read(buffer, 0, buffer.Length)) != 0)
-								{
-									stream.Write(buffer, 0, read);
-									md5Dig?.TransformBlock(buffer, 0, read, buffer, 0);
-								}
-								md5Dig?.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
-								token.Md5Sum = md5Dig?.Hash;
-							}
-							else // Download
-							{
-								// try to preallocate space
-								try { token.LocalStream.SetLength(token.Size); }
-								catch (NotSupportedException) { }
-
-								stream.CopyTo(token.LocalStream);
-							}
-							lock (token)
-							{
-								if (token.Status == TransferStatus.Transfering && token.LocalStream.Position == token.Size)
-								{
-									token.Status = TransferStatus.Done;
-									if (token.CloseStreamWhenDone)
-										token.LocalStream.Close();
-								}
-							}
+							token.Status = TransferStatus.Done;
+							if (token.CloseStreamWhenDone)
+								token.LocalStream.Close();
 						}
 					}
 				}

@@ -118,8 +118,8 @@ namespace TS3AudioBot.Web.Api
 				{
 					var returnString = json.Serialize();
 					response.StatusCode = returnString.Length == 0 ? (int)HttpStatusCode.NoContent : (int)HttpStatusCode.OK;
-					using (var responseStream = new StreamWriter(response.Body))
-						responseStream.Write(returnString);
+					using var responseStream = new StreamWriter(response.Body);
+					responseStream.Write(returnString);
 				}
 				else if (res is DataStream data)
 				{
@@ -212,9 +212,9 @@ namespace TS3AudioBot.Web.Api
 					break;
 				}
 
-				jsonError = jsonError ?? new JsonError(ex.Message, CommandExceptionReason.Unknown);
-				using (var responseStream = new StreamWriter(response.Body))
-					responseStream.Write(jsonError.Serialize());
+				jsonError ??= new JsonError(ex.Message, CommandExceptionReason.Unknown);
+				using var responseStream = new StreamWriter(response.Body);
+				responseStream.Write(jsonError.Serialize());
 			}
 			catch (Exception htex) { Log.Warn(htex, "Failed to respond to HTTP request."); }
 		}

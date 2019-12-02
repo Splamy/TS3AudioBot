@@ -70,7 +70,7 @@ namespace TS3AudioBot.ResourceFactories
 
 				if (parsed?.videoDetails != null)
 				{
-					resource.ResourceTitle = resource.ResourceTitle ?? parsed.videoDetails.title;
+					resource.ResourceTitle ??= parsed.videoDetails.title;
 
 					bool isLive = parsed.videoDetails.isLive ?? false;
 					if (isLive && parsed.streamingData?.hlsManifestUrl != null)
@@ -105,7 +105,7 @@ namespace TS3AudioBot.ResourceFactories
 			if (!result.Ok)
 				return result.Error;
 
-			resource.ResourceTitle = resource.ResourceTitle ?? $"<YT - no title : {resource.ResourceId}>";
+			resource.ResourceTitle ??= $"<YT - no title : {resource.ResourceId}>";
 
 			return new PlayResource(videoTypes[codec].Link, resource);
 		}

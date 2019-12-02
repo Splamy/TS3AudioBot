@@ -84,14 +84,12 @@ namespace TSLib.Audio
 
 		private OpusDecoder CreateDecoder(Codec codec)
 		{
-			switch (codec)
+			return codec switch
 			{
-			case Codec.OpusVoice:
-				return OpusDecoder.Create(SampleRate, 1);
-			case Codec.OpusMusic:
-				return OpusDecoder.Create(SampleRate, 2);
-			}
-			return null;
+				Codec.OpusVoice => OpusDecoder.Create(SampleRate, 1),
+				Codec.OpusMusic => OpusDecoder.Create(SampleRate, 2),
+				_ => null,
+			};
 		}
 
 		public void Dispose()

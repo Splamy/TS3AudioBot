@@ -21,12 +21,12 @@ namespace TS3AudioBot.CommandSystem
 				return list;
 			if (start >= list.Count)
 				return Array.Empty<T>();
-			switch (list)
+			return list switch
 			{
-			case T[] array: return new ArraySegment<T>(array, start, array.Length - start);
-			case ArraySegment<T> arrayseg: return new ArraySegment<T>(arrayseg.Array, arrayseg.Offset + start, arrayseg.Count - start);
-			default: return list.Skip(start).ToArray();
-			}
+				T[] array => new ArraySegment<T>(array, start, array.Length - start),
+				ArraySegment<T> arrayseg => new ArraySegment<T>(arrayseg.Array, arrayseg.Offset + start, arrayseg.Count - start),
+				_ => list.Skip(start).ToArray(),
+			};
 		}
 
 		public static IReadOnlyList<T> TrySegment<T>(this IReadOnlyList<T> list, int start, int length)

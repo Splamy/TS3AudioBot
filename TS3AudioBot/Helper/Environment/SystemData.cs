@@ -29,7 +29,7 @@ namespace TS3AudioBot.Helper.Environment
 			// Path for GVT <=4.0.0-beta14
 			var gitInfoType = Assembly.GetExecutingAssembly().GetType(nameof(TS3AudioBot) + ".GitVersionInformation");
 			// Path for GVT >=4.0.0
-			gitInfoType = gitInfoType ?? Assembly.GetExecutingAssembly().GetType("GitVersionInformation");
+			gitInfoType ??= Assembly.GetExecutingAssembly().GetType("GitVersionInformation");
 			if (gitInfoType is null)
 				return new BuildData();
 
@@ -66,8 +66,7 @@ namespace TS3AudioBot.Helper.Environment
 
 					if (values.Count > 0)
 					{
-						string value;
-						platform = values.TryGetValue("NAME", out value) ? value
+						platform = values.TryGetValue("NAME", out string value) ? value
 								: values.TryGetValue("ID", out value) ? value
 								: values.TryGetValue("DISTRIB_ID", out value) ? value
 								: values.TryGetValue("PRETTY_NAME", out value) ? value
@@ -92,8 +91,8 @@ namespace TS3AudioBot.Helper.Environment
 						}
 					}
 
-					platform = platform ?? "Linux";
-					version = version ?? "<?>";
+					platform ??= "Linux";
+					version ??= "<?>";
 				});
 			}
 			else
@@ -109,7 +108,7 @@ namespace TS3AudioBot.Helper.Environment
 		{
 			try
 			{
-				using (var p = new Process
+				using var p = new Process
 				{
 					StartInfo = new ProcessStartInfo
 					{
@@ -120,13 +119,11 @@ namespace TS3AudioBot.Helper.Environment
 						RedirectStandardOutput = true,
 					},
 					EnableRaisingEvents = true,
-				})
-				{
-					p.Start();
-					p.WaitForExit(200);
+				};
+				p.Start();
+				p.WaitForExit(200);
 
-					action.Invoke(p.StandardOutput);
-				}
+				action.Invoke(p.StandardOutput);
 			}
 			catch { }
 		}

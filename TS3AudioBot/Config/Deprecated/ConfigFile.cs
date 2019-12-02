@@ -273,23 +273,21 @@ namespace TS3AudioBot.Config.Deprecated
 				{
 					try
 					{
-						using (var output = new StreamWriter(File.Open(path, FileMode.Create, FileAccess.Write)))
+						using var output = new StreamWriter(File.Open(path, FileMode.Create, FileAccess.Write));
+						foreach (var line in fileLines)
 						{
-							foreach (var line in fileLines)
+							if (line.Comment)
 							{
-								if (line.Comment)
-								{
-									output.WriteLine(line.Value);
-								}
-								else
-								{
-									output.Write(line.Key);
-									output.Write(SplitChar);
-									output.WriteLine(line.Value);
-								}
+								output.WriteLine(line.Value);
 							}
-							output.Flush();
+							else
+							{
+								output.Write(line.Key);
+								output.Write(SplitChar);
+								output.WriteLine(line.Value);
+							}
 						}
+						output.Flush();
 					}
 					catch (Exception ex)
 					{

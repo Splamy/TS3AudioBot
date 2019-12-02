@@ -194,16 +194,14 @@ namespace TSLib.Query
 
 		public override R<T[], CommandError> Send<T>(TsCommand com) // Synchronous
 		{
-			using (var wb = new WaitBlock(msgProc.Deserializer, false))
+			using var wb = new WaitBlock(msgProc.Deserializer, false);
+			lock (sendQueueLock)
 			{
-				lock (sendQueueLock)
-				{
-					msgProc.EnqueueRequest(wb);
-					SendRaw(com.ToString());
-				}
-
-				return wb.WaitForMessage<T>();
+				msgProc.EnqueueRequest(wb);
+				SendRaw(com.ToString());
 			}
+
+			return wb.WaitForMessage<T>();
 		}
 
 		public override R<T[], CommandError> SendHybrid<T>(TsCommand com, NotificationType type)

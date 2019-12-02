@@ -76,30 +76,28 @@ namespace TS3AudioBot.ResourceFactories
 		{
 			try
 			{
-				using (var tmproc = new Process())
+				using var tmproc = new Process();
+				tmproc.StartInfo.FileName = path;
+				tmproc.StartInfo.Arguments = args;
+				tmproc.StartInfo.UseShellExecute = false;
+				tmproc.StartInfo.CreateNoWindow = true;
+				tmproc.StartInfo.RedirectStandardOutput = true;
+				tmproc.StartInfo.RedirectStandardError = true;
+				tmproc.EnableRaisingEvents = true;
+				tmproc.Start();
+				tmproc.WaitForExit(10000);
+
+				using (var reader = tmproc.StandardError)
 				{
-					tmproc.StartInfo.FileName = path;
-					tmproc.StartInfo.Arguments = args;
-					tmproc.StartInfo.UseShellExecute = false;
-					tmproc.StartInfo.CreateNoWindow = true;
-					tmproc.StartInfo.RedirectStandardOutput = true;
-					tmproc.StartInfo.RedirectStandardError = true;
-					tmproc.EnableRaisingEvents = true;
-					tmproc.Start();
-					tmproc.WaitForExit(10000);
-
-					using (var reader = tmproc.StandardError)
+					string result = reader.ReadToEnd();
+					if (!string.IsNullOrEmpty(result))
 					{
-						string result = reader.ReadToEnd();
-						if (!string.IsNullOrEmpty(result))
-						{
-							Log.Error("youtube-dl failed to load the resource:\n{0}", result);
-							return new LocalStr(strings.error_ytdl_song_failed_to_load);
-						}
+						Log.Error("youtube-dl failed to load the resource:\n{0}", result);
+						return new LocalStr(strings.error_ytdl_song_failed_to_load);
 					}
-
-					return ParseResponse(tmproc.StandardOutput);
 				}
+
+				return ParseResponse(tmproc.StandardOutput);
 			}
 			catch (Win32Exception ex)
 			{

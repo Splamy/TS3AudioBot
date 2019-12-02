@@ -60,8 +60,8 @@ namespace TSLib.Audio
 			if (OutStream is null || SendMode == TargetSendMode.None)
 				return;
 
-			meta = meta ?? new Meta();
-			meta.Out = meta.Out ?? new MetaOut();
+			meta ??= new Meta();
+			meta.Out ??= new MetaOut();
 			meta.Out.SendMode = SendMode;
 			switch (SendMode)
 			{

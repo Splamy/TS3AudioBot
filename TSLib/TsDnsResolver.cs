@@ -186,24 +186,22 @@ namespace TSLib
 			string returnString;
 			try
 			{
-				using (var client = new TcpClient())
+				using var client = new TcpClient();
+				if (!client.ConnectAsync(tsDnsAddress.Address, tsDnsAddress.Port).Wait(LookupTimeout))
 				{
-					if (!client.ConnectAsync(tsDnsAddress.Address, tsDnsAddress.Port).Wait(LookupTimeout))
-					{
-						client.Close();
-						return null;
-					}
-
-					var stream = client.GetStream();
-					var addBuf = Encoding.ASCII.GetBytes(resolveAddress);
-					stream.Write(addBuf, 0, addBuf.Length);
-					stream.Flush();
-
-					stream.ReadTimeout = (int)LookupTimeout.TotalMilliseconds;
-					var readBuffer = new byte[128];
-					int readLen = stream.Read(readBuffer, 0, readBuffer.Length);
-					returnString = Encoding.ASCII.GetString(readBuffer, 0, readLen);
+					client.Close();
+					return null;
 				}
+
+				var stream = client.GetStream();
+				var addBuf = Encoding.ASCII.GetBytes(resolveAddress);
+				stream.Write(addBuf, 0, addBuf.Length);
+				stream.Flush();
+
+				stream.ReadTimeout = (int)LookupTimeout.TotalMilliseconds;
+				var readBuffer = new byte[128];
+				int readLen = stream.Read(readBuffer, 0, readBuffer.Length);
+				returnString = Encoding.ASCII.GetString(readBuffer, 0, readLen);
 			}
 			catch (Exception ex)
 			{
@@ -256,12 +254,10 @@ namespace TSLib
 			try
 			{
 				var request = WebRequest.Create(NicknameLookup + Uri.EscapeDataString(nickname));
-				using (var respose = request.GetResponse())
-				using (var stream = respose.GetResponseStream())
-				using (var reader = new StreamReader(stream, Encoding.UTF8, false, (int)respose.ContentLength))
-				{
-					result = reader.ReadToEnd();
-				}
+				using var respose = request.GetResponse();
+				using var stream = respose.GetResponseStream();
+				using var reader = new StreamReader(stream, Encoding.UTF8, false, (int)respose.ContentLength);
+				result = reader.ReadToEnd();
 			}
 			catch (Exception ex)
 			{

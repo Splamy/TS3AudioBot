@@ -20,7 +20,6 @@ namespace TS3AudioBot.Playlists
 {
 	public sealed class PlaylistManager
 	{
-		private readonly ConfPlaylists config;
 		private readonly PlaylistIO playlistPool;
 		private const string mixName = ".mix";
 		private readonly Playlist mixList = new Playlist() { Title = "Now Playing" };
@@ -57,9 +56,8 @@ namespace TS3AudioBot.Playlists
 		/// <summary>Loop mode for the current playlist.</summary>
 		public LoopMode Loop { get; set; } = LoopMode.Off;
 
-		public PlaylistManager(ConfPlaylists config, PlaylistIO playlistPool)
+		public PlaylistManager(ConfPlaylists _, PlaylistIO playlistPool)
 		{
-			this.config = config;
 			this.playlistPool = playlistPool;
 			shuffle = NormalOrder;
 		}
@@ -206,11 +204,11 @@ namespace TS3AudioBot.Playlists
 
 		private R<Playlist, LocalStr> GetSpecialPlaylist(string listId)
 		{
-			switch (listId)
+			return listId switch
 			{
-			case mixName: return mixList;
-			default: return new LocalStr(strings.error_playlist_special_not_found);
-			}
+				mixName => mixList,
+				_ => new LocalStr(strings.error_playlist_special_not_found),
+			};
 		}
 	}
 }
