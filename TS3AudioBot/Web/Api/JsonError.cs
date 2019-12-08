@@ -23,15 +23,16 @@ namespace TS3AudioBot.Web.Api
 		public int ErrorCode => (int)reason;
 		public string ErrorName => reason.ToString();
 		public string ErrorMessage { get; }
-		public string HelpMessage { get; set; }
-		public string HelpLink { get; set; }
+		public string? HelpMessage { get; set; }
+		public string? HelpLink { get; set; }
 
-		public JsonError(string msg, CommandExceptionReason reason) : base(msg)
+		public JsonError(string msg, CommandExceptionReason reason)
 		{
 			ErrorMessage = msg;
 			this.reason = reason;
 		}
 
 		public override string Serialize() => JsonConvert.SerializeObject(GetSerializeObject(), ErrorSerializeSettings);
+		public override string ToString() => ErrorMessage;
 	}
 }

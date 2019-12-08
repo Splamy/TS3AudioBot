@@ -63,8 +63,8 @@ namespace TS3AudioBot
 
 	public class DbMetaData
 	{
-		public string Id { get; set; }
+		public string? Id { get; set; }
 		public int Version { get; set; }
-		public object CustomData { get; set; }
+		public object? CustomData { get; set; }
 	}
 }

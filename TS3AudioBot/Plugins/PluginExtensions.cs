@@ -18,9 +18,7 @@ namespace TS3AudioBot.Plugins
 		[MethodImpl(MethodImplOptions.NoInlining)]
 		public static Logger GetLogger()
 		{
-			var mth = new StackTrace().GetFrame(1).GetMethod();
-			var cls = mth.ReflectedType.Name;
-
+			var cls = new StackTrace()?.GetFrame(1)?.GetMethod()?.DeclaringType?.Name ?? "Unknown";
 			return LogManager.GetLogger($"TS3AudioBot.Plugins.{cls}");
 		}
 	}

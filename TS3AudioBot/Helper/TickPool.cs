@@ -26,7 +26,7 @@ namespace TS3AudioBot.Helper
 		public static TickWorker RegisterTickOnce(Action method, TimeSpan? delay = null)
 		{
 			if (method is null) throw new ArgumentNullException(nameof(method));
-			if (delay.HasValue && delay.Value < TimeSpan.Zero) throw new ArgumentException("The parameter must be greater than 0s", nameof(delay));
+			if (delay != null && delay.Value < TimeSpan.Zero) throw new ArgumentException("The parameter must be greater than 0s", nameof(delay));
 			var worker = new TickWorker(method, delay ?? TimeSpan.Zero) { Active = true, TickOnce = true };
 			AddWorker(worker);
 			return worker;

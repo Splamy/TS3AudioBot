@@ -21,24 +21,23 @@ namespace TS3AudioBot.Audio
 	{
 		private const Codec SendCodec = Codec.OpusMusic;
 
-		public IPlayerSource CurrentPlayerSource { get; private set; }
+		public IPlayerSource? CurrentPlayerSource { get; private set; }
 		public StallCheckPipe StallCheckPipe { get; }
 		public VolumePipe VolumePipe { get; }
 		public FfmpegProducer FfmpegProducer { get; }
 		public PreciseTimedPipe TimePipe { get; }
 		public PassiveMergePipe MergePipe { get; }
 		public EncoderPipe EncoderPipe { get; }
-		public IAudioPassiveConsumer PlayerSink { get; private set; }
+		public IAudioPassiveConsumer? PlayerSink { get; private set; }
 
-		public Player(ConfBot config, Id id)
+		public Player(ConfRoot confRoot, ConfBot config, Id id)
 		{
-			FfmpegProducer = new FfmpegProducer(config.GetParent().Tools.Ffmpeg, id);
+			FfmpegProducer = new FfmpegProducer(confRoot.Tools.Ffmpeg, id);
 			StallCheckPipe = new StallCheckPipe();
 			VolumePipe = new VolumePipe();
 			Volume = config.Audio.Volume.Default;
 			EncoderPipe = new EncoderPipe(SendCodec) { Bitrate = ScaleBitrate(config.Audio.Bitrate) };
-			TimePipe = new PreciseTimedPipe { ReadBufferSize = EncoderPipe.PacketSize };
-			TimePipe.Initialize(EncoderPipe, id);
+			TimePipe = new PreciseTimedPipe(EncoderPipe, id) { ReadBufferSize = EncoderPipe.PacketSize };
 			MergePipe = new PassiveMergePipe();
 
 			config.Audio.Bitrate.Changed += (s, e) => EncoderPipe.Bitrate = ScaleBitrate(e.NewValue);
@@ -54,11 +53,11 @@ namespace TS3AudioBot.Audio
 
 		private static int ScaleBitrate(int value) => Tools.Clamp(value, 1, 255) * 1000;
 
-		public event EventHandler OnSongEnd;
-		public event EventHandler<SongInfoChanged> OnSongUpdated;
+		public event EventHandler? OnSongEnd;
+		public event EventHandler<SongInfoChanged>? OnSongUpdated;
 
-		private void TriggerSongEnd(object o, EventArgs e) => OnSongEnd?.Invoke(this, EventArgs.Empty);
-		private void TriggerSongUpdated(object o, SongInfoChanged e) => OnSongUpdated?.Invoke(this, e);
+		private void TriggerSongEnd(object? o, EventArgs e) => OnSongEnd?.Invoke(this, EventArgs.Empty);
+		private void TriggerSongUpdated(object? o, SongInfoChanged e) => OnSongUpdated?.Invoke(this, e);
 
 		public E<string> Play(PlayResource res)
 		{
@@ -90,7 +89,7 @@ namespace TS3AudioBot.Audio
 			TimePipe.Paused = false;
 		}
 
-		private void CleanSource(IPlayerSource source)
+		private void CleanSource(IPlayerSource? source)
 		{
 			if (source is null)
 				return;

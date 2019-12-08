@@ -17,11 +17,11 @@ namespace TS3AudioBot.CommandSystem
 	public static class CommandSystemTypes
 	{
 		public static readonly Type[] ReturnJson = { typeof(JsonObject) };
-		public static readonly Type[] ReturnJsonOrDataOrNothing = { typeof(JsonObject), typeof(DataStream), null };
+		public static readonly Type?[] ReturnJsonOrDataOrNothing = { typeof(JsonObject), typeof(DataStream), null };
 		public static readonly Type[] ReturnString = { typeof(string) };
-		public static readonly Type[] ReturnStringOrNothing = { typeof(string), null };
+		public static readonly Type?[] ReturnStringOrNothing = { typeof(string), null };
 		public static readonly Type[] ReturnCommandOrString = { typeof(ICommand), typeof(string) };
-		public static readonly Type[] ReturnAnyPreferNothing = { null, typeof(string), typeof(JsonObject), typeof(ICommand) };
+		public static readonly Type?[] ReturnAnyPreferNothing = { null, typeof(string), typeof(JsonObject), typeof(ICommand) };
 
 		/// <summary>
 		/// The order of types, the first item has the highest priority,

@@ -21,7 +21,7 @@ namespace TS3AudioBot.Web.Api
 
 		public override TimeSpan ReadJson(JsonReader reader, Type objectType, TimeSpan existingValue, bool hasExistingValue, JsonSerializer serializer)
 		{
-			float secs = (float)reader.Value;
+			float secs = (float?)reader.Value ?? 0;
 			return TimeSpan.FromSeconds(secs);
 		}
 	}

@@ -31,8 +31,8 @@ namespace TS3ABotUnitTests
 			string testFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "history.test");
 			if (File.Exists(testFile)) File.Delete(testFile);
 
-			var inv1 = new ClientList { ClientId = (ClientId)10, Uid = (Uid)"Uid1", Name = "Invoker1" };
-			var inv2 = new ClientList { ClientId = (ClientId)20, Uid = (Uid)"Uid2", Name = "Invoker2" };
+			var inv1 = new { ClientId = (ClientId)10, Uid = (Uid)"Uid1", Name = "Invoker1" };
+			var inv2 = new { ClientId = (ClientId)20, Uid = (Uid)"Uid2", Name = "Invoker2" };
 
 			var ar1 = new AudioResource("asdf", "sc_ar1", "soundcloud");
 			var ar2 = new AudioResource("./File.mp3", "me_ar2", "media");

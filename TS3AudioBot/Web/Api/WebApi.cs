@@ -97,7 +97,7 @@ namespace TS3AudioBot.Web.Api
 
 			var command = BuildCommand(apiCallData.RequestUrl);
 
-			if (ProcessBodyData(request, apiCallData).GetError(out var err))
+			if (!ProcessBodyData(request, apiCallData).GetOk(out var err))
 			{
 				ReturnError(err, response);
 				return;
@@ -190,7 +190,7 @@ namespace TS3AudioBot.Web.Api
 
 			try
 			{
-				JsonError jsonError = null;
+				JsonError? jsonError = null;
 
 				switch (ex)
 				{
@@ -331,11 +331,10 @@ namespace TS3AudioBot.Web.Api
 			}
 			catch (Exception) { return "Malformed base64 string"; }
 
-			var result = tokenManager.GetToken(userUid);
-			if (!result.Ok)
+			var dbToken = tokenManager.GetToken(userUid);
+			if (dbToken is null)
 				return ErrorNoUserOrToken;
 
-			var dbToken = result.Value;
 			if (dbToken.Value != token)
 				return ErrorAuthFailure;
 

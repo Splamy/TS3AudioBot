@@ -29,7 +29,7 @@ namespace TS3AudioBot.CommandSystem
 
 		public static AstNode ParseCommandRequest(string request, char commandChar = DefaultCommandChar, char delimeterChar = DefaultDelimeterChar)
 		{
-			AstCommand root = null;
+			AstCommand? root = null;
 			var comAst = new Stack<AstCommand>();
 			var build = BuildStatus.ParseCommand;
 			var strb = new StringBuilder();
@@ -38,13 +38,11 @@ namespace TS3AudioBot.CommandSystem
 			var startTrim = request.AsSpan().TrimStart();
 			if (startTrim.IsEmpty || startTrim[0] != commandChar)
 			{
-				return new AstValue
+				return new AstValue(request, StringType.FreeString)
 				{
-					FullRequest = request,
 					Length = request.Length,
 					Position = 0,
 					Value = request,
-					StringType = StringType.FreeString,
 				};
 			}
 
@@ -55,7 +53,7 @@ namespace TS3AudioBot.CommandSystem
 				{
 				case BuildStatus.ParseCommand:
 					// Got a command
-					buildCom = new AstCommand();
+					buildCom = new AstCommand(request);
 					// Consume CommandChar if left over
 					if (strPtr.Char == commandChar)
 						strPtr.Next(commandChar);
@@ -124,7 +122,7 @@ namespace TS3AudioBot.CommandSystem
 					break;
 
 				case BuildStatus.ParseFreeString:
-					var valFreeAst = new AstValue() { FullRequest = request, StringType = StringType.FreeString };
+					var valFreeAst = new AstValue(request, StringType.FreeString);
 					using (strPtr.TrackNode(valFreeAst))
 					{
 						for (; !strPtr.End; strPtr.Next())
@@ -153,7 +151,7 @@ namespace TS3AudioBot.CommandSystem
 					else
 						throw new Exception("Parser error");
 
-					var valQuoAst = new AstValue() { FullRequest = request, StringType = StringType.QuotedString };
+					var valQuoAst = new AstValue(request, StringType.QuotedString);
 					using (strPtr.TrackNode(valQuoAst))
 					{
 						bool escaped = false;
@@ -198,7 +196,7 @@ namespace TS3AudioBot.CommandSystem
 				}
 			}
 
-			return root;
+			return root ?? throw new InvalidOperationException("No ast was built");
 		}
 
 		private class StringPtr
@@ -246,32 +244,32 @@ namespace TS3AudioBot.CommandSystem
 
 			public void JumpToEnd() => Index = text.Length + 1;
 
-			public NodeTracker TrackNode(AstNode node = null)
+			public NodeTracker TrackNode(AstNode? node = null)
 			{
 				return new NodeTracker(this, node);
 			}
 
-			public struct NodeTracker : IDisposable
+			public readonly ref struct NodeTracker
 			{
 				private readonly int indexStart;
 				private readonly StringPtr parent;
-				private readonly AstNode node;
-				public NodeTracker(StringPtr p, AstNode node = null)
+				private readonly AstNode? node;
+				public NodeTracker(StringPtr p, AstNode? node = null)
 				{
 					parent = p;
 					indexStart = parent.Index;
 					this.node = node;
 				}
 
-				public void Apply(AstNode node)
+				public readonly void Apply(AstNode node)
 				{
 					node.Position = indexStart;
 					node.Length = parent.Index - indexStart;
 				}
 
-				public (int start, int end) Done() => (indexStart, parent.Index);
+				public readonly (int start, int end) Done() => (indexStart, parent.Index);
 
-				public void Dispose() { if (node != null) Apply(node); }
+				public readonly void Dispose() { if (node != null) Apply(node); }
 			}
 		}
 

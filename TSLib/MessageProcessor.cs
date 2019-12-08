@@ -59,13 +59,13 @@ namespace TSLib
 			if (ntfyType != NotificationType.CommandError)
 			{
 				var notification = Deserializer.GenerateNotification(lineDataPart, ntfyType);
-				if (!notification.Ok)
+				if (notification is null)
 				{
 					Log.Warn("Got unparsable message. ({0})", msgSpan.NewUtf8String());
 					return null;
 				}
 
-				var lazyNotification = new LazyNotification(notification.Value, ntfyType);
+				var lazyNotification = new LazyNotification(notification, ntfyType);
 				lock (waitBlockLock)
 				{
 					var dependantList = dependingBlocks[(int)ntfyType];
@@ -92,7 +92,7 @@ namespace TSLib
 			}
 
 			var result = Deserializer.GenerateSingleNotification(lineDataPart, NotificationType.CommandError);
-			var errorStatus = result.Ok ? (CommandError)result.Value : CommandError.Custom("Invalid Error code");
+			var errorStatus = result is null ? CommandError.Custom("Invalid Error code") : (CommandError)result;
 
 			return PushMessageInternal(errorStatus, ntfyType);
 		}
@@ -113,7 +113,7 @@ namespace TSLib
 
 		protected override LazyNotification? PushMessageInternal(CommandError errorStatus, NotificationType ntfyType)
 		{
-			if (string.IsNullOrEmpty(errorStatus.ReturnCode))
+			if (errorStatus.ReturnCode is null)
 			{
 				return new LazyNotification(new[] { errorStatus }, ntfyType);
 			}
@@ -162,7 +162,7 @@ namespace TSLib
 
 				foreach (var block in dependingBlocks)
 				{
-					block?.ForEach((Action<WaitBlock>)(wb => wb.SetAnswer(CommandError.TimeOut)));
+					block?.ForEach(wb => wb.SetAnswer(CommandError.TimeOut));
 					block?.Clear();
 				}
 			}

@@ -51,7 +51,7 @@ namespace TSLib
 		/// <param name="endPoint">The ip address if successfully resolved. Otherwise a dummy.</param>
 		/// <param name="defaultPort">The default port when no port is specified with the address or the resolved address.</param>
 		/// <returns>Whether the resolve was succesful.</returns>
-		public static bool TryResolve(string address, out IPEndPoint endPoint, ushort defaultPort = TsVoiceDefaultPort)
+		public static bool TryResolve(string address, /* !NRT [MaybeNullWhen(false)] */ out IPEndPoint? endPoint, ushort defaultPort = TsVoiceDefaultPort)
 		{
 			if (address is null) throw new ArgumentNullException(nameof(address));
 
@@ -145,7 +145,7 @@ namespace TSLib
 			return true;
 		}
 
-		private static IPEndPoint ResolveSrv(Resolver resolver, string domain)
+		private static IPEndPoint? ResolveSrv(Resolver resolver, string domain)
 		{
 			Log.Trace("Resolving srv record '{0}'", domain);
 			Response response;
@@ -170,7 +170,7 @@ namespace TSLib
 			return null;
 		}
 
-		private static IPEndPoint ResolveTsDns(string tsDnsAddress, ushort port, string resolveAddress, ushort defaultPort)
+		private static IPEndPoint? ResolveTsDns(string tsDnsAddress, ushort port, string resolveAddress, ushort defaultPort)
 		{
 			Log.Trace("Looking for the tsdns under '{0}'", tsDnsAddress);
 			var hostAddress = ResolveDns(tsDnsAddress);
@@ -180,7 +180,7 @@ namespace TSLib
 			return ResolveTsDns(new IPEndPoint(hostAddress, port), resolveAddress, defaultPort);
 		}
 
-		private static IPEndPoint ResolveTsDns(IPEndPoint tsDnsAddress, string resolveAddress, ushort defaultPort)
+		private static IPEndPoint? ResolveTsDns(IPEndPoint tsDnsAddress, string resolveAddress, ushort defaultPort)
 		{
 			Log.Trace("Looking up tsdns address '{0}'", resolveAddress);
 			string returnString;
@@ -212,7 +212,7 @@ namespace TSLib
 			return ParseIpEndPoint(returnString, defaultPort);
 		}
 
-		private static IPAddress ResolveDns(string hostOrNameAddress)
+		private static IPAddress? ResolveDns(string hostOrNameAddress)
 		{
 			try
 			{
@@ -227,7 +227,7 @@ namespace TSLib
 
 		private static readonly Regex IpRegex = new Regex(@"(?<ip>(?:\d{1,3}\.){3}\d{1,3}|\[[0-9a-fA-F:]+\]|localhost)(?::(?<port>\d{1,5}))?", RegexOptions.ECMAScript | RegexOptions.Compiled);
 
-		private static IPEndPoint ParseIpEndPoint(string address, ushort defaultPort)
+		private static IPEndPoint? ParseIpEndPoint(string address, ushort defaultPort)
 		{
 			var match = IpRegex.Match(address);
 			if (!match.Success)
@@ -248,7 +248,7 @@ namespace TSLib
 			return new IPEndPoint(ipAddr, port);
 		}
 
-		private static string ResolveNickname(string nickname)
+		private static string? ResolveNickname(string nickname)
 		{
 			string result;
 			try

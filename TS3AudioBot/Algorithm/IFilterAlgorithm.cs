@@ -21,7 +21,7 @@ namespace TS3AudioBot.Algorithm
 	{
 		public static IFilter DefaultFilter { get; } = Ic3Filter.Instance;
 
-		public static IFilter GetFilterByName(string filter)
+		public static IFilter? GetFilterByName(string filter)
 		{
 			return filter switch
 			{

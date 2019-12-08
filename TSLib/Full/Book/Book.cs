@@ -19,8 +19,8 @@ namespace TSLib.Full.Book
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 
-		public Client Self() => GetClient(OwnClient);
-		public Channel CurrentChannel()
+		public Client? Self() => GetClient(OwnClient);
+		public Channel? CurrentChannel()
 		{
 			var self = Self();
 			if (self == null)
@@ -33,7 +33,7 @@ namespace TSLib.Full.Book
 			Server = server;
 		}
 
-		private Channel GetChannel(ChannelId id)
+		private Channel? GetChannel(ChannelId id)
 		{
 			if (Channels.TryGetValue(id, out var channel))
 				return channel;
@@ -53,7 +53,7 @@ namespace TSLib.Full.Book
 			ChannelOrderRemove(id, cur.Order);
 		}
 
-		private Client GetClient(ClientId id)
+		private Client? GetClient(ClientId id)
 		{
 			if (Clients.TryGetValue(id, out var client))
 				return client;
@@ -140,9 +140,9 @@ namespace TSLib.Full.Book
 			else return ChannelType.Temporary;
 		}
 
-		private string AwayCevFun(ClientEnterView msg) => AwayFun(msg.IsAway, msg.AwayMessage);
-		private string AwayCuFun(ClientUpdated msg) => AwayFun(msg.IsAway, msg.AwayMessage);
-		private string AwayFun(bool? away, string msg)
+		private string? AwayCevFun(ClientEnterView msg) => AwayFun(msg.IsAway, msg.AwayMessage);
+		private string? AwayCuFun(ClientUpdated msg) => AwayFun(msg.IsAway, msg.AwayMessage);
+		private string? AwayFun(bool? away, string? msg)
 		{
 			if (away == true)
 				return msg ?? "";
@@ -158,7 +158,7 @@ namespace TSLib.Full.Book
 			return null;
 		}
 		private static TalkPowerRequest? TalkPowerCuFun(ClientUpdated msg) => TalkPowerFun(msg.TalkPowerRequestTime, msg.TalkPowerRequestMessage);
-		private static TalkPowerRequest? TalkPowerFun(DateTime? time, string message)
+		private static TalkPowerRequest? TalkPowerFun(DateTime? time, string? message)
 		{
 			if (time != null && time != Tools.UnixTimeStart) // TODO
 				return new TalkPowerRequest() { Time = time.Value, Message = message ?? "" };

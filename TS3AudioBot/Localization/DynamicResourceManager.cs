@@ -29,7 +29,7 @@ namespace TS3AudioBot.Localization
 			dynamicResourceSets[culture.Name] = set;
 		}
 
-		public override ResourceSet GetResourceSet(CultureInfo culture, bool createIfNotExists, bool tryParents)
+		public override ResourceSet? GetResourceSet(CultureInfo culture, bool createIfNotExists, bool tryParents)
 		{
 			if (culture is null)
 			{
@@ -44,14 +44,14 @@ namespace TS3AudioBot.Localization
 			return base.GetResourceSet(culture, createIfNotExists, tryParents);
 		}
 
-		public override string GetString(string name, CultureInfo culture)
+		public override string? GetString(string name, CultureInfo? culture)
 		{
 			if (culture is null)
 			{
 				culture = Thread.CurrentThread.CurrentUICulture;
 			}
 
-			string str;
+			string? str;
 			if (dynamicResourceSets.TryGetValue(culture.Name, out var set))
 			{
 				if ((str = set.GetString(name)) != null)

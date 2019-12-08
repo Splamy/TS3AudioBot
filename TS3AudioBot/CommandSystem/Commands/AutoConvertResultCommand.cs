@@ -28,21 +28,24 @@ namespace TS3AudioBot.CommandSystem.Commands
 			Content = contentArg;
 		}
 
-		public virtual object Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<Type> returnTypes)
+		public virtual object? Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<Type?> returnTypes)
 		{
 			var filterLazy = info.GetFilterLazy();
-			foreach (var type in returnTypes)
+			foreach (var returnType in returnTypes)
 			{
+				if (returnType == null)
+					return null;
+
 				try
 				{
-					var result = FunctionCommand.ConvertParam(Content, type, filterLazy);
-					Log.Debug("Converting command result {0} to {1} returns {2}", Content, type, result);
+					var result = FunctionCommand.ConvertParam(Content, returnType, filterLazy);
+					Log.Debug("Converting command result {0} to {1} returns {2}", Content, returnType, result);
 
-					return ResultHelper.ToResult(type, result);
+					return ResultHelper.ToResult(returnType, result);
 				}
 				catch (Exception ex)
 				{
-					Log.Debug(ex, "Converting command result {0} to {1} failed", Content, type);
+					Log.Debug(ex, "Converting command result {0} to {1} failed", Content, returnType);
 				}
 			}
 			throw new CommandException(strings.error_cmd_no_matching_overload, CommandExceptionReason.NoReturnMatch);

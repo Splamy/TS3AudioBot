@@ -32,7 +32,7 @@ namespace TS3AudioBot.Localization
 				LoadedSuccessfully = true,
 			});
 
-			var resManField = typeof(strings).GetField("resourceMan", BindingFlags.NonPublic | BindingFlags.Static);
+			var resManField = typeof(strings).GetField("resourceMan", BindingFlags.NonPublic | BindingFlags.Static)!;
 			var currentResMan = resManField.GetValue(null);
 			(currentResMan as ResourceManager)?.ReleaseAllResources();
 			dynResMan = new DynamicResourceManager("TS3AudioBot.Localization.strings", typeof(strings).Assembly);
@@ -65,7 +65,7 @@ namespace TS3AudioBot.Localization
 
 		private static E<string> LoadLanguageAssembly(LanguageData languageDataInfo, CultureInfo culture, bool forceDownload)
 		{
-			var avaliableToDownload = new Lazy<HashSet<string>>(() =>
+			var avaliableToDownload = new Lazy<HashSet<string>?>(() =>
 			{
 				var arr = DownloadAvaliableLanguages();
 				return arr != null ? new HashSet<string>(arr) : null;
@@ -100,7 +100,7 @@ namespace TS3AudioBot.Localization
 						languageDataInfo.TriedDownloading = true;
 						Directory.CreateDirectory(tryFile.DirectoryName);
 						Log.Info("Downloading the resource pack for the language '{0}'", currentResolveCulture.Name);
-						WebWrapper.GetResponse(new Uri($"https://splamy.de/api/language/project/ts3ab/language/{currentResolveCulture.Name}/dll"), response =>
+						WebWrapper.GetResponse($"https://splamy.de/api/language/project/ts3ab/language/{currentResolveCulture.Name}/dll", response =>
 						{
 							using var dataStream = response.GetResponseStream();
 							using var fs = File.Open(tryFile.FullName, FileMode.Create, FileAccess.Write, FileShare.None);
@@ -117,7 +117,7 @@ namespace TS3AudioBot.Localization
 				try
 				{
 					var asm = Assembly.LoadFrom(tryFile.FullName);
-					var resStream = asm.GetManifestResourceStream($"TS3AudioBot.Localization.strings.{currentResolveCulture.Name}.resources");
+					var resStream = asm.GetManifestResourceStream($"TS3AudioBot.Localization.strings.{currentResolveCulture.Name}.resources") ?? throw new NullReferenceException("No stream found");
 					var rr = new ResourceReader(resStream);
 					var set = new ResourceSet(rr);
 					dynResMan.SetResourceSet(currentResolveCulture, set);
@@ -149,12 +149,12 @@ namespace TS3AudioBot.Localization
 		private static FileInfo GetCultureFileInfo(CultureInfo culture)
 			=> new FileInfo(Path.Combine(Directory.GetCurrentDirectory(), culture.Name, "TS3AudioBot.resources.dll"));
 
-		private static string[] DownloadAvaliableLanguages()
+		private static string[]? DownloadAvaliableLanguages()
 		{
 			try
 			{
 				Log.Info("Checking for requested language online");
-				if (WebWrapper.DownloadString(new Uri("https://splamy.de/api/language/project/ts3ab/languages")).GetOk(out var data))
+				if (WebWrapper.DownloadString("https://splamy.de/api/language/project/ts3ab/languages").GetOk(out var data))
 					return Newtonsoft.Json.JsonConvert.DeserializeObject<string[]>(data);
 			}
 			catch (Exception ex)
@@ -164,7 +164,7 @@ namespace TS3AudioBot.Localization
 			return null;
 		}
 
-		public static string GetString(string name)
+		public static string? GetString(string name)
 		{
 			return strings.ResourceManager.GetString(name);
 		}

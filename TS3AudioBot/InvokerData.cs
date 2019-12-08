@@ -16,7 +16,7 @@ namespace TS3AudioBot
 		public Uid ClientUid { get; }
 		public bool IsAnonymous => ClientUid == AnonymousUid;
 
-		protected static readonly Uid AnonymousUid = (Uid)"Anonymous";
+		public static readonly Uid AnonymousUid = (Uid)"Anonymous";
 		public static readonly InvokerData Anonymous = new InvokerData(AnonymousUid);
 
 		public InvokerData(Uid clientUid)

@@ -8,8 +8,13 @@
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
 using System;
+using System.Collections.Generic;
 using TS3AudioBot.Algorithm;
+using TS3AudioBot.CommandSystem.CommandResults;
+using TS3AudioBot.CommandSystem.Commands;
 using TS3AudioBot.Dependency;
+using TS3AudioBot.Localization;
+using static TS3AudioBot.CommandSystem.CommandSystemTypes;
 
 namespace TS3AudioBot.CommandSystem
 {
@@ -24,5 +29,13 @@ namespace TS3AudioBot.CommandSystem
 
 		public static Lazy<IFilter> GetFilterLazy(this IInjector injector)
 			=> new Lazy<IFilter>(() => injector.GetFilter(), false);
+
+		public static string ExecuteToString(this ICommand com, ExecutionInformation info, IReadOnlyList<ICommand> arguments)
+		{
+			var res = com.Execute(info, arguments, ReturnString);
+			if (res is IPrimitiveResult<string> primStr)
+				return primStr.Get();
+			throw new CommandException(string.Format(strings.error_cmd_could_not_convert_to, res, nameof(IPrimitiveResult<string>)), CommandExceptionReason.MissingParameter);
+		}
 	}
 }

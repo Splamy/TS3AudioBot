@@ -59,7 +59,7 @@ namespace TS3AudioBot.Config.Deprecated
 			var mfd = from.GetDataStruct<MediaFactoryData>("MediaFactory", true);
 			var mbd = from.GetDataStruct<MainBotData>("MainBot", true);
 			var hmd = from.GetDataStruct<HistoryManagerData>("HistoryManager", true);
-			var pld = from.GetDataStruct<PlaylistManagerData>("PlaylistManager", true);
+			var _ = from.GetDataStruct<PlaylistManagerData>("PlaylistManager", true);
 			var afd = from.GetDataStruct<AudioFrameworkData>("AudioFramework", true);
 			var qcd = from.GetDataStruct<Ts3FullClientData>("QueryConnection", true);
 

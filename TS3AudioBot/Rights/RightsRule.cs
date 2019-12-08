@@ -64,62 +64,53 @@ namespace TS3AudioBot.Rights
 			switch (key)
 			{
 			case "host":
-				var host = tomlObj.TryGetValueArray<string>();
-				if (host is null) ctx.Errors.Add("<host> Field has invalid data.");
-				else Matcher.Add(new MatchHost(host));
+				if (tomlObj.TryGetValueArray<string>(out var host)) Matcher.Add(new MatchHost(host));
+				else ctx.Errors.Add("<host> Field has invalid data.");
 				return true;
 			case "groupid":
-				var servergroupid = tomlObj.TryGetValueArray<ulong>();
-				if (servergroupid is null) ctx.Errors.Add("<groupid> Field has invalid data.");
-				else Matcher.Add(new MatchServerGroupId(servergroupid.Select(ServerGroupId.To)));
+				if (tomlObj.TryGetValueArray<ulong>(out var servergroupid)) Matcher.Add(new MatchServerGroupId(servergroupid.Select(ServerGroupId.To)));
+				else ctx.Errors.Add("<groupid> Field has invalid data.");
 				return true;
 			case "channelgroupid":
-				var channelgroupid = tomlObj.TryGetValueArray<ulong>();
-				if (channelgroupid is null) ctx.Errors.Add("<channelgroupid> Field has invalid data.");
-				else Matcher.Add(new MatchChannelGroupId(channelgroupid.Select(ChannelGroupId.To)));
+				if (tomlObj.TryGetValueArray<ulong>(out var channelgroupid)) Matcher.Add(new MatchChannelGroupId(channelgroupid.Select(ChannelGroupId.To)));
+				else ctx.Errors.Add("<channelgroupid> Field has invalid data.");
 				return true;
 			case "useruid":
-				var useruid = tomlObj.TryGetValueArray<string>();
-				if (useruid is null) ctx.Errors.Add("<useruid> Field has invalid data.");
-				else Matcher.Add(new MatchClientUid(useruid.Select(Uid.To)));
+				if (tomlObj.TryGetValueArray<string>(out var useruid)) Matcher.Add(new MatchClientUid(useruid.Select(Uid.To)));
+				else ctx.Errors.Add("<useruid> Field has invalid data.");
 				return true;
 			case "perm":
-				var perm = tomlObj.TryGetValueArray<string>();
-				if (perm is null) ctx.Errors.Add("<perm> Field has invalid data.");
-				else Matcher.Add(new MatchPermission(perm, ctx));
+				if (tomlObj.TryGetValueArray<string>(out var perm)) Matcher.Add(new MatchPermission(perm, ctx));
+				else ctx.Errors.Add("<perm> Field has invalid data.");
 				return true;
 			case "apitoken":
-				var apitoken = tomlObj.TryGetValueArray<string>();
-				if (apitoken is null) ctx.Errors.Add("<apitoken> Field has invalid data.");
-				else Matcher.Add(new MatchToken(apitoken));
+				if (tomlObj.TryGetValueArray<string>(out var apitoken)) Matcher.Add(new MatchToken(apitoken));
+				else ctx.Errors.Add("<apitoken> Field has invalid data.");
 				return true;
 			case "bot":
-				var bot = tomlObj.TryGetValueArray<string>();
-				if (bot is null) ctx.Errors.Add("<bot> Field has invalid data.");
-				else Matcher.Add(new MatchBot(bot));
+				if (tomlObj.TryGetValueArray<string>(out var bot)) Matcher.Add(new MatchBot(bot));
+				else ctx.Errors.Add("<bot> Field has invalid data.");
 				return true;
 			case "isapi":
-				if (!tomlObj.TryGetValue<bool>(out var isapi)) ctx.Errors.Add("<isapi> Field has invalid data.");
-				else Matcher.Add(new MatchIsApi(isapi));
+				if (tomlObj.TryGetValue<bool>(out var isapi)) Matcher.Add(new MatchIsApi(isapi));
+				else ctx.Errors.Add("<isapi> Field has invalid data.");
 				return true;
 			case "ip":
-				var ip = tomlObj.TryGetValueArray<string>();
-				if (ip is null) ctx.Errors.Add("<ip> Field has invalid data.");
-				else
+				if (tomlObj.TryGetValueArray<string>(out var ip))
 				{
 					Matcher.Add(new MatchApiCallerIp(ip.Select(x =>
 					{
 						if (IPAddress.TryParse(x, out var ipa))
 							return ipa;
 						ctx.Errors.Add($"<ip> Field value '{x}' could not be parsed.");
-						return null;
+						return null!;
 					}).Where(x => x != null)));
 				}
+				else ctx.Errors.Add("<ip> Field has invalid data.");
 				return true;
 			case "visibility":
-				var visibility = tomlObj.TryGetValueArray<TextMessageTargetMode>();
-				if (visibility is null) ctx.Errors.Add("<visibility> Field has invalid data.");
-				else Matcher.Add(new MatchVisibility(visibility));
+				if (tomlObj.TryGetValueArray<TextMessageTargetMode>(out var visibility)) Matcher.Add(new MatchVisibility(visibility));
+				else ctx.Errors.Add("<visibility> Field has invalid data.");
 				return true;
 			case "rule":
 				if (tomlObj.TomlType == TomlObjectType.ArrayOfTables)
@@ -161,7 +152,7 @@ namespace TS3AudioBot.Rights
 			}
 		}
 
-		public override RightsGroup ResolveGroup(string groupName, ParseContext ctx)
+		public override RightsGroup? ResolveGroup(string groupName, ParseContext ctx)
 		{
 			foreach (var child in ChildrenGroups)
 			{

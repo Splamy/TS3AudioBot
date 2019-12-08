@@ -33,7 +33,7 @@ namespace TS3AudioBot.Playlists
 
 		public int Index { get => shuffle.Index; set => shuffle.Index = value; }
 
-		public PlaylistItem Current => MoveIndex(null, true);
+		public PlaylistItem? Current => MoveIndex(null, true);
 
 		private bool random;
 		public bool Random
@@ -62,11 +62,11 @@ namespace TS3AudioBot.Playlists
 			shuffle = NormalOrder;
 		}
 
-		public PlaylistItem Next(bool manually = true) => MoveIndex(forward: true, manually);
+		public PlaylistItem? Next(bool manually = true) => MoveIndex(forward: true, manually);
 
-		public PlaylistItem Previous(bool manually = true) => MoveIndex(forward: false, manually);
+		public PlaylistItem? Previous(bool manually = true) => MoveIndex(forward: false, manually);
 
-		internal PlaylistItem MoveIndex(bool? forward, bool manually)
+		internal PlaylistItem? MoveIndex(bool? forward, bool manually)
 		{
 			lock (listLock)
 			{
@@ -78,11 +78,9 @@ namespace TS3AudioBot.Playlists
 				if (shuffle.Index < 0 || shuffle.Index >= mixList.Items.Count)
 					shuffle.Index = 0;
 
-				var loop = Loop;
-
 				// When next/prev was requested manually (via command) we ignore the loop one
 				// mode and instead move the index.
-				if ((Loop == LoopMode.One && !manually) || !forward.HasValue)
+				if ((Loop == LoopMode.One && !manually) || forward is null)
 					return mixList[shuffle.Index];
 
 				bool listEnded;
@@ -142,7 +140,7 @@ namespace TS3AudioBot.Playlists
 			return res.Value;
 		}
 
-		public E<LocalStr> CreatePlaylist(string listId, string title = null)
+		public E<LocalStr> CreatePlaylist(string listId, string? title = null)
 		{
 			var checkName = Util.IsSafeFileName(listId);
 			if (!checkName.Ok)
@@ -200,7 +198,7 @@ namespace TS3AudioBot.Playlists
 			return playlistPool.Delete(listId);
 		}
 
-		public R<PlaylistInfo[], LocalStr> GetAvailablePlaylists(string pattern = null) => playlistPool.ListPlaylists(pattern);
+		public R<PlaylistInfo[], LocalStr> GetAvailablePlaylists(string? pattern = null) => playlistPool.ListPlaylists(pattern);
 
 		private R<Playlist, LocalStr> GetSpecialPlaylist(string listId)
 		{

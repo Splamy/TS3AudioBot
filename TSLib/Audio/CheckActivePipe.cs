@@ -14,9 +14,9 @@ namespace TSLib.Audio
 	public class CheckActivePipe : IAudioPipe
 	{
 		public bool Active => OutStream?.Active ?? false;
-		public IAudioPassiveConsumer OutStream { get; set; }
+		public IAudioPassiveConsumer? OutStream { get; set; }
 
-		public void Write(Span<byte> data, Meta meta)
+		public void Write(Span<byte> data, Meta? meta)
 		{
 			if (OutStream is null || data.IsEmpty || !Active)
 				return;

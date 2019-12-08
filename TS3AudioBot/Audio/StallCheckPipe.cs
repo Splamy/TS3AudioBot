@@ -18,7 +18,7 @@ namespace TS3AudioBot.Audio
 		private const uint StallNoErrorCountMax = 5;
 
 		public bool Active => OutStream?.Active ?? false;
-		public IAudioPassiveConsumer OutStream { get; set; }
+		public IAudioPassiveConsumer? OutStream { get; set; }
 
 		private bool isStall;
 		private uint stallCount;
@@ -30,7 +30,7 @@ namespace TS3AudioBot.Audio
 			stallCount = 0;
 		}
 
-		public void Write(Span<byte> data, Meta meta)
+		public void Write(Span<byte> data, Meta? meta)
 		{
 			if (OutStream is null) return;
 

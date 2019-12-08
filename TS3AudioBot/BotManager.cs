@@ -22,7 +22,7 @@ namespace TS3AudioBot
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 
-		private List<Bot> activeBots = new List<Bot>();
+		private List<Bot?>? activeBots = new List<Bot?>();
 		private readonly object lockObj = new object();
 
 		private readonly ConfRoot confRoot;
@@ -54,7 +54,7 @@ namespace TS3AudioBot
 				var newBot = CreateNewBot();
 				newBot.Run.Value = true;
 
-				string address = Interactive.LoopAction("Please enter the ip, domain or nickname (with port; default: 9987) where to connect to:", addr =>
+				var address = Interactive.LoopAction("Please enter the ip, domain or nickname (with port; default: 9987) where to connect to:", addr =>
 				{
 					if (TSLib.TsDnsResolver.TryResolve(addr, out _))
 						return true;
@@ -118,9 +118,9 @@ namespace TS3AudioBot
 			{
 				if (!string.IsNullOrEmpty(config.Name))
 				{
-					bot = GetBotSave(config.Name);
-					if (bot != null)
-						return bot.GetInfo();
+					var maybeBot = GetBotSave(config.Name);
+					if (maybeBot != null)
+						return maybeBot.GetInfo();
 				}
 
 				var id = GetFreeId();
@@ -131,7 +131,7 @@ namespace TS3AudioBot
 				botInjector.AddModule(botInjector);
 				botInjector.AddModule(new Id(id.Value));
 				botInjector.AddModule(config);
-				if (!botInjector.TryCreate(out bot))
+				if (!botInjector.TryCreate(out bot!))
 					return "Failed to create new Bot";
 				InsertBot(bot);
 			}
@@ -151,6 +151,8 @@ namespace TS3AudioBot
 		// !! This method must be called with a lock on lockObj
 		private void InsertBot(Bot bot)
 		{
+			if (activeBots is null)
+				return;
 			activeBots[bot.Id] = bot;
 		}
 
@@ -175,7 +177,7 @@ namespace TS3AudioBot
 		}
 
 		// !! This method must be called with a lock on lockObj
-		private Bot GetBotSave(int id)
+		private Bot? GetBotSave(int id)
 		{
 			if (activeBots is null || id < 0 || id >= activeBots.Count)
 				return null;
@@ -183,7 +185,7 @@ namespace TS3AudioBot
 		}
 
 		// !! This method must be called with a lock on lockObj
-		private Bot GetBotSave(string name)
+		private Bot? GetBotSave(string name)
 		{
 			if (name is null)
 				throw new ArgumentNullException(nameof(name));
@@ -192,9 +194,9 @@ namespace TS3AudioBot
 			return activeBots.Find(x => x?.Name == name);
 		}
 
-		public BotLock GetBotLock(int id)
+		public BotLock? GetBotLock(int id)
 		{
-			Bot bot;
+			Bot? bot;
 			lock (lockObj)
 			{
 				bot = GetBotSave(id);
@@ -206,9 +208,9 @@ namespace TS3AudioBot
 			return bot.GetBotLock();
 		}
 
-		public BotLock GetBotLock(string name)
+		public BotLock? GetBotLock(string name)
 		{
-			Bot bot;
+			Bot? bot;
 			lock (lockObj)
 			{
 				bot = GetBotSave(name);
@@ -228,6 +230,7 @@ namespace TS3AudioBot
 					return;
 				foreach (var bot in activeBots)
 				{
+					if (bot is null) continue;
 					body(bot);
 				}
 			}
@@ -243,7 +246,7 @@ namespace TS3AudioBot
 		{
 			lock (lockObj)
 			{
-				Bot botInList;
+				Bot? botInList;
 				if (activeBots != null
 					&& (botInList = GetBotSave(bot.Id)) != null
 					&& botInList == bot)
@@ -259,13 +262,13 @@ namespace TS3AudioBot
 			{
 				if (activeBots is null)
 					return Array.Empty<BotInfo>();
-				return activeBots.Where(x => x != null).Select(x => x.GetInfo()).ToArray();
+				return activeBots.Where(x => x != null).Select(x => x!.GetInfo()).ToArray();
 			}
 		}
 
 		public void Dispose()
 		{
-			List<Bot> disposeBots;
+			List<Bot?> disposeBots;
 			lock (lockObj)
 			{
 				if (activeBots is null)
@@ -277,6 +280,7 @@ namespace TS3AudioBot
 
 			foreach (var bot in disposeBots.Where(x => x != null))
 			{
+				if (bot is null) continue;
 				StopBot(bot);
 			}
 		}

@@ -25,7 +25,7 @@ namespace TS3AudioBot.Config
 			this.createFactory = createFactory;
 		}
 
-		public override void FromToml(TomlObject tomlObject)
+		public override void FromToml(TomlObject? tomlObject)
 		{
 			base.FromToml(tomlObject);
 
@@ -46,7 +46,7 @@ namespace TS3AudioBot.Config
 
 		public override IEnumerable<ConfigPart> GetAllChildren() => GetAllItems();
 
-		public override ConfigPart GetChild(string key) => GetItem(key);
+		public override ConfigPart? GetChild(string key) => GetItem(key);
 
 		public ConfigPart GetOrCreateChild(string key) => GetOrCreateItem(key);
 
@@ -55,7 +55,7 @@ namespace TS3AudioBot.Config
 			// TODO (or rather probably ignore, as deriving is a bit ambiguous)
 		}
 
-		public T GetItem(string key) => dynamicTables.TryGetValue(key, out var item) ? item : null;
+		public T? GetItem(string key) => dynamicTables.TryGetValue(key, out var item) ? item : null;
 
 		public IEnumerable<T> GetAllItems() => dynamicTables.Values;
 

@@ -28,7 +28,7 @@ namespace TSLib
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private readonly TsBaseFunctions parent;
 		private readonly Queue<FileTransferToken> transferQueue = new Queue<FileTransferToken>();
-		private Thread workerThread;
+		private Thread? workerThread;
 		private bool threadEnd;
 		private ushort transferIdCnt;
 
@@ -112,7 +112,8 @@ namespace TSLib
 				if (threadEnd || workerThread is null || !workerThread.IsAlive)
 				{
 					threadEnd = false;
-					workerThread = new Thread(() => { Tools.SetLogId(parent.ConnectionData.LogId); TransferLoop(); }) { Name = $"FileTransfer[{parent.ConnectionData.LogId}]" };
+					var logId = parent.ConnectionData?.LogId ?? Id.Null;
+					workerThread = new Thread(() => { Tools.SetLogId(logId); TransferLoop(); }) { Name = $"FileTransfer[{logId}]" };
 					workerThread.Start();
 				}
 			}
@@ -214,6 +215,12 @@ namespace TSLib
 				{
 					lock (token)
 					{
+						if (parent.remoteAddress is null)
+						{
+							token.Status = TransferStatus.Failed;
+							Log.Trace("Client is not connected. Transfer failed {@token}", token);
+							continue;
+						}
 						if (token.Status != TransferStatus.Waiting)
 							continue;
 						token.Status = TransferStatus.Transfering;
@@ -298,7 +305,7 @@ namespace TSLib
 		public string TransferKey { get; internal set; }
 		public bool CloseStreamWhenDone { get; set; }
 		public bool CreateMd5 { get; }
-		public byte[] Md5Sum { get; internal set; }
+		public byte[]? Md5Sum { get; internal set; }
 
 		public TransferStatus Status { get; internal set; }
 

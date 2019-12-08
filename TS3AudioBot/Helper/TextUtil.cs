@@ -55,7 +55,7 @@ namespace TS3AudioBot.Helper
 					return quotedString;
 			}
 
-			return quotedString.Substring(1, quotedString.Length - 2);
+			return quotedString[1..^1];
 		}
 
 		public static string GenToken(int length)

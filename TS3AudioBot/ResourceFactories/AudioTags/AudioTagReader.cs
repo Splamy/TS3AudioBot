@@ -30,7 +30,7 @@ namespace TS3AudioBot.ResourceFactories.AudioTags
 			TagDict.Add(tagHeader.TagId, tagHeader);
 		}
 
-		public static HeaderData GetData(Stream fileStream)
+		public static HeaderData? GetData(Stream fileStream)
 		{
 			var sr = new BinaryReader(fileStream);
 			string tag = Encoding.ASCII.GetString(sr.ReadBytes(3));
@@ -196,7 +196,7 @@ namespace TS3AudioBot.ResourceFactories.AudioTags
 #pragma warning restore IDE0059 // Unnecessary assignment of a value
 			// ReSharper restore UnusedVariable
 
-			private static int ReadNullTermString(BinaryReader fileStream, byte encoding, List<byte> text)
+			private static int ReadNullTermString(BinaryReader fileStream, byte encoding, List<byte>? text)
 			{
 				bool unicode = encoding == 1 || encoding == 2;
 
@@ -256,7 +256,7 @@ namespace TS3AudioBot.ResourceFactories.AudioTags
 
 	internal class HeaderData
 	{
-		public string Title { get; set; }
-		public byte[] Picture { get; set; }
+		public string? Title { get; set; }
+		public byte[]? Picture { get; set; }
 	}
 }

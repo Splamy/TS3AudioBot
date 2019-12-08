@@ -55,7 +55,7 @@ namespace TS3AudioBot.Dependency
 		public DependencyBuilder RequestModule<TService>() where TService : class => RequestModule<TService, TService>();
 
 		// Pass through injector methods
-		public object GetModule(Type type) => injector.GetModule(type);
+		public object? GetModule(Type type) => injector.GetModule(type);
 		public void AddModule(Type type, object obj) => injector.AddModule(type, obj);
 
 		/// <summary>Creates all modules.</summary>
@@ -80,7 +80,7 @@ namespace TS3AudioBot.Dependency
 			return true;
 		}
 
-		internal static Type[] GetContructorParam(Type type)
+		internal static Type[]? GetContructorParam(Type type)
 		{
 			var fod = type.GetConstructors().FirstOrDefault();
 			if (fod == null)

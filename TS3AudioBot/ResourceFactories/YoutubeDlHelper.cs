@@ -20,10 +20,10 @@ namespace TS3AudioBot.ResourceFactories
 	internal static class YoutubeDlHelper
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
-		public static ConfPath DataObj { private get; set; }
-		private static string YoutubeDlPath => DataObj?.Path.Value;
+		public static ConfPath? DataObj { private get; set; }
+		private static string? YoutubeDlPath => DataObj?.Path.Value;
 
-		public static R<(string title, IList<string> links), LocalStr> FindAndRunYoutubeDl(string id)
+		public static R<(string? title, IList<string> links), LocalStr> FindAndRunYoutubeDl(string id)
 		{
 			var ytdlPath = FindYoutubeDl(id);
 			if (ytdlPath is null)
@@ -72,7 +72,7 @@ namespace TS3AudioBot.ResourceFactories
 			return null;
 		}
 
-		public static R<(string title, IList<string> links), LocalStr> RunYoutubeDl(string path, string args)
+		public static R<(string? title, IList<string> links), LocalStr> RunYoutubeDl(string path, string args)
 		{
 			try
 			{
@@ -106,12 +106,12 @@ namespace TS3AudioBot.ResourceFactories
 			}
 		}
 
-		public static (string title, IList<string> links) ParseResponse(StreamReader stream)
+		public static (string? title, IList<string> links) ParseResponse(StreamReader stream)
 		{
-			string title = stream.ReadLine();
+			string? title = stream.ReadLine();
 
 			var urlOptions = new List<string>();
-			string line;
+			string? line;
 			while ((line = stream.ReadLine()) != null)
 				urlOptions.Add(line);
 

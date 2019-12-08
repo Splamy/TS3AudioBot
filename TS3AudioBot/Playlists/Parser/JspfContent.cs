@@ -24,7 +24,7 @@ namespace TS3AudioBot.Playlists.Parser
 			var serializer = new JsonSerializer();
 			using var sr = new StreamReader(stream);
 			using var jsonTextReader = new JsonTextReader(sr);
-			return serializer.Deserialize<XspfPlaylist>(jsonTextReader);
+			return serializer.Deserialize<XspfPlaylist>(jsonTextReader) ?? throw new NullReferenceException("Data empty");
 		}
 
 		public string ToText(XspfPlaylist playlist)
@@ -36,15 +36,15 @@ namespace TS3AudioBot.Playlists.Parser
 	public class XspfPlaylist : IBasePlaylist
 	{
 		[JsonProperty(PropertyName = "title")]
-		public string Title { get; set; }
+		public string? Title { get; set; }
 		[JsonProperty(PropertyName = "creator")]
-		public string Creator { get; set; }
+		public string? Creator { get; set; }
 
 		[JsonProperty(PropertyName = "track")]
-		public List<XspfPlaylistEntry> PlaylistEntries { get; set; }
+		public List<XspfPlaylistEntry>? PlaylistEntries { get; set; }
 
-		public string Path { get; set; }
-		public string FileName { get; set; }
+		public string? Path { get; set; }
+		public string? FileName { get; set; }
 
 		public XspfPlaylist()
 		{
@@ -59,32 +59,39 @@ namespace TS3AudioBot.Playlists.Parser
 		public XspfPlaylistEntry() { }
 
 		[JsonProperty(PropertyName = "title")]
-		public string Title { get; set; }
+		public string? Title { get; set; }
 		[JsonProperty(PropertyName = "duration")]
-		public long Duration { get; set; } // MS : TODO timespan converter
+		public long? Duration { get; set; } // MS : TODO timespan converter
 
 		[JsonProperty(PropertyName = "meta")]
 		[JsonConverter(typeof(JspfMetaConverter))]
-		public List<XspfMeta> Meta { get; set; }
+		public List<XspfMeta>? Meta { get; set; }
 
 		[JsonProperty(PropertyName = "location")]
-		public List<string> Location { get; set; }
+		public List<string>? Location { get; set; }
 	}
 
 	public class XspfMeta
 	{
 		public string Key { get; set; }
 		public string Value { get; set; }
+
+		public XspfMeta(string key, string value)
+		{
+			Key = key;
+			Value = value;
+		}
 	}
 
 	internal class JspfMetaConverter : JsonConverter<XspfMeta>
 	{
-		public override XspfMeta ReadJson(JsonReader reader, Type objectType, XspfMeta existingValue, bool hasExistingValue, JsonSerializer serializer)
+		public override XspfMeta ReadJson(JsonReader reader, Type objectType, XspfMeta? existingValue, bool hasExistingValue, JsonSerializer serializer)
 		{
-			var meta = existingValue ?? new XspfMeta();
-			meta.Key = reader.ReadAsString();
-			meta.Value = reader.ReadAsString();
-			return meta;
+			var key = reader.ReadAsString();
+			var value = reader.ReadAsString();
+			if (string.IsNullOrEmpty(key) || string.IsNullOrEmpty(value))
+				throw new FormatException();
+			return new XspfMeta(key, value);
 		}
 
 		public override void WriteJson(JsonWriter writer, XspfMeta value, JsonSerializer serializer)

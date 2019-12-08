@@ -17,14 +17,14 @@ namespace TS3AudioBot.Sessions
 		public const int TokenLen = 32;
 		public static readonly TimeSpan DefaultTokenTimeout = TimeSpan.MaxValue;
 
-		public string Value { get; set; }
-		public DateTime Timeout { get; set; }
-		public bool ApiTokenActive => Value != null && Timeout > Tools.Now;
+		public string Value { get; }
+		public DateTime Timeout { get; }
+		public bool ApiTokenActive => Tools.Now <= Timeout;
 
-		public ApiToken()
+		public ApiToken(string value, DateTime timeout)
 		{
-			Value = null;
-			Timeout = DateTime.MinValue;
+			Value = value;
+			Timeout = timeout;
 		}
 	}
 }

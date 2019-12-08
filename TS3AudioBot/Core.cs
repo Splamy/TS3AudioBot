@@ -61,7 +61,7 @@ namespace TS3AudioBot
 			}
 		}
 
-		public Core(string configFilePath = null)
+		public Core(string? configFilePath = null)
 		{
 			// setting defaults
 			this.configFilePath = configFilePath ?? FilesConst.CoreConfig;
@@ -71,10 +71,9 @@ namespace TS3AudioBot
 
 		private E<string> Run(bool interactive = false)
 		{
-			var configResult = ConfRoot.OpenOrCreate(configFilePath);
-			if (!configResult.Ok)
+			var config = ConfRoot.OpenOrCreate(configFilePath);
+			if (config is null)
 				return "Could not create config";
-			ConfRoot config = configResult.Value;
 			Config.Deprecated.UpgradeScript.CheckAndUpgrade(config);
 			ConfigUpgrade2.Upgrade(config.Configs.BotsPath.Value);
 			config.Save();
@@ -101,18 +100,15 @@ namespace TS3AudioBot
 			builder.RequestModule<ResourceResolver>();
 
 			if (!builder.Build())
-			{
-				Log.Error("Missing core module dependency");
 				return "Could not load all core modules";
-			}
 
 			YoutubeDlHelper.DataObj = config.Tools.YoutubeDl;
 
-			builder.GetModule<SystemMonitor>().StartTimedSnapshots();
-			builder.GetModule<CommandManager>().RegisterCollection(MainCommands.Bag);
-			builder.GetModule<RightsManager>().CreateConfigIfNotExists(interactive);
-			builder.GetModule<BotManager>().RunBots(interactive);
-			builder.GetModule<WebServer>().StartWebServer();
+			builder.GetModule<SystemMonitor>()!.StartTimedSnapshots();
+			builder.GetModule<CommandManager>()!.RegisterCollection(MainCommands.Bag);
+			builder.GetModule<RightsManager>()!.CreateConfigIfNotExists(interactive);
+			builder.GetModule<BotManager>()!.RunBots(interactive);
+			builder.GetModule<WebServer>()!.StartWebServer();
 
 			return R.Ok;
 		}

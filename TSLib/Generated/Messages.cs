@@ -53,19 +53,22 @@ using IconHash = System.Int32;
 using ConnectionId = System.UInt32;
 #pragma warning restore CS8019
 
+#nullable enable
 namespace TSLib.Messages
 {
 
 	public sealed partial class BanAdd : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.BanAdd;
 		
 
-		public IpAddr Ip { get; set; }
-		public str Name { get; set; }
-		public Uid Uid { get; set; }
+		public IpAddr? Ip { get; set; }
+		public str? Name { get; set; }
+		public Uid? Uid { get; set; }
 		public DurationSeconds? Time { get; set; }
-		public str BanReason { get; set; }
+		public str? BanReason { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -103,12 +106,14 @@ namespace TSLib.Messages
 
 	public sealed partial class BanClient : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.BanClient;
 		
 
 		public ClientId ClientId { get; set; }
 		public DurationSeconds? Time { get; set; }
-		public str BanReason { get; set; }
+		public str? BanReason { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -142,10 +147,12 @@ namespace TSLib.Messages
 
 	public sealed partial class BanDel : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.BanDel;
 		
 
 		public u32 BanId { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -175,9 +182,11 @@ namespace TSLib.Messages
 
 	public sealed partial class BanDelAll : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.BanDelAll;
 		
 
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -190,22 +199,24 @@ namespace TSLib.Messages
 
 	public sealed partial class BanList : INotification, IResponse
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.BanList;
-		public string ReturnCode { get; set; }
+		public string? ReturnCode { get; set; }
 
 		public u32 BanId { get; set; }
 		public IpAddr Ip { get; set; }
 		public str Name { get; set; }
 		public Uid Uid { get; set; }
-		public str MyTsId { get; set; }
+		public str? MyTsId { get; set; }
 		public str LastNickname { get; set; }
 		public DateTime Created { get; set; }
 		public DurationSeconds Duration { get; set; }
 		public ClientDbId InvokerDatabaseId { get; set; }
 		public str InvokerName { get; set; }
-		public Uid InvokerUid { get; set; }
+		public Uid? InvokerUid { get; set; }
 		public str Reason { get; set; }
 		public u32 Enforcements { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -259,9 +270,11 @@ namespace TSLib.Messages
 
 	public sealed partial class BanListRequest : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.BanListRequest;
 		
 
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -274,10 +287,12 @@ namespace TSLib.Messages
 
 	public sealed partial class BindingList : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.BindingList;
 		
 
-		public str Subsystem { get; set; }
+		public str? Subsystem { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -307,13 +322,15 @@ namespace TSLib.Messages
 
 	public sealed partial class ChannelAddPerm : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ChannelAddPerm;
 		
 
 		public ChannelId ChannelId { get; set; }
-		public Ts3Permission PermissionId { get; set; }
-		public str PermissionNameId { get; set; }
+		public Ts3Permission? PermissionId { get; set; }
+		public str? PermissionNameId { get; set; }
 		public i32 PermissionValue { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -349,10 +366,12 @@ namespace TSLib.Messages
 
 	public sealed partial class ChannelChanged : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ChannelChanged;
 		
 
 		public ChannelId ChannelId { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -382,14 +401,16 @@ namespace TSLib.Messages
 
 	public sealed partial class ChannelClientAddPerm : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ChannelClientAddPerm;
 		
 
 		public ChannelId ChannelId { get; set; }
 		public ClientDbId ClientDbId { get; set; }
-		public Ts3Permission PermissionId { get; set; }
-		public str PermissionNameId { get; set; }
+		public Ts3Permission? PermissionId { get; set; }
+		public str? PermissionNameId { get; set; }
 		public i32 PermissionValue { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -427,13 +448,15 @@ namespace TSLib.Messages
 
 	public sealed partial class ChannelClientDelPerm : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ChannelClientDelPerm;
 		
 
 		public ChannelId ChannelId { get; set; }
 		public ClientDbId ClientDbId { get; set; }
-		public Ts3Permission PermissionId { get; set; }
-		public str PermissionNameId { get; set; }
+		public Ts3Permission? PermissionId { get; set; }
+		public str? PermissionNameId { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -469,16 +492,18 @@ namespace TSLib.Messages
 
 	public sealed partial class ChannelClientPermList : INotification, IResponse
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ChannelClientPermList;
-		public string ReturnCode { get; set; }
+		public string? ReturnCode { get; set; }
 
 		public ChannelId ChannelId { get; set; }
 		public ClientDbId ClientDbId { get; set; }
-		public Ts3Permission PermissionId { get; set; }
-		public str PermissionNameId { get; set; }
+		public Ts3Permission? PermissionId { get; set; }
+		public str? PermissionNameId { get; set; }
 		public i32 PermissionValue { get; set; }
 		public bool PermissionNegated { get; set; }
 		public bool PermissionSkip { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -520,11 +545,13 @@ namespace TSLib.Messages
 
 	public sealed partial class ChannelClientPermListRequest : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ChannelClientPermListRequest;
 		
 
 		public ChannelId ChannelId { get; set; }
 		public ClientDbId ClientDbId { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -556,14 +583,15 @@ namespace TSLib.Messages
 
 	public sealed partial class ChannelCreate : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ChannelCreate;
 		
 
 		public ChannelId? ParentId { get; set; }
 		public str Name { get; set; }
-		public str Topic { get; set; }
-		public str Description { get; set; }
-		public str Password { get; set; }
+		public str? Topic { get; set; }
+		public str? Description { get; set; }
+		public str? Password { get; set; }
 		public Codec? Codec { get; set; }
 		public u8? CodecQuality { get; set; }
 		public i32? MaxClients { get; set; }
@@ -575,10 +603,11 @@ namespace TSLib.Messages
 		public bool? IsMaxClientsUnlimited { get; set; }
 		public bool? IsMaxFamilyClientsUnlimited { get; set; }
 		public bool? InheritsMaxFamilyClients { get; set; }
-		public str PhoneticName { get; set; }
+		public str? PhoneticName { get; set; }
 		public bool? IsPermanent { get; set; }
 		public bool? IsSemiPermanent { get; set; }
 		public bool? IsDefault { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -646,16 +675,17 @@ namespace TSLib.Messages
 
 	public sealed partial class ChannelCreated : INotification, IResponse
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ChannelCreated;
-		public string ReturnCode { get; set; }
+		public string? ReturnCode { get; set; }
 
 		public ChannelId ChannelId { get; set; }
 		public ClientId InvokerId { get; set; }
 		public str InvokerName { get; set; }
-		public Uid InvokerUid { get; set; }
+		public Uid? InvokerUid { get; set; }
 		public ChannelId Order { get; set; }
 		public str Name { get; set; }
-		public str Topic { get; set; }
+		public str? Topic { get; set; }
 		public bool? IsDefault { get; set; }
 		public bool? HasPassword { get; set; }
 		public bool? IsPermanent { get; set; }
@@ -672,8 +702,9 @@ namespace TSLib.Messages
 		public bool? IsMaxClientsUnlimited { get; set; }
 		public bool IsMaxFamilyClientsUnlimited { get; set; }
 		public bool? InheritsMaxFamilyClients { get; set; }
-		public str PhoneticName { get; set; }
+		public str? PhoneticName { get; set; }
 		public ChannelId ParentId { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -751,10 +782,12 @@ namespace TSLib.Messages
 
 	public sealed partial class ChannelCreateResponse : IResponse
 	{
+		#pragma warning disable CS8618
 		
-		public string ReturnCode { get; set; }
+		public string? ReturnCode { get; set; }
 
 		public ChannelId ChannelId { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -784,11 +817,13 @@ namespace TSLib.Messages
 
 	public sealed partial class ChannelDelete : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ChannelDelete;
 		
 
 		public ChannelId ChannelId { get; set; }
 		public bool Force { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -820,13 +855,15 @@ namespace TSLib.Messages
 
 	public sealed partial class ChannelDeleted : INotification, IResponse
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ChannelDeleted;
-		public string ReturnCode { get; set; }
+		public string? ReturnCode { get; set; }
 
 		public ChannelId ChannelId { get; set; }
 		public ClientId InvokerId { get; set; }
 		public str InvokerName { get; set; }
-		public Uid InvokerUid { get; set; }
+		public Uid? InvokerUid { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -862,9 +899,11 @@ namespace TSLib.Messages
 
 	public sealed partial class ChannelDelPerm : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ChannelDelPerm;
 		
 
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -877,10 +916,12 @@ namespace TSLib.Messages
 
 	public sealed partial class ChannelDescriptionChanged : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ChannelDescriptionChanged;
 		
 
 		public ChannelId ChannelId { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -910,10 +951,12 @@ namespace TSLib.Messages
 
 	public sealed partial class ChannelDescriptionRequest : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ChannelDescriptionRequest;
 		
 
 		public ChannelId ChannelId { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -943,13 +986,14 @@ namespace TSLib.Messages
 
 	public sealed partial class ChannelEdit : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ChannelEdit;
 		
 
 		public ChannelId ChannelId { get; set; }
 		public ChannelId? Order { get; set; }
-		public str Name { get; set; }
-		public str Topic { get; set; }
+		public str? Name { get; set; }
+		public str? Topic { get; set; }
 		public bool? IsDefault { get; set; }
 		public bool? HasPassword { get; set; }
 		public bool? IsPermanent { get; set; }
@@ -966,9 +1010,10 @@ namespace TSLib.Messages
 		public bool? IsMaxClientsUnlimited { get; set; }
 		public bool? IsMaxFamilyClientsUnlimited { get; set; }
 		public bool? InheritsMaxFamilyClients { get; set; }
-		public str PhoneticName { get; set; }
+		public str? PhoneticName { get; set; }
 		public ChannelId? ParentId { get; set; }
-		public str Description { get; set; }
+		public str? Description { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -1042,17 +1087,18 @@ namespace TSLib.Messages
 
 	public sealed partial class ChannelEdited : INotification, IResponse
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ChannelEdited;
-		public string ReturnCode { get; set; }
+		public string? ReturnCode { get; set; }
 
 		public ChannelId ChannelId { get; set; }
 		public ClientId? InvokerId { get; set; }
-		public str InvokerName { get; set; }
-		public Uid InvokerUid { get; set; }
+		public str? InvokerName { get; set; }
+		public Uid? InvokerUid { get; set; }
 		public Reason Reason { get; set; }
 		public ChannelId? Order { get; set; }
-		public str Name { get; set; }
-		public str Topic { get; set; }
+		public str? Name { get; set; }
+		public str? Topic { get; set; }
 		public bool? IsDefault { get; set; }
 		public bool? HasPassword { get; set; }
 		public bool? IsPermanent { get; set; }
@@ -1069,9 +1115,10 @@ namespace TSLib.Messages
 		public bool? IsMaxClientsUnlimited { get; set; }
 		public bool? IsMaxFamilyClientsUnlimited { get; set; }
 		public bool? InheritsMaxFamilyClients { get; set; }
-		public str PhoneticName { get; set; }
+		public str? PhoneticName { get; set; }
 		public ChannelId? ParentId { get; set; }
-		public str Description { get; set; }
+		public str? Description { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -1153,11 +1200,13 @@ namespace TSLib.Messages
 
 	public sealed partial class ChannelFind : IResponse
 	{
+		#pragma warning disable CS8618
 		
-		public string ReturnCode { get; set; }
+		public string? ReturnCode { get; set; }
 
 		public ChannelId ChannelId { get; set; }
 		public str Name { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -1189,10 +1238,12 @@ namespace TSLib.Messages
 
 	public sealed partial class ChannelFindRequest : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ChannelFindRequest;
 		
 
 		public str Pattern { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -1222,11 +1273,13 @@ namespace TSLib.Messages
 
 	public sealed partial class ChannelGroupAdd : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ChannelGroupAdd;
 		
 
 		public str Name { get; set; }
-		public GroupType GroupType { get; set; }
+		public GroupType? GroupType { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -1258,13 +1311,15 @@ namespace TSLib.Messages
 
 	public sealed partial class ChannelGroupAddPerm : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ChannelGroupAddPerm;
 		
 
 		public ChannelGroupId ChannelGroup { get; set; }
-		public Ts3Permission PermissionId { get; set; }
-		public str PermissionNameId { get; set; }
+		public Ts3Permission? PermissionId { get; set; }
+		public str? PermissionNameId { get; set; }
 		public i32 PermissionValue { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -1300,12 +1355,14 @@ namespace TSLib.Messages
 
 	public sealed partial class ChannelGroupClientList : INotification, IResponse
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ChannelGroupClientList;
-		public string ReturnCode { get; set; }
+		public string? ReturnCode { get; set; }
 
 		public ChannelId ChannelId { get; set; }
 		public ClientDbId ClientDbId { get; set; }
 		public ChannelGroupId ChannelGroup { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -1339,12 +1396,14 @@ namespace TSLib.Messages
 
 	public sealed partial class ChannelGroupClientListRequest : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ChannelGroupClientListRequest;
 		
 
 		public ChannelId? ChannelId { get; set; }
 		public ClientDbId? ClientDbId { get; set; }
 		public ChannelGroupId? ChannelGroup { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -1378,6 +1437,7 @@ namespace TSLib.Messages
 
 	public sealed partial class ChannelGroupCopy : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ChannelGroupCopy;
 		
 
@@ -1385,6 +1445,7 @@ namespace TSLib.Messages
 		public ChannelGroupId TargetChannelGroupId { get; set; }
 		public str Name { get; set; }
 		public GroupType GroupType { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -1420,11 +1481,13 @@ namespace TSLib.Messages
 
 	public sealed partial class ChannelGroupDel : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ChannelGroupDel;
 		
 
 		public ChannelGroupId ChannelGroup { get; set; }
 		public bool Force { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -1456,12 +1519,14 @@ namespace TSLib.Messages
 
 	public sealed partial class ChannelGroupDelPerm : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ChannelGroupDelPerm;
 		
 
 		public ChannelGroupId ChannelGroup { get; set; }
-		public Ts3Permission PermissionId { get; set; }
-		public str PermissionNameId { get; set; }
+		public Ts3Permission? PermissionId { get; set; }
+		public str? PermissionNameId { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -1495,8 +1560,9 @@ namespace TSLib.Messages
 
 	public sealed partial class ChannelGroupList : INotification, IResponse
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ChannelGroupList;
-		public string ReturnCode { get; set; }
+		public string? ReturnCode { get; set; }
 
 		public ChannelGroupId ChannelGroup { get; set; }
 		public str Name { get; set; }
@@ -1508,6 +1574,7 @@ namespace TSLib.Messages
 		public i32 NeededModifyPower { get; set; }
 		public i32 NeededMemberAddPower { get; set; }
 		public i32? NeededMemberRemovePower { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -1555,9 +1622,11 @@ namespace TSLib.Messages
 
 	public sealed partial class ChannelGroupListRequest : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ChannelGroupListRequest;
 		
 
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -1570,15 +1639,17 @@ namespace TSLib.Messages
 
 	public sealed partial class ChannelGroupPermList : INotification, IResponse
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ChannelGroupPermList;
-		public string ReturnCode { get; set; }
+		public string? ReturnCode { get; set; }
 
 		public ChannelGroupId ChannelGroup { get; set; }
-		public Ts3Permission PermissionId { get; set; }
-		public str PermissionNameId { get; set; }
+		public Ts3Permission? PermissionId { get; set; }
+		public str? PermissionNameId { get; set; }
 		public i32 PermissionValue { get; set; }
 		public bool PermissionNegated { get; set; }
 		public bool PermissionSkip { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -1618,10 +1689,12 @@ namespace TSLib.Messages
 
 	public sealed partial class ChannelGroupPermListRequest : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ChannelGroupPermListRequest;
 		
 
 		public ChannelGroupId ChannelGroup { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -1651,11 +1724,13 @@ namespace TSLib.Messages
 
 	public sealed partial class ChannelGroupRename : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ChannelGroupRename;
 		
 
 		public ChannelGroupId ChannelGroup { get; set; }
 		public str Name { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -1687,10 +1762,12 @@ namespace TSLib.Messages
 
 	public sealed partial class ChannelInfoRequest : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ChannelInfoRequest;
 		
 
 		public ChannelId ChannelId { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -1720,14 +1797,15 @@ namespace TSLib.Messages
 
 	public sealed partial class ChannelInfoResponse : IResponse
 	{
+		#pragma warning disable CS8618
 		
-		public string ReturnCode { get; set; }
+		public string? ReturnCode { get; set; }
 
 		public ChannelId ParentChannelId { get; set; }
 		public str Name { get; set; }
 		public str Topic { get; set; }
 		public str Description { get; set; }
-		public str Password { get; set; }
+		public str? Password { get; set; }
 		public Codec Codec { get; set; }
 		public u8 CodecQuality { get; set; }
 		public i32 MaxClients { get; set; }
@@ -1739,7 +1817,7 @@ namespace TSLib.Messages
 		public bool HasPassword { get; set; }
 		public i32 CodecLatencyFactor { get; set; }
 		public bool IsUnencrypted { get; set; }
-		public str PasswordSalt { get; set; }
+		public str? PasswordSalt { get; set; }
 		public DurationSeconds DeleteDelay { get; set; }
 		public bool IsMaxClientsUnlimited { get; set; }
 		public bool IsMaxFamilyClientsUnlimited { get; set; }
@@ -1747,11 +1825,12 @@ namespace TSLib.Messages
 		public str FilePath { get; set; }
 		public i32 NeededTalkPower { get; set; }
 		public bool ForcedSilence { get; set; }
-		public str PhoneticName { get; set; }
+		public str? PhoneticName { get; set; }
 		public IconHash IconId { get; set; }
-		public str BannerGfxUrl { get; set; }
+		public str? BannerGfxUrl { get; set; }
 		public str BannerMode { get; set; }
 		public DurationSeconds DurationEmpty { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -1837,6 +1916,7 @@ namespace TSLib.Messages
 
 	public sealed partial class ChannelList : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ChannelList;
 		
 
@@ -1864,6 +1944,7 @@ namespace TSLib.Messages
 		public str PhoneticName { get; set; }
 		public IconHash IconId { get; set; }
 		public bool? IsPrivate { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -1939,9 +2020,11 @@ namespace TSLib.Messages
 
 	public sealed partial class ChannelListFinished : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ChannelListFinished;
 		
 
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -1954,9 +2037,11 @@ namespace TSLib.Messages
 
 	public sealed partial class ChannelListRequest : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ChannelListRequest;
 		
 
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -1969,8 +2054,9 @@ namespace TSLib.Messages
 
 	public sealed partial class ChannelListResponse : IResponse
 	{
+		#pragma warning disable CS8618
 		
-		public string ReturnCode { get; set; }
+		public string? ReturnCode { get; set; }
 
 		public ChannelId ChannelId { get; set; }
 		public ChannelId ParentChannelId { get; set; }
@@ -1978,7 +2064,7 @@ namespace TSLib.Messages
 		public str Name { get; set; }
 		public i32 TotalClients { get; set; }
 		public i32 NeededSubscribePower { get; set; }
-		public str Topic { get; set; }
+		public str? Topic { get; set; }
 		public bool? IsDefault { get; set; }
 		public bool? HasPassword { get; set; }
 		public bool? IsPermanent { get; set; }
@@ -1991,6 +2077,7 @@ namespace TSLib.Messages
 		public i32? MaxFamilyClients { get; set; }
 		public IconHash? IconId { get; set; }
 		public DurationSeconds? DurationEmpty { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -2056,12 +2143,14 @@ namespace TSLib.Messages
 
 	public sealed partial class ChannelMove : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ChannelMove;
 		
 
 		public ChannelId ChannelId { get; set; }
 		public ChannelId ParentId { get; set; }
 		public ChannelId? Order { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -2095,6 +2184,7 @@ namespace TSLib.Messages
 
 	public sealed partial class ChannelMoved : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ChannelMoved;
 		
 
@@ -2102,9 +2192,10 @@ namespace TSLib.Messages
 		public ChannelId ChannelId { get; set; }
 		public ClientId InvokerId { get; set; }
 		public str InvokerName { get; set; }
-		public Uid InvokerUid { get; set; }
+		public Uid? InvokerUid { get; set; }
 		public Reason Reason { get; set; }
 		public ChannelId ParentId { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -2146,10 +2237,12 @@ namespace TSLib.Messages
 
 	public sealed partial class ChannelPasswordChanged : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ChannelPasswordChanged;
 		
 
 		public ChannelId ChannelId { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -2179,11 +2272,13 @@ namespace TSLib.Messages
 
 	public sealed partial class ChannelPermissionHints : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ChannelPermissionHints;
 		
 
 		public ChannelId ChannelId { get; set; }
 		public ChannelPermissionHint Flags { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -2215,14 +2310,16 @@ namespace TSLib.Messages
 
 	public sealed partial class ChannelPermList : INotification, IResponse
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ChannelPermList;
-		public string ReturnCode { get; set; }
+		public string? ReturnCode { get; set; }
 
 		public ChannelId ChannelId { get; set; }
 		public Ts3Permission PermissionId { get; set; }
 		public i32 PermissionValue { get; set; }
 		public bool PermissionNegated { get; set; }
 		public bool PermissionSkip { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -2260,10 +2357,12 @@ namespace TSLib.Messages
 
 	public sealed partial class ChannelPermListRequest : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ChannelPermListRequest;
 		
 
 		public ChannelId ChannelId { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -2293,10 +2392,12 @@ namespace TSLib.Messages
 
 	public sealed partial class ChannelSubscribe : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ChannelSubscribe;
 		
 
 		public ChannelId ChannelId { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -2326,9 +2427,11 @@ namespace TSLib.Messages
 
 	public sealed partial class ChannelSubscribeAll : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ChannelSubscribeAll;
 		
 
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -2341,11 +2444,13 @@ namespace TSLib.Messages
 
 	public sealed partial class ChannelSubscribed : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ChannelSubscribed;
 		
 
 		public ChannelId ChannelId { get; set; }
 		public DurationSeconds? EmptySince { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -2377,10 +2482,12 @@ namespace TSLib.Messages
 
 	public sealed partial class ChannelUnsubscribe : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ChannelUnsubscribe;
 		
 
 		public ChannelId ChannelId { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -2410,9 +2517,11 @@ namespace TSLib.Messages
 
 	public sealed partial class ChannelUnsubscribeAll : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ChannelUnsubscribeAll;
 		
 
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -2425,10 +2534,12 @@ namespace TSLib.Messages
 
 	public sealed partial class ChannelUnsubscribed : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ChannelUnsubscribed;
 		
 
 		public ChannelId ChannelId { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -2458,14 +2569,16 @@ namespace TSLib.Messages
 
 	public sealed partial class ClientAddPerm : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ClientAddPerm;
 		
 
 		public ClientDbId ClientDbId { get; set; }
-		public Ts3Permission PermissionId { get; set; }
-		public str PermissionNameId { get; set; }
+		public Ts3Permission? PermissionId { get; set; }
+		public str? PermissionNameId { get; set; }
 		public i32 PermissionValue { get; set; }
 		public bool PermissionSkip { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -2503,16 +2616,18 @@ namespace TSLib.Messages
 
 	public sealed partial class ClientChannelGroupChanged : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ClientChannelGroupChanged;
 		
 
 		public ClientId InvokerId { get; set; }
 		public str InvokerName { get; set; }
-		public Uid InvokerUid { get; set; }
+		public Uid? InvokerUid { get; set; }
 		public ChannelGroupId ChannelGroup { get; set; }
 		public ChannelGroupId ChannelGroupIndex { get; set; }
 		public ChannelId ChannelId { get; set; }
 		public ClientId ClientId { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -2554,11 +2669,13 @@ namespace TSLib.Messages
 
 	public sealed partial class ClientChatClose : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ClientChatClose;
 		
 
 		public ClientId ClientId { get; set; }
 		public Uid ClientUid { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -2590,11 +2707,13 @@ namespace TSLib.Messages
 
 	public sealed partial class ClientChatClosed : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ClientChatClosed;
 		
 
 		public ClientId ClientId { get; set; }
 		public Uid ClientUid { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -2626,11 +2745,13 @@ namespace TSLib.Messages
 
 	public sealed partial class ClientChatComposing : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ClientChatComposing;
 		
 
 		public ClientId ClientId { get; set; }
 		public Uid ClientUid { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -2662,6 +2783,7 @@ namespace TSLib.Messages
 
 	public sealed partial class ClientConnectionInfo : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ClientConnectionInfo;
 		
 
@@ -2706,6 +2828,7 @@ namespace TSLib.Messages
 		public u64 FiletransferBandwidthSent { get; set; }
 		public u64 FiletransferBandwidthReceived { get; set; }
 		public DurationMilliseconds IdleTime { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -2815,10 +2938,12 @@ namespace TSLib.Messages
 
 	public sealed partial class ClientConnectionInfoRequest : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ClientConnectionInfoRequest;
 		
 
 		public ClientId ClientId { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -2848,9 +2973,11 @@ namespace TSLib.Messages
 
 	public sealed partial class ClientConnectionInfoUpdateRequest : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ClientConnectionInfoUpdateRequest;
 		
 
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -2863,10 +2990,12 @@ namespace TSLib.Messages
 
 	public sealed partial class ClientDbDelete : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ClientDbDelete;
 		
 
 		public ClientDbId ClientDbId { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -2896,10 +3025,12 @@ namespace TSLib.Messages
 
 	public sealed partial class ClientDbEdit : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ClientDbEdit;
 		
 
 		public ClientDbId ClientDbId { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -2929,14 +3060,16 @@ namespace TSLib.Messages
 
 	public sealed partial class ClientDbFind : INotification, IResponse
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ClientDbFind;
-		public string ReturnCode { get; set; }
+		public string? ReturnCode { get; set; }
 
 		public ClientDbId ClientDbId { get; set; }
 		public Uid Uid { get; set; }
 		public str Name { get; set; }
 		public DateTime LastConnected { get; set; }
 		public i32 TotalConnections { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -2974,10 +3107,12 @@ namespace TSLib.Messages
 
 	public sealed partial class ClientDbFindRequest : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ClientDbFindRequest;
 		
 
 		public str Pattern { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -3007,11 +3142,13 @@ namespace TSLib.Messages
 
 	public sealed partial class ClientDbIdFromUid : INotification, IResponse
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ClientDbIdFromUid;
-		public string ReturnCode { get; set; }
+		public string? ReturnCode { get; set; }
 
 		public Uid ClientUid { get; set; }
 		public ClientDbId ClientDbId { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -3043,10 +3180,12 @@ namespace TSLib.Messages
 
 	public sealed partial class ClientDbIdFromUidRequest : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ClientDbIdFromUidRequest;
 		
 
 		public Uid ClientUid { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -3076,8 +3215,9 @@ namespace TSLib.Messages
 
 	public sealed partial class ClientDbInfo : IResponse
 	{
+		#pragma warning disable CS8618
 		
-		public string ReturnCode { get; set; }
+		public string? ReturnCode { get; set; }
 
 		public str LastIp { get; set; }
 		public ClientId ClientId { get; set; }
@@ -3097,6 +3237,7 @@ namespace TSLib.Messages
 		public i64 TotalUploadQuota { get; set; }
 		public i64 TotalDownloadQuota { get; set; }
 		public str Base64HashClientUid { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -3160,10 +3301,12 @@ namespace TSLib.Messages
 
 	public sealed partial class ClientDbInfoRequest : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ClientDbInfoRequest;
 		
 
 		public ClientDbId ClientDbId { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -3193,8 +3336,9 @@ namespace TSLib.Messages
 
 	public sealed partial class ClientDbList : INotification, IResponse
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ClientDbList;
-		public string ReturnCode { get; set; }
+		public string? ReturnCode { get; set; }
 
 		public ClientDbId ClientDbId { get; set; }
 		public Uid Uid { get; set; }
@@ -3204,6 +3348,7 @@ namespace TSLib.Messages
 		public i32 TotalConnections { get; set; }
 		public str Description { get; set; }
 		public str LastIp { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -3247,11 +3392,13 @@ namespace TSLib.Messages
 
 	public sealed partial class ClientDbListRequest : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ClientDbListRequest;
 		
 
 		public u32? Offset { get; set; }
 		public u32? Limit { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -3283,12 +3430,14 @@ namespace TSLib.Messages
 
 	public sealed partial class ClientDelPerm : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ClientDelPerm;
 		
 
 		public ClientDbId ClientDbId { get; set; }
-		public Ts3Permission PermissionId { get; set; }
-		public str PermissionNameId { get; set; }
+		public Ts3Permission? PermissionId { get; set; }
+		public str? PermissionNameId { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -3322,12 +3471,14 @@ namespace TSLib.Messages
 
 	public sealed partial class ClientEdit : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ClientEdit;
 		
 
 		public ClientId ClientId { get; set; }
-		public str Description { get; set; }
+		public str? Description { get; set; }
 		public bool? TalkPowerGranted { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -3361,14 +3512,15 @@ namespace TSLib.Messages
 
 	public sealed partial class ClientEnterView : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ClientEnterView;
 		
 
 		public Reason Reason { get; set; }
 		public ChannelId TargetChannelId { get; set; }
 		public ClientId? InvokerId { get; set; }
-		public str InvokerName { get; set; }
-		public Uid InvokerUid { get; set; }
+		public str? InvokerName { get; set; }
+		public Uid? InvokerUid { get; set; }
 		public ClientId ClientId { get; set; }
 		public ClientDbId DatabaseId { get; set; }
 		public str Name { get; set; }
@@ -3401,6 +3553,7 @@ namespace TSLib.Messages
 		public bool IsChannelCommander { get; set; }
 		public str CountryCode { get; set; }
 		public str Badges { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -3502,10 +3655,12 @@ namespace TSLib.Messages
 
 	public sealed partial class ClientFindRequest : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ClientFindRequest;
 		
 
 		public str Pattern { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -3535,12 +3690,14 @@ namespace TSLib.Messages
 
 	public sealed partial class ClientIds : INotification, IResponse
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ClientIds;
-		public string ReturnCode { get; set; }
+		public string? ReturnCode { get; set; }
 
 		public Uid ClientUid { get; set; }
 		public ClientId ClientId { get; set; }
 		public str Name { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -3574,10 +3731,12 @@ namespace TSLib.Messages
 
 	public sealed partial class ClientIdsRequest : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ClientIdsRequest;
 		
 
 		public Uid ClientUid { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -3607,8 +3766,9 @@ namespace TSLib.Messages
 
 	public sealed partial class ClientInfo : IResponse
 	{
+		#pragma warning disable CS8618
 		
-		public string ReturnCode { get; set; }
+		public string? ReturnCode { get; set; }
 
 		public DurationMilliseconds ClientIdleTime { get; set; }
 		public str ClientVersion { get; set; }
@@ -3669,8 +3829,9 @@ namespace TSLib.Messages
 		public str AvatarHash { get; set; }
 		public str Description { get; set; }
 		public IconHash IconId { get; set; }
-		public str MyTeamSpeakId { get; set; }
-		public str Integrations { get; set; }
+		public str? MyTeamSpeakId { get; set; }
+		public str? Integrations { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -3820,10 +3981,12 @@ namespace TSLib.Messages
 
 	public sealed partial class ClientInfoRequest : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ClientInfoRequest;
 		
 
 		public ClientId ClientId { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -3853,6 +4016,7 @@ namespace TSLib.Messages
 
 	public sealed partial class ClientInit : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ClientInit;
 		
 
@@ -3870,7 +4034,8 @@ namespace TSLib.Messages
 		public str PhoneticName { get; set; }
 		public str DefaultToken { get; set; }
 		public str HardwareId { get; set; }
-		public str Badges { get; set; }
+		public str? Badges { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -3928,12 +4093,14 @@ namespace TSLib.Messages
 
 	public sealed partial class ClientInitIv : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ClientInitIv;
 		
 
 		public str Alpha { get; set; }
 		public str Omega { get; set; }
 		public IpAddr Ip { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -3967,12 +4134,14 @@ namespace TSLib.Messages
 
 	public sealed partial class ClientKick : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ClientKick;
 		
 
 		public ClientId ClientId { get; set; }
 		public Reason Reason { get; set; }
-		public str ReasonMessage { get; set; }
+		public str? ReasonMessage { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -4006,18 +4175,20 @@ namespace TSLib.Messages
 
 	public sealed partial class ClientLeftView : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ClientLeftView;
 		
 
-		public str ReasonMessage { get; set; }
+		public str? ReasonMessage { get; set; }
 		public DurationSeconds? BanTime { get; set; }
-		public Reason Reason { get; set; }
+		public Reason? Reason { get; set; }
 		public ChannelId TargetChannelId { get; set; }
 		public ClientId? InvokerId { get; set; }
-		public str InvokerName { get; set; }
-		public Uid InvokerUid { get; set; }
+		public str? InvokerName { get; set; }
+		public Uid? InvokerUid { get; set; }
 		public ClientId ClientId { get; set; }
 		public ChannelId SourceChannelId { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -4063,17 +4234,18 @@ namespace TSLib.Messages
 
 	public sealed partial class ClientList : IResponse
 	{
+		#pragma warning disable CS8618
 		
-		public string ReturnCode { get; set; }
+		public string? ReturnCode { get; set; }
 
 		public ClientId ClientId { get; set; }
 		public ChannelId ChannelId { get; set; }
 		public ClientDbId DatabaseId { get; set; }
 		public str Name { get; set; }
 		public ClientType ClientType { get; set; }
-		public Uid Uid { get; set; }
+		public Uid? Uid { get; set; }
 		public bool? IsAway { get; set; }
-		public str AwayMessage { get; set; }
+		public str? AwayMessage { get; set; }
 		public bool? IsTalking { get; set; }
 		public bool? InputMuted { get; set; }
 		public bool? OutputMuted { get; set; }
@@ -4087,14 +4259,15 @@ namespace TSLib.Messages
 		public DurationMilliseconds? ClientIdleTime { get; set; }
 		public DateTime? CreationDate { get; set; }
 		public DateTime? LastConnected { get; set; }
-		public ServerGroupId[] ServerGroups { get; set; }
+		public ServerGroupId[]? ServerGroups { get; set; }
 		public ChannelGroupId? ChannelGroup { get; set; }
 		public ChannelId? InheritedChannelGroupFromChannel { get; set; }
-		public str ClientVersion { get; set; }
-		public str ClientPlatform { get; set; }
-		public str CountryCode { get; set; }
-		public str Ip { get; set; }
-		public str Badges { get; set; }
+		public str? ClientVersion { get; set; }
+		public str? ClientPlatform { get; set; }
+		public str? CountryCode { get; set; }
+		public str? Ip { get; set; }
+		public str? Badges { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -4180,9 +4353,11 @@ namespace TSLib.Messages
 
 	public sealed partial class ClientListRequest : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ClientListRequest;
 		
 
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -4195,12 +4370,14 @@ namespace TSLib.Messages
 
 	public sealed partial class ClientMove : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ClientMove;
 		
 
 		public ClientId ClientId { get; set; }
 		public ChannelId ChannelId { get; set; }
-		public str ChannelPassword { get; set; }
+		public str? ChannelPassword { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -4234,6 +4411,7 @@ namespace TSLib.Messages
 
 	public sealed partial class ClientMoved : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ClientMoved;
 		
 
@@ -4241,9 +4419,10 @@ namespace TSLib.Messages
 		public Reason Reason { get; set; }
 		public ChannelId TargetChannelId { get; set; }
 		public ClientId? InvokerId { get; set; }
-		public str InvokerName { get; set; }
-		public Uid InvokerUid { get; set; }
-		public str ReasonMessage { get; set; }
+		public str? InvokerName { get; set; }
+		public Uid? InvokerUid { get; set; }
+		public str? ReasonMessage { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -4285,12 +4464,14 @@ namespace TSLib.Messages
 
 	public sealed partial class ClientNameFromDbId : INotification, IResponse
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ClientNameFromDbId;
-		public string ReturnCode { get; set; }
+		public string? ReturnCode { get; set; }
 
 		public Uid ClientUid { get; set; }
 		public ClientDbId ClientDbId { get; set; }
 		public str Name { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -4324,10 +4505,12 @@ namespace TSLib.Messages
 
 	public sealed partial class ClientNameFromDbIdRequest : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ClientNameFromDbIdRequest;
 		
 
 		public ClientDbId ClientDbId { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -4357,12 +4540,14 @@ namespace TSLib.Messages
 
 	public sealed partial class ClientNameFromUid : INotification, IResponse
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ClientNameFromUid;
-		public string ReturnCode { get; set; }
+		public string? ReturnCode { get; set; }
 
 		public Uid ClientUid { get; set; }
 		public ClientDbId ClientDbId { get; set; }
 		public str Name { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -4396,10 +4581,12 @@ namespace TSLib.Messages
 
 	public sealed partial class ClientNameFromUidRequest : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ClientNameFromUidRequest;
 		
 
 		public Uid ClientUid { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -4429,11 +4616,13 @@ namespace TSLib.Messages
 
 	public sealed partial class ClientNeededPermissions : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ClientNeededPermissions;
 		
 
 		public Ts3Permission PermissionId { get; set; }
 		public i32? PermissionValue { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -4465,11 +4654,13 @@ namespace TSLib.Messages
 
 	public sealed partial class ClientPermissionHints : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ClientPermissionHints;
 		
 
 		public ClientId ClientId { get; set; }
 		public ClientPermissionHint Flags { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -4501,15 +4692,17 @@ namespace TSLib.Messages
 
 	public sealed partial class ClientPermList : INotification, IResponse
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ClientPermList;
-		public string ReturnCode { get; set; }
+		public string? ReturnCode { get; set; }
 
 		public ClientDbId ClientDbId { get; set; }
-		public Ts3Permission PermissionId { get; set; }
-		public str PermissionNameId { get; set; }
+		public Ts3Permission? PermissionId { get; set; }
+		public str? PermissionNameId { get; set; }
 		public i32 PermissionValue { get; set; }
 		public bool PermissionNegated { get; set; }
 		public bool PermissionSkip { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -4549,10 +4742,12 @@ namespace TSLib.Messages
 
 	public sealed partial class ClientPermListRequest : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ClientPermListRequest;
 		
 
 		public ClientDbId ClientDbId { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -4582,13 +4777,15 @@ namespace TSLib.Messages
 
 	public sealed partial class ClientPoke : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ClientPoke;
 		
 
 		public ClientId InvokerId { get; set; }
 		public str InvokerName { get; set; }
-		public Uid InvokerUid { get; set; }
+		public Uid? InvokerUid { get; set; }
 		public str Message { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -4624,11 +4821,13 @@ namespace TSLib.Messages
 
 	public sealed partial class ClientPokeRequest : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ClientPokeRequest;
 		
 
 		public ClientId ClientId { get; set; }
 		public str Message { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -4660,6 +4859,7 @@ namespace TSLib.Messages
 
 	public sealed partial class ClientServerGroupAdded : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ClientServerGroupAdded;
 		
 
@@ -4667,9 +4867,10 @@ namespace TSLib.Messages
 		public ServerGroupId ServerGroupId { get; set; }
 		public ClientId InvokerId { get; set; }
 		public str InvokerName { get; set; }
-		public Uid InvokerUid { get; set; }
+		public Uid? InvokerUid { get; set; }
 		public ClientId ClientId { get; set; }
 		public Uid ClientUid { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -4711,6 +4912,7 @@ namespace TSLib.Messages
 
 	public sealed partial class ClientServerGroupRemoved : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ClientServerGroupRemoved;
 		
 
@@ -4718,9 +4920,10 @@ namespace TSLib.Messages
 		public ServerGroupId ServerGroupId { get; set; }
 		public ClientId InvokerId { get; set; }
 		public str InvokerName { get; set; }
-		public Uid InvokerUid { get; set; }
+		public Uid? InvokerUid { get; set; }
 		public ClientId ClientId { get; set; }
 		public Uid ClientUid { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -4762,10 +4965,12 @@ namespace TSLib.Messages
 
 	public sealed partial class ClientSetServerQueryLogin : INotification, IResponse
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ClientSetServerQueryLogin;
-		public string ReturnCode { get; set; }
+		public string? ReturnCode { get; set; }
 
 		public str LoginPassword { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -4795,12 +5000,14 @@ namespace TSLib.Messages
 
 	public sealed partial class ClientSetServerQueryLoginRequest : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ClientSetServerQueryLoginRequest;
 		
 
 		public str LoginName { get; set; }
-		public str LoginPassword { get; set; }
+		public str? LoginPassword { get; set; }
 		public ClientDbId? ClientDbId { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -4834,12 +5041,14 @@ namespace TSLib.Messages
 
 	public sealed partial class ClientUidFromClid : INotification, IResponse
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ClientUidFromClid;
-		public string ReturnCode { get; set; }
+		public string? ReturnCode { get; set; }
 
 		public Uid ClientUid { get; set; }
 		public ClientId ClientId { get; set; }
 		public str Nickname { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -4873,10 +5082,12 @@ namespace TSLib.Messages
 
 	public sealed partial class ClientUidFromClidRequest : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ClientUidFromClidRequest;
 		
 
 		public ClientId ClientId { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -4906,23 +5117,25 @@ namespace TSLib.Messages
 
 	public sealed partial class ClientUpdate : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ClientUpdate;
 		
 
-		public str Name { get; set; }
+		public str? Name { get; set; }
 		public bool? InputMuted { get; set; }
 		public bool? OutputMuted { get; set; }
 		public bool? IsAway { get; set; }
-		public str AwayMessage { get; set; }
+		public str? AwayMessage { get; set; }
 		public bool? InputHardwareEnabled { get; set; }
 		public bool? OutputHardwareEnabled { get; set; }
 		public bool? IsChannelCommander { get; set; }
-		public str AvatarHash { get; set; }
-		public str PhoneticName { get; set; }
+		public str? AvatarHash { get; set; }
+		public str? PhoneticName { get; set; }
 		public DateTime? TalkPowerRequestTime { get; set; }
-		public str TalkPowerRequestMessage { get; set; }
+		public str? TalkPowerRequestMessage { get; set; }
 		public bool? IsRecording { get; set; }
-		public str Badges { get; set; }
+		public str? Badges { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -4978,15 +5191,16 @@ namespace TSLib.Messages
 
 	public sealed partial class ClientUpdated : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ClientUpdated;
 		
 
 		public ClientId ClientId { get; set; }
-		public str Name { get; set; }
+		public str? Name { get; set; }
 		public u32? UnreadMessages { get; set; }
-		public str ClientVersion { get; set; }
-		public str ClientPlatform { get; set; }
-		public str LoginName { get; set; }
+		public str? ClientVersion { get; set; }
+		public str? ClientPlatform { get; set; }
+		public str? LoginName { get; set; }
 		public DateTime? CreationDate { get; set; }
 		public DateTime? LastConnected { get; set; }
 		public i32? TotalConnections { get; set; }
@@ -4998,22 +5212,23 @@ namespace TSLib.Messages
 		public bool? InputHardwareEnabled { get; set; }
 		public bool? OutputMuted { get; set; }
 		public bool? OutputHardwareEnabled { get; set; }
-		public str Description { get; set; }
+		public str? Description { get; set; }
 		public bool? IsPrioritySpeaker { get; set; }
 		public bool? IsChannelCommander { get; set; }
-		public str AvatarHash { get; set; }
+		public str? AvatarHash { get; set; }
 		public DateTime? TalkPowerRequestTime { get; set; }
-		public str TalkPowerRequestMessage { get; set; }
+		public str? TalkPowerRequestMessage { get; set; }
 		public bool? TalkPowerGranted { get; set; }
-		public str PhoneticName { get; set; }
+		public str? PhoneticName { get; set; }
 		public bool? IsRecording { get; set; }
-		public ServerGroupId[] ServerGroups { get; set; }
-		public str MyTeamSpeakId { get; set; }
-		public str Badges { get; set; }
+		public ServerGroupId[]? ServerGroups { get; set; }
+		public str? MyTeamSpeakId { get; set; }
+		public str? Badges { get; set; }
 		public i32? TalkPower { get; set; }
 		public IconHash? IconId { get; set; }
 		public bool? IsAway { get; set; }
-		public str AwayMessage { get; set; }
+		public str? AwayMessage { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -5107,10 +5322,12 @@ namespace TSLib.Messages
 
 	public sealed partial class ClientVariablesRequest : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ClientVariablesRequest;
 		
 
 		public ClientId ClientId { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -5140,14 +5357,16 @@ namespace TSLib.Messages
 
 	public sealed partial class CommandError : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.CommandError;
 		
 
 		public Ts3ErrorCode Id { get; set; }
 		public str Message { get; set; }
-		public Ts3Permission MissingPermissionId { get; set; }
-		public str ReturnCode { get; set; }
-		public str ExtraMessage { get; set; }
+		public Ts3Permission? MissingPermissionId { get; set; }
+		public str? ReturnCode { get; set; }
+		public str? ExtraMessage { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -5185,11 +5404,13 @@ namespace TSLib.Messages
 
 	public sealed partial class ComplainAdd : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ComplainAdd;
 		
 
 		public ClientDbId TargetClientDbId { get; set; }
 		public str Message { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -5221,11 +5442,13 @@ namespace TSLib.Messages
 
 	public sealed partial class ComplainDel : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ComplainDel;
 		
 
 		public ClientDbId TargetClientDbId { get; set; }
 		public ClientDbId FromClientDbId { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -5257,10 +5480,12 @@ namespace TSLib.Messages
 
 	public sealed partial class ComplainDelAll : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ComplainDelAll;
 		
 
 		public ClientDbId TargetClientDbId { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -5290,8 +5515,9 @@ namespace TSLib.Messages
 
 	public sealed partial class ComplainList : INotification, IResponse
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ComplainList;
-		public string ReturnCode { get; set; }
+		public string? ReturnCode { get; set; }
 
 		public ClientDbId TargetClientDbId { get; set; }
 		public str TargetName { get; set; }
@@ -5299,6 +5525,7 @@ namespace TSLib.Messages
 		public str FromName { get; set; }
 		public str Message { get; set; }
 		public DateTime Timestamp { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -5338,10 +5565,12 @@ namespace TSLib.Messages
 
 	public sealed partial class ComplainListRequest : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ComplainListRequest;
 		
 
 		public ClientDbId? TargetClientDbId { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -5371,11 +5600,13 @@ namespace TSLib.Messages
 
 	public sealed partial class CustomDelete : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.CustomDelete;
 		
 
 		public ClientDbId ClientDbId { get; set; }
 		public str ExternalIdentity { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -5407,10 +5638,12 @@ namespace TSLib.Messages
 
 	public sealed partial class CustomInfoRequest : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.CustomInfoRequest;
 		
 
 		public ClientDbId ClientDbId { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -5440,11 +5673,13 @@ namespace TSLib.Messages
 
 	public sealed partial class CustomSearch : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.CustomSearch;
 		
 
 		public str ExternalIdentity { get; set; }
 		public str Pattern { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -5476,12 +5711,14 @@ namespace TSLib.Messages
 
 	public sealed partial class CustomSet : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.CustomSet;
 		
 
 		public ClientDbId ClientDbId { get; set; }
 		public str ExternalIdentity { get; set; }
 		public str Value { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -5515,11 +5752,13 @@ namespace TSLib.Messages
 
 	public sealed partial class Disconnect : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.Disconnect;
 		
 
-		public Reason Reason { get; set; }
-		public str ReasonMessage { get; set; }
+		public Reason? Reason { get; set; }
+		public str? ReasonMessage { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -5551,8 +5790,9 @@ namespace TSLib.Messages
 
 	public sealed partial class FileDownload : INotification, IResponse
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.FileDownload;
-		public string ReturnCode { get; set; }
+		public string? ReturnCode { get; set; }
 
 		public u16 ClientFileTransferId { get; set; }
 		public u16 ServerFileTransferId { get; set; }
@@ -5560,7 +5800,8 @@ namespace TSLib.Messages
 		public u16 Port { get; set; }
 		public u64 Size { get; set; }
 		public u8 Protocol { get; set; }
-		public IpAddr Ip { get; set; }
+		public IpAddr? Ip { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -5602,14 +5843,16 @@ namespace TSLib.Messages
 
 	public sealed partial class FileInfo : INotification, IResponse
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.FileInfo;
-		public string ReturnCode { get; set; }
+		public string? ReturnCode { get; set; }
 
 		public ChannelId ChannelId { get; set; }
 		public str Path { get; set; }
 		public str Name { get; set; }
 		public u64 Size { get; set; }
 		public DateTime DateTime { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -5647,8 +5890,9 @@ namespace TSLib.Messages
 
 	public sealed partial class FileList : INotification, IResponse
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.FileList;
-		public string ReturnCode { get; set; }
+		public string? ReturnCode { get; set; }
 
 		public ChannelId ChannelId { get; set; }
 		public str Path { get; set; }
@@ -5656,6 +5900,7 @@ namespace TSLib.Messages
 		public u64 Size { get; set; }
 		public DateTime DateTime { get; set; }
 		public bool IsFile { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -5695,11 +5940,13 @@ namespace TSLib.Messages
 
 	public sealed partial class FileListFinished : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.FileListFinished;
 		
 
 		public ChannelId ChannelId { get; set; }
 		public str Path { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -5731,8 +5978,9 @@ namespace TSLib.Messages
 
 	public sealed partial class FileTransfer : INotification, IResponse
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.FileTransfer;
-		public string ReturnCode { get; set; }
+		public string? ReturnCode { get; set; }
 
 		public ClientId ClientId { get; set; }
 		public str Path { get; set; }
@@ -5746,6 +5994,7 @@ namespace TSLib.Messages
 		public f32 CurrentSpeed { get; set; }
 		public f32 AverageSpeed { get; set; }
 		public DurationSeconds Runtime { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -5797,6 +6046,7 @@ namespace TSLib.Messages
 
 	public sealed partial class FileTransferStatus : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.FileTransferStatus;
 		
 
@@ -5804,6 +6054,7 @@ namespace TSLib.Messages
 		public Ts3ErrorCode Status { get; set; }
 		public str Message { get; set; }
 		public u64 Size { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -5839,8 +6090,9 @@ namespace TSLib.Messages
 
 	public sealed partial class FileUpload : INotification, IResponse
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.FileUpload;
-		public string ReturnCode { get; set; }
+		public string? ReturnCode { get; set; }
 
 		public u16 ClientFileTransferId { get; set; }
 		public u16 ServerFileTransferId { get; set; }
@@ -5848,7 +6100,8 @@ namespace TSLib.Messages
 		public u16 Port { get; set; }
 		public u64 SeekPosition { get; set; }
 		public u8 Protocol { get; set; }
-		public IpAddr Ip { get; set; }
+		public IpAddr? Ip { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -5890,12 +6143,14 @@ namespace TSLib.Messages
 
 	public sealed partial class FtCreateDir : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.FtCreateDir;
 		
 
 		public ChannelId ChannelId { get; set; }
 		public str ChannelPassword { get; set; }
 		public str DirectoryName { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -5929,12 +6184,14 @@ namespace TSLib.Messages
 
 	public sealed partial class FtDeleteFile : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.FtDeleteFile;
 		
 
 		public ChannelId ChannelId { get; set; }
 		public str ChannelPassword { get; set; }
 		public str Name { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -5968,12 +6225,14 @@ namespace TSLib.Messages
 
 	public sealed partial class FtFileInfoRequest : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.FtFileInfoRequest;
 		
 
 		public ChannelId ChannelId { get; set; }
 		public str ChannelPassword { get; set; }
 		public str Name { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -6007,12 +6266,14 @@ namespace TSLib.Messages
 
 	public sealed partial class FtFileListRequest : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.FtFileListRequest;
 		
 
 		public ChannelId ChannelId { get; set; }
 		public str ChannelPassword { get; set; }
 		public str Path { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -6046,6 +6307,7 @@ namespace TSLib.Messages
 
 	public sealed partial class FtInitDownload : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.FtInitDownload;
 		
 
@@ -6055,6 +6317,7 @@ namespace TSLib.Messages
 		public str ChannelPassword { get; set; }
 		public u64 SeekPosition { get; set; }
 		public u8 Protocol { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -6094,6 +6357,7 @@ namespace TSLib.Messages
 
 	public sealed partial class FtInitUpload : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.FtInitUpload;
 		
 
@@ -6105,6 +6369,7 @@ namespace TSLib.Messages
 		public bool Overwrite { get; set; }
 		public bool Resume { get; set; }
 		public u8 Protocol { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -6148,9 +6413,11 @@ namespace TSLib.Messages
 
 	public sealed partial class FtList : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.FtList;
 		
 
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -6163,15 +6430,17 @@ namespace TSLib.Messages
 
 	public sealed partial class FtRenameFile : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.FtRenameFile;
 		
 
 		public ChannelId ChannelId { get; set; }
 		public str ChannelPassword { get; set; }
 		public ChannelId? TargetChannelId { get; set; }
-		public str TargetChannelPassword { get; set; }
+		public str? TargetChannelPassword { get; set; }
 		public str OldName { get; set; }
 		public str NewName { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -6211,11 +6480,13 @@ namespace TSLib.Messages
 
 	public sealed partial class FtStop : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.FtStop;
 		
 
 		public u16 ServerFileTransferId { get; set; }
 		public bool Delete { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -6247,10 +6518,12 @@ namespace TSLib.Messages
 
 	public sealed partial class GlobalMessage : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.GlobalMessage;
 		
 
 		public str Message { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -6280,9 +6553,11 @@ namespace TSLib.Messages
 
 	public sealed partial class HostInfoRequest : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.HostInfoRequest;
 		
 
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -6295,12 +6570,14 @@ namespace TSLib.Messages
 
 	public sealed partial class InitIvExpand : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.InitIvExpand;
 		
 
 		public str Alpha { get; set; }
 		public str Beta { get; set; }
 		public str Omega { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -6334,6 +6611,7 @@ namespace TSLib.Messages
 
 	public sealed partial class InitIvExpand2 : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.InitIvExpand2;
 		
 
@@ -6343,6 +6621,7 @@ namespace TSLib.Messages
 		public bool Ot { get; set; }
 		public str Proof { get; set; }
 		public str Tvd { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -6382,6 +6661,7 @@ namespace TSLib.Messages
 
 	public sealed partial class InitServer : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.InitServer;
 		
 
@@ -6398,7 +6678,7 @@ namespace TSLib.Messages
 		public str ClientName { get; set; }
 		public ClientId ClientId { get; set; }
 		public u16 ProtocolVersion { get; set; }
-		public LicenseType LicenseType { get; set; }
+		public LicenseType? LicenseType { get; set; }
 		public i32 TalkPower { get; set; }
 		public i32 NeededServerqueryViewPower { get; set; }
 		public str Name { get; set; }
@@ -6416,6 +6696,7 @@ namespace TSLib.Messages
 		public IconHash IconId { get; set; }
 		public HostBannerMode HostbannerMode { get; set; }
 		public DurationSeconds TempChannelDefaultDeleteDelay { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -6505,9 +6786,11 @@ namespace TSLib.Messages
 
 	public sealed partial class InstanceEdit : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.InstanceEdit;
 		
 
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -6520,9 +6803,11 @@ namespace TSLib.Messages
 
 	public sealed partial class InstanceInfo : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.InstanceInfo;
 		
 
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -6535,11 +6820,13 @@ namespace TSLib.Messages
 
 	public sealed partial class LogAdd : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.LogAdd;
 		
 
 		public LogLevel LogLevel { get; set; }
 		public str LogMessage { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -6571,11 +6858,13 @@ namespace TSLib.Messages
 
 	public sealed partial class Login : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.Login;
 		
 
 		public str LoginName { get; set; }
 		public str LoginPassword { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -6607,9 +6896,11 @@ namespace TSLib.Messages
 
 	public sealed partial class Logout : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.Logout;
 		
 
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -6622,6 +6913,7 @@ namespace TSLib.Messages
 
 	public sealed partial class LogView : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.LogView;
 		
 
@@ -6629,6 +6921,7 @@ namespace TSLib.Messages
 		public bool? Reverse { get; set; }
 		public bool? InstanceLog { get; set; }
 		public u64? Offset { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -6664,14 +6957,16 @@ namespace TSLib.Messages
 
 	public sealed partial class OfflineMessage : INotification, IResponse
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.OfflineMessage;
-		public string ReturnCode { get; set; }
+		public string? ReturnCode { get; set; }
 
 		public u32 MessageId { get; set; }
 		public Uid ClientUid { get; set; }
 		public str Subject { get; set; }
 		public str Message { get; set; }
 		public DateTime Timestamp { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -6709,12 +7004,14 @@ namespace TSLib.Messages
 
 	public sealed partial class OfflineMessageAdd : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.OfflineMessageAdd;
 		
 
 		public Uid ClientUid { get; set; }
 		public str Subject { get; set; }
 		public str Message { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -6748,10 +7045,12 @@ namespace TSLib.Messages
 
 	public sealed partial class OfflineMessageDel : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.OfflineMessageDel;
 		
 
 		public u32 MessageId { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -6781,10 +7080,12 @@ namespace TSLib.Messages
 
 	public sealed partial class OfflineMessageGet : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.OfflineMessageGet;
 		
 
 		public u32 MessageId { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -6814,14 +7115,16 @@ namespace TSLib.Messages
 
 	public sealed partial class OfflineMessageList : INotification, IResponse
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.OfflineMessageList;
-		public string ReturnCode { get; set; }
+		public string? ReturnCode { get; set; }
 
 		public u32 MessageId { get; set; }
 		public Uid ClientUid { get; set; }
 		public str Subject { get; set; }
 		public DateTime Timestamp { get; set; }
 		public bool IsRead { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -6859,9 +7162,11 @@ namespace TSLib.Messages
 
 	public sealed partial class OfflineMessageListRequest : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.OfflineMessageListRequest;
 		
 
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -6874,11 +7179,13 @@ namespace TSLib.Messages
 
 	public sealed partial class OfflineMessageUpdateFlag : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.OfflineMessageUpdateFlag;
 		
 
 		public u32 MessageId { get; set; }
 		public bool IsRead { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -6910,13 +7217,15 @@ namespace TSLib.Messages
 
 	public sealed partial class PermFind : INotification, IResponse
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.PermFind;
-		public string ReturnCode { get; set; }
+		public string? ReturnCode { get; set; }
 
 		public PermissionType PermissionType { get; set; }
 		public u64 Id1 { get; set; }
 		public u64 Id2 { get; set; }
 		public Ts3Permission PermissionId { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -6952,11 +7261,13 @@ namespace TSLib.Messages
 
 	public sealed partial class PermFindRequest : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.PermFindRequest;
 		
 
-		public Ts3Permission PermissionId { get; set; }
-		public str PermissionNameId { get; set; }
+		public Ts3Permission? PermissionId { get; set; }
+		public str? PermissionNameId { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -6988,10 +7299,12 @@ namespace TSLib.Messages
 
 	public sealed partial class PermIdByNameRequest : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.PermIdByNameRequest;
 		
 
 		public str PermissionNameId { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -7021,13 +7334,15 @@ namespace TSLib.Messages
 
 	public sealed partial class PermList : INotification, IResponse
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.PermList;
-		public string ReturnCode { get; set; }
+		public string? ReturnCode { get; set; }
 
 		public Ts3Permission GroupIdEnd { get; set; }
 		public Ts3Permission PermissionId { get; set; }
 		public str PermissionName { get; set; }
 		public str PermissionDescription { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -7063,9 +7378,11 @@ namespace TSLib.Messages
 
 	public sealed partial class PermListRequest : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.PermListRequest;
 		
 
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -7078,8 +7395,9 @@ namespace TSLib.Messages
 
 	public sealed partial class PermOverview : INotification, IResponse
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.PermOverview;
-		public string ReturnCode { get; set; }
+		public string? ReturnCode { get; set; }
 
 		public ClientDbId ClientDbId { get; set; }
 		public ChannelId ChannelId { get; set; }
@@ -7090,6 +7408,7 @@ namespace TSLib.Messages
 		public i32 PermissionValue { get; set; }
 		public bool PermissionNegated { get; set; }
 		public bool PermissionSkip { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -7135,13 +7454,15 @@ namespace TSLib.Messages
 
 	public sealed partial class PermOverviewRequest : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.PermOverviewRequest;
 		
 
 		public ChannelId ChannelId { get; set; }
 		public ClientDbId ClientDbId { get; set; }
-		public Ts3Permission PermissionId { get; set; }
-		public str PermissionNameId { get; set; }
+		public Ts3Permission? PermissionId { get; set; }
+		public str? PermissionNameId { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -7177,10 +7498,12 @@ namespace TSLib.Messages
 
 	public sealed partial class PermRequest : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.PermRequest;
 		
 
 		public Ts3Permission PermissionId { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -7210,9 +7533,11 @@ namespace TSLib.Messages
 
 	public sealed partial class PermReset : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.PermReset;
 		
 
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -7225,11 +7550,13 @@ namespace TSLib.Messages
 
 	public sealed partial class PluginCommand : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.PluginCommand;
 		
 
 		public str Name { get; set; }
 		public str Data { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -7261,12 +7588,14 @@ namespace TSLib.Messages
 
 	public sealed partial class PluginCommandRequest : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.PluginCommandRequest;
 		
 
 		public str Name { get; set; }
 		public str Data { get; set; }
 		public PluginTargetMode Target { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -7300,14 +7629,16 @@ namespace TSLib.Messages
 
 	public sealed partial class PrivilegeKeyAddRequest : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.PrivilegeKeyAddRequest;
 		
 
 		public TokenType TokenType { get; set; }
 		public u64 TokenId1 { get; set; }
 		public ChannelId TokenId2 { get; set; }
-		public str TokenDescription { get; set; }
-		public str TokenCustomSet { get; set; }
+		public str? TokenDescription { get; set; }
+		public str? TokenCustomSet { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -7345,10 +7676,12 @@ namespace TSLib.Messages
 
 	public sealed partial class PrivilegeKeyDelete : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.PrivilegeKeyDelete;
 		
 
 		public str Token { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -7378,9 +7711,11 @@ namespace TSLib.Messages
 
 	public sealed partial class PrivilegeKeyListRequest : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.PrivilegeKeyListRequest;
 		
 
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -7393,10 +7728,12 @@ namespace TSLib.Messages
 
 	public sealed partial class PrivilegeKeyUse : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.PrivilegeKeyUse;
 		
 
 		public str Token { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -7426,9 +7763,11 @@ namespace TSLib.Messages
 
 	public sealed partial class Quit : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.Quit;
 		
 
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -7441,12 +7780,14 @@ namespace TSLib.Messages
 
 	public sealed partial class SendTextMessage : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.SendTextMessage;
 		
 
 		public TextMessageTargetMode Target { get; set; }
 		public ClientId? TargetClientId { get; set; }
 		public str Message { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -7480,8 +7821,9 @@ namespace TSLib.Messages
 
 	public sealed partial class ServerConnectionInfo : INotification, IResponse
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ServerConnectionInfo;
-		public string ReturnCode { get; set; }
+		public string? ReturnCode { get; set; }
 
 		public u64 FiletransferBandwidthSent { get; set; }
 		public u64 FiletransferBandwidthReceived { get; set; }
@@ -7498,6 +7840,7 @@ namespace TSLib.Messages
 		public DurationMilliseconds ConnectedTime { get; set; }
 		public f32 PacketlossTotal { get; set; }
 		public DurationMilliseconds Ping { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -7555,9 +7898,11 @@ namespace TSLib.Messages
 
 	public sealed partial class ServerConnectionInfoRequest : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ServerConnectionInfoRequest;
 		
 
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -7570,10 +7915,12 @@ namespace TSLib.Messages
 
 	public sealed partial class ServerCreate : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ServerCreate;
 		
 
 		public str Name { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -7603,10 +7950,12 @@ namespace TSLib.Messages
 
 	public sealed partial class ServerDelete : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ServerDelete;
 		
 
 		public u32 ServerId { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -7636,26 +7985,27 @@ namespace TSLib.Messages
 
 	public sealed partial class ServerEdit : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ServerEdit;
 		
 
 		public u32 ServerId { get; set; }
-		public str Name { get; set; }
-		public str WelcomeMessage { get; set; }
+		public str? Name { get; set; }
+		public str? WelcomeMessage { get; set; }
 		public u16? MaxClients { get; set; }
-		public str ServerPassword { get; set; }
-		public str Hostmessage { get; set; }
+		public str? ServerPassword { get; set; }
+		public str? Hostmessage { get; set; }
 		public HostMessageMode? HostmessageMode { get; set; }
-		public str HostbannerUrl { get; set; }
-		public str HostbannerGfxUrl { get; set; }
+		public str? HostbannerUrl { get; set; }
+		public str? HostbannerGfxUrl { get; set; }
 		public DurationSeconds? HostbannerGfxInterval { get; set; }
-		public str HostbuttonTooltip { get; set; }
-		public str HostbuttonUrl { get; set; }
-		public str HostbuttonGfxUrl { get; set; }
+		public str? HostbuttonTooltip { get; set; }
+		public str? HostbuttonUrl { get; set; }
+		public str? HostbuttonGfxUrl { get; set; }
 		public IconHash? IconId { get; set; }
 		public u16? ReservedSlots { get; set; }
 		public HostBannerMode? HostbannerMode { get; set; }
-		public str Nickname { get; set; }
+		public str? Nickname { get; set; }
 		public u64? MaxDownloadTotalBandwidth { get; set; }
 		public u64? MaxUploadTotalBandwidth { get; set; }
 		public u64? DownloadQuota { get; set; }
@@ -7673,7 +8023,7 @@ namespace TSLib.Messages
 		public DurationSeconds? ComplainRemoveTime { get; set; }
 		public u32? MinClientsInChannelBeforeForcedSilence { get; set; }
 		public f32? PrioritySpeakerDimmModificator { get; set; }
-		public str PhoneticName { get; set; }
+		public str? PhoneticName { get; set; }
 		public DurationSeconds? TempChannelDefaultDeleteDelay { get; set; }
 		public bool? WeblistEnabled { get; set; }
 		public bool? LogClient { get; set; }
@@ -7682,6 +8032,7 @@ namespace TSLib.Messages
 		public bool? LogPermissions { get; set; }
 		public bool? LogServer { get; set; }
 		public bool? LogFileTransfer { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -7795,29 +8146,31 @@ namespace TSLib.Messages
 
 	public sealed partial class ServerEdited : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ServerEdited;
 		
 
 		public ClientId InvokerId { get; set; }
 		public str InvokerName { get; set; }
-		public Uid InvokerUid { get; set; }
+		public Uid? InvokerUid { get; set; }
 		public Reason Reason { get; set; }
-		public str Name { get; set; }
-		public str Nickname { get; set; }
+		public str? Name { get; set; }
+		public str? Nickname { get; set; }
 		public CodecEncryptionMode? CodecEncryptionMode { get; set; }
 		public ServerGroupId? DefaultServerGroup { get; set; }
 		public ChannelGroupId? DefaultChannelGroup { get; set; }
-		public str HostbannerUrl { get; set; }
-		public str HostbannerGfxUrl { get; set; }
+		public str? HostbannerUrl { get; set; }
+		public str? HostbannerGfxUrl { get; set; }
 		public DurationSeconds? HostbannerGfxInterval { get; set; }
 		public f32? PrioritySpeakerDimmModificator { get; set; }
-		public str HostbuttonTooltip { get; set; }
-		public str HostbuttonUrl { get; set; }
-		public str HostbuttonGfxUrl { get; set; }
-		public str PhoneticName { get; set; }
+		public str? HostbuttonTooltip { get; set; }
+		public str? HostbuttonUrl { get; set; }
+		public str? HostbuttonGfxUrl { get; set; }
+		public str? PhoneticName { get; set; }
 		public IconHash? IconId { get; set; }
 		public HostBannerMode? HostbannerMode { get; set; }
 		public DurationSeconds? TempChannelDefaultDeleteDelay { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -7885,11 +8238,13 @@ namespace TSLib.Messages
 
 	public sealed partial class ServerGroupAdd : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ServerGroupAdd;
 		
 
 		public str Name { get; set; }
-		public GroupType GroupType { get; set; }
+		public GroupType? GroupType { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -7921,11 +8276,13 @@ namespace TSLib.Messages
 
 	public sealed partial class ServerGroupAddClient : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ServerGroupAddClient;
 		
 
 		public ServerGroupId ServerGroupId { get; set; }
 		public ClientDbId ClientDbId { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -7957,15 +8314,17 @@ namespace TSLib.Messages
 
 	public sealed partial class ServerGroupAddPerm : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ServerGroupAddPerm;
 		
 
 		public ServerGroupId ServerGroupId { get; set; }
-		public Ts3Permission PermissionId { get; set; }
-		public str PermissionNameId { get; set; }
+		public Ts3Permission? PermissionId { get; set; }
+		public str? PermissionNameId { get; set; }
 		public i32 PermissionValue { get; set; }
 		public bool PermissionNegated { get; set; }
 		public bool PermissionSkip { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -8005,10 +8364,12 @@ namespace TSLib.Messages
 
 	public sealed partial class ServerGroupAddResponse : IResponse
 	{
+		#pragma warning disable CS8618
 		
-		public string ReturnCode { get; set; }
+		public string? ReturnCode { get; set; }
 
 		public ServerGroupId ServerGroupId { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -8038,15 +8399,17 @@ namespace TSLib.Messages
 
 	public sealed partial class ServerGroupAutoAddPerm : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ServerGroupAutoAddPerm;
 		
 
 		public u32 ServerGroupType { get; set; }
-		public Ts3Permission PermissionId { get; set; }
-		public str PermissionNameId { get; set; }
+		public Ts3Permission? PermissionId { get; set; }
+		public str? PermissionNameId { get; set; }
 		public i32 PermissionValue { get; set; }
 		public bool PermissionNegated { get; set; }
 		public bool PermissionSkip { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -8086,12 +8449,14 @@ namespace TSLib.Messages
 
 	public sealed partial class ServerGroupAutoDelPerm : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ServerGroupAutoDelPerm;
 		
 
 		public u32 ServerGroupType { get; set; }
-		public Ts3Permission PermissionId { get; set; }
-		public str PermissionNameId { get; set; }
+		public Ts3Permission? PermissionId { get; set; }
+		public str? PermissionNameId { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -8125,13 +8490,15 @@ namespace TSLib.Messages
 
 	public sealed partial class ServerGroupClientList : INotification, IResponse
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ServerGroupClientList;
-		public string ReturnCode { get; set; }
+		public string? ReturnCode { get; set; }
 
 		public ServerGroupId ServerGroupId { get; set; }
 		public ClientDbId ClientDbId { get; set; }
-		public str Name { get; set; }
-		public Uid Uid { get; set; }
+		public str? Name { get; set; }
+		public Uid? Uid { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -8167,10 +8534,12 @@ namespace TSLib.Messages
 
 	public sealed partial class ServerGroupClientListRequest : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ServerGroupClientListRequest;
 		
 
 		public ServerGroupId ServerGroupId { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -8200,6 +8569,7 @@ namespace TSLib.Messages
 
 	public sealed partial class ServerGroupCopy : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ServerGroupCopy;
 		
 
@@ -8207,6 +8577,7 @@ namespace TSLib.Messages
 		public ServerGroupId TargetServerGroupId { get; set; }
 		public str Name { get; set; }
 		public GroupType GroupType { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -8242,11 +8613,13 @@ namespace TSLib.Messages
 
 	public sealed partial class ServerGroupDel : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ServerGroupDel;
 		
 
 		public ServerGroupId ServerGroupId { get; set; }
 		public bool Force { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -8278,11 +8651,13 @@ namespace TSLib.Messages
 
 	public sealed partial class ServerGroupDelClient : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ServerGroupDelClient;
 		
 
 		public ServerGroupId ServerGroupId { get; set; }
 		public ClientDbId ClientDbId { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -8314,12 +8689,14 @@ namespace TSLib.Messages
 
 	public sealed partial class ServerGroupDelPerm : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ServerGroupDelPerm;
 		
 
 		public ServerGroupId ServerGroupId { get; set; }
-		public Ts3Permission PermissionId { get; set; }
-		public str PermissionNameId { get; set; }
+		public Ts3Permission? PermissionId { get; set; }
+		public str? PermissionNameId { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -8353,8 +8730,9 @@ namespace TSLib.Messages
 
 	public sealed partial class ServerGroupList : INotification, IResponse
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ServerGroupList;
-		public string ReturnCode { get; set; }
+		public string? ReturnCode { get; set; }
 
 		public ServerGroupId ServerGroupId { get; set; }
 		public str Name { get; set; }
@@ -8366,6 +8744,7 @@ namespace TSLib.Messages
 		public i32 NeededModifyPower { get; set; }
 		public i32 NeededMemberAddPower { get; set; }
 		public i32? NeededMemberRemovePower { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -8413,9 +8792,11 @@ namespace TSLib.Messages
 
 	public sealed partial class ServerGroupListRequest : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ServerGroupListRequest;
 		
 
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -8428,15 +8809,17 @@ namespace TSLib.Messages
 
 	public sealed partial class ServerGroupPermList : INotification, IResponse
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ServerGroupPermList;
-		public string ReturnCode { get; set; }
+		public string? ReturnCode { get; set; }
 
 		public ServerGroupId ServerGroupId { get; set; }
-		public Ts3Permission PermissionId { get; set; }
-		public str PermissionNameId { get; set; }
+		public Ts3Permission? PermissionId { get; set; }
+		public str? PermissionNameId { get; set; }
 		public i32 PermissionValue { get; set; }
 		public bool PermissionNegated { get; set; }
 		public bool PermissionSkip { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -8476,10 +8859,12 @@ namespace TSLib.Messages
 
 	public sealed partial class ServerGroupPermListRequest : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ServerGroupPermListRequest;
 		
 
 		public ServerGroupId ServerGroupId { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -8509,11 +8894,13 @@ namespace TSLib.Messages
 
 	public sealed partial class ServerGroupRename : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ServerGroupRename;
 		
 
 		public ServerGroupId ServerGroupId { get; set; }
 		public str Name { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -8545,12 +8932,14 @@ namespace TSLib.Messages
 
 	public sealed partial class ServerGroupsByClientId : INotification, IResponse
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ServerGroupsByClientId;
-		public string ReturnCode { get; set; }
+		public string? ReturnCode { get; set; }
 
 		public str Name { get; set; }
 		public ServerGroupId ServerGroupId { get; set; }
 		public ClientDbId ClientDbId { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -8584,10 +8973,12 @@ namespace TSLib.Messages
 
 	public sealed partial class ServerGroupsByClientIdRequest : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ServerGroupsByClientIdRequest;
 		
 
 		public ClientDbId ClientDbId { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -8617,10 +9008,12 @@ namespace TSLib.Messages
 
 	public sealed partial class ServerIdGetByPort : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ServerIdGetByPort;
 		
 
 		public u16 VirtualServerPort { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -8650,9 +9043,11 @@ namespace TSLib.Messages
 
 	public sealed partial class ServerInfo : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ServerInfo;
 		
 
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -8665,9 +9060,11 @@ namespace TSLib.Messages
 
 	public sealed partial class ServerListRequest : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ServerListRequest;
 		
 
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -8680,8 +9077,9 @@ namespace TSLib.Messages
 
 	public sealed partial class ServerListResponse : IResponse
 	{
+		#pragma warning disable CS8618
 		
-		public string ReturnCode { get; set; }
+		public string? ReturnCode { get; set; }
 
 		public u64 VirtualServerId { get; set; }
 		public u16 VirtualServerPort { get; set; }
@@ -8691,9 +9089,10 @@ namespace TSLib.Messages
 		public u16? MaxClients { get; set; }
 		public DurationSeconds? Uptime { get; set; }
 		public bool? Autostart { get; set; }
-		public str MachineId { get; set; }
-		public str Name { get; set; }
-		public Uid VirtualServerUid { get; set; }
+		public str? MachineId { get; set; }
+		public str? Name { get; set; }
+		public Uid? VirtualServerUid { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -8743,12 +9142,14 @@ namespace TSLib.Messages
 
 	public sealed partial class ServerLog : INotification, IResponse
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ServerLog;
-		public string ReturnCode { get; set; }
+		public string? ReturnCode { get; set; }
 
 		public u64 LastOffset { get; set; }
 		public u64 FileSize { get; set; }
 		public str License { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -8782,11 +9183,13 @@ namespace TSLib.Messages
 
 	public sealed partial class ServerNotifyRegister : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ServerNotifyRegister;
 		
 
 		public str EventType { get; set; }
 		public ChannelId? Id { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -8818,9 +9221,11 @@ namespace TSLib.Messages
 
 	public sealed partial class ServerNotifyUnregister : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ServerNotifyUnregister;
 		
 
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -8833,10 +9238,12 @@ namespace TSLib.Messages
 
 	public sealed partial class ServerProcessStop : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ServerProcessStop;
 		
 
-		public str ReasonMessage { get; set; }
+		public str? ReasonMessage { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -8866,9 +9273,11 @@ namespace TSLib.Messages
 
 	public sealed partial class ServerSnapshotCreate : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ServerSnapshotCreate;
 		
 
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -8881,9 +9290,11 @@ namespace TSLib.Messages
 
 	public sealed partial class ServerSnapshotDeploy : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ServerSnapshotDeploy;
 		
 
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -8896,10 +9307,12 @@ namespace TSLib.Messages
 
 	public sealed partial class ServerStart : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ServerStart;
 		
 
 		public u32 ServerId { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -8929,11 +9342,13 @@ namespace TSLib.Messages
 
 	public sealed partial class ServerStop : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ServerStop;
 		
 
 		public u32 ServerId { get; set; }
-		public str ReasonMessage { get; set; }
+		public str? ReasonMessage { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -8965,6 +9380,7 @@ namespace TSLib.Messages
 
 	public sealed partial class ServerTempPasswordAdd : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ServerTempPasswordAdd;
 		
 
@@ -8973,6 +9389,7 @@ namespace TSLib.Messages
 		public DurationSeconds Duration { get; set; }
 		public ChannelId TargetChannelId { get; set; }
 		public str TargetChannelPassword { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -9010,10 +9427,12 @@ namespace TSLib.Messages
 
 	public sealed partial class ServerTempPasswordDel : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ServerTempPasswordDel;
 		
 
 		public str Password { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -9043,6 +9462,7 @@ namespace TSLib.Messages
 
 	public sealed partial class ServerTempPasswordList : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ServerTempPasswordList;
 		
 
@@ -9054,6 +9474,7 @@ namespace TSLib.Messages
 		public DateTime End { get; set; }
 		public ChannelId TargetChannelId { get; set; }
 		public str TargetChannelPassword { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -9097,9 +9518,11 @@ namespace TSLib.Messages
 
 	public sealed partial class ServerTempPasswordListRequest : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ServerTempPasswordListRequest;
 		
 
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -9112,6 +9535,7 @@ namespace TSLib.Messages
 
 	public sealed partial class ServerUpdated : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ServerUpdated;
 		
 
@@ -9163,6 +9587,7 @@ namespace TSLib.Messages
 		public u32 MinAndroidVersion { get; set; }
 		public u32 MinIosVersion { get; set; }
 		public u32 AntifloodPointsToPluginBlock { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -9286,9 +9711,11 @@ namespace TSLib.Messages
 
 	public sealed partial class ServerVariablesRequest : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.ServerVariablesRequest;
 		
 
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -9301,12 +9728,14 @@ namespace TSLib.Messages
 
 	public sealed partial class SetClientChannelGroup : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.SetClientChannelGroup;
 		
 
 		public ChannelGroupId ChannelGroup { get; set; }
 		public ChannelId ChannelId { get; set; }
 		public ClientDbId ClientDbId { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -9340,15 +9769,17 @@ namespace TSLib.Messages
 
 	public sealed partial class TextMessage : INotification, IResponse
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.TextMessage;
-		public string ReturnCode { get; set; }
+		public string? ReturnCode { get; set; }
 
 		public TextMessageTargetMode Target { get; set; }
 		public str Message { get; set; }
 		public ClientId? TargetClientId { get; set; }
 		public ClientId InvokerId { get; set; }
 		public str InvokerName { get; set; }
-		public Uid InvokerUid { get; set; }
+		public Uid? InvokerUid { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -9388,10 +9819,12 @@ namespace TSLib.Messages
 
 	public sealed partial class TokenAdd : INotification, IResponse
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.TokenAdd;
-		public string ReturnCode { get; set; }
+		public string? ReturnCode { get; set; }
 
 		public str Token { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -9421,14 +9854,16 @@ namespace TSLib.Messages
 
 	public sealed partial class TokenAddRequest : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.TokenAddRequest;
 		
 
 		public TokenType TokenType { get; set; }
 		public u64 TokenId1 { get; set; }
 		public ChannelId TokenId2 { get; set; }
-		public str TokenDescription { get; set; }
-		public str TokenCustomSet { get; set; }
+		public str? TokenDescription { get; set; }
+		public str? TokenCustomSet { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -9466,10 +9901,12 @@ namespace TSLib.Messages
 
 	public sealed partial class TokenDelete : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.TokenDelete;
 		
 
 		public str Token { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -9499,8 +9936,9 @@ namespace TSLib.Messages
 
 	public sealed partial class TokenList : INotification, IResponse
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.TokenList;
-		public string ReturnCode { get; set; }
+		public string? ReturnCode { get; set; }
 
 		public str Token { get; set; }
 		public TokenType TokenType { get; set; }
@@ -9508,6 +9946,7 @@ namespace TSLib.Messages
 		public ChannelId TokenId2 { get; set; }
 		public DateTime TokenCreateTime { get; set; }
 		public str TokenDescription { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -9547,9 +9986,11 @@ namespace TSLib.Messages
 
 	public sealed partial class TokenListRequest : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.TokenListRequest;
 		
 
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -9562,10 +10003,12 @@ namespace TSLib.Messages
 
 	public sealed partial class TokenUse : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.TokenUse;
 		
 
 		public str Token { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -9595,6 +10038,7 @@ namespace TSLib.Messages
 
 	public sealed partial class TokenUsed : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.TokenUsed;
 		
 
@@ -9605,6 +10049,7 @@ namespace TSLib.Messages
 		public ClientId ClientId { get; set; }
 		public ClientDbId ClientDbId { get; set; }
 		public Uid ClientUid { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -9646,11 +10091,13 @@ namespace TSLib.Messages
 
 	public sealed partial class Use : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.Use;
 		
 
 		public u32? ServerId { get; set; }
 		public u16? Port { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -9682,9 +10129,11 @@ namespace TSLib.Messages
 
 	public sealed partial class VersionRequest : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.VersionRequest;
 		
 
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -9697,8 +10146,9 @@ namespace TSLib.Messages
 
 	public sealed partial class WhoAmI : IResponse
 	{
+		#pragma warning disable CS8618
 		
-		public string ReturnCode { get; set; }
+		public string? ReturnCode { get; set; }
 
 		public ClientId ClientId { get; set; }
 		public ChannelId ChannelId { get; set; }
@@ -9711,6 +10161,7 @@ namespace TSLib.Messages
 		public u16 VirtualServerPort { get; set; }
 		public str VirtualServerStatus { get; set; }
 		public Uid Uid { get; set; }
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
@@ -9760,9 +10211,11 @@ namespace TSLib.Messages
 
 	public sealed partial class WhoAmIRequest : INotification
 	{
+		#pragma warning disable CS8618
 		public NotificationType NotifyType { get; } = NotificationType.WhoAmIRequest;
 		
 
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{

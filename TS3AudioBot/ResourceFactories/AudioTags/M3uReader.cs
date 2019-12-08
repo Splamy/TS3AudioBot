@@ -30,8 +30,8 @@ namespace TS3AudioBot.ResourceFactories.AudioTags
 			int bufferLen = 0;
 			var buffer = new byte[MaxLineLength];
 			var data = new List<M3uEntry>();
-			string trackTitle = null;
-			string trackStreamMeta = null;
+			string? trackTitle = null;
+			string? trackStreamMeta = null;
 			//bool extm3u = false;
 
 			try
@@ -95,12 +95,11 @@ namespace TS3AudioBot.ResourceFactories.AudioTags
 							var lineStr = line.NewUtf8String();
 							if (Uri.TryCreate(lineStr, UriKind.RelativeOrAbsolute, out _))
 							{
-								data.Add(new M3uEntry()
-								{
-									TrackUrl = lineStr,
-									Title = trackTitle,
-									StreamMeta = trackStreamMeta,
-								});
+								data.Add(new M3uEntry(
+									trackUrl: lineStr,
+									title: trackTitle,
+									streamMeta: trackStreamMeta)
+								);
 							}
 							else
 							{
@@ -134,7 +133,14 @@ namespace TS3AudioBot.ResourceFactories.AudioTags
 	public class M3uEntry
 	{
 		public string TrackUrl { get; set; }
-		public string Title { get; set; }
-		public string StreamMeta { get; set; }
+		public string? Title { get; set; }
+		public string? StreamMeta { get; set; }
+
+		public M3uEntry(string trackUrl, string? title, string? streamMeta)
+		{
+			TrackUrl = trackUrl;
+			Title = title;
+			StreamMeta = streamMeta;
+		}
 	}
 }

@@ -23,6 +23,6 @@ namespace TS3AudioBot.Web.Api
 
 		public bool WriteOut(HttpResponse response) => writeFunc(response);
 
-		public override string ToString() => null;
+		public override string? ToString() => null;
 	}
 }

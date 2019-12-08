@@ -32,7 +32,7 @@ namespace TS3AudioBot.Rights
 
 		private bool needsRecalculation;
 		private readonly ConfRights config;
-		private RightsRule rootRule;
+		private RightsRule? rootRule;
 		private HashSet<string> registeredRights = new HashSet<string>();
 		private readonly object rootRuleLock = new object();
 
@@ -99,7 +99,7 @@ namespace TS3AudioBot.Rights
 
 				if (info.TryGet<Ts3Client>(out var ts) && info.TryGet<TsBaseFunctions>(out var tsClient))
 				{
-					ServerGroupId[] serverGroups = clientCall.ServerGroups;
+					ServerGroupId[]? serverGroups = clientCall.ServerGroups;
 					ChannelId? channelId = clientCall.ChannelId;
 					ClientDbId? databaseId = clientCall.DatabaseId;
 					ChannelGroupId? channelGroup = clientCall.ChannelGroup;
@@ -190,7 +190,7 @@ namespace TS3AudioBot.Rights
 			return execCtx;
 		}
 
-		private RightsRule TryGetRootSafe()
+		private RightsRule? TryGetRootSafe()
 		{
 			var localRootRule = rootRule;
 			if (localRootRule != null && !needsRecalculation)
@@ -230,7 +230,7 @@ namespace TS3AudioBot.Rights
 
 		// Loading and Parsing
 
-		private RightsRule ReadFile()
+		private RightsRule? ReadFile()
 		{
 			try
 			{
@@ -272,8 +272,8 @@ namespace TS3AudioBot.Rights
 
 			Log.Info("Creating new permission file ({@settings})", settings);
 
-			string toml = null;
-			using (var fs = Util.GetEmbeddedFile("TS3AudioBot.Rights.DefaultRights.toml"))
+			string? toml = null;
+			using (var fs = Util.GetEmbeddedFile("TS3AudioBot.Rights.DefaultRights.toml")!)
 			using (var reader = new StreamReader(fs, Tools.Utf8Encoder))
 			{
 				toml = reader.ReadToEnd();
@@ -551,8 +551,7 @@ namespace TS3AudioBot.Rights
 			{
 				foreach (var include in decl.Includes)
 				{
-					if (unusedGroups.Contains(include))
-						unusedGroups.Remove(include);
+					unusedGroups.Remove(include);
 				}
 			}
 			foreach (var uGroup in unusedGroups)
@@ -577,7 +576,7 @@ namespace TS3AudioBot.Rights
 					currentlyReached.Add(item);
 
 					item.MergeGroups(item.Includes);
-					item.Includes = null;
+					item.Includes = Array.Empty<RightsGroup>();
 				}
 				else
 				{
@@ -596,7 +595,7 @@ namespace TS3AudioBot.Rights
 			if (root.Parent != null)
 				root.MergeGroups(root.Parent);
 			root.MergeGroups(root.Includes);
-			root.Includes = null;
+			root.Includes = Array.Empty<RightsGroup>();
 
 			foreach (var child in root.ChildrenRules)
 				FlattenRules(child);
@@ -617,11 +616,11 @@ namespace TS3AudioBot.Rights
 				{
 					switch (matcher)
 					{
-					case MatchServerGroupId sgid:
+					case MatchServerGroupId _:
 						ctx.NeedsAvailableGroups = true;
 						break;
 
-					case MatchChannelGroupId sgid:
+					case MatchChannelGroupId _:
 						ctx.NeedsAvailableChanGroups = true;
 						break;
 

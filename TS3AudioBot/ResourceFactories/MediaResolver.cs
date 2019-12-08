@@ -56,7 +56,7 @@ namespace TS3AudioBot.ResourceFactories
 				return new MediaPlayResource(resData.FullUri, resource, null, true);
 			}
 
-			if (resource.ResourceTitle == null)
+			if (resource.ResourceTitle is null)
 			{
 				if (!string.IsNullOrWhiteSpace(resData.Title))
 					resource.ResourceTitle = resData.Title;
@@ -147,31 +147,38 @@ namespace TS3AudioBot.ResourceFactories
 
 		private R<Uri, LocalStr> TryGetUri(ConfBot conf, string uri)
 		{
-			if (Uri.TryCreate(uri, UriKind.Absolute, out Uri uriResult))
+			if (Uri.TryCreate(uri, UriKind.Absolute, out Uri? uriResult))
 			{
 				return uriResult;
 			}
 			else
 			{
 				var file = FindFile(conf, uri);
-				if (file == null)
+				if (file is null)
 					return new LocalStr(strings.error_media_file_not_found);
 				return file;
 			}
 		}
 
-		private Uri FindFile(ConfBot conf, string path)
+		private Uri? FindFile(ConfBot conf, string path)
 		{
 			Log.Trace("Finding media path: '{0}'", path);
 
 			try
 			{
+				// === remove this block for security rework
 				var fullPath = Path.GetFullPath(path);
 				if (File.Exists(fullPath))
 					return new Uri(fullPath, UriKind.Absolute);
-				fullPath = Path.GetFullPath(Path.Combine(conf.LocalConfigDir, BotPaths.Playlists, path));
-				if (File.Exists(fullPath))
-					return new Uri(fullPath, UriKind.Absolute);
+				// ===
+				var localPath = conf.LocalConfigDir;
+				if (localPath != null)
+				{
+					var localMusicPath = Path.GetFullPath(Path.Combine(localPath, BotPaths.Music));
+					fullPath = Path.GetFullPath(Path.Combine(localMusicPath, path));
+					if (File.Exists(fullPath) && fullPath.StartsWith(localMusicPath))
+						return new Uri(fullPath, UriKind.Absolute);
+				}
 			}
 			catch (Exception ex)
 			when (ex is ArgumentException || ex is NotSupportedException || ex is PathTooLongException || ex is System.Security.SecurityException)
@@ -239,11 +246,11 @@ namespace TS3AudioBot.ResourceFactories
 			return plistResult;
 		}
 
-		private R<Playlist, LocalStr> GetPlaylistContent(Stream stream, string url, string mime = null)
+		private R<Playlist, LocalStr> GetPlaylistContent(Stream stream, string url, string? mime = null)
 		{
-			string name = null;
+			string? name = null;
 			List<PlaylistItem> items;
-			mime = mime.ToLowerInvariant();
+			mime = mime?.ToLowerInvariant();
 			url = url.ToLowerInvariant();
 			string anyId = mime ?? url;
 
@@ -339,7 +346,7 @@ namespace TS3AudioBot.ResourceFactories
 
 		public R<Stream, LocalStr> GetThumbnail(ResolveContext _, PlayResource playResource)
 		{
-			byte[] rawImgData;
+			byte[]? rawImgData;
 
 			if (playResource is MediaPlayResource mediaPlayResource)
 			{
@@ -366,15 +373,16 @@ namespace TS3AudioBot.ResourceFactories
 	internal class ResData
 	{
 		public string FullUri { get; }
-		public string Title { get; }
-		public byte[] Image { get; set; }
+		public string? Title { get; }
+		public byte[]? Image { get; set; }
 
 		public bool IsIcyStream { get; set; } = false;
 
-		public ResData(string fullUri, string title)
+		public ResData(string fullUri, string? title)
 		{
 			FullUri = fullUri;
 			Title = title;
+			Image = null;
 		}
 	}
 
@@ -391,10 +399,10 @@ namespace TS3AudioBot.ResourceFactories
 
 	public class MediaPlayResource : PlayResource
 	{
-		public byte[] Image { get; }
+		public byte[]? Image { get; }
 		public bool IsIcyStream { get; }
 
-		public MediaPlayResource(string uri, AudioResource baseData, byte[] image, bool isIcyStream) : base(uri, baseData)
+		public MediaPlayResource(string uri, AudioResource baseData, byte[]? image, bool isIcyStream) : base(uri, baseData)
 		{
 			Image = image;
 			IsIcyStream = isIcyStream;

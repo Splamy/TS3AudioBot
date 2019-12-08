@@ -16,7 +16,7 @@ namespace TSLib.Audio
 	public class DecoderPipe : IAudioPipe, IDisposable, ISampleInfo
 	{
 		public bool Active => OutStream?.Active ?? false;
-		public IAudioPassiveConsumer OutStream { get; set; }
+		public IAudioPassiveConsumer? OutStream { get; set; }
 
 		public int SampleRate { get; } = 48_000;
 		public int Channels { get; } = 2;
@@ -35,9 +35,9 @@ namespace TSLib.Audio
 			decodedBuffer = new byte[4096 * 2];
 		}
 
-		public void Write(Span<byte> data, Meta meta)
+		public void Write(Span<byte> data, Meta? meta)
 		{
-			if (OutStream is null || !meta.Codec.HasValue)
+			if (OutStream is null || meta?.Codec is null)
 				return;
 
 			switch (meta.Codec.Value)
@@ -88,7 +88,7 @@ namespace TSLib.Audio
 			{
 				Codec.OpusVoice => OpusDecoder.Create(SampleRate, 1),
 				Codec.OpusMusic => OpusDecoder.Create(SampleRate, 2),
-				_ => null,
+				_ => throw new NotSupportedException(),
 			};
 		}
 

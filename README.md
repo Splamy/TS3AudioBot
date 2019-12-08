@@ -48,7 +48,7 @@ Download either one of the latest builds from our [nightly server](https://splam
   Will always have the latest and greatest but might not be fully stable or have broken features.
 
 #### Linux
-1. dotnet core: Get the latest `dotnet core 2.2` version by following [this tutorial](https://dotnet.microsoft.com/download/linux-package-manager/ubuntu16-04/sdk-current) and follow the steps after choosing your platform
+1. dotnet core: Get the latest `dotnet core` version by following [this tutorial](https://dotnet.microsoft.com/download/linux-package-manager/ubuntu16-04/sdk-current) and follow the steps after choosing your platform
 1. Other dependencies:
 * on **Ubuntu**:  
 Run `sudo apt-get install libopus-dev ffmpeg`
@@ -98,13 +98,13 @@ For further reading check out the [CommandSystem](https://github.com/Splamy/TS3A
 Download the git repository with `git clone --recurse-submodules https://github.com/Splamy/TS3AudioBot.git`.
 
 #### Linux
-1. Get the latest `dotnet core 2.2` version by following [this tutorial](https://dotnet.microsoft.com/download/linux-package-manager/ubuntu16-04/sdk-current) and choose your platform
+1. Get the latest `dotnet core 3.0` version by following [this tutorial](https://docs.microsoft.com/dotnet/core/install/linux-package-managers) and choose your platform
 1. Go into the directory of the repository with `cd TS3AudioBot`
-1. Execute `dotnet build --framework netcoreapp2.2 --configuration Release TS3AudioBot` to build the AudioBot
-1. The binary will be in `./TS3AudioBot/bin/Release/netcoreapp2.2` and can be run with `dotnet TS3AudioBot.dll`
+1. Execute `dotnet build --framework netcoreapp3.0 --configuration Release TS3AudioBot` to build the AudioBot
+1. The binary will be in `./TS3AudioBot/bin/Release/netcoreapp3.0` and can be run with `dotnet TS3AudioBot.dll`
 
 #### Windows
-1. Make sure you have installed `Visual Studio` with `.NET Framework 4.7.2` and the latest `dotnet core 2.2` or higher
+1. Make sure you have `Visual Studio` with the `dotnet core 3.0` development toolchain installed
 1. Build the AudioBot with Visual Studio.
 
 ## Community

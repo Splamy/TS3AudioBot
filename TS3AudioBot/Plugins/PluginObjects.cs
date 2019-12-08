@@ -16,5 +16,12 @@ namespace TS3AudioBot.Plugins
 		public PluginCommandBag Bag { get; set; }
 		public ITabPlugin Plugin { get; set; }
 		public CommandManager CommandManager { get; set; }
+
+		public PluginObjects(ITabPlugin plugin, PluginCommandBag bag, CommandManager commandManager)
+		{
+			Bag = bag;
+			Plugin = plugin;
+			CommandManager = commandManager;
+		}
 	}
 }

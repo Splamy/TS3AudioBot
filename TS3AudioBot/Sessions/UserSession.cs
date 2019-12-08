@@ -9,18 +9,19 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Threading;
 using TS3AudioBot.CommandSystem;
-using Response = System.Func<string, string>;
+using Response = System.Func<string, string?>;
 
 namespace TS3AudioBot.Sessions
 {
 	public class UserSession
 	{
-		private Dictionary<string, object> assocMap;
+		private Dictionary<string, object>? assocMap;
 		protected bool lockToken;
 
-		public Response ResponseProcessor { get; private set; }
+		public Response? ResponseProcessor { get; private set; }
 
 		public UserSession()
 		{
@@ -41,15 +42,15 @@ namespace TS3AudioBot.Sessions
 			ResponseProcessor = null;
 		}
 
-		public bool Get<TData>(string key, out TData value)
+		public bool Get<TData>(string key, [MaybeNullWhen(false)] out TData value)
 		{
 			VerifyLock();
-			value = default;
+			value = default!;
 
 			if (assocMap is null)
 				return false;
 
-			if (!assocMap.TryGetValue(key, out object valueObj))
+			if (!assocMap.TryGetValue(key, out var valueObj))
 				return false;
 
 			if (!(valueObj is TData valueT))
@@ -59,7 +60,7 @@ namespace TS3AudioBot.Sessions
 			return true;
 		}
 
-		public void Set<TData>(string key, TData data)
+		public void Set<TData>(string key, TData data) where TData : notnull
 		{
 			VerifyLock();
 
@@ -95,7 +96,7 @@ namespace TS3AudioBot.Sessions
 
 	public static class UserSessionExtensions
 	{
-		public static void SetResponse(this UserSession session, Response responseProcessor)
+		public static void SetResponse(this UserSession? session, Response responseProcessor)
 		{
 			if (session is null)
 				throw new CommandException("No session context", CommandExceptionReason.CommandError);

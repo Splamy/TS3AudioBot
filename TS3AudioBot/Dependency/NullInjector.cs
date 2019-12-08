@@ -15,7 +15,7 @@ namespace TS3AudioBot.Dependency
 	{
 		public static readonly IInjector Instance = new NullInjector();
 		private NullInjector() { }
-		public object GetModule(Type type) => null;
+		public object? GetModule(Type type) => null;
 		public void AddModule(Type type, object obj) { }
 	}
 }

@@ -37,7 +37,7 @@ namespace TS3AudioBot.ResourceFactories
 			AddResolver(new BandcampResolver());
 		}
 
-		private T GetResolverByType<T>(string audioType) where T : class, IResolver =>
+		private T? GetResolverByType<T>(string audioType) where T : class, IResolver =>
 			// ToLower for legacy reasons
 			allResolvers.TryGetValue(audioType.ToLowerInvariant(), out var resolver) && resolver is T resolverT
 				? resolverT
@@ -111,7 +111,7 @@ namespace TS3AudioBot.ResourceFactories
 		/// <param name="audioType">The associated resource type string to a resolver.
 		/// Leave null to let it detect automatically.</param>
 		/// <returns>The playable resource if successful, or an error message otherwise.</returns>
-		public R<PlayResource, LocalStr> Load(ResolveContext ctx, string message, string audioType = null)
+		public R<PlayResource, LocalStr> Load(ResolveContext ctx, string message, string? audioType = null)
 		{
 			if (string.IsNullOrWhiteSpace(message))
 				throw new ArgumentNullException(nameof(message));
@@ -132,7 +132,7 @@ namespace TS3AudioBot.ResourceFactories
 
 			var sw = Stopwatch.StartNew();
 			var resolvers = FilterUsable(GetResResolverByLink(ctx, netlinkurl));
-			List<(string, LocalStr)> errors = null;
+			List<(string, LocalStr)>? errors = null;
 			foreach (var resolver in resolvers)
 			{
 				var result = resolver.GetResource(ctx, netlinkurl);
@@ -146,7 +146,7 @@ namespace TS3AudioBot.ResourceFactories
 			return ToErrorString(errors);
 		}
 
-		public R<Playlist, LocalStr> LoadPlaylistFrom(ResolveContext ctx, string message, string audioType = null)
+		public R<Playlist, LocalStr> LoadPlaylistFrom(ResolveContext ctx, string message, string? audioType = null)
 		{
 			if (string.IsNullOrWhiteSpace(message))
 				throw new ArgumentNullException(nameof(message));
@@ -166,7 +166,7 @@ namespace TS3AudioBot.ResourceFactories
 			}
 
 			var resolvers = FilterUsable(GetListResolverByLink(ctx, netlinkurl));
-			List<(string, LocalStr)> errors = null;
+			List<(string, LocalStr)>? errors = null;
 			foreach (var resolver in resolvers)
 			{
 				var result = resolver.GetPlaylist(ctx, netlinkurl);
@@ -243,7 +243,7 @@ namespace TS3AudioBot.ResourceFactories
 				searchResolvers.Remove(searchResolver);
 		}
 
-		private static LocalStr CouldNotLoad(string reason = null)
+		private static LocalStr CouldNotLoad(string? reason = null)
 		{
 			if (reason is null)
 				return new LocalStr(strings.error_resfac_could_not_load);
@@ -252,7 +252,7 @@ namespace TS3AudioBot.ResourceFactories
 			return new LocalStr(strb.ToString());
 		}
 
-		private static LocalStr ToErrorString(List<(string rsv, LocalStr err)> errors)
+		private static LocalStr ToErrorString(List<(string rsv, LocalStr err)>? errors)
 		{
 			if (errors is null || errors.Count == 0)
 				throw new ArgumentException("No errors provided", nameof(errors));

@@ -15,9 +15,14 @@ namespace TS3AudioBot.CommandSystem.Ast
 	{
 		public abstract AstType Type { get; }
 
-		public string FullRequest { get; set; }
+		public string FullRequest { get; }
 		public int Position { get; set; }
 		public int Length { get; set; }
+
+		protected AstNode(string fullRequest)
+		{
+			FullRequest = fullRequest;
+		}
 
 		public abstract void Write(StringBuilder strb, int depth);
 		public sealed override string ToString()

@@ -28,11 +28,11 @@ namespace TS3AudioBot
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private readonly Id id;
 
-		public event EventHandler OnBotConnected;
-		public event EventHandler<DisconnectEventArgs> OnBotDisconnect;
-		public event EventHandler<TextMessage> OnMessageReceived;
-		public event EventHandler<AloneChanged> OnAloneChanged;
-		public event EventHandler OnWhisperNoTarget;
+		public event EventHandler? OnBotConnected;
+		public event EventHandler<DisconnectEventArgs>? OnBotDisconnect;
+		public event EventHandler<TextMessage>? OnMessageReceived;
+		public event EventHandler<AloneChanged>? OnAloneChanged;
+		public event EventHandler? OnWhisperNoTarget;
 
 		private static readonly string[] QuitMessages = {
 			"I'm outta here", "You're boring", "Have a nice day", "Bye", "Good night",
@@ -46,13 +46,13 @@ namespace TS3AudioBot
 		};
 
 		private bool closed = false;
-		private TickWorker reconnectTick = null;
+		private TickWorker? reconnectTick = null;
 		private int reconnectCounter;
 		private ReconnectType? lastReconnect;
 
 		private readonly ConfBot config;
 		private readonly TsFullClient ts3FullClient;
-		private IdentityData identity;
+		private IdentityData? identity;
 		private List<ClientList> clientbuffer = new List<ClientList>();
 		private bool clientbufferOutdated = true;
 		private readonly TimedCache<ClientDbId, ClientDbInfo> clientDbNames = new TimedCache<ClientDbId, ClientDbInfo>();
@@ -61,7 +61,6 @@ namespace TS3AudioBot
 		private ClientId[] ownChannelClients = Array.Empty<ClientId>();
 
 		public bool Connected => ts3FullClient.Connected;
-		public ConnectionData ConnectionData => ts3FullClient.ConnectionData;
 
 		public Ts3Client(ConfBot config, TsFullClient ts3FullClient, Id id)
 		{
@@ -130,6 +129,8 @@ namespace TS3AudioBot
 
 		private E<string> ConnectClient()
 		{
+			if (identity is null) throw new InvalidOperationException();
+
 			StopReconnectTickWorker();
 			if (closed)
 				return "Bot disposed";
@@ -157,17 +158,14 @@ namespace TS3AudioBot
 
 			try
 			{
-				var connectionConfig = new ConnectionDataFull
-				{
-					Username = config.Connect.Name,
-					ServerPassword = config.Connect.ServerPassword.Get(),
-					Address = config.Connect.Address,
-					Identity = identity,
-					VersionSign = versionSign,
-					DefaultChannel = config.Connect.Channel,
-					DefaultChannelPassword = config.Connect.ChannelPassword.Get(),
-					LogId = id,
-				};
+				var connectionConfig = new ConnectionDataFull(config.Connect.Address, identity,
+					versionSign: versionSign,
+					username: config.Connect.Name,
+					serverPassword: config.Connect.ServerPassword.Get(),
+					defaultChannel: config.Connect.Channel,
+					defaultChannelPassword: config.Connect.ChannelPassword.Get(),
+					logId: id);
+
 				config.SaveWhenExists();
 
 				ts3FullClient.Connect(connectionConfig);
@@ -182,6 +180,7 @@ namespace TS3AudioBot
 
 		private void UpdateIndentityToSecurityLevel(int targetLevel)
 		{
+			if (identity == null) throw new InvalidOperationException();
 			if (TsCrypt.GetSecurityLevel(identity) < targetLevel)
 			{
 				Log.Info("Calculating up to required security level: {0}", targetLevel);
@@ -338,15 +337,15 @@ namespace TS3AudioBot
 			return result.Value.ClientDbId;
 		}
 
-		internal bool SetupRights(string key)
+		public bool SetupRights(string? key)
 		{
-			var dbResult = ts3FullClient.GetClientDbIdFromUid(identity.ClientUid);
-			if (!dbResult.Ok)
+			var self = ts3FullClient.Book.Self();
+			if (self is null)
 			{
-				Log.Error("Getting own dbid failed ({0})", dbResult.Error.ErrorFormat());
+				Log.Error("Getting self failed");
 				return false;
 			}
-			var myDbId = dbResult.Value.ClientDbId;
+			var myDbId = self.DatabaseId;
 
 			// Check all own server groups
 			var getGroupResult = GetClientServerGroups(myDbId);
@@ -480,11 +479,11 @@ namespace TS3AudioBot
 
 		public E<LocalStr> UploadAvatar(System.IO.Stream stream) => ts3FullClient.UploadAvatar(stream).FormatLocal(e =>
 			(e == TsErrorCode.permission_invalid_size ? strings.error_ts_file_too_big : null, false)
-		); // TODO C# 8 switch expressions
+		);
 
 		public E<LocalStr> DeleteAvatar() => ts3FullClient.DeleteAvatar().FormatLocal();
 
-		public E<LocalStr> MoveTo(ChannelId channelId, string password = null)
+		public E<LocalStr> MoveTo(ChannelId channelId, string? password = null)
 			=> ts3FullClient.ClientMove(ts3FullClient.ClientId, channelId, password).FormatLocal(_ => (strings.error_ts_cannot_move, true));
 
 		public E<LocalStr> SetChannelCommander(bool isCommander)
@@ -515,7 +514,7 @@ namespace TS3AudioBot
 
 		#region Events
 
-		private void TsFullClient_OnErrorEvent(object sender, CommandError error)
+		private void TsFullClient_OnErrorEvent(object? sender, CommandError error)
 		{
 			switch (error.Id)
 			{
@@ -529,7 +528,7 @@ namespace TS3AudioBot
 			}
 		}
 
-		private void TsFullClient_OnDisconnected(object sender, DisconnectEventArgs e)
+		private void TsFullClient_OnDisconnected(object? sender, DisconnectEventArgs e)
 		{
 			if (e.Error != null)
 			{
@@ -537,7 +536,7 @@ namespace TS3AudioBot
 				switch (error.Id)
 				{
 				case TsErrorCode.client_could_not_validate_identity:
-					if (config.Connect.Identity.Level.Value == -1)
+					if (config.Connect.Identity.Level.Value == -1 && !string.IsNullOrEmpty(error.ExtraMessage))
 					{
 						int targetSecLevel = int.Parse(error.ExtraMessage);
 						UpdateIndentityToSecurityLevel(targetSecLevel);
@@ -574,13 +573,15 @@ namespace TS3AudioBot
 			{
 				Log.Debug("Bot disconnected. Reason: {0}", e.ExitReason);
 
-				if (TryReconnect( // TODO c# 8.0 switch expression
-						e.ExitReason == Reason.Timeout ? ReconnectType.Timeout :
-						e.ExitReason == Reason.KickedFromServer ? ReconnectType.Kick :
-						e.ExitReason == Reason.ServerShutdown || e.ExitReason == Reason.ServerStopped ? ReconnectType.ServerShutdown :
-						e.ExitReason == Reason.Banned ? ReconnectType.Ban :
-						ReconnectType.None))
-					return;
+				if (TryReconnect(e.ExitReason switch
+				{
+					Reason.Timeout => ReconnectType.Timeout,
+					Reason.KickedFromServer => ReconnectType.Kick,
+					Reason.ServerShutdown => ReconnectType.ServerShutdown,
+					Reason.ServerStopped => ReconnectType.ServerShutdown,
+					Reason.Banned => ReconnectType.Ban,
+					_ => ReconnectType.None
+				})) return;
 			}
 
 			OnBotDisconnect?.Invoke(this, e);
@@ -620,7 +621,7 @@ namespace TS3AudioBot
 			return true;
 		}
 
-		private void TsFullClient_OnConnected(object sender, EventArgs e)
+		private void TsFullClient_OnConnected(object? sender, EventArgs e)
 		{
 			StopReconnectTickWorker();
 			reconnectCounter = 0;
@@ -628,7 +629,7 @@ namespace TS3AudioBot
 			OnBotConnected?.Invoke(this, EventArgs.Empty);
 		}
 
-		private void ExtendedTextMessage(object sender, TextMessage textMessage)
+		private void ExtendedTextMessage(object? sender, TextMessage textMessage)
 		{
 			// Prevent loopback of own textmessages
 			if (textMessage.InvokerId == ts3FullClient.ClientId)
@@ -686,28 +687,28 @@ namespace TS3AudioBot
 
 	internal static class CommandErrorExtentions
 	{
-		public static R<T, LocalStr> FormatLocal<T>(this R<T, CommandError> cmdErr, Func<TsErrorCode, (string loc, bool msg)> prefix = null)
+		public static R<T, LocalStr> FormatLocal<T>(this R<T, CommandError> cmdErr, Func<TsErrorCode, (string? loc, bool msg)>? prefix = null) where T : notnull
 		{
 			if (cmdErr.Ok)
 				return cmdErr.Value;
 			return cmdErr.Error.FormatLocal(prefix);
 		}
 
-		public static E<LocalStr> FormatLocal(this E<CommandError> cmdErr, Func<TsErrorCode, (string loc, bool msg)> prefix = null)
+		public static E<LocalStr> FormatLocal(this E<CommandError> cmdErr, Func<TsErrorCode, (string? loc, bool msg)>? prefix = null)
 		{
 			if (cmdErr.Ok)
 				return R.Ok;
 			return cmdErr.Error.FormatLocal(prefix);
 		}
 
-		public static LocalStr FormatLocal(this CommandError err, Func<TsErrorCode, (string loc, bool msg)> prefix = null)
+		public static LocalStr FormatLocal(this CommandError err, Func<TsErrorCode, (string? loc, bool msg)>? prefix = null)
 		{
 			var strb = new StringBuilder();
 			bool msg = true;
 
 			if (prefix != null)
 			{
-				string prefixStr;
+				string? prefixStr;
 				(prefixStr, msg) = prefix(err.Id);
 				if (prefixStr != null)
 				{

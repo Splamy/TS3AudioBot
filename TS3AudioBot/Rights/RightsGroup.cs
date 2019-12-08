@@ -18,7 +18,7 @@ namespace TS3AudioBot.Rights
 			Name = name;
 		}
 
-		public override RightsGroup ResolveGroup(string groupName, ParseContext ctx)
+		public override RightsGroup? ResolveGroup(string groupName, ParseContext ctx)
 		{
 			if (Name == groupName)
 				return this;

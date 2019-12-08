@@ -19,14 +19,14 @@ namespace TS3AudioBot
 		public ClientDbId? DatabaseId { get; }
 		public ChannelId? ChannelId { get; }
 		public ClientId? ClientId { get; }
-		public string NickName { get; }
-		public ServerGroupId[] ServerGroups { get; }
+		public string? NickName { get; }
+		public ServerGroupId[]? ServerGroups { get; }
 		public ChannelGroupId? ChannelGroup { get; }
 		public TextMessageTargetMode? Visibiliy { get; internal set; }
 
 		public ClientCall(Uid clientUid, string textMessage, ClientDbId? databaseId = null,
-			ChannelId? channelId = null, ClientId? clientId = null, string nickName = null,
-			TextMessageTargetMode? visibiliy = null, ServerGroupId[] serverGroups = null,
+			ChannelId? channelId = null, ClientId? clientId = null, string? nickName = null,
+			TextMessageTargetMode? visibiliy = null, ServerGroupId[]? serverGroups = null,
 			ChannelGroupId? channelGroup = null) : base(clientUid)
 		{
 			TextMessage = textMessage;

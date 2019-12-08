@@ -22,7 +22,7 @@ namespace TS3AudioBot.History
 		[Obsolete]
 		public uint? UserInvokeId { get; set; }
 		/// <summary>The Uid of the teamspeak user, who played this song first.</summary>
-		public string UserUid { get; set; }
+		public string? UserUid { get; set; }
 		/// <summary>How often the song has been played.</summary>
 		public uint PlayCount { get; set; }
 		/// <summary>The last time this song has been played.</summary>
@@ -33,12 +33,14 @@ namespace TS3AudioBot.History
 		public AudioLogEntry()
 		{
 			PlayCount = 0;
+			AudioResource = null!;
 		}
 
-		public AudioLogEntry(int id, AudioResource resource) : this()
+		public AudioLogEntry(int id, AudioResource resource, string userUid) : this()
 		{
 			Id = id;
 			AudioResource = resource;
+			UserUid = userUid;
 		}
 
 		public void SetName(string newName)

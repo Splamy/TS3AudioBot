@@ -13,18 +13,16 @@ namespace TS3AudioBot.CommandSystem.Ast
 {
 	internal class AstValue : AstNode
 	{
-		private string value;
-		private string tailString;
+		private string? value;
+		private string? tailString;
 
 		public override AstType Type => AstType.Value;
-
-		public StringType StringType { get; set; }
-
+		public StringType StringType { get; }
 		public int TailLength { get; set; }
 
 		public string Value
 		{
-			get => value = (value ?? FullRequest.Substring(Position, Length));
+			get => value ??= FullRequest.Substring(Position, Length);
 			set { this.value = value; tailString = value; }
 		}
 
@@ -32,7 +30,7 @@ namespace TS3AudioBot.CommandSystem.Ast
 		{
 			get
 			{
-				if (tailString == null)
+				if (tailString is null)
 				{
 					if (TailLength == 0)
 						tailString = FullRequest.Substring(Position);
@@ -41,6 +39,11 @@ namespace TS3AudioBot.CommandSystem.Ast
 				}
 				return tailString;
 			}
+		}
+
+		public AstValue(string fullRequest, StringType stringType) : base(fullRequest)
+		{
+			StringType = stringType;
 		}
 
 		public override void Write(StringBuilder strb, int depth) => strb.Space(depth).Append(Value);

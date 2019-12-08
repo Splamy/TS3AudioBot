@@ -17,16 +17,16 @@ namespace TS3AudioBot.Rights
 {
 	internal class ExecuteContext
 	{
-		public string Host { get; set; }
-		public ServerGroupId[] ServerGroups { get; set; } = Array.Empty<ServerGroupId>();
+		public string? Host { get; set; }
+		public ServerGroupId[]? ServerGroups { get; set; } = Array.Empty<ServerGroupId>();
 		public ChannelGroupId? ChannelGroupId { get; set; }
 		public Uid ClientUid { get; set; }
 		public bool IsApi { get; set; }
-		public IPAddress ApiCallerIp { get; set; }
-		public string ApiToken { get; set; }
-		public string Bot { get; set; }
+		public IPAddress? ApiCallerIp { get; set; }
+		public string? ApiToken { get; set; }
+		public string? Bot { get; set; }
 		public TextMessageTargetMode? Visibiliy { get; set; }
-		public PermOverview[] Permissions { get; set; }
+		public PermOverview[]? Permissions { get; set; }
 
 		public List<RightsRule> MatchingRules { get; } = new List<RightsRule>();
 

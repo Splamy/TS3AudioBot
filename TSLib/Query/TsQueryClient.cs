@@ -27,10 +27,9 @@ namespace TSLib.Query
 	{
 		private readonly object sendQueueLock = new object();
 		private readonly TcpClient tcpClient;
-		private NetworkStream tcpStream;
-		private StreamReader tcpReader;
-		private StreamWriter tcpWriter;
-		private CancellationTokenSource cts;
+		private StreamReader? tcpReader;
+		private StreamWriter? tcpWriter;
+		private CancellationTokenSource? cts;
 		private readonly SyncMessageProcessor msgProc;
 		private readonly IEventDispatcher dispatcher;
 		private readonly Pipe dataPipe = new Pipe();
@@ -41,11 +40,11 @@ namespace TSLib.Query
 		public override bool Connecting => connecting && !Connected;
 		protected override Deserializer Deserializer => msgProc.Deserializer;
 
-		public override event NotifyEventHandler<TextMessage> OnTextMessage;
-		public override event NotifyEventHandler<ClientEnterView> OnClientEnterView;
-		public override event NotifyEventHandler<ClientLeftView> OnClientLeftView;
-		public override event EventHandler<EventArgs> OnConnected;
-		public override event EventHandler<DisconnectEventArgs> OnDisconnected;
+		public override event NotifyEventHandler<TextMessage>? OnTextMessage;
+		public override event NotifyEventHandler<ClientEnterView>? OnClientEnterView;
+		public override event NotifyEventHandler<ClientLeftView>? OnClientLeftView;
+		public override event EventHandler<EventArgs>? OnConnected;
+		public override event EventHandler<DisconnectEventArgs>? OnDisconnected;
 
 		public TsQueryClient()
 		{
@@ -57,9 +56,10 @@ namespace TSLib.Query
 
 		public override void Connect(ConnectionData conData)
 		{
-			if (!TsDnsResolver.TryResolve(conData.Address, out remoteAddress, TsDnsResolver.TsQueryDefaultPort))
+			if (!TsDnsResolver.TryResolve(conData.Address, out remoteAddress!, TsDnsResolver.TsQueryDefaultPort))
 				throw new TsException("Could not read or resolve address.");
 
+			NetworkStream tcpStream;
 			try
 			{
 				connecting = true;
@@ -82,7 +82,7 @@ namespace TSLib.Query
 
 			cts = new CancellationTokenSource();
 			dispatcher.Init(InvokeEvent, conData.LogId);
-			NetworkLoop(cts.Token).ConfigureAwait(false);
+			NetworkLoop(tcpStream, cts.Token).ConfigureAwait(false);
 			OnConnected?.Invoke(this, EventArgs.Empty);
 		}
 
@@ -91,13 +91,14 @@ namespace TSLib.Query
 			lock (sendQueueLock)
 			{
 				SendRaw("quit");
-				cts.Cancel();
+				cts?.Cancel();
+				cts = null;
 				if (tcpClient.Connected)
-					tcpClient?.Dispose();
+					tcpClient.Dispose();
 			}
 		}
 
-		private async Task NetworkLoop(CancellationToken cancellationToken)
+		private async Task NetworkLoop(NetworkStream tcpStream, CancellationToken cancellationToken)
 		{
 			await Task.WhenAll(NetworkToPipeLoopAsync(tcpStream, dataPipe.Writer, cancellationToken), PipeProcessorAsync(dataPipe.Reader, cancellationToken)).ConfigureAwait(false);
 			OnDisconnected?.Invoke(this, new DisconnectEventArgs(Reason.LeftServer));
@@ -194,7 +195,7 @@ namespace TSLib.Query
 
 		public override R<T[], CommandError> Send<T>(TsCommand com) // Synchronous
 		{
-			using var wb = new WaitBlock(msgProc.Deserializer, false);
+			using var wb = new WaitBlockSync(msgProc.Deserializer);
 			lock (sendQueueLock)
 			{
 				msgProc.EnqueueRequest(wb);
@@ -211,8 +212,8 @@ namespace TSLib.Query
 		{
 			if (!tcpClient.Connected)
 				return;
-			tcpWriter.WriteLine(data);
-			tcpWriter.Flush();
+			tcpWriter?.WriteLine(data);
+			tcpWriter?.Flush();
 		}
 
 		#region QUERY SPECIFIC COMMANDS
@@ -253,7 +254,7 @@ namespace TSLib.Query
 		// Splitted base commands
 
 		public override R<IChannelCreateResponse, CommandError> ChannelCreate(string name,
-			string namePhonetic = null, string topic = null, string description = null, string password = null,
+			string? namePhonetic = null, string? topic = null, string? description = null, string? password = null,
 			Codec? codec = null, int? codecQuality = null, int? codecLatencyFactor = null, bool? codecEncrypted = null,
 			int? maxClients = null, int? maxFamilyClients = null, bool? maxClientsUnlimited = null,
 			bool? maxFamilyClientsUnlimited = null, bool? maxFamilyClientsInherited = null, ChannelId? order = null,
@@ -301,10 +302,8 @@ namespace TSLib.Query
 			{
 				tcpWriter?.Dispose();
 				tcpWriter = null;
-
 				tcpReader?.Dispose();
 				tcpReader = null;
-
 				msgProc.DropQueue();
 				dispatcher.Dispose();
 			}

@@ -23,6 +23,7 @@ using TSLib.Helper;
 
 <#= ConversionSet #>
 
+#nullable enable
 namespace TSLib.Messages
 {
 <#
@@ -129,11 +130,13 @@ foreach(var msg in gen.GetOrderedMsg())
 		else if (isResponse) Write(" : IResponse");
 	#>
 	{
+		#pragma warning disable CS8618
 		<#= isNotify ? "public NotificationType NotifyType { get; } = NotificationType." + msg.name + ";" : "" #>
-		<#= isResponse ? "public string ReturnCode { get; set; }" : "" #>
+		<#= isResponse ? "public string? ReturnCode { get; set; }" : "" #>
 <#
 	foreach (var (genField, optional) in msg.attributes.Select(f => gen.GetField(f))) { #>
 		public <#= genField.TypeFin(optional) #> <#= genField.pretty #> { get; set; }<# } #>
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{<#

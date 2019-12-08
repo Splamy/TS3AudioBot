@@ -16,7 +16,7 @@ namespace TS3AudioBot.CommandSystem.CommandResults
 {
 	public static class ResultHelper
 	{
-		public static bool IsValidResult(object result, IReadOnlyList<Type> returnTypes)
+		public static bool IsValidResult(object? result, IReadOnlyList<Type?> returnTypes)
 		{
 			if (result == null)
 				return returnTypes.Contains(null);
@@ -24,11 +24,11 @@ namespace TS3AudioBot.CommandSystem.CommandResults
 			return IsValidResultType(result.GetType(), returnTypes);
 		}
 
-		public static bool IsValidResultType(Type resultType, IReadOnlyList<Type> returnTypes)
+		public static bool IsValidResultType(Type resultType, IReadOnlyList<Type?> returnTypes)
 		{
 			return returnTypes.Any(t =>
 			{
-				if (t == null)
+				if (t is null)
 					return false;
 				if (BasicTypes.Contains(t))
 				{
@@ -52,10 +52,9 @@ namespace TS3AudioBot.CommandSystem.CommandResults
 			if (BasicTypes.Contains(resultType))
 			{
 				var genType = typeof(PrimitiveResult<>).MakeGenericType(resultType);
-				return Activator.CreateInstance(genType, new object[] { result });
+				return Activator.CreateInstance(genType, new object[] { result }) ?? throw new ArgumentException("Activator didn't do his job...");
 			}
-			else
-				return result;
+			return result;
 		}
 	}
 }

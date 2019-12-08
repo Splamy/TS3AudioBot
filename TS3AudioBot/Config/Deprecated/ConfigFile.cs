@@ -29,7 +29,7 @@ namespace TS3AudioBot.Config.Deprecated
 		private bool changed;
 		private readonly Dictionary<string, ConfigData> confObjects = new Dictionary<string, ConfigData>();
 
-		public static ConfigFile OpenOrCreate(string path)
+		public static ConfigFile? OpenOrCreate(string path)
 		{
 			var cfgFile = new NormalConfigFile(path);
 			return cfgFile.Open() ? cfgFile : null;
@@ -61,7 +61,7 @@ namespace TS3AudioBot.Config.Deprecated
 			var fields = typeof(T).GetProperties();
 			foreach (var field in fields)
 			{
-				InfoAttribute iAtt = field.GetCustomAttribute<InfoAttribute>();
+				InfoAttribute iAtt = field.GetCustomAttribute<InfoAttribute>()!;
 				string entryName = associatedClass + NameSeperator + field.Name;
 				object parsedValue;
 				bool newKey = false;
@@ -86,7 +86,7 @@ namespace TS3AudioBot.Config.Deprecated
 				// Try to parse it and save if necessary
 				try
 				{
-					parsedValue = Convert.ChangeType(rawValue, field.PropertyType, CultureInfo.InvariantCulture);
+					parsedValue = Convert.ChangeType(rawValue, field.PropertyType, CultureInfo.InvariantCulture)!;
 				}
 				catch (Exception ex) when (ex is FormatException || ex is OverflowException)
 				{
@@ -110,7 +110,7 @@ namespace TS3AudioBot.Config.Deprecated
 
 		protected virtual void RegisterConfigObj(ConfigData obj)
 		{
-			confObjects.Add(obj.AssociatedClass, obj);
+			confObjects.Add(obj.AssociatedClass!, obj);
 		}
 
 		public E<LocalStr> SetSetting(string key, string value)
@@ -123,7 +123,7 @@ namespace TS3AudioBot.Config.Deprecated
 				return new LocalStr(strings.error_config_no_key_found);
 
 			object convertedValue;
-			PropertyInfo prop = co.GetType().GetProperty(keyParam[1], BindingFlags.IgnoreCase | BindingFlags.Instance | BindingFlags.Public);
+			PropertyInfo prop = co.GetType().GetProperty(keyParam[1], BindingFlags.IgnoreCase | BindingFlags.Instance | BindingFlags.Public)!;
 			try
 			{
 				convertedValue = Convert.ChangeType(value, prop.PropertyType, CultureInfo.InvariantCulture);
@@ -138,11 +138,11 @@ namespace TS3AudioBot.Config.Deprecated
 		}
 
 		protected void WriteValueToConfig(string entryName, object value)
-			=> WriteKey(entryName, Convert.ToString(value, CultureInfo.InvariantCulture));
+			=> WriteKey(entryName, Convert.ToString(value, CultureInfo.InvariantCulture)!);
 
 		protected abstract void WriteComment(string text);
 		protected abstract void WriteKey(string key, string value);
-		protected abstract bool ReadKey(string key, out string value);
+		protected abstract bool ReadKey(string key, out string? value);
 		public abstract void Close();
 
 		public abstract IEnumerable<KeyValuePair<string, string>> GetConfigMap();
@@ -226,7 +226,7 @@ namespace TS3AudioBot.Config.Deprecated
 				FlushToFile();
 			}
 
-			protected override bool ReadKey(string key, out string value)
+			protected override bool ReadKey(string key, out string? value)
 			{
 				if (data.TryGetValue(key.ToLowerInvariant(), out int line))
 				{
@@ -299,12 +299,12 @@ namespace TS3AudioBot.Config.Deprecated
 			}
 
 			public override IEnumerable<KeyValuePair<string, string>> GetConfigMap()
-				=> fileLines.Where(e => !e.Comment).Select(e => new KeyValuePair<string, string>(e.Key, e.Value));
+				=> fileLines.Where(e => !e.Comment).Select(e => new KeyValuePair<string, string>(e.Key!, e.Value));
 
 			private class LineData
 			{
 				public bool Comment { get; }
-				public string Key { get; }
+				public string? Key { get; }
 				public string Value { get; set; }
 
 				public LineData(string comment) { Value = comment; Comment = true; }
@@ -331,7 +331,7 @@ namespace TS3AudioBot.Config.Deprecated
 			}
 
 			protected override void WriteComment(string text) { }
-			protected override bool ReadKey(string key, out string value) => data.TryGetValue(key.ToLowerInvariant(), out value);
+			protected override bool ReadKey(string key, out string? value) => data.TryGetValue(key.ToLowerInvariant(), out value);
 			protected override void WriteKey(string key, string value) => data[key.ToLowerInvariant()] = value;
 			public override void Close() { }
 
@@ -341,23 +341,23 @@ namespace TS3AudioBot.Config.Deprecated
 
 	public class ConfigData
 	{
-		internal string AssociatedClass { get; set; }
+		internal string? AssociatedClass { get; set; }
 		private readonly Dictionary<string, object> Values = new Dictionary<string, object>();
-		internal event PropertyChangedEventHandler PropertyChanged;
+		internal event PropertyChangedEventHandler? PropertyChanged;
 
 		protected T Get<T>([System.Runtime.CompilerServices.CallerMemberName] string memberName = "")
 		{
 			if (Values.TryGetValue(memberName.ToUpperInvariant(), out var data))
 				return (T)data;
-			return default;
+			return default!;
 		}
 
-		internal bool TryGet(string memberName, out object value) => Values.TryGetValue(memberName.ToUpperInvariant(), out value);
+		internal bool TryGet(string memberName, out object value) => Values.TryGetValue(memberName.ToUpperInvariant(), out value!);
 
 		protected void Set<T>(T value,
 			[System.Runtime.CompilerServices.CallerMemberName] string memberName = "")
 		{
-			Values[memberName.ToUpperInvariant()] = value;
+			Values[memberName.ToUpperInvariant()] = value!;
 			PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(memberName));
 		}
 

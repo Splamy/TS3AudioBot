@@ -26,57 +26,57 @@ namespace TSLib.Commands
 	partial class TsCommand
 	{
 
-		[DebuggerStepThrough] public TsCommand Add(string key, bool? value) { if(value.HasValue) return Add(key, value.Value); return this; }
+		[DebuggerStepThrough] public TsCommand Add(string key, bool? value) { if(value != null) return Add(key, value.Value); return this; }
 		[DebuggerStepThrough] public TsCommand Add(string key, bool value) => Add(new CommandParameter(key, value));
 
 		[DebuggerStepThrough] public TsCommand Add(string key, IEnumerable<bool> value) => Add(new CommandMultiParameter(key, value));
 
-		[DebuggerStepThrough] public TsCommand Add(string key, sbyte? value) { if(value.HasValue) return Add(key, value.Value); return this; }
+		[DebuggerStepThrough] public TsCommand Add(string key, sbyte? value) { if(value != null) return Add(key, value.Value); return this; }
 		[DebuggerStepThrough] public TsCommand Add(string key, sbyte value) => Add(new CommandParameter(key, value));
 
 		[DebuggerStepThrough] public TsCommand Add(string key, IEnumerable<sbyte> value) => Add(new CommandMultiParameter(key, value));
 
-		[DebuggerStepThrough] public TsCommand Add(string key, byte? value) { if(value.HasValue) return Add(key, value.Value); return this; }
+		[DebuggerStepThrough] public TsCommand Add(string key, byte? value) { if(value != null) return Add(key, value.Value); return this; }
 		[DebuggerStepThrough] public TsCommand Add(string key, byte value) => Add(new CommandParameter(key, value));
 
 		[DebuggerStepThrough] public TsCommand Add(string key, IEnumerable<byte> value) => Add(new CommandMultiParameter(key, value));
 
-		[DebuggerStepThrough] public TsCommand Add(string key, short? value) { if(value.HasValue) return Add(key, value.Value); return this; }
+		[DebuggerStepThrough] public TsCommand Add(string key, short? value) { if(value != null) return Add(key, value.Value); return this; }
 		[DebuggerStepThrough] public TsCommand Add(string key, short value) => Add(new CommandParameter(key, value));
 
 		[DebuggerStepThrough] public TsCommand Add(string key, IEnumerable<short> value) => Add(new CommandMultiParameter(key, value));
 
-		[DebuggerStepThrough] public TsCommand Add(string key, ushort? value) { if(value.HasValue) return Add(key, value.Value); return this; }
+		[DebuggerStepThrough] public TsCommand Add(string key, ushort? value) { if(value != null) return Add(key, value.Value); return this; }
 		[DebuggerStepThrough] public TsCommand Add(string key, ushort value) => Add(new CommandParameter(key, value));
 
 		[DebuggerStepThrough] public TsCommand Add(string key, IEnumerable<ushort> value) => Add(new CommandMultiParameter(key, value));
 
-		[DebuggerStepThrough] public TsCommand Add(string key, int? value) { if(value.HasValue) return Add(key, value.Value); return this; }
+		[DebuggerStepThrough] public TsCommand Add(string key, int? value) { if(value != null) return Add(key, value.Value); return this; }
 		[DebuggerStepThrough] public TsCommand Add(string key, int value) => Add(new CommandParameter(key, value));
 
 		[DebuggerStepThrough] public TsCommand Add(string key, IEnumerable<int> value) => Add(new CommandMultiParameter(key, value));
 
-		[DebuggerStepThrough] public TsCommand Add(string key, uint? value) { if(value.HasValue) return Add(key, value.Value); return this; }
+		[DebuggerStepThrough] public TsCommand Add(string key, uint? value) { if(value != null) return Add(key, value.Value); return this; }
 		[DebuggerStepThrough] public TsCommand Add(string key, uint value) => Add(new CommandParameter(key, value));
 
 		[DebuggerStepThrough] public TsCommand Add(string key, IEnumerable<uint> value) => Add(new CommandMultiParameter(key, value));
 
-		[DebuggerStepThrough] public TsCommand Add(string key, long? value) { if(value.HasValue) return Add(key, value.Value); return this; }
+		[DebuggerStepThrough] public TsCommand Add(string key, long? value) { if(value != null) return Add(key, value.Value); return this; }
 		[DebuggerStepThrough] public TsCommand Add(string key, long value) => Add(new CommandParameter(key, value));
 
 		[DebuggerStepThrough] public TsCommand Add(string key, IEnumerable<long> value) => Add(new CommandMultiParameter(key, value));
 
-		[DebuggerStepThrough] public TsCommand Add(string key, ulong? value) { if(value.HasValue) return Add(key, value.Value); return this; }
+		[DebuggerStepThrough] public TsCommand Add(string key, ulong? value) { if(value != null) return Add(key, value.Value); return this; }
 		[DebuggerStepThrough] public TsCommand Add(string key, ulong value) => Add(new CommandParameter(key, value));
 
 		[DebuggerStepThrough] public TsCommand Add(string key, IEnumerable<ulong> value) => Add(new CommandMultiParameter(key, value));
 
-		[DebuggerStepThrough] public TsCommand Add(string key, float? value) { if(value.HasValue) return Add(key, value.Value); return this; }
+		[DebuggerStepThrough] public TsCommand Add(string key, float? value) { if(value != null) return Add(key, value.Value); return this; }
 		[DebuggerStepThrough] public TsCommand Add(string key, float value) => Add(new CommandParameter(key, value));
 
 		[DebuggerStepThrough] public TsCommand Add(string key, IEnumerable<float> value) => Add(new CommandMultiParameter(key, value));
 
-		[DebuggerStepThrough] public TsCommand Add(string key, double? value) { if(value.HasValue) return Add(key, value.Value); return this; }
+		[DebuggerStepThrough] public TsCommand Add(string key, double? value) { if(value != null) return Add(key, value.Value); return this; }
 		[DebuggerStepThrough] public TsCommand Add(string key, double value) => Add(new CommandParameter(key, value));
 
 		[DebuggerStepThrough] public TsCommand Add(string key, IEnumerable<double> value) => Add(new CommandMultiParameter(key, value));
@@ -85,37 +85,37 @@ namespace TSLib.Commands
 
 		[DebuggerStepThrough] public TsCommand Add(string key, IEnumerable<string> value) => Add(new CommandMultiParameter(key, value));
 
-		[DebuggerStepThrough] public TsCommand Add(string key, DateTime? value) { if(value.HasValue) return Add(key, value.Value); return this; }
+		[DebuggerStepThrough] public TsCommand Add(string key, DateTime? value) { if(value != null) return Add(key, value.Value); return this; }
 		[DebuggerStepThrough] public TsCommand Add(string key, DateTime value) => Add(new CommandParameter(key, value));
 
 		[DebuggerStepThrough] public TsCommand Add(string key, IEnumerable<DateTime> value) => Add(new CommandMultiParameter(key, value));
 
-		[DebuggerStepThrough] public TsCommand Add(string key, Uid? value) { if(value.HasValue) return Add(key, value.Value); return this; }
+		[DebuggerStepThrough] public TsCommand Add(string key, Uid? value) { if(value != null) return Add(key, value.Value); return this; }
 		[DebuggerStepThrough] public TsCommand Add(string key, Uid value) => Add(new CommandParameter(key, value));
 
 		[DebuggerStepThrough] public TsCommand Add(string key, IEnumerable<Uid> value) => Add(new CommandMultiParameter(key, value));
 
-		[DebuggerStepThrough] public TsCommand Add(string key, ClientDbId? value) { if(value.HasValue) return Add(key, value.Value); return this; }
+		[DebuggerStepThrough] public TsCommand Add(string key, ClientDbId? value) { if(value != null) return Add(key, value.Value); return this; }
 		[DebuggerStepThrough] public TsCommand Add(string key, ClientDbId value) => Add(new CommandParameter(key, value));
 
 		[DebuggerStepThrough] public TsCommand Add(string key, IEnumerable<ClientDbId> value) => Add(new CommandMultiParameter(key, value));
 
-		[DebuggerStepThrough] public TsCommand Add(string key, ClientId? value) { if(value.HasValue) return Add(key, value.Value); return this; }
+		[DebuggerStepThrough] public TsCommand Add(string key, ClientId? value) { if(value != null) return Add(key, value.Value); return this; }
 		[DebuggerStepThrough] public TsCommand Add(string key, ClientId value) => Add(new CommandParameter(key, value));
 
 		[DebuggerStepThrough] public TsCommand Add(string key, IEnumerable<ClientId> value) => Add(new CommandMultiParameter(key, value));
 
-		[DebuggerStepThrough] public TsCommand Add(string key, ChannelId? value) { if(value.HasValue) return Add(key, value.Value); return this; }
+		[DebuggerStepThrough] public TsCommand Add(string key, ChannelId? value) { if(value != null) return Add(key, value.Value); return this; }
 		[DebuggerStepThrough] public TsCommand Add(string key, ChannelId value) => Add(new CommandParameter(key, value));
 
 		[DebuggerStepThrough] public TsCommand Add(string key, IEnumerable<ChannelId> value) => Add(new CommandMultiParameter(key, value));
 
-		[DebuggerStepThrough] public TsCommand Add(string key, ServerGroupId? value) { if(value.HasValue) return Add(key, value.Value); return this; }
+		[DebuggerStepThrough] public TsCommand Add(string key, ServerGroupId? value) { if(value != null) return Add(key, value.Value); return this; }
 		[DebuggerStepThrough] public TsCommand Add(string key, ServerGroupId value) => Add(new CommandParameter(key, value));
 
 		[DebuggerStepThrough] public TsCommand Add(string key, IEnumerable<ServerGroupId> value) => Add(new CommandMultiParameter(key, value));
 
-		[DebuggerStepThrough] public TsCommand Add(string key, ChannelGroupId? value) { if(value.HasValue) return Add(key, value.Value); return this; }
+		[DebuggerStepThrough] public TsCommand Add(string key, ChannelGroupId? value) { if(value != null) return Add(key, value.Value); return this; }
 		[DebuggerStepThrough] public TsCommand Add(string key, ChannelGroupId value) => Add(new CommandParameter(key, value));
 
 		[DebuggerStepThrough] public TsCommand Add(string key, IEnumerable<ChannelGroupId> value) => Add(new CommandMultiParameter(key, value));

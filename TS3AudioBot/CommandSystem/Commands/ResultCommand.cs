@@ -28,7 +28,7 @@ namespace TS3AudioBot.CommandSystem.Commands
 			Content = contentArg;
 		}
 
-		public virtual object Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<Type> returnTypes)
+		public virtual object? Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<Type?> returnTypes)
 		{
 			if (!ResultHelper.IsValidResult(Content, returnTypes))
 			{

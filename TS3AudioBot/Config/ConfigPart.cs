@@ -23,19 +23,21 @@ namespace TS3AudioBot.Config
 	{
 		protected static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 
-		public string Documentation { get; protected set; }
+		public string? Documentation { get; protected set; }
 		public string Key { get; protected set; }
 		// must be a field otherwise it will be found as a child for ConfigTable
-		public ConfigEnumerable Parent;
+		public ConfigEnumerable? Parent;
 
+#pragma warning disable CS8618 // !NRT, all ConfigParts are create via Create<T>
 		protected ConfigPart() { }
+#pragma warning restore CS8618
 		protected ConfigPart(string key)
 		{
 			Key = key;
 		}
 
 		public abstract bool ExpectsString { get; }
-		public abstract void FromToml(TomlObject tomlObject);
+		public abstract void FromToml(TomlObject? tomlObject);
 		public abstract void ToToml(bool writeDefaults, bool writeDocumentation);
 		public abstract void Derive(ConfigPart derived);
 		public abstract E<string> FromJson(JsonReader reader);
@@ -197,7 +199,7 @@ namespace TS3AudioBot.Config
 			return ProcessIdentifier(rest);
 		}
 
-		private ConfigPart GetArrayItemByIndex(ReadOnlySpan<char> index)
+		private ConfigPart? GetArrayItemByIndex(ReadOnlySpan<char> index)
 		{
 			var indexNum = new string(index.ToArray());
 
@@ -221,7 +223,7 @@ namespace TS3AudioBot.Config
 			return Enumerable.Empty<ConfigPart>();
 		}
 
-		private ConfigPart GetSubItemByName(ReadOnlySpan<char> name)
+		private ConfigPart? GetSubItemByName(ReadOnlySpan<char> name)
 		{
 			var indexNum = new string(name.ToArray());
 			if (this is ConfigEnumerable table)

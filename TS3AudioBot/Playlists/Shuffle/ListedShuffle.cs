@@ -15,7 +15,7 @@ namespace TS3AudioBot.Playlists.Shuffle
 {
 	public class ListedShuffle : IShuffleAlgorithm
 	{
-		private int[] permutation;
+		private int[] permutation = Array.Empty<int>();
 
 		private bool needsRecalc = true;
 		private int index;
