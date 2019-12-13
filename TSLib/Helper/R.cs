@@ -58,11 +58,7 @@ namespace System
 		public static implicit operator R<TSuccess, TError>(TError error) => new R<TSuccess, TError>(error);
 
 		// Fluent get
-#if NETCOREAPP3_0
 		public bool GetOk([MaybeNullWhen(false)] out TSuccess value)
-#else
-		public bool GetOk(out TSuccess value)
-#endif
 		{
 			if (Ok)
 				value = Value;
@@ -71,11 +67,7 @@ namespace System
 			return Ok;
 		}
 
-#if NETCOREAPP3_0
 		public bool Get([MaybeNullWhen(false)] out TSuccess result, [MaybeNullWhen(true)] out TError error)
-#else
-		public bool Get(out TSuccess result, out TError error)
-#endif
 		{
 			if (Ok)
 			{
@@ -91,11 +83,8 @@ namespace System
 		}
 
 		// Unwrapping
-#if NETCOREAPP3_0
-		[return: MaybeNull, NotNullIfNotNull("alt")] public TSuccess OkOr([AllowNull] TSuccess alt) => Ok ? Value : alt;
-#else
-		public TSuccess OkOr(TSuccess alt) => Ok ? Value : alt;
-#endif
+		[return: MaybeNull, NotNullIfNotNull("alt")]
+		public TSuccess OkOr([AllowNull] TSuccess alt) => Ok ? Value : alt;
 
 		public TSuccess Unwrap() => Ok ? Value : throw new InvalidOperationException("Called upwrap on error");
 
@@ -136,11 +125,7 @@ namespace System
 		public static implicit operator E<TError>(TError result) => new E<TError>(result);
 
 		// Fluent get
-#if NETCOREAPP3_0
 		public bool GetOk([MaybeNullWhen(true)] out TError error)
-#else
-		public bool GetOk(out TError error)
-#endif
 		{
 			if (Ok)
 				error = default!;

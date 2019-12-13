@@ -21,15 +21,15 @@ namespace TS3AudioBot.Dependency
 			return (T?)injector.GetModule(typeof(T));
 		}
 
-		public static bool TryGet<T>(this IInjector injector, [MaybeNullWhen(false)] out T obj) where T : class
+		public static bool TryGet<T>(this IInjector injector, [NotNullWhen(true)] out T? obj) where T : class
 		{
-			obj = injector.GetModule<T>()!;
+			obj = injector.GetModule<T>();
 			return obj != null;
 		}
 
-		public static bool TryGet(this IInjector injector, Type t, [MaybeNullWhen(false)] out object obj)
+		public static bool TryGet(this IInjector injector, Type t, [NotNullWhen(true)] out object? obj)
 		{
-			obj = injector.GetModule(t)!;
+			obj = injector.GetModule(t);
 			return obj != null;
 		}
 
@@ -38,7 +38,7 @@ namespace TS3AudioBot.Dependency
 			injector.AddModule(typeof(T), obj);
 		}
 
-		public static bool TryCreate<T>(this IInjector injector, [MaybeNullWhen(false)] out T obj) where T : class
+		public static bool TryCreate<T>(this IInjector injector, [NotNullWhen(true)] out T? obj) where T : class
 		{
 			if (injector.TryCreate(typeof(T), out var oobj))
 			{
@@ -47,12 +47,12 @@ namespace TS3AudioBot.Dependency
 			}
 			else
 			{
-				obj = default!;
+				obj = default;
 				return false;
 			}
 		}
 
-		public static bool TryCreate(this IInjector injector, Type type, [MaybeNullWhen(false)] out object obj)
+		public static bool TryCreate(this IInjector injector, Type type, [NotNullWhen(true)] out object? obj)
 		{
 			var param = DependencyBuilder.GetContructorParam(type);
 			if (param == null)
@@ -63,7 +63,7 @@ namespace TS3AudioBot.Dependency
 			{
 				if (!injector.TryGet(param[i], out var dep))
 				{
-					obj = default!;
+					obj = default;
 					return false;
 				}
 				call[i] = dep;

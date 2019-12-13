@@ -8,6 +8,7 @@
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 
 namespace TSLib.Full
 {
@@ -129,7 +130,7 @@ namespace TSLib.Full
 			return true;
 		}
 
-		public bool TryPeekStart(int index, /* !NRT */ out T value)
+		public bool TryPeekStart(int index, [MaybeNullWhen(false)] out T value)
 		{
 			if (index < 0)
 				throw new ArgumentOutOfRangeException(nameof(index));

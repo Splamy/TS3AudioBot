@@ -25,12 +25,6 @@ namespace TSLib
 	public abstract partial class TsBaseFunctions : IDisposable
 	{
 		protected readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
-		/// <summary>When this client receives any visible message.</summary>
-		public abstract event NotifyEventHandler<TextMessage> OnTextMessage;
-		/// <summary>When another client enters visiblility.</summary>
-		public abstract event NotifyEventHandler<ClientEnterView> OnClientEnterView;
-		/// <summary>When another client leaves visiblility.</summary>
-		public abstract event NotifyEventHandler<ClientLeftView> OnClientLeftView;
 		/// <summary>After the client connected.</summary>
 		public abstract event EventHandler<EventArgs> OnConnected;
 		/// <summary>After the client disconnected.</summary>

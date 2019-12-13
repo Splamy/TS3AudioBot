@@ -42,7 +42,7 @@ namespace TS3AudioBot.Sessions
 			ResponseProcessor = null;
 		}
 
-		public bool Get<TData>(string key, [MaybeNullWhen(false)] out TData value)
+		public bool Get<TData>(string key, [MaybeNullWhen(false)] out TData value) where TData : notnull
 		{
 			VerifyLock();
 			value = default!;

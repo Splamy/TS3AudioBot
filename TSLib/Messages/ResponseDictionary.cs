@@ -10,6 +10,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using TSLib.Helper;
 using KeyType = System.String;
 using ValueType = System.String;
@@ -41,7 +42,7 @@ namespace TSLib.Messages
 		public IEnumerator<KeyValuePair<KeyType, ValueType>> GetEnumerator() => data.GetEnumerator();
 		public bool Remove(KeyValuePair<KeyType, ValueType> item) { throw new NotSupportedException(); }
 		public bool Remove(KeyType key) { throw new NotSupportedException(); }
-		public bool TryGetValue(KeyType key, /* !NRT [MaybeNullWhen(false)] */ out ValueType value) => data.TryGetValue(key, out value! /* !NRT */);
+		public bool TryGetValue(KeyType key, [MaybeNullWhen(false)] out ValueType value) => data.TryGetValue(key, out value!);
 		IEnumerator IEnumerable.GetEnumerator() => data.GetEnumerator();
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser) => data[name] = value.NewUtf8String();

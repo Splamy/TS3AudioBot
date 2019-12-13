@@ -22,7 +22,7 @@ namespace TS3AudioBot.Helper
 	{
 		// *** Convenience method for getting values out of a toml object. ***
 
-		public static bool TryGetValueArray<T>(this TomlObject tomlObj, [MaybeNullWhen(false)] out T[] value) where T : notnull
+		public static bool TryGetValueArray<T>(this TomlObject tomlObj, [NotNullWhen(true)] out T[]? value) where T : notnull
 		{
 			if (tomlObj.TomlType == TomlObjectType.Array)
 			{
@@ -32,7 +32,7 @@ namespace TS3AudioBot.Helper
 				{
 					if (!tomlArray.Items[i].TryGetValue(out value[i]))
 					{
-						value = null!;
+						value = null;
 						return false;
 					}
 				}
@@ -43,7 +43,7 @@ namespace TS3AudioBot.Helper
 				value = new[] { retSingleVal };
 				return true;
 			}
-			value = null!;
+			value = null;
 			return false;
 		}
 

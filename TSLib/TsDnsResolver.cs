@@ -11,6 +11,7 @@ using Heijden.Dns.Portable;
 using Heijden.DNS;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
@@ -30,7 +31,7 @@ namespace TSLib
 		private const string DnsPrefixUdp = "_ts3._udp.";
 		private const string NicknameLookup = "https://named.myteamspeak.com/lookup?name=";
 		private static readonly TimeSpan LookupTimeout = TimeSpan.FromSeconds(1);
-		private static readonly Resolver Resolver = new Resolver(new[]
+		public static readonly Resolver Resolver = new Resolver(new[]
 		{
 			// Google
 			new IPEndPoint(new IPAddress(new byte[] { 8,8,8,8 }), 53),
@@ -48,12 +49,23 @@ namespace TSLib
 
 		/// <summary>Tries to resolve an address string to an ip.</summary>
 		/// <param name="address">The address, nickname, etc. to resolve.</param>
-		/// <param name="endPoint">The ip address if successfully resolved. Otherwise a dummy.</param>
+		/// <param name="endPoint">The ip address if successfully resolved.</param>
 		/// <param name="defaultPort">The default port when no port is specified with the address or the resolved address.</param>
 		/// <returns>Whether the resolve was succesful.</returns>
-		public static bool TryResolve(string address, /* !NRT [MaybeNullWhen(false)] */ out IPEndPoint? endPoint, ushort defaultPort = TsVoiceDefaultPort)
+		public static bool TryResolve(string address, [NotNullWhen(true)] out IPEndPoint? endPoint, ushort defaultPort = TsVoiceDefaultPort)
 		{
-			if (address is null) throw new ArgumentNullException(nameof(address));
+			endPoint = TryResolve(address, defaultPort);
+			return endPoint != null;
+		}
+
+		/// <summary>Tries to resolve an address string to an ip.</summary>
+		/// <param name="address">The address, nickname, etc. to resolve.</param>
+		/// <param name="defaultPort">The default port when no port is specified with the address or the resolved address.</param>
+		/// <returns>The ip address if successfully resolved.</returns>
+		public static IPEndPoint? TryResolve(string address, ushort defaultPort = TsVoiceDefaultPort)
+		{
+			if (string.IsNullOrEmpty(address)) throw new ArgumentNullException(nameof(address));
+			IPEndPoint? endPoint;
 
 			Log.Debug("Trying to look up '{0}'", address);
 
@@ -73,28 +85,27 @@ namespace TSLib
 			if ((endPoint = ParseIpEndPoint(address, defaultPort)) != null)
 			{
 				Log.Debug("Address is an ip: '{0}'", endPoint);
-				return true;
+				return endPoint;
 			}
 
 			if (!Uri.TryCreate("http://" + address, UriKind.Absolute, out var uri))
 			{
 				Log.Warn("Could not parse address as uri");
-				return false;
+				return null;
 			}
 
 			// host is a dns name
 			var hasUriPort = !string.IsNullOrEmpty(uri.GetComponents(UriComponents.Port, UriFormat.Unescaped));
 
 			// Try resolve udp prefix
-			// Under this address we'll get ts voice server
-			var srvEndPoint = ResolveSrv(Resolver, DnsPrefixUdp + uri.Host);
-			if (srvEndPoint != null)
+			// At this address we'll get ts voice server
+			endPoint = ResolveSrv(Resolver, DnsPrefixUdp + uri.Host);
+			if (endPoint != null)
 			{
 				if (hasUriPort)
-					srvEndPoint.Port = uri.Port;
-				endPoint = srvEndPoint;
+					endPoint.Port = uri.Port;
 				Log.Debug("Address found using _udp prefix '{0}'", endPoint);
-				return true;
+				return endPoint;
 			}
 
 			// split domain to get a list of subdomains, for e.g.:
@@ -104,7 +115,7 @@ namespace TSLib
 			// => cool.subdomain.from.de
 			var domainSplit = uri.Host.Split('.');
 			if (domainSplit.Length <= 1)
-				return false;
+				return null;
 			var domainList = new List<string>();
 			for (int i = 1; i < Math.Min(domainSplit.Length, 4); i++)
 				domainList.Add(string.Join(".", domainSplit, domainSplit.Length - (i + 1), i + 1));
@@ -113,7 +124,7 @@ namespace TSLib
 			// Under this address we'll get the tsdns server
 			foreach (var domain in domainList)
 			{
-				srvEndPoint = ResolveSrv(Resolver, DnsPrefixTcp + domain);
+				var srvEndPoint = ResolveSrv(Resolver, DnsPrefixTcp + domain);
 				if (srvEndPoint is null)
 					continue;
 
@@ -123,7 +134,7 @@ namespace TSLib
 					if (hasUriPort)
 						endPoint.Port = uri.Port;
 					Log.Debug("Address found using _tcp prefix '{0}'", endPoint);
-					return true;
+					return endPoint;
 				}
 			}
 
@@ -132,17 +143,16 @@ namespace TSLib
 			{
 				endPoint = ResolveTsDns(domain, TsDnsDefaultPort, uri.Host, defaultPort);
 				if (endPoint != null)
-					return true;
+					return endPoint;
 			}
 
 			// Try to normally resolve server address
 			var hostAddress = ResolveDns(uri.Host);
 			if (hostAddress is null)
-				return false;
+				return null;
 
 			var port = hasUriPort ? uri.Port : defaultPort;
-			endPoint = new IPEndPoint(hostAddress, port);
-			return true;
+			return new IPEndPoint(hostAddress, port);
 		}
 
 		private static IPEndPoint? ResolveSrv(Resolver resolver, string domain)
@@ -183,7 +193,6 @@ namespace TSLib
 		private static IPEndPoint? ResolveTsDns(IPEndPoint tsDnsAddress, string resolveAddress, ushort defaultPort)
 		{
 			Log.Trace("Looking up tsdns address '{0}'", resolveAddress);
-			string returnString;
 			try
 			{
 				using var client = new TcpClient();
@@ -201,15 +210,15 @@ namespace TSLib
 				stream.ReadTimeout = (int)LookupTimeout.TotalMilliseconds;
 				var readBuffer = new byte[128];
 				int readLen = stream.Read(readBuffer, 0, readBuffer.Length);
-				returnString = Encoding.ASCII.GetString(readBuffer, 0, readLen);
+				string returnString = Encoding.ASCII.GetString(readBuffer, 0, readLen);
+
+				return ParseIpEndPoint(returnString, defaultPort);
 			}
 			catch (Exception ex)
 			{
 				Log.Warn(ex, "Socket forcibly closed when checking '{0}', reason {1}", resolveAddress, ex.Message);
 				return null;
 			}
-
-			return ParseIpEndPoint(returnString, defaultPort);
 		}
 
 		private static IPAddress? ResolveDns(string hostOrNameAddress)

@@ -82,7 +82,7 @@ namespace TSLib.Full
 
 			Disconnect();
 
-			if (!TsDnsResolver.TryResolve(conData.Address, out remoteAddress! /* !NRT */))
+			if (!TsDnsResolver.TryResolve(conData.Address, out remoteAddress))
 				throw new TsException("Could not read or resolve address.");
 
 			lock (statusLock)

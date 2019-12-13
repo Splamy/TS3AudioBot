@@ -23,7 +23,7 @@ using CmdR = System.E<TSLib.Messages.CommandError>;
 
 namespace TSLib.Query
 {
-	public sealed class TsQueryClient : TsBaseFunctions
+	public sealed partial class TsQueryClient : TsBaseFunctions
 	{
 		private readonly object sendQueueLock = new object();
 		private readonly TcpClient tcpClient;
@@ -40,9 +40,6 @@ namespace TSLib.Query
 		public override bool Connecting => connecting && !Connected;
 		protected override Deserializer Deserializer => msgProc.Deserializer;
 
-		public override event NotifyEventHandler<TextMessage>? OnTextMessage;
-		public override event NotifyEventHandler<ClientEnterView>? OnClientEnterView;
-		public override event NotifyEventHandler<ClientLeftView>? OnClientLeftView;
 		public override event EventHandler<EventArgs>? OnConnected;
 		public override event EventHandler<DisconnectEventArgs>? OnDisconnected;
 
@@ -56,7 +53,7 @@ namespace TSLib.Query
 
 		public override void Connect(ConnectionData conData)
 		{
-			if (!TsDnsResolver.TryResolve(conData.Address, out remoteAddress!, TsDnsResolver.TsQueryDefaultPort))
+			if (!TsDnsResolver.TryResolve(conData.Address, out remoteAddress, TsDnsResolver.TsQueryDefaultPort))
 				throw new TsException("Could not read or resolve address.");
 
 			NetworkStream tcpStream;
@@ -107,7 +104,7 @@ namespace TSLib.Query
 		private async Task NetworkToPipeLoopAsync(NetworkStream stream, PipeWriter writer, CancellationToken cancellationToken = default)
 		{
 			const int minimumBufferSize = 4096;
-#if !(NETCOREAPP2_2 || NETCOREAPP3_0)
+#if !(NETSTANDARD2_1 || NETCOREAPP3_0)
 			var dataReadBuffer = new byte[minimumBufferSize];
 #endif
 
@@ -116,7 +113,7 @@ namespace TSLib.Query
 				try
 				{
 					var mem = writer.GetMemory(minimumBufferSize);
-#if NETCOREAPP2_2 || NETCOREAPP3_0
+#if NETSTANDARD2_1 || NETCOREAPP3_0
 					int bytesRead = await stream.ReadAsync(mem, cancellationToken).ConfigureAwait(false);
 #else
 					int bytesRead = await stream.ReadAsync(dataReadBuffer, 0, dataReadBuffer.Length, cancellationToken).ConfigureAwait(false);
@@ -167,30 +164,6 @@ namespace TSLib.Query
 			}
 
 			reader.Complete();
-		}
-
-		private void InvokeEvent(LazyNotification lazyNotification)
-		{
-			var notification = lazyNotification.Notifications;
-			switch (lazyNotification.NotifyType)
-			{
-			case NotificationType.ChannelCreated: break;
-			case NotificationType.ChannelDeleted: break;
-			case NotificationType.ChannelChanged: break;
-			case NotificationType.ChannelEdited: break;
-			case NotificationType.ChannelMoved: break;
-			case NotificationType.ChannelPasswordChanged: break;
-			case NotificationType.ClientEnterView: OnClientEnterView?.Invoke(this, notification.Cast<ClientEnterView>()); break;
-			case NotificationType.ClientLeftView: OnClientLeftView?.Invoke(this, notification.Cast<ClientLeftView>()); break;
-			case NotificationType.ClientMoved: break;
-			case NotificationType.ServerEdited: break;
-			case NotificationType.TextMessage: OnTextMessage?.Invoke(this, notification.Cast<TextMessage>()); break;
-			case NotificationType.TokenUsed: break;
-			// special
-			case NotificationType.CommandError: break;
-			case NotificationType.Unknown:
-			default: throw Tools.UnhandledDefault(lazyNotification.NotifyType);
-			}
 		}
 
 		public override R<T[], CommandError> Send<T>(TsCommand com) // Synchronous

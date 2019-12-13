@@ -1,11 +1,17 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <TargetFrameworks>netcoreapp3.0</TargetFrameworks>
-    <LangVersion>8.0</LangVersion>
     <RootNamespace>TS3AudioBot</RootNamespace>
     <AssemblyName>TS3AudioBot</AssemblyName>
+    <OutputType>Exe</OutputType>
+    <LangVersion>8.0</LangVersion>
+    <TargetFramework>netcoreapp3.0</TargetFramework>
+	  <!--<RuntimeIdentifiers>win-x64;linux-x64</RuntimeIdentifiers>-->
+    <!--<PublishTrimmed>true</PublishTrimmed>-->
+	  <!--<PublishSingleFile>true</PublishSingleFile>-->
+	  <!-- IncludeSymbolsInSingleFile -->
+    <TargetLatestRuntimePatch>true</TargetLatestRuntimePatch>
+    <RollForward>Major</RollForward>
 
     <Nullable>enable</Nullable>
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -66,9 +72,11 @@
   <ItemGroup>
     <Content Include="lib\x64\libopus.dll">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  <Pack>true</Pack>
     </Content>
     <Content Include="lib\x86\libopus.dll">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+	  <Pack>true</Pack>
     </Content>
   </ItemGroup>
 

@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "TS3AudioBot": {
+      "commandName": "Project",
+      "workingDirectory": "E:\\_Projects\\git\\TS3AudioBot\\TS3AudioBot\\bin\\config"
+    }
+  }
+}
