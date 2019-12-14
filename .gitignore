@@ -12,6 +12,7 @@
 .vs/
 .vscode/
 .idea/
+[Pp]roperties/
 
 # Build results
 [Dd]ebug/

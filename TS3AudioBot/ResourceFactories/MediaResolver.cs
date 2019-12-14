@@ -159,24 +159,25 @@ namespace TS3AudioBot.ResourceFactories
 			}
 			else
 			{
-				var file = FindFile(conf, uri);
+				Log.Trace("Finding media path: '{0}'", uri);
+
+				var file =
+					TryInPath(Path.Combine(conf.LocalConfigDir, BotPaths.Music), uri)
+					?? TryInPath(conf.GetParent().Factories.Media.Path.Value, uri);
+
 				if (file == null)
 					return new LocalStr(strings.error_media_file_not_found);
 				return file;
 			}
 		}
 
-		private Uri FindFile(ConfBot conf, string path)
+		private static Uri TryInPath(string pathPrefix, string file)
 		{
-			Log.Trace("Finding media path: '{0}'", path);
-
 			try
 			{
-				var fullPath = Path.GetFullPath(path);
-				if (File.Exists(fullPath))
-					return new Uri(fullPath, UriKind.Absolute);
-				fullPath = Path.GetFullPath(Path.Combine(conf.LocalConfigDir, BotPaths.Playlists, path));
-				if (File.Exists(fullPath))
+				var musicPathPrefix = Path.GetFullPath(pathPrefix);
+				var fullPath = Path.Combine(musicPathPrefix, file);
+				if (fullPath.StartsWith(musicPathPrefix) && File.Exists(fullPath))
 					return new Uri(fullPath, UriKind.Absolute);
 			}
 			catch (Exception ex)
@@ -187,11 +188,9 @@ namespace TS3AudioBot.ResourceFactories
 			return null;
 		}
 
-		public void Dispose() { }
-
 		public R<Playlist, LocalStr> GetPlaylist(ResolveContext ctx, string url)
 		{
-			if (Directory.Exists(url))
+			if (Directory.Exists(url)) // TODO rework for security
 			{
 				try
 				{
@@ -214,35 +213,38 @@ namespace TS3AudioBot.ResourceFactories
 				}
 			}
 
-			var plistResult = R<Playlist, LocalStr>.Err(new LocalStr(strings.error_media_invalid_uri));
-
 			try
 			{
-				if (File.Exists(url))
+				if (TryGetUri(ctx.Config, url).GetOk(out var uri))
 				{
-					using (var stream = File.OpenRead(url))
-						plistResult = GetPlaylistContent(stream, url);
-				}
-				else if (TryGetUri(ctx.Config, url).GetOk(out var uri))
-				{
-					plistResult = WebWrapper.GetResponse(uri, response =>
+					if (uri.IsFile())
 					{
-						var contentType = response.Headers.Get("Content-Type");
-						int index = url.LastIndexOf('.');
-						string anyId = index >= 0 ? url.Substring(index) : url;
+						if (File.Exists(url))
+						{
+							using (var stream = File.OpenRead(uri.AbsolutePath))
+								return GetPlaylistContent(stream, url);
+						}
+					}
+					else if (uri.IsWeb())
+					{
+						return WebWrapper.GetResponse(uri, response =>
+						{
+							var contentType = response.Headers.Get("Content-Type");
+							int index = url.LastIndexOf('.');
+							string anyId = index >= 0 ? url.Substring(index) : url;
 
-						using (var stream = response.GetResponseStream())
-							return GetPlaylistContent(stream, url, contentType);
-					}).Flat();
+							using (var stream = response.GetResponseStream())
+								return GetPlaylistContent(stream, url, contentType);
+						}).Flat();
+					}
 				}
+				return new LocalStr(strings.error_media_invalid_uri);
 			}
 			catch (Exception ex)
 			{
 				Log.Warn(ex, "Error opening/reading playlist file");
-				return new LocalStr(strings.error_media_invalid_uri);
+				return new LocalStr(strings.error_io_unknown_error);
 			}
-
-			return plistResult;
 		}
 
 		private R<Playlist, LocalStr> GetPlaylistContent(Stream stream, string url, string mime = null)
@@ -369,6 +371,8 @@ namespace TS3AudioBot.ResourceFactories
 
 			return new MemoryStream(rawImgData);
 		}
+
+		public void Dispose() { }
 	}
 
 	internal class ResData
