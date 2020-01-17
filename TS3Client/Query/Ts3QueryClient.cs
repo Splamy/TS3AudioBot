@@ -63,12 +63,6 @@ namespace TS3Client.Query
 			{
 				connecting = true;
 
-				// Create a new client instance using the correct address family,
-				// because it can't be adjusted after the underlying socket was
-				// created by TcpClient (default is IPv4, but come on, it's 2020).
-				// This prevents failing connections due to the address family
-				// of the socket not matching the address family of the given
-				// remote address when using IPv6.
 				tcpClient = new TcpClient(remoteAddress.AddressFamily);
 				tcpClient.Connect(remoteAddress);
 
