@@ -26,7 +26,7 @@ namespace TS3Client.Query
 	public sealed class Ts3QueryClient : Ts3BaseFunctions
 	{
 		private readonly object sendQueueLock = new object();
-		private readonly TcpClient tcpClient;
+		private TcpClient tcpClient;
 		private NetworkStream tcpStream;
 		private StreamReader tcpReader;
 		private StreamWriter tcpWriter;
@@ -50,7 +50,6 @@ namespace TS3Client.Query
 		public Ts3QueryClient()
 		{
 			connecting = false;
-			tcpClient = new TcpClient();
 			msgProc = new SyncMessageProcessor(MessageHelper.GetToClientNotificationType);
 			dispatcher = new ExtraThreadEventDispatcher();
 		}
@@ -64,6 +63,7 @@ namespace TS3Client.Query
 			{
 				connecting = true;
 
+				tcpClient = new TcpClient(remoteAddress.AddressFamily);
 				tcpClient.Connect(remoteAddress);
 
 				ConnectionData = conData;
