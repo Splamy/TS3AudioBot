@@ -579,6 +579,7 @@ namespace TS3AudioBot
 						e.ExitReason == Reason.KickedFromServer ? ReconnectType.Kick :
 						e.ExitReason == Reason.ServerShutdown || e.ExitReason == Reason.ServerStopped ? ReconnectType.ServerShutdown :
 						e.ExitReason == Reason.Banned ? ReconnectType.Ban :
+						e.ExitReason == Reason.SocketError ? ReconnectType.Error :
 						ReconnectType.None))
 					return;
 			}

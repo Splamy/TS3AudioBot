@@ -65,7 +65,7 @@ namespace TSLib.Full
 		private int closed; // bool
 
 		public PacketEvent<TIn> PacketEvent;
-		public Action<Reason> StopEvent;
+		public Action<Reason?> StopEvent;
 
 		public PacketHandler(TsCrypt ts3Crypt, Id id)
 		{
@@ -165,7 +165,8 @@ namespace TSLib.Full
 			}
 		}
 
-		public void Stop(Reason closeReason = Reason.Timeout)
+		public void Stop() => Stop(null);
+		private void Stop(Reason? closeReason)
 		{
 			var wasClosed = Interlocked.Exchange(ref closed, 1);
 			if (wasClosed != 0)
@@ -345,7 +346,7 @@ namespace TSLib.Full
 						Log.Debug("Socket error: {@args}", args);
 						if (args.SocketError == SocketError.ConnectionReset)
 						{
-							self.Stop();
+							self.Stop(Reason.SocketError);
 						}
 					}
 
@@ -672,7 +673,7 @@ namespace TSLib.Full
 				}
 				if (close)
 				{
-					Stop();
+					Stop(Reason.Timeout);
 					return;
 				}
 
@@ -695,7 +696,7 @@ namespace TSLib.Full
 				if (elapsed > PacketTimeout)
 				{
 					LogTimeout.Debug("TIMEOUT: Got no ping packet response for {0}", elapsed);
-					Stop();
+					Stop(Reason.Timeout);
 					return;
 				}
 			}

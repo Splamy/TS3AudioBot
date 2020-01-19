@@ -105,7 +105,7 @@ namespace TSLib.Full
 						}
 						else
 						{
-							Write24(dest, destPos, hash << 4 | (matchlen << 16));
+							Write24(destSpan, destPos, hash << 4 | (matchlen << 16));
 							destPos += 3;
 						}
 						sourcePos += matchlen;
@@ -262,16 +262,19 @@ namespace TSLib.Full
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		private static void Write24(byte[] outArr, int outOff, int value)
+		private static void Write24(Span<byte> outArr, int outOff, int value)
 		{
-			outArr[outOff + 0] = unchecked((byte)(value >> 00));
-			outArr[outOff + 1] = unchecked((byte)(value >> 08));
-			outArr[outOff + 2] = unchecked((byte)(value >> 16));
+			var sli3 = outArr.Slice(outOff, 3);
+			BinaryPrimitives.WriteUInt16LittleEndian(sli3, unchecked((ushort)value));
+			sli3[2] = unchecked((byte)(value >> 16));
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static int Read24(ReadOnlySpan<byte> intArr, int inOff)
-			=> unchecked(intArr[inOff] | (intArr[inOff + 1] << 8) | (intArr[inOff + 2] << 16));
+		{
+			var sli3 = intArr.Slice(inOff, 3);
+			return unchecked(BinaryPrimitives.ReadUInt16LittleEndian(sli3) | (sli3[2] << 16));
+		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static int Hash(int value) => ((value >> 12) ^ value) & 0xfff;
@@ -279,11 +282,10 @@ namespace TSLib.Full
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private static bool Is6Same(ReadOnlySpan<byte> arr)
 		{
-			return arr[0] == arr[1]
-				&& arr[1] == arr[2]
-				&& arr[2] == arr[3]
-				&& arr[3] == arr[4]
-				&& arr[4] == arr[5];
+			var sli6 = arr.Slice(0, 6);
+			var i0 = BinaryPrimitives.ReadUInt32LittleEndian(sli6);
+			var u1 = BinaryPrimitives.ReadUInt16LittleEndian(sli6.Slice(4));
+			return i0 == i0 >> 8 && unchecked((ushort)i0) == u1;
 		}
 
 		/// <summary>Copy <code>[start; start + length)</code> bytes from `data` to the end of `data`</summary>

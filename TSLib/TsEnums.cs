@@ -82,6 +82,8 @@ namespace TSLib
 		ChannelUpdated,
 		ServerOrChannelEdited,
 		ServerShutdown,
+
+		SocketError = 1000,
 	}
 
 	public enum GroupWhisperType : byte

@@ -97,7 +97,7 @@ namespace TSLib.Full
 
 				packetHandler = new PacketHandler<S2C, C2S>(tsCrypt, conData.LogId);
 				packetHandler.PacketEvent = (ref Packet<S2C> packet) => { PacketEvent(ctx, ref packet); };
-				packetHandler.StopEvent = (closeReason) => { ctx.ExitReason = closeReason; DisconnectInternal(ctx, setStatus: TsClientStatus.Disconnected); };
+				packetHandler.StopEvent = (closeReason) => { ctx.ExitReason = ctx.ExitReason ?? closeReason; DisconnectInternal(ctx, setStatus: TsClientStatus.Disconnected); };
 				packetHandler.Connect(remoteAddress);
 				dispatcher = new ExtraThreadEventDispatcher();
 				dispatcher.Init(InvokeEvent, conData.LogId);
@@ -284,7 +284,7 @@ namespace TSLib.Full
 		{
 			if (clientLeftView.ClientId == packetHandler.ClientId)
 			{
-				context.ExitReason = Reason.LeftServer;
+				context.ExitReason = clientLeftView.Reason;
 				DisconnectInternal(context, setStatus: TsClientStatus.Disconnected);
 			}
 		}
