@@ -13,10 +13,11 @@ using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Text.RegularExpressions;
+using TS3AudioBot.Helper;
 using TSLib.Helper;
-using PlatformVersion = System.ValueTuple<TS3AudioBot.Helper.Environment.Runtime, string, System.Version>;
+//using PlatformVersion = System.ValueTuple<TS3AudioBot.Environment.Runtime, string, System.Version>;
 
-namespace TS3AudioBot.Helper.Environment
+namespace TS3AudioBot.Environment
 {
 	public static class SystemData
 	{
@@ -128,25 +129,25 @@ namespace TS3AudioBot.Helper.Environment
 			catch { }
 		}
 
-		public static (Runtime Runtime, string FullName, Version SemVer) RuntimeData { get; } = GenRuntimeData();
+		public static PlatformVersion RuntimeData { get; } = GenRuntimeData();
 		private static PlatformVersion GenRuntimeData()
 		{
 			var ver = GetNetCoreVersion();
-			if (ver.HasValue)
-				return ver.Value;
+			if (ver != null)
+				return ver;
 
 			ver = GetMonoVersion();
-			if (ver.HasValue)
-				return ver.Value;
+			if (ver != null)
+				return ver;
 
 			ver = GetNetFrameworkVersion();
-			if (ver.HasValue)
-				return ver.Value;
+			if (ver != null)
+				return ver;
 
-			return (Runtime.Unknown, "? (?)", null);
+			return new PlatformVersion(Runtime.Unknown, "? (?)", null);
 		}
 
-		private static PlatformVersion? GetNetCoreVersion()
+		private static PlatformVersion GetNetCoreVersion()
 		{
 			var assembly = typeof(System.Runtime.GCSettings).GetTypeInfo().Assembly;
 			var assemblyPath = assembly.CodeBase.Split(new[] { '/', '\\' }, StringSplitOptions.RemoveEmptyEntries);
@@ -155,27 +156,27 @@ namespace TS3AudioBot.Helper.Environment
 				return null;
 			var version = assemblyPath[netCoreAppIndex + 1];
 			var semVer = ParseToSemVer(version);
-			return (Runtime.Core, $".NET Core ({version})", semVer);
+			return new PlatformVersion(Runtime.Core, $".NET Core ({version})", semVer);
 		}
 
-		private static PlatformVersion? GetMonoVersion()
+		private static PlatformVersion GetMonoVersion()
 		{
 			var type = Type.GetType("Mono.Runtime");
 			if (type is null)
 				return null;
 			var displayName = type.GetMethod("GetDisplayName", BindingFlags.NonPublic | BindingFlags.Static);
 			if (displayName is null)
-				return (Runtime.Mono, "Mono (?)", null);
+				return new PlatformVersion(Runtime.Mono, "Mono (?)", null);
 			var version = displayName.Invoke(null, null) as string;
 			var semVer = ParseToSemVer(version);
-			return (Runtime.Mono, $"Mono ({version})", semVer);
+			return new PlatformVersion(Runtime.Mono, $"Mono ({version})", semVer);
 		}
 
-		private static PlatformVersion? GetNetFrameworkVersion()
+		private static PlatformVersion GetNetFrameworkVersion()
 		{
 			var version = System.Environment.Version.ToString();
 			var semVer = ParseToSemVer(version);
-			return (Runtime.Net, $".NET Framework {version}", semVer);
+			return new PlatformVersion(Runtime.Net, $".NET Framework {version}", semVer);
 		}
 
 		private static Version ParseToSemVer(string version)
@@ -210,6 +211,22 @@ namespace TS3AudioBot.Helper.Environment
 
 		public string ToLongString() => $"\nVersion: {Version}\nBranch: {Branch}\nCommitHash: {CommitSha}";
 		public override string ToString() => $"{Version}/{Branch}/{(CommitSha.Length > 8 ? CommitSha.Substring(0, 8) : CommitSha)}";
+	}
+
+	public class PlatformVersion
+	{
+		public Runtime Runtime;
+		public string FullName;
+		public Version SemVer;
+
+		public PlatformVersion(Runtime runtime, string fullName, Version semVer)
+		{
+			Runtime = runtime;
+			FullName = fullName;
+			SemVer = semVer;
+		}
+
+		public override string ToString() => FullName;
 	}
 
 	public static class SemVerExtension

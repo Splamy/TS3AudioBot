@@ -45,8 +45,7 @@ namespace TS3AudioBot.Localization
 			try { culture = CultureInfo.GetCultureInfo(lang); }
 			catch (CultureNotFoundException) { return "Language not found"; }
 
-			if (!loadedLanguage.TryGetValue(culture.Name, out var languageDataInfo))
-				loadedLanguage[culture.Name] = languageDataInfo = new LanguageData();
+			var languageDataInfo = loadedLanguage.GetOrNew(culture.Name);
 
 			if (!languageDataInfo.LoadedSuccessfully)
 			{

@@ -42,7 +42,7 @@ namespace TS3AudioBot
 
 		public void UpdateMetaData(DbMetaData metaData)
 		{
-			metaTable.Update(metaData);
+			metaTable.Upsert(metaData);
 		}
 
 		public LiteCollection<T> GetCollection<T>(string name)
@@ -65,6 +65,6 @@ namespace TS3AudioBot
 	{
 		public string Id { get; set; }
 		public int Version { get; set; }
-		public object CustomData { get; set; }
+		public string CustomData { get; set; }
 	}
 }

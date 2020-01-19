@@ -61,6 +61,12 @@ namespace TSLib.Audio
 
 		public void Stop() => stopwatch.Stop();
 
+		public void Reset()
+		{
+			SongPositionOffset = TimeSpan.Zero;
+			AbsoluteBufferLength = 0;
+		}
+
 		public void PushBytes(int count) => AbsoluteBufferLength += count;
 
 		public void ResetRemoteBuffer()

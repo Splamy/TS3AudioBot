@@ -360,11 +360,8 @@ namespace TS3AudioBot.ResourceFactories
 				int index = row.IndexOf('=');
 				if (index < 0) continue;
 				var param = Uri.UnescapeDataString(row.Substring(0, index).Replace('+', ' '));
-				if (!rc.TryGetValue(param, out var list))
-				{
-					list = new List<string>();
-					rc[param] = list;
-				}
+
+				var list = rc.GetOrNew(param);
 				list.Add(Uri.UnescapeDataString(row.Substring(index + 1).Replace('+', ' ')));
 			}
 			return rc;

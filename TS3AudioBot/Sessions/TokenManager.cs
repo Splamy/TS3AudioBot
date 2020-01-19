@@ -38,12 +38,7 @@ namespace TS3AudioBot.Sessions
 			if (string.IsNullOrEmpty(authId))
 				throw new ArgumentNullException(nameof(authId));
 
-			if (!liveTokenList.TryGetValue(authId, out var token))
-			{
-				token = new ApiToken();
-				liveTokenList.Add(authId, token);
-			}
-
+			var token = liveTokenList.GetOrNew(authId);
 			token.Value = TextUtil.GenToken(ApiToken.TokenLen);
 			if (timeout.HasValue)
 				token.Timeout = timeout.Value == TimeSpan.MaxValue

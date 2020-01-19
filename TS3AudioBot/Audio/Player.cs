@@ -87,6 +87,7 @@ namespace TS3AudioBot.Audio
 				CurrentPlayerSource = source;
 			}
 			// Start Ticker
+			TimePipe.AudioTimer.Reset();
 			TimePipe.Paused = false;
 		}
 

@@ -37,6 +37,11 @@ namespace TS3AudioBot.Config
 		//public ConfigValue<string> RootPath { get; } = new ConfigValue<string>("root_path", "."); // TODO enable when done
 		public ConfigValue<string> BotsPath { get; } = new ConfigValue<string>("bots_path", "bots",
 			"Path to a folder where the configuration files for each bot template will be stored.");
+		public ConfigValue<bool> SendStats { get; } = new ConfigValue<bool>("send_stats", true,
+			"Enable to contribute to the global stats tracker to help us improve our service.\n" +
+			"We do NOT send/store any IPs, identifiable information or logs for this.\n" +
+			"If you want to check how a stats packet looks like you can run the bot with 'TS3AudioBot --stats-example'.\n" +
+			"To disable contributing without config you can run the bot with 'TS3AudioBot --stats-disabled'. This will ignore the config value.");
 	}
 
 	public class ConfDb : ConfigTable

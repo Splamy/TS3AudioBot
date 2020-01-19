@@ -13,8 +13,8 @@ using System.Threading;
 using TS3AudioBot.CommandSystem;
 using TS3AudioBot.Config;
 using TS3AudioBot.Dependency;
+using TS3AudioBot.Environment;
 using TS3AudioBot.Helper;
-using TS3AudioBot.Helper.Environment;
 using TS3AudioBot.Plugins;
 using TS3AudioBot.ResourceFactories;
 using TS3AudioBot.Rights;
@@ -53,7 +53,7 @@ namespace TS3AudioBot
 			AppDomain.CurrentDomain.UnhandledException += core.ExceptionHandler;
 			Console.CancelKeyPress += core.ConsoleInterruptHandler;
 
-			var initResult = core.Run(setup.Interactive);
+			var initResult = core.Run(setup);
 			if (!initResult)
 			{
 				Log.Error("Core initialization failed: {0}", initResult.Error);
@@ -69,7 +69,7 @@ namespace TS3AudioBot
 			injector = new CoreInjector();
 		}
 
-		private E<string> Run(bool interactive = false)
+		private E<string> Run(ParameterData setup)
 		{
 			var configResult = ConfRoot.OpenOrCreate(configFilePath);
 			if (!configResult.Ok)
@@ -99,6 +99,7 @@ namespace TS3AudioBot
 			builder.RequestModule<TokenManager>();
 			builder.RequestModule<CommandManager>();
 			builder.RequestModule<ResourceResolver>();
+			builder.RequestModule<Stats>();
 
 			if (!builder.Build())
 			{
@@ -110,9 +111,11 @@ namespace TS3AudioBot
 
 			builder.GetModule<SystemMonitor>().StartTimedSnapshots();
 			builder.GetModule<CommandManager>().RegisterCollection(MainCommands.Bag);
-			builder.GetModule<RightsManager>().CreateConfigIfNotExists(interactive);
-			builder.GetModule<BotManager>().RunBots(interactive);
+			builder.GetModule<RightsManager>().CreateConfigIfNotExists(setup.Interactive);
+			builder.GetModule<BotManager>().RunBots(setup.Interactive);
 			builder.GetModule<WebServer>().StartWebServer();
+			if (setup.SendStats)
+				builder.GetModule<Stats>()?.StartSendStats();
 
 			return R.Ok;
 		}
@@ -121,7 +124,7 @@ namespace TS3AudioBot
 		{
 			Log.Fatal(e.ExceptionObject as Exception, "Critical program failure!");
 			Dispose();
-			Environment.Exit(-1);
+			System.Environment.Exit(-1);
 		}
 
 		public void ConsoleInterruptHandler(object sender, ConsoleCancelEventArgs e)
@@ -138,7 +141,7 @@ namespace TS3AudioBot
 				else
 				{
 					Log.Info("Got multiple interrupt signals, trying to force-exit.");
-					Environment.Exit(0);
+					System.Environment.Exit(0);
 				}
 			}
 		}

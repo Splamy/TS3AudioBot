@@ -12,9 +12,10 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Threading;
+using TS3AudioBot.Helper;
 using TSLib.Helper;
 
-namespace TS3AudioBot.Helper.Environment
+namespace TS3AudioBot.Environment
 {
 	public class SystemMonitor
 	{
@@ -50,7 +51,7 @@ namespace TS3AudioBot.Helper.Environment
 
 			var timeDiff = currentSnapshotTime - lastSnapshotTime;
 			var cpuDiff = currentCpuTime - lastCpuTime;
-			var cpu = (cpuDiff.Ticks / (float)timeDiff.Ticks);
+			var cpu = cpuDiff.Ticks / (float)timeDiff.Ticks;
 
 			lastSnapshotTime = currentSnapshotTime;
 			lastCpuTime = currentCpuTime;

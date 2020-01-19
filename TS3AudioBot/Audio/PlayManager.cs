@@ -11,6 +11,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using TS3AudioBot.Config;
+using TS3AudioBot.Environment;
 using TS3AudioBot.Helper;
 using TS3AudioBot.Localization;
 using TS3AudioBot.Playlists;
@@ -28,6 +29,7 @@ namespace TS3AudioBot.Audio
 		private readonly Player playerConnection;
 		private readonly PlaylistManager playlistManager;
 		private readonly ResolveContext resourceResolver;
+		private readonly Stats stats;
 
 		public PlayInfoEventArgs CurrentPlayData { get; private set; }
 		public bool IsPlaying => CurrentPlayData != null;
@@ -38,12 +40,13 @@ namespace TS3AudioBot.Audio
 		public event EventHandler<SongEndEventArgs> BeforeResourceStopped;
 		public event EventHandler AfterResourceStopped;
 
-		public PlayManager(ConfBot config, Player playerConnection, PlaylistManager playlistManager, ResolveContext resourceResolver)
+		public PlayManager(ConfBot config, Player playerConnection, PlaylistManager playlistManager, ResolveContext resourceResolver, Stats stats)
 		{
 			confBot = config;
 			this.playerConnection = playerConnection;
 			this.playlistManager = playlistManager;
 			this.resourceResolver = resourceResolver;
+			this.stats = stats;
 		}
 
 		public E<LocalStr> Enqueue(InvokerData invoker, AudioResource ar, MetaData meta = null) => Enqueue(invoker, new PlaylistItem(ar, meta));
@@ -51,7 +54,10 @@ namespace TS3AudioBot.Audio
 		{
 			var result = resourceResolver.Load(message, audioType);
 			if (!result)
+			{
+				stats.TrackSongLoad(audioType, false, true);
 				return result.Error;
+			}
 			return Enqueue(invoker, new PlaylistItem(result.Value.BaseData, meta));
 		}
 		public E<LocalStr> Enqueue(InvokerData invoker, IEnumerable<PlaylistItem> items)
@@ -94,7 +100,10 @@ namespace TS3AudioBot.Audio
 
 			var result = resourceResolver.Load(ar);
 			if (!result)
+			{
+				stats.TrackSongLoad(ar.AudioType, false, true);
 				return result.Error;
+			}
 			return Play(invoker, result.Value, meta);
 		}
 
@@ -108,7 +117,10 @@ namespace TS3AudioBot.Audio
 		{
 			var result = resourceResolver.Load(link, audioType);
 			if (!result)
+			{
+				stats.TrackSongLoad(audioType, false, true);
 				return result.Error;
+			}
 			return Play(invoker, result.Value, meta);
 		}
 
@@ -146,15 +158,16 @@ namespace TS3AudioBot.Audio
 			playlistManager.Clear();
 			playlistManager.Queue(new PlaylistItem(play.BaseData, meta));
 			playlistManager.Index = 0;
+			stats.TrackSongLoad(play.BaseData.AudioType, true, true);
 			return StartResource(invoker, play, meta);
 		}
 
 		private E<LocalStr> StartResource(InvokerData invoker, PlaylistItem item)
 		{
 			var result = resourceResolver.Load(item.AudioResource);
+			stats.TrackSongLoad(item.AudioResource.AudioType, result.Ok, false);
 			if (!result)
 				return result.Error;
-
 			return StartResource(invoker, result.Value, item.Meta);
 		}
 

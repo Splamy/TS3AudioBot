@@ -162,5 +162,15 @@ namespace TS3AudioBot.Helper
 			try { return process.HasExited; }
 			catch { return true; }
 		}
+
+		public static V GetOrNew<K, V>(this IDictionary<K, V> dict, K key) where V: new()
+		{
+			if(!dict.TryGetValue(key, out var val))
+			{
+				val = new V();
+				dict.Add(key, val);
+			}
+			return val;
+		}
 	}
 }

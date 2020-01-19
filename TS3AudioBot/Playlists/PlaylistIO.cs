@@ -236,11 +236,8 @@ namespace TS3AudioBot.Playlists
 					Formatting = Formatting.None,
 				};
 
-				if (!playlistInfo.TryGetValue(listId, out var meta))
-				{
-					meta = new PlaylistMeta { };
-					playlistInfo.Add(listId, meta);
-				}
+
+				var meta = playlistInfo.GetOrNew(listId);
 				meta.Title = plist.Title;
 				meta.Count = plist.Items.Count;
 				meta.Version = FileVersion;

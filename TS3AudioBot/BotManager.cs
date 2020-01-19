@@ -263,6 +263,16 @@ namespace TS3AudioBot
 			}
 		}
 
+		public uint GetRunningBotCount()
+		{
+			lock (lockObj)
+			{
+				if (activeBots is null)
+					return 0;
+				return (uint)activeBots.Count(x => x != null);
+			}
+		}
+
 		public void Dispose()
 		{
 			List<Bot> disposeBots;

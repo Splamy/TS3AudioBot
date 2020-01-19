@@ -11,7 +11,7 @@ using NLog;
 using System;
 using System.Runtime;
 using TS3AudioBot.Helper;
-using TS3AudioBot.Helper.Environment;
+using TS3AudioBot.Environment;
 
 namespace TS3AudioBot
 {
@@ -77,12 +77,7 @@ namespace TS3AudioBot
 
 		public static ParameterData ReadParameter(string[] args)
 		{
-			var data = new ParameterData
-			{
-				Interactive = true,
-				Llgc = true,
-				Exit = ExitType.No,
-			};
+			var data = new ParameterData();
 
 			ParameterData Cancel() { data.Exit = ExitType.Immediately; return data; }
 
@@ -140,6 +135,14 @@ namespace TS3AudioBot
 					data.Llgc = false;
 					break;
 
+				case "--stats-example":
+					data.StatsExample = true;
+					break;
+
+				case "--stats-disabled":
+					data.SendStats = false;
+					break;
+
 				case "-V":
 				case "--version":
 					Console.WriteLine(SystemData.AssemblyData.ToLongString());
@@ -174,12 +177,14 @@ namespace TS3AudioBot
 
 	internal class ParameterData
 	{
-		public ExitType Exit { get; set; }
-		public string ConfigFile { get; set; }
-		public bool SkipVerifications { get; set; }
-		public bool HideBanner { get; set; }
-		public bool Interactive { get; set; }
-		public bool Llgc { get; set; }
+		public ExitType Exit { get; set; } = ExitType.No;
+		public string ConfigFile { get; set; } = null;
+		public bool SkipVerifications { get; set; } = false;
+		public bool HideBanner { get; set; } = false;
+		public bool Interactive { get; set; } = true;
+		public bool Llgc { get; set; } = true;
+		public bool SendStats { get; set; } = true;
+		public bool StatsExample { get; set; } = false;
 	}
 
 	internal enum ExitType

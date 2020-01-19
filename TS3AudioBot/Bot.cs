@@ -502,7 +502,10 @@ namespace TS3AudioBot
 		{
 			var idleTime = config.Events.IdleDelay.Value;
 			if (idleTime <= TimeSpan.Zero || string.IsNullOrEmpty(config.Events.OnIdle.Value))
+			{
+				DisableIdleTickWorker();
 				return;
+			}
 			var newWorker = TickPool.RegisterTick(OnIdle, idleTime, false);
 			SetIdleTickWorker(newWorker);
 			newWorker.Active = true;
