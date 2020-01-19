@@ -190,7 +190,7 @@ namespace TSLib
 			string name, string namePhonetic, string topic, string description, string password,
 			Codec? codec, int? codecQuality, int? codecLatencyFactor, bool? codecEncrypted, int? maxClients,
 			int? maxFamilyClients, bool? maxClientsUnlimited, bool? maxFamilyClientsUnlimited, bool? maxFamilyClientsInherited,
-			ChannelId? parent, ChannelId? order, ChannelType? type, TimeSpan? deleteDelay, int? neededTalkPower)
+			ChannelId? order, ChannelId? parent, ChannelType? type, TimeSpan? deleteDelay, int? neededTalkPower)
 			=> new TsCommand(op) {
 				{ "cid", channelId },
 				{ "cpid", parent },
