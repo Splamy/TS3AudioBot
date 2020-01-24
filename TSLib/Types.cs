@@ -21,4 +21,9 @@ namespace TSLib
 			return result.Ok && result.Value.Length == 20;
 		}
 	}
+
+	public partial struct ChannelId
+	{
+		public string ToPath() => $"/{Value}";
+	}
 }

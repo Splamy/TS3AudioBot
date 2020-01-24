@@ -58,6 +58,7 @@ namespace TS3AudioBot
 		private readonly TimedCache<ClientDbId, ClientDbInfo> clientDbNames = new TimedCache<ClientDbId, ClientDbInfo>();
 		private readonly LruCache<Uid, ClientDbId> dbIdCache = new LruCache<Uid, ClientDbId>(1024);
 		private bool alone = true;
+		private ChannelId? reconnectChannel = null;
 		private ClientId[] ownChannelClients = Array.Empty<ClientId>();
 
 		public bool Connected => ts3FullClient.Connected;
@@ -74,17 +75,20 @@ namespace TS3AudioBot
 			ts3FullClient.OnDisconnected += TsFullClient_OnDisconnected;
 			ts3FullClient.OnEachClientMoved += (s, e) =>
 			{
+				UpdateReconnectChannel(e.ClientId, e.TargetChannelId);
 				if (AloneRecheckRequired(e.ClientId, e.TargetChannelId)) IsAloneRecheck();
 			};
 			ts3FullClient.OnEachClientEnterView += (s, e) =>
 			{
+				UpdateReconnectChannel(e.ClientId, e.TargetChannelId);
 				if (AloneRecheckRequired(e.ClientId, e.TargetChannelId)) IsAloneRecheck();
-				else if (AloneRecheckRequired(e.ClientId, e.TargetChannelId)) IsAloneRecheck();
+				else if (AloneRecheckRequired(e.ClientId, e.SourceChannelId)) IsAloneRecheck();
 			};
 			ts3FullClient.OnEachClientLeftView += (s, e) =>
 			{
+				UpdateReconnectChannel(e.ClientId, e.TargetChannelId);
 				if (AloneRecheckRequired(e.ClientId, e.TargetChannelId)) IsAloneRecheck();
-				else if (AloneRecheckRequired(e.ClientId, e.TargetChannelId)) IsAloneRecheck();
+				else if (AloneRecheckRequired(e.ClientId, e.SourceChannelId)) IsAloneRecheck();
 			};
 
 			this.config = config;
@@ -123,6 +127,7 @@ namespace TS3AudioBot
 
 			reconnectCounter = 0;
 			lastReconnect = null;
+			reconnectChannel = null;
 			ts3FullClient.QuitMessage = Tools.PickRandom(QuitMessages);
 			ClearAllCaches();
 			return ConnectClient();
@@ -164,7 +169,7 @@ namespace TS3AudioBot
 					Address = config.Connect.Address,
 					Identity = identity,
 					VersionSign = versionSign,
-					DefaultChannel = config.Connect.Channel,
+					DefaultChannel = reconnectChannel?.ToPath() ?? config.Connect.Channel,
 					DefaultChannelPassword = config.Connect.ChannelPassword.Get(),
 					LogId = id,
 				};
@@ -575,11 +580,10 @@ namespace TS3AudioBot
 				Log.Debug("Bot disconnected. Reason: {0}", e.ExitReason);
 
 				if (TryReconnect( // TODO c# 8.0 switch expression
-						e.ExitReason == Reason.Timeout ? ReconnectType.Timeout :
+						e.ExitReason == Reason.Timeout || e.ExitReason == Reason.SocketError ? ReconnectType.Timeout :
 						e.ExitReason == Reason.KickedFromServer ? ReconnectType.Kick :
 						e.ExitReason == Reason.ServerShutdown || e.ExitReason == Reason.ServerStopped ? ReconnectType.ServerShutdown :
 						e.ExitReason == Reason.Banned ? ReconnectType.Ban :
-						e.ExitReason == Reason.SocketError ? ReconnectType.Error :
 						ReconnectType.None))
 					return;
 			}
@@ -592,9 +596,17 @@ namespace TS3AudioBot
 			if (closed)
 				return false;
 
-			if (lastReconnect != type)
-				reconnectCounter = 0;
-			lastReconnect = type;
+			// Check if we want to keep the last disconnect type
+			if (type == ReconnectType.Timeout && lastReconnect == ReconnectType.ServerShutdown)
+			{
+				type = lastReconnect.Value;
+			}
+			else
+			{
+				if (lastReconnect != type)
+					reconnectCounter = 0;
+				lastReconnect = type;
+			}
 
 			TimeSpan? delay;
 			switch (type)
@@ -635,6 +647,12 @@ namespace TS3AudioBot
 			if (textMessage.InvokerId == ts3FullClient.ClientId)
 				return;
 			OnMessageReceived?.Invoke(sender, textMessage);
+		}
+
+		private void UpdateReconnectChannel(ClientId clientId, ChannelId channelId)
+		{
+			if (clientId == ts3FullClient.ClientId && channelId != ChannelId.Null)
+				reconnectChannel = channelId;
 		}
 
 		private bool AloneRecheckRequired(ClientId clientId, ChannelId channelId)
