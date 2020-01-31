@@ -114,8 +114,7 @@ namespace TS3AudioBot
 			builder.GetModule<RightsManager>().CreateConfigIfNotExists(setup.Interactive);
 			builder.GetModule<BotManager>().RunBots(setup.Interactive);
 			builder.GetModule<WebServer>().StartWebServer();
-			if (setup.SendStats)
-				builder.GetModule<Stats>()?.StartSendStats();
+			builder.GetModule<Stats>().StartTimer(setup.SendStats);
 
 			return R.Ok;
 		}

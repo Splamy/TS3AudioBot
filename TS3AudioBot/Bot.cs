@@ -18,6 +18,7 @@ using TS3AudioBot.CommandSystem;
 using TS3AudioBot.CommandSystem.Text;
 using TS3AudioBot.Config;
 using TS3AudioBot.Dependency;
+using TS3AudioBot.Environment;
 using TS3AudioBot.Helper;
 using TS3AudioBot.History;
 using TS3AudioBot.Localization;
@@ -57,6 +58,7 @@ namespace TS3AudioBot
 		private PlayManager playManager;
 		private IVoiceTarget targetManager;
 		private Player player;
+		private Stats stats;
 
 		public Bot(Id id, ConfBot config, BotInjector injector)
 		{
@@ -121,6 +123,7 @@ namespace TS3AudioBot
 			playManager = Injector.GetModule<PlayManager>();
 			targetManager = Injector.GetModule<IVoiceTarget>();
 			sessionManager = Injector.GetModule<SessionManager>();
+			stats = Injector.GetModule<Stats>();
 
 			player.OnSongEnd += playManager.SongStoppedEvent;
 			player.OnSongUpdated += (s, e) => playManager.Update(e);
@@ -453,6 +456,7 @@ namespace TS3AudioBot
 		private void CallScript(ExecutionInformation info, string command, bool answer, bool skipRights)
 		{
 			Log.Debug("Calling script (skipRights:{0}, answer:{1}): {2}", skipRights, answer, command);
+			stats.TrackCommandCall(answer);
 
 			info.AddModule(new CallerInfo(false)
 			{
