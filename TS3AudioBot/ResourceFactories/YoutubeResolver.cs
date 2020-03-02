@@ -13,6 +13,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using TS3AudioBot.Config;
 using TS3AudioBot.Helper;
 using TS3AudioBot.Localization;
 using TS3AudioBot.Playlists;
@@ -27,7 +28,13 @@ namespace TS3AudioBot.ResourceFactories
 		private static readonly Regex ListMatch = new Regex(@"(&|\?)list=([\w\-_]+)", Util.DefaultRegexConfig);
 		private static readonly Regex StreamCodecMatch = new Regex(@"CODECS=""([^""]*)""", Util.DefaultRegexConfig);
 		private static readonly Regex StreamBitrateMatch = new Regex(@"BANDWIDTH=(\d+)", Util.DefaultRegexConfig);
-		private const string YoutubeProjectId = "AIzaSyBOqG5LUbGSkBfRUoYfUUea37-5xlEyxNs";
+		private string YoutubeProjectId => conf.YoutubeApiKey.Value;
+		private readonly ConfFactories conf;
+
+		public YoutubeResolver(ConfFactories conf)
+		{
+			this.conf = conf;
+		}
 
 		public string ResolverFor => "youtube";
 
@@ -369,15 +376,12 @@ namespace TS3AudioBot.ResourceFactories
 
 		public R<Stream, LocalStr> GetThumbnail(ResolveContext _, PlayResource playResource)
 		{
-			if (!WebWrapper.DownloadString(out string response,
-				new Uri($"https://www.googleapis.com/youtube/v3/videos?part=snippet&id={playResource.BaseData.ResourceId}&key={YoutubeProjectId}")))
-				return new LocalStr(strings.error_net_no_connection);
-			var parsed = JsonConvert.DeserializeObject<JsonVideoListResponse>(response);
-
-			// default: 120px/ 90px
-			// medium : 320px/180px
-			// high   : 480px/360px
-			var imgurl = new Uri(parsed.items[0].snippet.thumbnails.medium.url);
+			// default  :  120px/ 90px /default.jpg
+			// medium   :  320px/180px /mqdefault.jpg
+			// high     :  480px/360px /hqdefault.jpg
+			// standard :  640px/480px /sddefault.jpg
+			// maxres   : 1280px/720px /maxresdefault.jpg
+			var imgurl = new Uri($"https://i.ytimg.com/vi/{playResource.BaseData.ResourceId}/mqdefault.jpg");
 			return WebWrapper.GetResponseUnsafe(imgurl);
 		}
 

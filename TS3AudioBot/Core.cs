@@ -10,6 +10,7 @@
 using NLog;
 using System;
 using System.Threading;
+using System.Threading.Tasks;
 using TS3AudioBot.CommandSystem;
 using TS3AudioBot.Config;
 using TS3AudioBot.Dependency;
@@ -51,6 +52,7 @@ namespace TS3AudioBot
 			// Initialize the actual core
 			var core = new Core(setup.ConfigFile);
 			AppDomain.CurrentDomain.UnhandledException += core.ExceptionHandler;
+			TaskScheduler.UnobservedTaskException += UnobservedTaskExceptionHandler;
 			Console.CancelKeyPress += core.ConsoleInterruptHandler;
 
 			var initResult = core.Run(setup);
@@ -98,6 +100,7 @@ namespace TS3AudioBot
 			builder.RequestModule<BotManager>();
 			builder.RequestModule<TokenManager>();
 			builder.RequestModule<CommandManager>();
+			builder.AddModule(config.Factories); // XXX: Temporary for youtube-dl
 			builder.RequestModule<ResourceResolver>();
 			builder.RequestModule<Stats>();
 
@@ -124,6 +127,11 @@ namespace TS3AudioBot
 			Log.Fatal(e.ExceptionObject as Exception, "Critical program failure!");
 			Dispose();
 			System.Environment.Exit(-1);
+		}
+
+		public static void UnobservedTaskExceptionHandler(object sender, UnobservedTaskExceptionEventArgs e)
+		{
+			Log.Fatal(e.Exception, "Critical program error!");
 		}
 
 		public void ConsoleInterruptHandler(object sender, ConsoleCancelEventArgs e)

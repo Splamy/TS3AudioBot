@@ -54,6 +54,9 @@ namespace TS3AudioBot.Config
 	{
 		public ConfPath Media { get; } = Create<ConfPath>("media",
 			"The default path to look for local resources.");
+		public ConfigValue<string> YoutubeApiKey { get; } = new ConfigValue<string>("youtube_api_key", "",
+			"Set your own youtube api key to keep using the old youtube factory loader.\n" +
+			"This field will not be used anymore when the youtube-loader refactorings are done.");
 	}
 
 	public class ConfTools : ConfigTable

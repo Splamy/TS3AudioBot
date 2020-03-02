@@ -276,6 +276,7 @@ namespace TS3AudioBot.Environment
 		public uint Loaded { get; set; } = 0;
 		///<summary>How many actually were started by a user (and not i.e. from a playlist)</summary>
 		public uint FromUser { get; set; } = 0;
+		public uint SearchRequests { get; set; } = 0;
 		public TimeSpan Playtime { get; set; } = TimeSpan.Zero;
 
 		public void Add(StatsFactory other)
@@ -284,6 +285,7 @@ namespace TS3AudioBot.Environment
 			Loaded += other.Loaded;
 			FromUser += other.FromUser;
 			Playtime += other.Playtime;
+			SearchRequests += other.SearchRequests;
 		}
 
 		public void Reset()
@@ -292,6 +294,7 @@ namespace TS3AudioBot.Environment
 			Loaded = 0;
 			FromUser = 0;
 			Playtime = TimeSpan.Zero;
+			SearchRequests = 0;
 		}
 	}
 

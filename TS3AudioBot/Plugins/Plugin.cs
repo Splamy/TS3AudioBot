@@ -20,6 +20,7 @@ using System.Text;
 using TS3AudioBot.CommandSystem;
 using TS3AudioBot.Dependency;
 using TS3AudioBot.ResourceFactories;
+using Microsoft.CodeAnalysis.Emit;
 using TSLib.Helper;
 
 namespace TS3AudioBot.Plugins
@@ -201,14 +202,19 @@ namespace TS3AudioBot.Plugins
 					.AddReferences(param)
 					.AddSyntaxTrees(sourceTree);
 
-				using (var ms = new MemoryStream())
+				using (var ms_assembly = new MemoryStream())
+				using (var ms_pdb = new MemoryStream())
 				{
-					var result = compilation.Emit(ms);
+					var result = compilation.Emit(ms_assembly, ms_pdb,
+						options: new EmitOptions()
+							.WithDebugInformationFormat(DebugInformationFormat.PortablePdb)
+						);
 
 					if (result.Success)
 					{
-						ms.Seek(0, SeekOrigin.Begin);
-						var assembly = Assembly.Load(ms.ToArray());
+						ms_assembly.Seek(0, SeekOrigin.Begin);
+						ms_pdb.Seek(0, SeekOrigin.Begin);
+						var assembly = Assembly.Load(ms_assembly.ToArray(), ms_pdb.ToArray());
 						return InitializeAssembly(assembly);
 					}
 					else

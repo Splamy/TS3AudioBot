@@ -223,7 +223,7 @@ namespace TS3ABotUnitTests
 		public void Factory_YoutubeFactoryTest()
 		{
 			var ctx = new ResolveContext(null, null);
-			using (IResourceResolver rfac = new YoutubeResolver())
+			using (IResourceResolver rfac = new YoutubeResolver(null))
 			{
 				// matching links
 				Assert.AreEqual(rfac.MatchResource(ctx, @"https://www.youtube.com/watch?v=robqdGEhQWo"), MatchCertainty.Always);

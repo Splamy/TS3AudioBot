@@ -13,6 +13,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using TS3AudioBot.Config;
 using TS3AudioBot.Helper;
 using TS3AudioBot.Localization;
 using TS3AudioBot.Playlists;
@@ -28,10 +29,10 @@ namespace TS3AudioBot.ResourceFactories
 		private readonly List<IResourceResolver> resResolvers = new List<IResourceResolver>();
 		private readonly List<ISearchResolver> searchResolvers = new List<ISearchResolver>();
 
-		public ResourceResolver()
+		public ResourceResolver(ConfFactories conf)
 		{
 			AddResolver(new MediaResolver());
-			AddResolver(new YoutubeResolver());
+			AddResolver(new YoutubeResolver(conf));
 			AddResolver(new SoundcloudResolver());
 			AddResolver(new TwitchResolver());
 			AddResolver(new BandcampResolver());
