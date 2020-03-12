@@ -7,7 +7,7 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
-using Newtonsoft.Json.Linq;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -19,9 +19,12 @@ namespace TS3AudioBot.ResourceFactories
 {
 	public sealed class TwitchResolver : IResourceResolver
 	{
+		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private static readonly Regex TwitchMatch = new Regex(@"^(https?://)?(www\.)?twitch\.tv/(\w+)", Util.DefaultRegexConfig);
 		private static readonly Regex M3U8ExtMatch = new Regex(@"#([\w-]+)(:(([\w-]+)=(""[^""]*""|[^,]+),?)*)?", Util.DefaultRegexConfig);
 		private const string TwitchClientId = "t9nlhlxnfux3gk2d6z1p093rj2c71i3";
+		// See: https://github.com/streamlink/streamlink/issues/2680
+		private const string TwitchClientIdPrivate = "kimne78kx3ncx6brgo4mv6wki5h1ko";
 
 		public string ResolverFor => "twitch";
 
@@ -40,16 +43,25 @@ namespace TS3AudioBot.ResourceFactories
 			var channel = resource.ResourceId;
 
 			// request api token
-			if (!WebWrapper.DownloadString(out string jsonResponse, new Uri($"https://api.twitch.tv/api/channels/{channel}/access_token"), ("Client-ID", TwitchClientId)))
+			if (!WebWrapper.DownloadString(out string jsonResponse, new Uri($"https://api.twitch.tv/api/channels/{channel}/access_token"), ("Client-ID", TwitchClientIdPrivate)))
 				return new LocalStr(strings.error_net_no_connection);
 
-			var jObj = JObject.Parse(jsonResponse);
+			JsonAccessToken access;
+			try
+			{
+				access = JsonConvert.DeserializeObject<JsonAccessToken>(jsonResponse);
+			}
+			catch (Exception ex)
+			{
+				Log.Debug(ex, "Failed to parse jsonResponse. (Data: {0})", jsonResponse);
+				return new LocalStr(strings.error_media_internal_invalid + " (jsonResponse)");
+			}
 
 			// request m3u8 file
-			if (!jObj.TryCast<string>("token", out var tokenUnescaped)
-				|| !jObj.TryCast<string>("sig", out var sig))
+			if (access.token is null || access.sig is null)
 				return new LocalStr(strings.error_media_internal_invalid + " (tokenResult|sigResult)");
-			var token = Uri.EscapeUriString(tokenUnescaped);
+			var token = Uri.EscapeUriString(access.token);
+			var sig = access.sig;
 			// guaranteed to be random, chosen by fair dice roll.
 			const int random = 4;
 			if (!WebWrapper.DownloadString(out string m3u8, new Uri($"http://usher.twitch.tv/api/channel/hls/{channel}.m3u8?player=twitchweb&&token={token}&sig={sig}&allow_audio_only=true&allow_source=true&type=any&p={random}")))
@@ -130,6 +142,15 @@ namespace TS3AudioBot.ResourceFactories
 		public string RestoreLink(ResolveContext _, AudioResource resource) => "https://www.twitch.tv/" + resource.ResourceId;
 
 		public void Dispose() { }
+
+#pragma warning disable IDE1006 // Naming Styles
+		private class JsonAccessToken
+		{
+			public string token { get; set; }
+			public string sig { get; set; }
+			public DateTime expires_at { get; set; }
+		}
+#pragma warning restore IDE1006 // Naming Styles
 	}
 
 	public sealed class StreamData
