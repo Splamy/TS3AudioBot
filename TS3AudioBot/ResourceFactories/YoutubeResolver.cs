@@ -286,7 +286,15 @@ namespace TS3AudioBot.ResourceFactories
 				return new LocalStr(strings.error_media_failed_to_parse_id);
 
 			string id = matchYtId.Groups[2].Value;
-			var plist = new Playlist().SetTitle(id); // TODO TITLE !!!!!!!!!
+			if (string.IsNullOrEmpty(YoutubeProjectId))
+				return GetPlaylistYoutubeDl(id);
+			else
+				return GetPlaylistYoutubeApi(id);
+		}
+
+		private R<Playlist, LocalStr> GetPlaylistYoutubeApi(string id)
+		{
+			var plist = new Playlist().SetTitle(id);
 
 			string nextToken = null;
 			do
@@ -322,36 +330,41 @@ namespace TS3AudioBot.ResourceFactories
 			return plist;
 		}
 
+		private R<Playlist, LocalStr> GetPlaylistYoutubeDl(string id)
+		{
+			var result = YoutubeDlHelper.GetPlaylist(id);
+			if (!result.Ok)
+				return result.Error;
+
+			var plistData = result.Value;
+			var plist = new Playlist().SetTitle(plistData.title);
+			plist.AddRange(plistData.entries.Select(entry =>
+				new PlaylistItem(
+					new AudioResource(
+						entry.id,
+						entry.title,
+						ResolverFor
+					)
+				)));
+
+			return plist;
+		}
+
 		private static R<PlayResource, LocalStr> YoutubeDlWrapped(AudioResource resource)
 		{
 			Log.Debug("Falling back to youtube-dl!");
 
-			var result = YoutubeDlHelper.FindAndRunYoutubeDl(resource.ResourceId);
+			var result = YoutubeDlHelper.GetSingleVideo(resource.ResourceId);
 			if (!result.Ok)
 				return result.Error;
 
 			var response = result.Value;
-			var title = response.title;
-			var urlOptions = response.links;
+			resource.ResourceTitle = response.track ?? $"Youtube-{resource.ResourceId}";
+			var format = YoutubeDlHelper.FilterBest(response.formats);
+			string url = format?.url;
 
-			string url = null;
-			if (urlOptions.Count == 1)
-			{
-				url = urlOptions[0];
-			}
-			else if (urlOptions.Count >= 1)
-			{
-				Uri[] uriList = urlOptions.Select(s => new Uri(s)).ToArray();
-				Uri bestMatch = uriList
-					.FirstOrDefault(u => ParseQueryString(u.Query).TryGetValue("mime", out var mimes)
-										 && mimes.Any(x => x.StartsWith("audio", StringComparison.OrdinalIgnoreCase)));
-				url = (bestMatch ?? uriList[0]).OriginalString;
-			}
-
-			if (string.IsNullOrEmpty(title) || string.IsNullOrEmpty(url))
+			if (string.IsNullOrEmpty(url))
 				return new LocalStr(strings.error_ytdl_empty_response);
-
-			resource.ResourceTitle = title;
 
 			Log.Debug("youtube-dl succeeded!");
 			return new PlayResource(url, resource);
@@ -387,7 +400,14 @@ namespace TS3AudioBot.ResourceFactories
 
 		public R<IList<AudioResource>, LocalStr> Search(ResolveContext _, string keyword)
 		{
-			// TODO checkout https://developers.google.com/youtube/v3/docs/search/list ->relatedToVideoId for auto radio play
+			if (string.IsNullOrEmpty(YoutubeProjectId))
+				return SearchYoutubeDl(keyword);
+			else
+				return SearchYoutubeApi(keyword);
+		}
+
+		public R<IList<AudioResource>, LocalStr> SearchYoutubeApi(string keyword)
+		{
 			const int maxResults = 10;
 			if (!WebWrapper.DownloadString(out string response,
 				new Uri("https://www.googleapis.com/youtube/v3/search"
@@ -407,8 +427,24 @@ namespace TS3AudioBot.ResourceFactories
 				ResolverFor)).ToArray();
 		}
 
+		public R<IList<AudioResource>, LocalStr> SearchYoutubeDl(string keyword)
+		{
+			var result = YoutubeDlHelper.GetSearch(keyword);
+			if (!result.Ok)
+				return result.Error;
+			var search = result.Value;
+
+			return search.entries.Select(entry =>
+				new AudioResource(
+					entry.id,
+					entry.title,
+					ResolverFor
+				)).ToArray();
+		}
+
 		public void Dispose() { }
 
+		#region Youtube Api Json
 #pragma warning disable CS0649, CS0169, IDE1006
 		// ReSharper disable ClassNeverInstantiated.Local, InconsistentNaming
 		private class JsonVideoListResponse // # youtube#videoListResponse
@@ -480,6 +516,7 @@ namespace TS3AudioBot.ResourceFactories
 		}
 		// ReSharper enable ClassNeverInstantiated.Local, InconsistentNaming
 #pragma warning restore CS0649, CS0169, IDE1006
+		#endregion
 	}
 
 	public sealed class VideoData

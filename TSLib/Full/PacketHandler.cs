@@ -768,7 +768,7 @@ namespace TSLib.Full
 		public static readonly Logger LogTimeout = LogManager.GetLogger("TSLib.PacketHandler.Timeout");
 
 		/// <summary>Elapsed time since first send timestamp until the connection is considered lost.</summary>
-		public static readonly TimeSpan PacketTimeout = TimeSpan.FromSeconds(20);
+		public static readonly TimeSpan PacketTimeout = TimeSpan.FromSeconds(30);
 		/// <summary>Smoothing factor for the SmoothedRtt.</summary>
 		public const float AlphaSmooth = 0.125f;
 		/// <summary>Smoothing factor for the SmoothedRttDev.</summary>

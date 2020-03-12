@@ -28,7 +28,7 @@ namespace TS3AudioBot.Helper
 		{
 			mime = null;
 			if (imgStream == null)
-				return null;
+				return new LocalStr("<TODO>");
 			try
 			{
 				using (var limitStream = new LimitStream(imgStream, Limits.MaxImageStreamSize))

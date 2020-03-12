@@ -108,17 +108,21 @@ namespace TS3AudioBot.ResourceFactories
 		{
 			Log.Debug("Falling back to youtube-dl!");
 
-			var result = YoutubeDlHelper.FindAndRunYoutubeDl(link);
+			var result = YoutubeDlHelper.GetSingleVideo(link);
 			if (!result.Ok)
 				return result.Error;
 
-			var (title, urls) = result.Value;
-			if (urls.Count == 0 || string.IsNullOrEmpty(title) || string.IsNullOrEmpty(urls[0]))
+			var response = result.Value;
+			var title = response.title ?? $"Soundcloud-{link}";
+			var format = YoutubeDlHelper.FilterBest(response.formats);
+			var url = format?.url;
+
+			if (string.IsNullOrEmpty(url))
 				return new LocalStr(strings.error_ytdl_empty_response);
 
 			Log.Debug("youtube-dl succeeded!");
 
-			return new PlayResource(urls[0], new AudioResource(link, title, ResolverFor));
+			return new PlayResource(url, new AudioResource(link, title, ResolverFor));
 		}
 
 		public R<Playlist, LocalStr> GetPlaylist(ResolveContext _, string url)
