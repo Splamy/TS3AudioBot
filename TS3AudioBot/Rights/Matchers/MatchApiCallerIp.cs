@@ -7,11 +7,11 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System.Collections.Generic;
+using System.Net;
+
 namespace TS3AudioBot.Rights.Matchers
 {
-	using System.Collections.Generic;
-	using System.Net;
-
 	internal class MatchApiCallerIp : Matcher
 	{
 		private readonly HashSet<IPAddress> requestIps;

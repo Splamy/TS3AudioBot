@@ -7,12 +7,12 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System;
+using System.Linq;
+using System.Reflection;
+
 namespace TS3AudioBot.Dependency
 {
-	using System;
-	using System.Reflection;
-	using System.Linq;
-
 	public static class InjectorExtensions
 	{
 		public static T GetModule<T>(this IInjector injector)

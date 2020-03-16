@@ -7,51 +7,79 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using SixLabors.ImageSharp;
+using SixLabors.ImageSharp.Formats;
+using SixLabors.ImageSharp.Formats.Gif;
+using SixLabors.ImageSharp.Formats.Jpeg;
+using SixLabors.ImageSharp.Processing;
+using System;
+using System.IO;
+using TS3AudioBot.Localization;
+
 namespace TS3AudioBot.Helper
 {
-	using SixLabors.ImageSharp;
-	using SixLabors.ImageSharp.Formats.Gif;
-	using SixLabors.ImageSharp.Formats.Jpeg;
-	using SixLabors.ImageSharp.Processing;
-	using System;
-	using System.IO;
-
 	internal static class ImageUtil
 	{
+		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
+
 		public const int ResizeMaxWidthDefault = 320;
 
-		public static Stream ResizeImage(Stream imgStream, int resizeMaxWidth = ResizeMaxWidthDefault)
+		public static R<Stream, LocalStr> ResizeImageSave(Stream imgStream, out string mime, int resizeMaxWidth = ResizeMaxWidthDefault)
 		{
+			mime = null;
+			if (imgStream == null)
+				return new LocalStr("Stream not found");
 			try
 			{
-				using (var img = Image.Load(imgStream))
-				{
-					if (img.Width <= resizeMaxWidth)
-						return SaveAdaptive(img);
-
-					float ratio = img.Width / (float)img.Height;
-					img.Mutate(x => x.Resize(resizeMaxWidth, (int)(resizeMaxWidth / ratio)));
-
-					return SaveAdaptive(img);
-				}
+				using (var limitStream = new LimitStream(imgStream, Limits.MaxImageStreamSize))
+					return ResizeImage(limitStream, out mime, resizeMaxWidth);
 			}
 			catch (NotSupportedException)
 			{
-				return null;
+				Log.Debug("Dropping image because of unknown format");
+				return new LocalStr("Dropping image because of unknown format"); // TODO
+			}
+			catch (EntityTooLargeException)
+			{
+				Log.Debug("Dropping image because too large");
+				return new LocalStr("Dropping image because too large"); // TODO
 			}
 		}
 
-		private static MemoryStream SaveAdaptive(Image img)
+		private static Stream ResizeImage(Stream imgStream, out string mime, int resizeMaxWidth = ResizeMaxWidthDefault)
 		{
-			var mem = new MemoryStream();
+			mime = null;
+			using (var img = Image.Load(imgStream))
+			{
+				if (img.Width > Limits.MaxImageDimension || img.Height > Limits.MaxImageDimension
+					|| img.Width == 0 || img.Height == 0)
+					return null;
+
+				if (img.Width <= resizeMaxWidth)
+					return SaveAdaptive(img, out mime);
+
+				float ratio = img.Width / (float)img.Height;
+				img.Mutate(x => x.Resize(resizeMaxWidth, (int)(resizeMaxWidth / ratio)));
+
+				return SaveAdaptive(img, out mime);
+			}
+		}
+
+		private static Stream SaveAdaptive(Image img, out string mime)
+		{
+			IImageFormat format;
 			if (img.Frames.Count > 1)
 			{
-				img.Save(mem, GifFormat.Instance);
+				format = GifFormat.Instance;
 			}
 			else
 			{
-				img.Save(mem, JpegFormat.Instance);
+				format = JpegFormat.Instance;
 			}
+			mime = format.DefaultMimeType;
+			var mem = new MemoryStream();
+			img.Save(mem, format);
+			mem.Seek(0, SeekOrigin.Begin);
 			return mem;
 		}
 	}

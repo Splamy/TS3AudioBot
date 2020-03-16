@@ -7,17 +7,18 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using LiteDB;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using TS3AudioBot.Config;
+using TS3AudioBot.Localization;
+using TS3AudioBot.ResourceFactories;
+using TSLib;
+using TSLib.Helper;
+
 namespace TS3AudioBot.History
 {
-	using Config;
-	using Helper;
-	using LiteDB;
-	using Localization;
-	using ResourceFactories;
-	using System;
-	using System.Collections.Generic;
-	using System.Linq;
-
 	/// <summary>Stores all played songs. Can be used to search and restore played songs.</summary>
 	public sealed class HistoryManager
 	{
@@ -27,7 +28,7 @@ namespace TS3AudioBot.History
 		private const string ResourceTitleQueryColumn = "lowTitle";
 
 		private LiteCollection<AudioLogEntry> audioLogEntries;
-		private readonly LinkedList<int> unusedIds;
+		private readonly LinkedList<int> unusedIds = new LinkedList<int>();
 		private readonly object dbLock = new object();
 		private readonly ConfHistory config;
 		private readonly DbStore database;
@@ -45,7 +46,6 @@ namespace TS3AudioBot.History
 		{
 			Formatter = new SmartHistoryFormatter();
 
-			Util.Init(out unusedIds);
 			this.config = config;
 			this.database = database;
 
@@ -146,7 +146,7 @@ namespace TS3AudioBot.History
 				throw new ArgumentNullException(nameof(ale));
 
 			// update the playtime
-			ale.Timestamp = Util.GetNow();
+			ale.Timestamp = Tools.Now;
 			// update the playcount
 			ale.PlayCount++;
 
@@ -171,8 +171,8 @@ namespace TS3AudioBot.History
 
 			var ale = new AudioLogEntry(nextHid, saveData.Resource)
 			{
-				UserUid = saveData.InvokerUid,
-				Timestamp = Util.GetNow(),
+				UserUid = saveData.InvokerUid.Value,
+				Timestamp = Tools.Now,
 				PlayCount = 1,
 			};
 
@@ -263,7 +263,7 @@ namespace TS3AudioBot.History
 			audioLogEntries.Update(ale);
 		}
 
-		public void RemoveBrokenLinks(ResourceFactory resourceFactory)
+		public void RemoveBrokenLinks(ResolveContext resourceFactory)
 		{
 			const int iterations = 3;
 			var currentIter = audioLogEntries.FindAll().ToList();
@@ -289,7 +289,7 @@ namespace TS3AudioBot.History
 		/// </summary>
 		/// <param name="list">The list to iterate.</param>
 		/// <returns>A new list with all working items.</returns>
-		private List<AudioLogEntry> FilterList(ResourceFactory resourceFactory, IReadOnlyCollection<AudioLogEntry> list)
+		private List<AudioLogEntry> FilterList(ResolveContext resourceFactory, IReadOnlyCollection<AudioLogEntry> list)
 		{
 			int userNotifyCnt = 0;
 			var nextIter = new List<AudioLogEntry>(list.Count);
@@ -311,7 +311,7 @@ namespace TS3AudioBot.History
 		public void UpdadeDbIdToUid(Ts3Client ts3Client)
 		{
 			var upgradedEntries = new List<AudioLogEntry>();
-			var dbIdCache = new Dictionary<uint, (bool valid, string uid)>();
+			var dbIdCache = new Dictionary<uint, (bool valid, Uid uid)>();
 
 			foreach (var audioLogEntry in audioLogEntries.FindAll())
 			{
@@ -328,8 +328,8 @@ namespace TS3AudioBot.History
 
 				if (!dbIdCache.TryGetValue(audioLogEntry.UserInvokeId.Value, out var data))
 				{
-					var result = ts3Client.GetDbClientByDbId(audioLogEntry.UserInvokeId.Value);
-					data.uid = (data.valid = result.Ok) ? result.Value.Uid : null;
+					var result = ts3Client.GetDbClientByDbId((ClientDbId)audioLogEntry.UserInvokeId.Value);
+					data.uid = (data.valid = result.Ok) ? result.Value.Uid : Uid.Null;
 					if (!data.valid)
 					{
 						Log.Warn("Client DbId {0} could not be found.", audioLogEntry.UserInvokeId.Value);
@@ -341,7 +341,7 @@ namespace TS3AudioBot.History
 					continue;
 
 				audioLogEntry.UserInvokeId = null;
-				audioLogEntry.UserUid = data.uid;
+				audioLogEntry.UserUid = data.uid.Value;
 				upgradedEntries.Add(audioLogEntry);
 #pragma warning restore CS0612
 			}

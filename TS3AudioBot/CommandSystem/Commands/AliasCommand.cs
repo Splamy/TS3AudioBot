@@ -7,27 +7,26 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using TS3AudioBot.Dependency;
+
 namespace TS3AudioBot.CommandSystem.Commands
 {
-	using System;
-	using System.Collections.Generic;
-	using System.Linq;
-	using TS3AudioBot.CommandSystem.CommandResults;
-	using TS3AudioBot.Dependency;
-
 	public class AliasCommand : ICommand
 	{
 		private readonly ICommand aliasCommand;
 		public string AliasString { get; }
 
-		public AliasCommand(XCommandSystem root, string command)
+		public AliasCommand(string command)
 		{
 			var ast = CommandParser.ParseCommandRequest(command);
-			aliasCommand = root.AstToCommandResult(ast);
+			aliasCommand = CommandManager.AstToCommandResult(ast);
 			AliasString = command;
 		}
 
-		public ICommandResult Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<CommandResultType> returnTypes)
+		public object Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<Type> returnTypes)
 		{
 			info.UseComplexityTokens(1);
 

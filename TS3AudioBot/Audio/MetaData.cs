@@ -7,19 +7,21 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System;
+using TSLib;
+
 namespace TS3AudioBot.Audio
 {
 	public sealed class MetaData
 	{
 		/// <summary>Defaults to: invoker.Uid - Can be set if the owner of a song differs from the invoker.</summary>
-		public string ResourceOwnerUid { get; set; }
-		/// <summary>Default: false - Indicates whether the song has been requested from a playlist.</summary>
-		public PlaySource From { get; set; } = PlaySource.PlayRequest;
+		public Uid ResourceOwnerUid { get; set; }
+		/// <summary></summary>
+		public TimeSpan? StartOffset { get; set; }
 
-		public MetaData Clone() => new MetaData
+		public MetaData(TimeSpan? startOffset = null)
 		{
-			ResourceOwnerUid = ResourceOwnerUid,
-			From = From,
-		};
+			StartOffset = startOffset;
+		}
 	}
 }

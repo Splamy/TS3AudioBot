@@ -7,17 +7,17 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.IO;
+using System.Reflection;
+using System.Resources;
+using System.Threading;
+using TS3AudioBot.Helper;
+
 namespace TS3AudioBot.Localization
 {
-	using Helper;
-	using System;
-	using System.Collections.Generic;
-	using System.Globalization;
-	using System.IO;
-	using System.Reflection;
-	using System.Resources;
-	using System.Threading;
-
 	public static class LocalizationManager
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
@@ -45,8 +45,7 @@ namespace TS3AudioBot.Localization
 			try { culture = CultureInfo.GetCultureInfo(lang); }
 			catch (CultureNotFoundException) { return "Language not found"; }
 
-			if (!loadedLanguage.TryGetValue(culture.Name, out var languageDataInfo))
-				loadedLanguage[culture.Name] = languageDataInfo = new LanguageData();
+			var languageDataInfo = loadedLanguage.GetOrNew(culture.Name);
 
 			if (!languageDataInfo.LoadedSuccessfully)
 			{

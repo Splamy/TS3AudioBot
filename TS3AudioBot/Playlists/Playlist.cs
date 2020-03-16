@@ -7,14 +7,13 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using TS3AudioBot.Localization;
+
 namespace TS3AudioBot.Playlists
 {
-	using Audio;
-	using System;
-	using System.Collections.Generic;
-	using System.Linq;
-	using TS3AudioBot.Localization;
-
 	public class Playlist : IReadOnlyPlaylist
 	{
 		private const int MaxSongs = 1000;
@@ -23,7 +22,7 @@ namespace TS3AudioBot.Playlists
 		private readonly List<PlaylistItem> items;
 		public IReadOnlyList<PlaylistItem> Items => items;
 
-		public PlaylistItem this[int i] => this.Get(i);
+		public PlaylistItem this[int i] => items[i];
 
 		public Playlist() :
 			this(new List<PlaylistItem>())
@@ -88,17 +87,8 @@ namespace TS3AudioBot.Playlists
 
 	public interface IReadOnlyPlaylist
 	{
+		PlaylistItem this[int i] { get; }
 		string Title { get; }
 		IReadOnlyList<PlaylistItem> Items { get; }
-	}
-
-	public static class PlaylistExtensions
-	{
-		public static PlaylistItem Get(this IReadOnlyPlaylist self, int index)
-		{
-			var item = self.Items[index];
-			item.Meta.From = PlaySource.FromPlaylist;
-			return item;
-		}
 	}
 }

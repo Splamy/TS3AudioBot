@@ -7,22 +7,18 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using Nett;
+using Newtonsoft.Json;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text;
+
 namespace TS3AudioBot.Helper
 {
-	using Nett;
-	using Newtonsoft.Json;
-	using System;
-	using System.Collections.Generic;
-	using System.IO;
-	using System.Linq;
-	using System.Text;
-	using System.Text.RegularExpressions;
-	using System.Xml;
-
 	public static class TomlTools
 	{
-		private static readonly Regex TimeReg = new Regex(@"^(?:(\d+)d)?(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?(?:(\d+)ms)?$", Util.DefaultRegexConfig);
-
 		// *** Convenience method for getting values out of a toml object. ***
 
 		public static T[] TryGetValueArray<T>(this TomlObject tomlObj)
@@ -125,7 +121,7 @@ namespace TS3AudioBot.Helper
 				{
 					try
 					{
-						value = (T)(object)ParseTime(((TomlString)tomlObj).Value);
+						value = (T)(object)TextUtil.ParseTime(((TomlString)tomlObj).Value);
 						return true;
 					}
 					catch (FormatException) { }
@@ -136,47 +132,12 @@ namespace TS3AudioBot.Helper
 			return false;
 		}
 
-		public static TimeSpan? ParseTime(string value)
-		{
-			int AsNum(string svalue)
-			{
-				if (string.IsNullOrEmpty(svalue))
-					return 0;
-				return int.TryParse(svalue, out var num) ? num : 0;
-			}
-
-			var match = TimeReg.Match(value);
-			if (match.Success)
-			{
-				try
-				{
-					return new TimeSpan(
-						AsNum(match.Groups[1].Value),
-						AsNum(match.Groups[2].Value),
-						AsNum(match.Groups[3].Value),
-						AsNum(match.Groups[4].Value),
-						AsNum(match.Groups[5].Value));
-				}
-				catch { }
-			}
-
-			try { return XmlConvert.ToTimeSpan(value); }
-			catch (FormatException) { }
-
-			return null;
-		}
-
-		public static E<string> ValidateTime(string value)
-		{
-			if (TimeReg.IsMatch(value))
-				return R.Ok;
-			return $"Value '{value}' is not a valid time.";
-		}
-
 		public static string SerializeTime(TimeSpan time)
 		{
+			if (time.TotalMilliseconds < 1)
+				return "0s";
 			var strb = new StringBuilder();
-			if (time.TotalDays > 1)
+			if (time.TotalDays >= 1)
 			{
 				strb.Append(time.TotalDays.ToString("F0")).Append('d');
 				time -= TimeSpan.FromDays(time.Days);
@@ -465,7 +426,7 @@ namespace TS3AudioBot.Helper
 			var sw = new StringWriter(sb);
 			using (var writer = new JsonTextWriter(sw))
 			{
-				writer.Formatting = Newtonsoft.Json.Formatting.Indented;
+				writer.Formatting = Formatting.Indented;
 				DumpToJson(obj, writer);
 			}
 			return sb.ToString();

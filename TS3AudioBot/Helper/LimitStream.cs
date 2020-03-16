@@ -7,11 +7,11 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System;
+using System.IO;
+
 namespace TS3AudioBot.Helper
 {
-	using System;
-	using System.IO;
-
 	public class LimitStream : Stream
 	{
 		private readonly Stream baseStream;
@@ -26,7 +26,7 @@ namespace TS3AudioBot.Helper
 		public long IOBytes { get; private set; }
 
 		public override bool CanRead => baseStream.CanRead;
-		public override bool CanSeek => baseStream.CanSeek;
+		public override bool CanSeek => false;
 		public override bool CanWrite => baseStream.CanWrite;
 		public override long Length => baseStream.Length;
 		public override long Position { get => baseStream.Position; set => baseStream.Position = value; }

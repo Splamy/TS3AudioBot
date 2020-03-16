@@ -7,11 +7,12 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System;
+using System.Net;
+using TSLib;
+
 namespace TS3AudioBot.Web.Api
 {
-	using System;
-	using System.Net;
-
 	public class ApiCall : InvokerData
 	{
 		public string Token { get; set; }
@@ -21,7 +22,7 @@ namespace TS3AudioBot.Web.Api
 
 		public static ApiCall CreateAnonymous() => new ApiCall(AnonymousUid);
 
-		public ApiCall(string clientUid, IPAddress ipAddress = null, Uri requestUrl = null, string token = null, string body = null) : base(clientUid)
+		public ApiCall(Uid clientUid, IPAddress ipAddress = null, Uri requestUrl = null, string token = null, string body = null) : base(clientUid)
 		{
 			Token = token;
 			IpAddress = ipAddress;

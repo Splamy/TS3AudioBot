@@ -7,11 +7,11 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System;
+
 namespace TS3AudioBot.Dependency
 {
-	using System;
-
-	public class ChainedInjector<T> : IInjector where T: class, IInjector
+	public class ChainedInjector<T> : IInjector where T : class, IInjector
 	{
 		public IInjector ParentInjector { get; set; }
 		public T OwnInjector { get; protected set; }

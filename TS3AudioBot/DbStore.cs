@@ -7,13 +7,13 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using LiteDB;
+using System;
+using System.IO;
+using TS3AudioBot.Config;
+
 namespace TS3AudioBot
 {
-	using Config;
-	using LiteDB;
-	using System;
-	using System.IO;
-
 	public class DbStore : IDisposable
 	{
 		private const string DbMetaInformationTable = "dbmeta";
@@ -42,13 +42,15 @@ namespace TS3AudioBot
 
 		public void UpdateMetaData(DbMetaData metaData)
 		{
-			metaTable.Update(metaData);
+			metaTable.Upsert(metaData);
 		}
 
 		public LiteCollection<T> GetCollection<T>(string name)
 		{
 			return database.GetCollection<T>(name);
 		}
+
+		public void DropCollection(string name) => database.DropCollection(name);
 
 		public void CleanFile()
 		{
@@ -65,6 +67,6 @@ namespace TS3AudioBot
 	{
 		public string Id { get; set; }
 		public int Version { get; set; }
-		public object CustomData { get; set; }
+		public string CustomData { get; set; }
 	}
 }

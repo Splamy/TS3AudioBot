@@ -7,21 +7,21 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using System;
+using System.IO;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using TS3AudioBot.Config;
+using TS3AudioBot.Dependency;
+
 namespace TS3AudioBot.Web
 {
-	using Config;
-	using Dependency;
-	using Microsoft.AspNetCore.Builder;
-	using Microsoft.AspNetCore.Hosting;
-	using Microsoft.AspNetCore.Http;
-	using Microsoft.Extensions.DependencyInjection;
-	using Microsoft.Extensions.Logging;
-	using System;
-	using System.IO;
-	using System.Linq;
-	using System.Threading;
-	using System.Threading.Tasks;
-
 	public sealed class WebServer : IDisposable
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
@@ -129,11 +129,6 @@ namespace TS3AudioBot.Web
 					app.Map(new PathString("/api"), map =>
 					{
 						map.Run(ctx => Task.Run(() => Log.Swallow(() => api.ProcessApiV1Call(ctx))));
-					});
-
-					app.Map(new PathString("/data"), map =>
-					{
-						map.Run(ctx => Task.Run(() => Log.Swallow(() => { /* TODO */ })));
 					});
 
 					if (config.Interface.Enabled)

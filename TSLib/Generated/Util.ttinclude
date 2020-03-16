@@ -1,0 +1,65 @@
+<#@ assembly name="System.Core" #>
+<#@ assembly name="%userprofile%/.nuget/packages/nett/0.13.0/lib/Net40/Nett.dll" #>
+<#+
+public void Warn(string _warn) { WriteLine($"#warning {_warn}"); }
+
+public static bool NullType(string type) {
+	return type == "i8"
+		|| type == "u8"
+		|| type == "i16"
+		|| type == "u16"
+		|| type == "i32"
+		|| type == "u32"
+		|| type == "i64"
+		|| type == "u64"
+		|| type == "f32"
+		|| type == "f64"
+		|| type == "bool"
+		|| type == "ClientDbId"
+		|| type == "ClientId"
+		|| type == "ChannelId"
+		|| type == "ServerGroupId"
+		|| type == "ChannelGroupId"
+		|| type == "IconHash"
+		|| type == "ConnectionId"
+		|| type == "DateTime"
+		|| type == "Duration"
+		|| type == "DurationSeconds"
+		|| type == "DurationMilliseconds"
+		|| type == "Codec"
+		|| type == "HostMessageMode"
+		|| type == "CodecEncryptionMode"
+		|| type == "HostBannerMode"
+		|| type == "TalkPowerRequest"
+		|| type == "ChannelPermissionHint"
+		|| type == "ClientPermissionHint"
+		;
+}
+
+const string ConversionSet = 
+@"#pragma warning disable CS8019 // Ignore unused imports
+using i8  = System.SByte;
+using u8  = System.Byte;
+using i16 = System.Int16;
+using u16 = System.UInt16;
+using i32 = System.Int32;
+using u32 = System.UInt32;
+using i64 = System.Int64;
+using u64 = System.UInt64;
+using f32 = System.Single;
+using f64 = System.Double;
+using str = System.String;
+
+using DateTime = System.DateTime;
+using Duration = System.TimeSpan;
+using DurationSeconds = System.TimeSpan;
+using DurationMilliseconds = System.TimeSpan;
+using SocketAddr = System.String;
+using IpAddr = System.String;
+using Ts3ErrorCode = TSLib.TsErrorCode;
+using Ts3Permission = TSLib.TsPermission;
+
+using IconHash = System.Int32;
+using ConnectionId = System.UInt32;
+#pragma warning restore CS8019";
+#>

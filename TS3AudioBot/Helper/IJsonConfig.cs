@@ -7,13 +7,13 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using Newtonsoft.Json;
+using System;
+using System.IO;
+using System.Text;
+
 namespace TS3AudioBot.Helper
 {
-	using Newtonsoft.Json;
-	using System;
-	using System.IO;
-	using System.Text;
-
 	public interface IJsonSerializable
 	{
 		bool ExpectsString { get; }

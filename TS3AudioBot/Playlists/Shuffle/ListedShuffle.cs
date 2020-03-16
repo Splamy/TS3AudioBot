@@ -7,12 +7,12 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System;
+using System.Linq;
+using TSLib.Helper;
+
 namespace TS3AudioBot.Playlists.Shuffle
 {
-	using Helper;
-	using System;
-	using System.Linq;
-
 	public class ListedShuffle : IShuffleAlgorithm
 	{
 		private int[] permutation;
@@ -44,7 +44,7 @@ namespace TS3AudioBot.Playlists.Shuffle
 			{
 				if (Length <= 0) return;
 				GenList();
-				index = Array.IndexOf(permutation, Util.MathMod(value, permutation.Length));
+				index = Array.IndexOf(permutation, Tools.MathMod(value, permutation.Length));
 			}
 		}
 
@@ -73,7 +73,7 @@ namespace TS3AudioBot.Playlists.Shuffle
 			if (Length <= 0)
 				return false;
 			GenList();
-			index = (index - 1) % permutation.Length;
+			index = ((index - 1) % permutation.Length + permutation.Length) % permutation.Length;
 			return index == permutation.Length - 1;
 		}
 	}

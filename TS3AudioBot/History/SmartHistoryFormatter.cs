@@ -7,14 +7,14 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using TSLib.Commands;
+
 namespace TS3AudioBot.History
 {
-	using System;
-	using System.Collections.Generic;
-	using System.Linq;
-	using System.Text;
-	using TS3Client.Commands;
-
 	public class SmartHistoryFormatter : IHistoryFormatter
 	{
 		// configurable constants
@@ -22,12 +22,12 @@ namespace TS3AudioBot.History
 		private const int MinTokenLine = 40;
 		private readonly bool fairDistribute = true;
 		// resulting constants from configuration
-		private static readonly int LineBreakLen = Ts3String.TokenLength(LineBreak);
+		private static readonly int LineBreakLen = TsString.TokenLength(LineBreak);
 		private static readonly int UseableTokenLine = MinTokenLine - LineBreakLen;
 
 		public string ProcessQuery(AudioLogEntry entry, Func<AudioLogEntry, string> format)
 		{
-			return SubstringToken(format(entry), Ts3Const.MaxSizeTextMessage);
+			return SubstringToken(format(entry), TsConst.MaxSizeTextMessage);
 		}
 
 		public string ProcessQuery(IEnumerable<AudioLogEntry> entries, Func<AudioLogEntry, string> format)
@@ -36,7 +36,7 @@ namespace TS3AudioBot.History
 			var entryLinesRev = entries.Select(e =>
 			{
 				string finStr = format(e);
-				return new Line { Value = finStr, TokenLength = Ts3String.TokenLength(finStr) };
+				return new Line { Value = finStr, TokenLength = TsString.TokenLength(finStr) };
 			});
 
 			//! entryLines[n] is the most recent entry
@@ -46,7 +46,7 @@ namespace TS3AudioBot.History
 			StringBuilder strb;
 
 			// If the entire content fits within the ts3 limitation, we can concat and return it.
-			if (queryTokenLen <= Ts3Const.MaxSizeTextMessage)
+			if (queryTokenLen <= TsConst.MaxSizeTextMessage)
 			{
 				if (queryTokenLen == 0) return "Nothing found!";
 				strb = new StringBuilder(queryTokenLen, queryTokenLen);
@@ -56,7 +56,7 @@ namespace TS3AudioBot.History
 				return strb.ToString();
 			}
 
-			int spareToken = Ts3Const.MaxSizeTextMessage;
+			int spareToken = TsConst.MaxSizeTextMessage;
 			int listStart = 0;
 
 			// Otherwise we go iteratively through the list to test how many entries we can add with our token
@@ -115,7 +115,7 @@ namespace TS3AudioBot.History
 			}
 
 			// now we can just build our result and return
-			strb = new StringBuilder(Ts3Const.MaxSizeTextMessage - spareToken, Ts3Const.MaxSizeTextMessage);
+			strb = new StringBuilder(TsConst.MaxSizeTextMessage - spareToken, TsConst.MaxSizeTextMessage);
 			for (int i = useList.Count - 1; i >= 0; i--)
 			{
 				var eL = useList[i];
@@ -140,7 +140,7 @@ namespace TS3AudioBot.History
 			int tokens = 0;
 			for (int i = 0; i < value.Length; i++)
 			{
-				int addToken = Ts3String.IsDoubleChar(value[i]) ? 2 : 1;
+				int addToken = TsString.IsDoubleChar(value[i]) ? 2 : 1;
 				if (tokens + addToken > token) return value.Substring(0, i);
 				else tokens += addToken;
 			}

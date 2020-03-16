@@ -7,21 +7,26 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Threading;
+
 namespace TS3AudioBot.Helper
 {
-	using System;
-	using System.Collections.Generic;
-	using System.Diagnostics;
-	using System.Threading;
-
 	public static class TickPool
 	{
-		private static bool run = false;
+		private static bool run = true;
 		private static readonly Thread tickThread = new Thread(Tick) { Name = "TickPool" };
 		private static readonly object tickLock = new object();
 		private static readonly TimeSpan MinTick = TimeSpan.FromMilliseconds(1000);
 		private static readonly List<TickWorker> workList = new List<TickWorker>();
 		private static readonly AutoResetEvent tickLoopPulse = new AutoResetEvent(false);
+
+		static TickPool()
+		{
+			tickThread.Start();
+		}
 
 		public static TickWorker RegisterTickOnce(Action method, TimeSpan? delay = null)
 		{
@@ -45,13 +50,11 @@ namespace TS3AudioBot.Helper
 		{
 			lock (tickLock)
 			{
+				if (!run)
+					return;
+
 				workList.Add(worker);
 				worker.Timer.Start();
-				if (!run)
-				{
-					run = true;
-					tickThread.Start();
-				}
 			}
 		}
 

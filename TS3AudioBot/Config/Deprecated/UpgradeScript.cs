@@ -7,11 +7,11 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System;
+using System.IO;
+
 namespace TS3AudioBot.Config.Deprecated
 {
-	using System;
-	using System.IO;
-
 	internal static class UpgradeScript
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
@@ -73,7 +73,6 @@ namespace TS3AudioBot.Config.Deprecated
 			to.Tools.YoutubeDl.Path.Value = ytd.YoutubedlPath;
 			to.Tools.Ffmpeg.Path.Value = qcd.FfmpegPath;
 			to.Plugins.Path.Value = pmd.PluginPath;
-			to.Plugins.WriteStatusFiles.Value = pmd.WriteStatusFiles;
 			to.Factories.Media.Path.Value = mfd.DefaultPath;
 			to.Db.Path.Value = hmd.HistoryFile;
 

@@ -115,15 +115,6 @@ namespace TS3AudioBot.Localization {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Generates an api nonce..
-        /// </summary>
-        internal static string cmd_api_nonce_help {
-            get {
-                return ResourceManager.GetString("cmd_api_nonce_help", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Looks up a localized string similar to Generates an api token..
         /// </summary>
         internal static string cmd_api_token_help {
@@ -2368,11 +2359,29 @@ namespace TS3AudioBot.Localization {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Invalid channel password..
+        /// </summary>
+        internal static string error_ts_code_781 {
+            get {
+                return ResourceManager.GetString("error_ts_code_781", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Teamspeak Error: {0}.
         /// </summary>
         internal static string error_ts_error {
             get {
                 return ResourceManager.GetString("error_ts_error", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The file to upload is too big..
+        /// </summary>
+        internal static string error_ts_file_too_big {
+            get {
+                return ResourceManager.GetString("error_ts_file_too_big", resourceCulture);
             }
         }
         
@@ -2539,7 +2548,7 @@ namespace TS3AudioBot.Localization {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to &lt;number&gt;.
+        ///   Looks up a localized string similar to number.
         /// </summary>
         internal static string info_number {
             get {

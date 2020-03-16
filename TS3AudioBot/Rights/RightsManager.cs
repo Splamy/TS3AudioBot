@@ -7,22 +7,23 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using Nett;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using TS3AudioBot.CommandSystem;
+using TS3AudioBot.Config;
+using TS3AudioBot.Dependency;
+using TS3AudioBot.Helper;
+using TS3AudioBot.Rights.Matchers;
+using TS3AudioBot.Web.Api;
+using TSLib;
+using TSLib.Helper;
+using TSLib.Messages;
+
 namespace TS3AudioBot.Rights
 {
-	using CommandSystem;
-	using Dependency;
-	using Config;
-	using Helper;
-	using Matchers;
-	using Nett;
-	using System;
-	using System.Collections.Generic;
-	using System.IO;
-	using System.Linq;
-	using TS3Client;
-	using TS3Client.Messages;
-	using TS3AudioBot.Web.Api;
-
 	/// <summary>Permission system of the bot.</summary>
 	public class RightsManager
 	{
@@ -32,7 +33,7 @@ namespace TS3AudioBot.Rights
 		private bool needsRecalculation;
 		private readonly ConfRights config;
 		private RightsRule rootRule;
-		private readonly HashSet<string> registeredRights;
+		private HashSet<string> registeredRights = new HashSet<string>();
 		private readonly object rootRuleLock = new object();
 
 		// Required Matcher Data:
@@ -41,21 +42,23 @@ namespace TS3AudioBot.Rights
 		// This will save us from making unnecessary query calls.
 		private bool needsAvailableGroups = true;
 		private bool needsAvailableChanGroups = true;
-		private Ts3Permission[] needsPermOverview = Array.Empty<Ts3Permission>();
+		private TsPermission[] needsPermOverview = Array.Empty<TsPermission>();
 
 		public RightsManager(ConfRights config)
 		{
-			Util.Init(out registeredRights);
 			this.config = config;
 			needsRecalculation = true;
 		}
 
 		public void SetRightsList(IEnumerable<string> rights)
 		{
-			// TODO validate right names
-			registeredRights.Clear();
-			registeredRights.UnionWith(rights);
-			needsRecalculation = true;
+			var newRights = new HashSet<string>(rights);
+			if (!registeredRights.SetEquals(newRights))
+			{
+				// TODO validate right names
+				registeredRights = newRights;
+				needsRecalculation = true;
+			}
 		}
 
 		public bool HasAllRights(ExecutionInformation info, params string[] requestedRights)
@@ -94,12 +97,12 @@ namespace TS3AudioBot.Rights
 				// For this step we will prefer query calls which can give us more than one information
 				// at once and lazily fall back to other calls as long as needed.
 
-				if (info.TryGet<Ts3Client>(out var ts) && info.TryGet<Ts3BaseFunctions>(out var tsClient))
+				if (info.TryGet<Ts3Client>(out var ts) && info.TryGet<TsBaseFunctions>(out var tsClient))
 				{
-					ulong[] serverGroups = clientCall.ServerGroups;
-					ulong? channelId = clientCall.ChannelId;
-					ulong? databaseId = clientCall.DatabaseId;
-					ulong? channelGroup = clientCall.ChannelGroup;
+					ServerGroupId[] serverGroups = clientCall.ServerGroups;
+					ChannelId? channelId = clientCall.ChannelId;
+					ClientDbId? databaseId = clientCall.DatabaseId;
+					ChannelGroupId? channelGroup = clientCall.ChannelGroup;
 
 					if (clientCall.ClientId != null
 						&& ((needsAvailableGroups && serverGroups is null)
@@ -138,7 +141,7 @@ namespace TS3AudioBot.Rights
 					}
 
 					execCtx.ChannelGroupId = channelGroup;
-					execCtx.ServerGroups = serverGroups ?? Array.Empty<ulong>();
+					execCtx.ServerGroups = serverGroups ?? Array.Empty<ServerGroupId>();
 
 					if (needsPermOverview.Length > 0 && databaseId != null && channelId != null)
 					{
@@ -146,7 +149,7 @@ namespace TS3AudioBot.Rights
 						var result = tsClient.PermOverview(databaseId.Value, channelId.Value, 0);
 						if (result.Ok)
 						{
-							execCtx.Permissions = new PermOverview[Enum.GetValues(typeof(Ts3Permission)).Length];
+							execCtx.Permissions = new PermOverview[Enum.GetValues(typeof(TsPermission)).Length];
 							foreach (var perm in result.Value)
 							{
 								if (perm.PermissionId < 0 || (int)perm.PermissionId >= execCtx.Permissions.Length)
@@ -271,13 +274,13 @@ namespace TS3AudioBot.Rights
 
 			string toml = null;
 			using (var fs = Util.GetEmbeddedFile("TS3AudioBot.Rights.DefaultRights.toml"))
-			using (var reader = new StreamReader(fs, Util.Utf8Encoder))
+			using (var reader = new StreamReader(fs, Tools.Utf8Encoder))
 			{
 				toml = reader.ReadToEnd();
 			}
 
 			using (var fs = File.Open(config.Path, FileMode.Create, FileAccess.Write, FileShare.None))
-			using (var writer = new StreamWriter(fs, Util.Utf8Encoder))
+			using (var writer = new StreamWriter(fs, Tools.Utf8Encoder))
 			{
 				string replaceAdminUids = settings.AdminUids != null
 					? string.Join(" ,", settings.AdminUids.Select(x => $"\"{x}\""))
@@ -307,7 +310,7 @@ namespace TS3AudioBot.Rights
 				{
 					var adminUid = Interactive.LoopAction("Please enter an admin uid", uid =>
 					{
-						if (!TS3Client.Full.IdentityData.IsUidValid(uid))
+						if (!Uid.IsValid(uid))
 						{
 							Console.WriteLine("The uid seems to be invalid, continue anyway? [y/N]");
 							return Interactive.UserAgree(defaultTo: false);
@@ -606,7 +609,7 @@ namespace TS3AudioBot.Rights
 		/// <param name="ctx">The parsing context for the current file processing.</param>
 		private static void CheckRequiredCalls(ParseContext ctx)
 		{
-			var needsPermOverview = new HashSet<Ts3Permission>();
+			var needsPermOverview = new HashSet<TsPermission>();
 
 			foreach (var group in ctx.Rules)
 			{
@@ -628,7 +631,7 @@ namespace TS3AudioBot.Rights
 					}
 				}
 			}
-			ctx.NeedsPermOverview = needsPermOverview.Count > 0 ? needsPermOverview.ToArray() : Array.Empty<Ts3Permission>();
+			ctx.NeedsPermOverview = needsPermOverview.Count > 0 ? needsPermOverview.ToArray() : Array.Empty<TsPermission>();
 		}
 	}
 }

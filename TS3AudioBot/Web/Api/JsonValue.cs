@@ -7,17 +7,17 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using Newtonsoft.Json;
+using System;
+using TS3AudioBot.CommandSystem;
+
 namespace TS3AudioBot.Web.Api
 {
-	using CommandSystem;
-	using Newtonsoft.Json;
-	using System;
-
 	public class JsonValue<T> : JsonValue
 	{
 		protected Func<T, string> AsString { get; }
 
-		new public T Value => (T)base.Value;
+		public new T Value => (T)base.Value;
 
 		public JsonValue(T value) : base(value) { }
 		public JsonValue(T value, string msg) : base(value, msg) { }
@@ -58,7 +58,7 @@ namespace TS3AudioBot.Web.Api
 		public override string Serialize()
 		{
 			var seriObj = GetSerializeObject();
-			if (seriObj != null && XCommandSystem.BasicTypes.Contains(seriObj.GetType()))
+			if (seriObj != null && CommandSystemTypes.BasicTypes.Contains(seriObj.GetType()))
 				return JsonConvert.SerializeObject(this);
 			return base.Serialize();
 		}

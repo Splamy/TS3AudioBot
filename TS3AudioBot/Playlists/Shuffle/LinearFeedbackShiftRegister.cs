@@ -7,11 +7,11 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System;
+using TSLib.Helper;
+
 namespace TS3AudioBot.Playlists.Shuffle
 {
-	using Helper;
-	using System;
-
 	public class LinearFeedbackShiftRegister : IShuffleAlgorithm
 	{
 		private int register = 1; // aka index
@@ -30,14 +30,14 @@ namespace TS3AudioBot.Playlists.Shuffle
 			{
 				if (Length <= 0)
 					return -1;
-				return Util.MathMod(register + Seed, Length);
+				return Tools.MathMod(register + Seed, Length);
 			}
 			set
 			{
 				if (Length <= 0)
 					return;
 				Recalc();
-				register = Util.MathMod(value - Seed, Length);
+				register = Tools.MathMod(value - Seed, Length);
 				startRegister = register;
 			}
 		}
@@ -70,28 +70,40 @@ namespace TS3AudioBot.Playlists.Shuffle
 			return register == startRegister;
 		}
 
-		public bool Prev()
-		{
-			if (Length <= 0) return false;
-			Recalc();
-			for (int i = 0; i < maskLength; i++)
-			{
-				if (NextOf(i) == register)
-				{
-					register = i;
-					return register == startRegister;
-				}
-			}
-
-			throw new InvalidOperationException();
-		}
-
 		private int NextOf(int val)
 		{
 			var lsb = val & 1;
 			val >>= 1;
 			val ^= -lsb & mask;
 			return val;
+		}
+
+		public bool Prev()
+		{
+			if (Length <= 0) return false;
+			Recalc();
+			do
+			{
+				register = PrevOf(register);
+			} while ((uint)register > Length);
+			return register == startRegister;
+		}
+
+		private int PrevOf(int val)
+		{
+			var v0 = PrevOfTest(val, 0);
+			var v1 = PrevOfTest(val, 1);
+			if (v0 < maskLength && NextOf(v0) == val)
+				return v0;
+			if (v1 < maskLength && NextOf(v1) == val)
+				return v1;
+			throw new InvalidOperationException();
+		}
+
+		private int PrevOfTest(int val, int lsb)
+		{
+			var pval = (-lsb & mask) ^ val;
+			return (pval << 1) | lsb;
 		}
 
 		private static int GenerateGaloisMask(int bits, int seedOffset)
@@ -105,7 +117,7 @@ namespace TS3AudioBot.Playlists.Shuffle
 
 			for (int i = 0; i < diff; i++)
 			{
-				int checkMask = Util.MathMod(i + seedOffset, diff) + start;
+				int checkMask = Tools.MathMod(i + seedOffset, diff) + start;
 				if (NumberOfSetBits(checkMask) % 2 != 0) continue;
 
 				if (TestLfsr(checkMask, end))
@@ -131,6 +143,10 @@ namespace TS3AudioBot.Playlists.Shuffle
 
 		private static int NumberOfSetBits(int i)
 		{
+#if NETCOREAPP3_0
+			if (System.Runtime.Intrinsics.X86.Popcnt.IsSupported)
+				return unchecked((int)System.Runtime.Intrinsics.X86.Popcnt.PopCount((uint)i));
+#endif
 			i -= ((i >> 1) & 0x55555555);
 			i = (i & 0x33333333) + ((i >> 2) & 0x33333333);
 			return (((i + (i >> 4)) & 0x0F0F0F0F) * 0x01010101) >> 24;

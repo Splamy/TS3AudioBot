@@ -4,9 +4,17 @@
 			<b-input icon="magnify" v-model="filter.text" placeholder="Filter..." expanded />
 
 			<b-field>
-				<b-radio-button v-model="filter.level" :native-value="0" type="is-success">Simple</b-radio-button>
-				<b-radio-button v-model="filter.level" :native-value="1" type="is-warning">Advanced</b-radio-button>
-				<b-radio-button v-model="filter.level" :native-value="2" type="is-danger">Expert</b-radio-button>
+				<b-radio-button
+					v-model="filter.level"
+					:native-value="SettLevel.Beginner"
+					type="is-success"
+				>Simple</b-radio-button>
+				<b-radio-button
+					v-model="filter.level"
+					:native-value="SettLevel.Advanced"
+					type="is-warning"
+				>Advanced</b-radio-button>
+				<b-radio-button v-model="filter.level" :native-value="SettLevel.Expert" type="is-danger">Expert</b-radio-button>
 			</b-field>
 		</b-field>
 
@@ -27,17 +35,7 @@
 
 			<settings-field :filter="filter" path="language" label="Bot Language">
 				<b-select v-model="model.language" placeholder="Select your language">
-					<option value="cs">Czech</option>
-					<option value="da">Danish</option>
-					<option value="en">English</option>
-					<option value="fr">French</option>
-					<option value="de">German [Deutsch]</option>
-					<option value="hu">Hungarian</option>
-					<option value="pl">Polish</option>
-					<option value="ru">Russian [Русский]</option>
-					<option value="es">Spanish</option>
-					<option value="es-ar">Spanish (Argentinia)</option>
-					<option value="th">Thai</option>
+					<option v-for="lang in Object.keys(Lang)" :key="lang" :value="lang">{{Lang[lang]}}</option>
 				</b-select>
 			</settings-field>
 		</settings-group>
@@ -164,11 +162,12 @@ import Vue from "vue";
 import SettingsField from "../Components/SettingsField.vue";
 import SettingsGroup from "../Components/SettingsGroup.vue";
 import SettingsPassword from "../Components/SettingsPassword.vue";
-import { bot, cmd } from "../Api";
+import { bot, cmd, Api } from "../Api";
 import { IVersion } from "../ApiObjects";
 import { Util } from "../Util";
 import Lang from "../Model/Languge";
 import { debounce } from "lodash-es";
+import { SettLevel } from "../Model/SettingsLevel";
 
 // missing:
 // - channel password
@@ -191,11 +190,12 @@ export default Vue.extend({
 	data() {
 		return {
 			Lang,
+			SettLevel,
 
 			versions: [] as IVersion[],
 			filter: {
 				text: "",
-				level: 0 // 0 simple, 1 advanced, 2 expert
+				level: Number(localStorage.filter_level ?? SettLevel.Beginner) as SettLevel,
 			},
 			model: {
 				audio: {
@@ -239,7 +239,11 @@ export default Vue.extend({
 
 		this.bindRecursive("", this.model);
 	},
-	watch: {},
+	watch: {
+		"filter.level"(val: SettLevel): void {
+			localStorage.filter_level = val;
+		}
+	},
 	computed: {
 		botId(): number | string {
 			if (this.online) return Number(this.$route.params.id);
@@ -259,7 +263,7 @@ export default Vue.extend({
 		}
 	},
 	methods: {
-		requestModel() {
+		requestModel(): Promise<Api<any>> {
 			if (this.online)
 				return bot(cmd<any>("settings", "get"), this.botId).get();
 			else

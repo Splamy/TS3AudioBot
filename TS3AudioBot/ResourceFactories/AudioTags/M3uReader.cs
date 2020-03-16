@@ -7,14 +7,14 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Text;
+using TSLib.Helper;
+
 namespace TS3AudioBot.ResourceFactories.AudioTags
 {
-	using System;
-	using System.Collections.Generic;
-	using System.IO;
-	using System.Text;
-	using TS3Client.Helper;
-
 	public static class M3uReader
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();

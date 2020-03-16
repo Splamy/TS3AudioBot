@@ -1,11 +1,20 @@
+// TS3AudioBot - An advanced Musicbot for Teamspeak 3
+// Copyright (C) 2017  TS3AudioBot contributors
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the Open Software License v. 3.0
+//
+// You should have received a copy of the Open Software License along with this
+// program. If not, see <https://opensource.org/licenses/OSL-3.0>.
+
+using NLog;
+using System;
+using System.Runtime;
+using TS3AudioBot.Helper;
+using TS3AudioBot.Environment;
+
 namespace TS3AudioBot
 {
-	using Helper;
-	using Helper.Environment;
-	using NLog;
-	using System;
-	using System.Runtime;
-
 	internal static class Setup
 	{
 		private static readonly Logger Log = LogManager.GetCurrentClassLogger();
@@ -60,7 +69,7 @@ namespace TS3AudioBot
 
 		public static bool VerifyLibopus()
 		{
-			bool loaded = TS3Client.Audio.Opus.NativeMethods.PreloadLibrary();
+			bool loaded = TSLib.Audio.Opus.NativeMethods.PreloadLibrary();
 			if (!loaded)
 				Log.Error("Couldn't find libopus. Make sure it is installed or placed in the correct folder.");
 			return loaded;
@@ -68,11 +77,7 @@ namespace TS3AudioBot
 
 		public static ParameterData ReadParameter(string[] args)
 		{
-			var data = new ParameterData {
-				Interactive = true,
-				Llgc = true,
-				Exit = ExitType.No,
-			};
+			var data = new ParameterData();
 
 			ParameterData Cancel() { data.Exit = ExitType.Immediately; return data; }
 
@@ -96,12 +101,14 @@ namespace TS3AudioBot
 				case "?":
 				case "-h":
 				case "--help":
+					Console.WriteLine(" --help -h           Prints this help...");
 					Console.WriteLine(" --config -c <file>  Specifies the path to the config file.");
 					Console.WriteLine(" --version -V        Gets the bot version.");
 					Console.WriteLine(" --skip-checks       Skips checking the system for all required tools.");
 					Console.WriteLine(" --hide-banner       Does not print the version information header.");
 					Console.WriteLine(" --non-interactive   Disables console prompts from setup tools.");
-					Console.WriteLine(" --help -h           Prints this help...");
+					Console.WriteLine(" --stats-example     Shows you what the bot sends to the global stats tracker.");
+					Console.WriteLine(" --stats-disabled    Disables sending to the global stats tracker.");
 					return Cancel();
 
 				case "-c":
@@ -130,6 +137,18 @@ namespace TS3AudioBot
 					data.Llgc = false;
 					break;
 
+				case "--stats-example":
+					Console.WriteLine("The bot will contribute to the stats counter about once per day.");
+					Console.WriteLine("We do NOT store any IP or identifiable information.");
+					Console.WriteLine("Please keep this feature enabled to help us improve and grow.");
+					Console.WriteLine("An example stats packet looks like this:");
+					Console.WriteLine(Stats.CreateExample());
+					return Cancel();
+
+				case "--stats-disabled":
+					data.SendStats = false;
+					break;
+
 				case "-V":
 				case "--version":
 					Console.WriteLine(SystemData.AssemblyData.ToLongString());
@@ -155,7 +174,7 @@ namespace TS3AudioBot
 			Log.Info("[ Version: {0}", SystemData.AssemblyData);
 			Log.Info("[ Platform: {0}", SystemData.PlatformData);
 			Log.Info("[ Runtime: {0} ServerGC:{1} GC:{2}", SystemData.RuntimeData.FullName, GCSettings.IsServerGC, GCSettings.LatencyMode);
-			Log.Info("[ Opus: {0}", TS3Client.Audio.Opus.NativeMethods.Info);
+			Log.Info("[ Opus: {0}", TSLib.Audio.Opus.NativeMethods.Info);
 			// ffmpeg
 			// youtube-dl
 			Log.Info("[==============================================]");
@@ -164,12 +183,13 @@ namespace TS3AudioBot
 
 	internal class ParameterData
 	{
-		public ExitType Exit { get; set; }
-		public string ConfigFile { get; set; }
-		public bool SkipVerifications { get; set; }
-		public bool HideBanner { get; set; }
-		public bool Interactive { get; set; }
-		public bool Llgc { get; set; }
+		public ExitType Exit { get; set; } = ExitType.No;
+		public string ConfigFile { get; set; } = null;
+		public bool SkipVerifications { get; set; } = false;
+		public bool HideBanner { get; set; } = false;
+		public bool Interactive { get; set; } = true;
+		public bool Llgc { get; set; } = true;
+		public bool SendStats { get; set; } = true;
 	}
 
 	internal enum ExitType

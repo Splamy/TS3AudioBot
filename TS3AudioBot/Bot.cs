@@ -7,31 +7,32 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System;
+using System.IO;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
+using TS3AudioBot.Algorithm;
+using TS3AudioBot.Audio;
+using TS3AudioBot.CommandSystem;
+using TS3AudioBot.CommandSystem.Text;
+using TS3AudioBot.Config;
+using TS3AudioBot.Dependency;
+using TS3AudioBot.Environment;
+using TS3AudioBot.Helper;
+using TS3AudioBot.History;
+using TS3AudioBot.Localization;
+using TS3AudioBot.Playlists;
+using TS3AudioBot.Plugins;
+using TS3AudioBot.ResourceFactories;
+using TS3AudioBot.Sessions;
+using TSLib;
+using TSLib.Full;
+using TSLib.Helper;
+using TSLib.Messages;
+
 namespace TS3AudioBot
 {
-	using Audio;
-	using Algorithm;
-	using CommandSystem;
-	using CommandSystem.CommandResults;
-	using CommandSystem.Text;
-	using Config;
-	using Dependency;
-	using Helper;
-	using History;
-	using Localization;
-	using Playlists;
-	using Plugins;
-	using Sessions;
-	using System;
-	using System.Linq;
-	using System.Threading;
-	using System.Threading.Tasks;
-	using TS3AudioBot.ResourceFactories;
-	using TS3Client;
-	using TS3Client.Messages;
-	using TS3Client.Helper;
-	using TS3Client.Full;
-
 	/// <summary>Core class managing all bots and utility modules.</summary>
 	public sealed class Bot : IDisposable
 	{
@@ -39,6 +40,7 @@ namespace TS3AudioBot
 
 		private readonly ConfBot config;
 		private TickWorker idleTickWorker;
+		private TickWorker aloneTickWorker;
 
 		internal object SyncRoot { get; } = new object();
 		internal bool IsDisposed { get; private set; }
@@ -49,22 +51,20 @@ namespace TS3AudioBot
 		public string Name => config.Name;
 		public bool QuizMode { get; set; }
 
-		private readonly ResourceFactory resourceFactory;
-		private readonly CommandManager commandManager;
-		private Ts3Client clientConnection;
-		private Ts3FullClient tsFullClient;
+		private ResolveContext resourceResolver;
+		private Ts3Client ts3client;
+		private TsFullClient ts3FullClient;
 		private SessionManager sessionManager;
 		private PlayManager playManager;
 		private IVoiceTarget targetManager;
-		private IPlayerConnection playerConnection;
+		private Player player;
+		private Stats stats;
 
-		public Bot(Id id, ConfBot config, BotInjector injector, ResourceFactory resourceFactory, CommandManager commandManager)
+		public Bot(Id id, ConfBot config, BotInjector injector)
 		{
 			this.Id = id;
 			this.config = config;
 			this.Injector = injector;
-			this.resourceFactory = resourceFactory;
-			this.commandManager = commandManager;
 		}
 
 		public E<string> InitializeBot()
@@ -78,7 +78,7 @@ namespace TS3AudioBot
 				if (!langResult.Ok)
 					Log.Error("Failed to load language file ({0})", langResult.Error);
 			};
-			config.Events.IdleTime.Changed += (s, e) => EnableIdleTickWorker();
+			config.Events.IdleDelay.Changed += (s, e) => EnableIdleTickWorker();
 			config.Events.OnIdle.Changed += (s, e) => EnableIdleTickWorker();
 
 			var builder = new DependencyBuilder(Injector);
@@ -89,11 +89,17 @@ namespace TS3AudioBot
 			builder.RequestModule<PlaylistIO>();
 			builder.RequestModule<PlaylistManager>();
 			builder.AddModule(Id);
-			builder.AddModule(new Ts3FullClient());
-			builder.RequestModule<Ts3BaseFunctions, Ts3FullClient>();
+			builder.AddModule(new TsFullClient());
+			builder.RequestModule<TsBaseFunctions, TsFullClient>();
 			builder.RequestModule<Ts3Client>();
-			builder.RequestModule<IPlayerConnection, Ts3Client>();
+			builder.RequestModule<Player>();
+			builder.RequestModule<CustomTargetPipe>();
+			builder.RequestModule<IVoiceTarget, CustomTargetPipe>();
 			builder.RequestModule<SessionManager>();
+			builder.RequestModule<ResolveContext>();
+			if (!builder.TryCreate<CommandManager>(out var commandManager))
+				return "Failed to create commandManager";
+			builder.AddModule(commandManager);
 			if (config.History.Enabled)
 			{
 				builder.AddModule(config.History);
@@ -107,46 +113,61 @@ namespace TS3AudioBot
 				return "Could not load all bot modules";
 			}
 
-			tsFullClient = Injector.GetModule<Ts3FullClient>();
-			clientConnection = Injector.GetModule<Ts3Client>();
-			playerConnection = clientConnection;
-			Injector.AddModule<IVoiceTarget>(clientConnection.TargetPipe);
-			Injector.AddModule(tsFullClient.Book);
+			resourceResolver = Injector.GetModule<ResolveContext>();
+			ts3FullClient = Injector.GetModule<TsFullClient>();
+			ts3client = Injector.GetModule<Ts3Client>();
+			player = Injector.GetModule<Player>();
+			player.SetTarget(Injector.GetModule<CustomTargetPipe>());
+			Injector.AddModule(ts3FullClient.Book);
 
 			playManager = Injector.GetModule<PlayManager>();
 			targetManager = Injector.GetModule<IVoiceTarget>();
 			sessionManager = Injector.GetModule<SessionManager>();
+			stats = Injector.GetModule<Stats>();
 
-			playerConnection.OnSongEnd += playManager.SongStoppedEvent;
-			playerConnection.OnSongUpdated += (s, e) => playManager.Update(e);
+			player.OnSongEnd += playManager.SongStoppedEvent;
+			player.OnSongUpdated += (s, e) => playManager.Update(e);
 			// Update idle status events
 			playManager.BeforeResourceStarted += (s, e) => DisableIdleTickWorker();
-			playManager.AfterResourceStopped += (s, e) => EnableIdleTickWorker();
+			playManager.PlaybackStopped += (s, e) => EnableIdleTickWorker();
 			// Used for the voice_mode script
 			playManager.BeforeResourceStarted += BeforeResourceStarted;
 			// Update the own status text to the current song title
 			playManager.AfterResourceStarted += LoggedUpdateBotStatus;
-			playManager.AfterResourceStopped += LoggedUpdateBotStatus;
+			playManager.PlaybackStopped += LoggedUpdateBotStatus;
 			playManager.OnResourceUpdated += LoggedUpdateBotStatus;
 			// Log our resource in the history
 			if (Injector.TryGet<HistoryManager>(out var historyManager))
-				playManager.AfterResourceStarted += (s, e) => historyManager.LogAudioResource(new HistorySaveData(e.PlayResource.BaseData, e.Invoker.ClientUid));
+				playManager.AfterResourceStarted += (s, e) => historyManager.LogAudioResource(new HistorySaveData(e.PlayResource.BaseData, e.MetaData.ResourceOwnerUid));
 			// Update our thumbnail
 			playManager.AfterResourceStarted += GenerateStatusImage;
-			playManager.AfterResourceStopped += GenerateStatusImage;
+			playManager.PlaybackStopped += GenerateStatusImage;
+			// Stats
+			playManager.AfterResourceStarted += (s, e) => stats.TrackSongStart(Id, e.ResourceData.AudioType);
+			playManager.ResourceStopped += (s, e) => stats.TrackSongStop(Id);
 			// Register callback for all messages happening
-			clientConnection.OnMessageReceived += OnMessageReceived;
+			ts3client.OnMessageReceived += OnMessageReceived;
 			// Register callback to remove open private sessions, when user disconnects
-			tsFullClient.OnEachClientLeftView += OnClientLeftView;
-			clientConnection.OnBotConnected += OnBotConnected;
-			clientConnection.OnBotDisconnect += OnBotDisconnect;
+			ts3FullClient.OnEachClientLeftView += OnClientLeftView;
+			ts3client.OnBotConnected += OnBotConnected;
+			ts3client.OnBotDisconnect += OnBotDisconnect;
+			// Alone mode
+			ts3client.OnAloneChanged += OnAloneChanged;
+			// Whisper stall
+			ts3client.OnWhisperNoTarget += (s, e) => player.SetStall();
 
+			commandManager.RegisterCollection(MainCommands.Bag);
+			// TODO remove after plugin rework
+			var pluginManager = Injector.GetModule<PluginManager>();
+			foreach (var plugin in pluginManager.Plugins)
+				if (plugin.Type == PluginType.CorePlugin || plugin.Type == PluginType.Commands)
+					commandManager.RegisterCollection(plugin.CorePlugin.Bag);
 			// Restore all alias from the config
 			foreach (var alias in config.Commands.Alias.GetAllItems())
 				commandManager.RegisterAlias(alias.Key, alias.Value).UnwrapToLog(Log);
 
-			// Connect the query after everyting is set up
-			return clientConnection.Connect();
+			// Connect after everyting is set up
+			return ts3client.Connect();
 		}
 
 		private void OnBotConnected(object sender, EventArgs e)
@@ -157,7 +178,7 @@ namespace TS3AudioBot
 
 			var badges = config.Connect.Badges.Value;
 			if (!string.IsNullOrEmpty(badges))
-				clientConnection?.ChangeBadges(badges);
+				ts3client?.ChangeBadges(badges);
 
 			var onStart = config.Events.OnConnect.Value;
 			if (!string.IsNullOrEmpty(onStart))
@@ -200,26 +221,28 @@ namespace TS3AudioBot
 
 			Log.Info("User {0} requested: {1}", textMessage.InvokerName, textMessage.Message);
 
-			clientConnection.InvalidateClientBuffer();
+			ts3client.InvalidateClientBuffer();
 
-			ulong? channelId = null, databaseId = null, channelGroup = null;
-			ulong[] serverGroups = null;
+			ChannelId? channelId = null;
+			ClientDbId? databaseId = null;
+			ChannelGroupId? channelGroup = null;
+			ServerGroupId[] serverGroups = null;
 
-			if (tsFullClient.Book.Clients.TryGetValue(textMessage.InvokerId, out var bookClient))
+			if (ts3FullClient.Book.Clients.TryGetValue(textMessage.InvokerId, out var bookClient))
 			{
 				channelId = bookClient.Channel;
 				databaseId = bookClient.DatabaseId;
 				serverGroups = bookClient.ServerGroups.ToArray();
 				channelGroup = bookClient.ChannelGroup;
 			}
-			else if (!clientConnection.GetClientInfoById(textMessage.InvokerId).GetOk(out var infoClient).GetError(out var infoClientError))
+			else if (!ts3client.GetClientInfoById(textMessage.InvokerId).GetOk(out var infoClient).GetError(out var infoClientError))
 			{
 				channelId = infoClient.ChannelId;
 				databaseId = infoClient.DatabaseId;
 				serverGroups = infoClient.ServerGroups;
 				channelGroup = infoClient.ChannelGroup;
 			}
-			else if (!clientConnection.GetCachedClientById(textMessage.InvokerId).GetOk(out var cachedClient).GetError(out var cachedClientError))
+			else if (!ts3client.GetCachedClientById(textMessage.InvokerId).GetOk(out var cachedClient).GetError(out var cachedClientError))
 			{
 				channelId = cachedClient.ChannelId;
 				databaseId = cachedClient.DatabaseId;
@@ -271,6 +294,50 @@ namespace TS3AudioBot
 			sessionManager.RemoveSession(eventArgs.ClientId);
 		}
 
+		private void OnAloneChanged(object sender, AloneChanged e)
+		{
+			string script;
+			TimeSpan delay;
+			if (e.Alone)
+			{
+				script = config.Events.OnAlone.Value;
+				delay = config.Events.AloneDelay.Value;
+			}
+			else
+			{
+				script = config.Events.OnParty.Value;
+				delay = config.Events.PartyDelay.Value;
+			}
+			if (string.IsNullOrEmpty(script))
+				return;
+
+			void RunEvent()
+			{
+				var info = CreateExecInfo();
+				CallScript(info, script, false, true);
+			};
+
+			SetAloneTickWorker(null);
+			if (delay <= TimeSpan.Zero)
+			{
+				RunEvent();
+			}
+			else
+			{
+				var worker = TickPool.RegisterTickOnce(RunEvent, delay);
+				SetAloneTickWorker(worker);
+			}
+		}
+
+		private void SetAloneTickWorker(TickWorker worker)
+		{
+			var oldWoker = Interlocked.Exchange(ref aloneTickWorker, worker);
+			if (oldWoker != null)
+			{
+				TickPool.UnregisterTicker(oldWoker);
+			}
+		}
+
 		private void LoggedUpdateBotStatus(object sender, EventArgs e)
 		{
 			if (IsDisposed)
@@ -299,7 +366,7 @@ namespace TS3AudioBot
 				setString = strings.info_botstatus_sleeping;
 			}
 
-			return clientConnection.ChangeDescription(setString ?? "");
+			return ts3client.ChangeDescription(setString ?? "");
 		}
 
 		private void GenerateStatusImage(object sender, EventArgs e)
@@ -307,36 +374,63 @@ namespace TS3AudioBot
 			if (!config.GenerateStatusAvatar || IsDisposed)
 				return;
 
-			if (e is PlayInfoEventArgs startEvent)
+			Stream GetRandomFile(string prefix)
 			{
-				Task.Run(() =>
+				try
 				{
-					var thumresult = resourceFactory.GetThumbnail(startEvent.PlayResource);
-					if (!thumresult.Ok)
-					{
-						clientConnection.DeleteAvatar();
-						return;
-					}
+					if (string.IsNullOrEmpty(config.LocalConfigDir))
+						return null;
+					var avatarPath = new DirectoryInfo(Path.Combine(config.LocalConfigDir, BotPaths.Avatars));
+					if (!avatarPath.Exists)
+						return null;
+					var avatars = avatarPath.EnumerateFiles(prefix).ToArray();
+					if (avatars.Length == 0)
+						return null;
+					var pickedAvatar = Tools.PickRandom(avatars);
+					return pickedAvatar.Open(FileMode.Open, FileAccess.Read, FileShare.Read);
+				}
+				catch (Exception ex)
+				{
+					Log.Warn(ex, "Failed to load local avatar");
+					return null;
+				}
+			}
 
-					using (var image = ImageUtil.ResizeImage(thumresult.Value))
+			void Upload(Stream setStream)
+			{
+				if (setStream != null)
+				{
+					using (setStream)
 					{
-						if (image is null)
-							return;
-						var result = clientConnection.UploadAvatar(image);
+						var result = ts3client.UploadAvatar(setStream);
 						if (!result.Ok)
 							Log.Warn("Could not save avatar: {0}", result.Error);
 					}
-				});
-			}
-			else
-			{
-				using (var sleepPic = Util.GetEmbeddedFile("TS3AudioBot.Media.SleepingKitty.png"))
-				{
-					var result = clientConnection.UploadAvatar(sleepPic);
-					if (!result.Ok)
-						Log.Warn("Could not save avatar: {0}", result.Error);
 				}
 			}
+
+			Task.Run(() =>
+			{
+				Stream setStream = null;
+				if (e is PlayInfoEventArgs startEvent)
+				{
+					setStream = ImageUtil.ResizeImageSave(resourceResolver.GetThumbnail(startEvent.PlayResource).OkOr(null), out _).OkOr(null);
+					setStream = setStream ?? GetRandomFile("play*");
+					Upload(setStream);
+				}
+				else
+				{
+					setStream = GetRandomFile("sleep*");
+					setStream = setStream ?? Util.GetEmbeddedFile("TS3AudioBot.Media.SleepingKitty.png");
+					Upload(setStream);
+				}
+
+				if (setStream is null)
+				{
+					ts3client.DeleteAvatar();
+					return;
+				}
+			});
 		}
 
 		private void BeforeResourceStarted(object sender, PlayInfoEventArgs e)
@@ -365,6 +459,7 @@ namespace TS3AudioBot
 		private void CallScript(ExecutionInformation info, string command, bool answer, bool skipRights)
 		{
 			Log.Debug("Calling script (skipRights:{0}, answer:{1}): {2}", skipRights, answer, command);
+			stats.TrackCommandCall(answer);
 
 			info.AddModule(new CallerInfo(false)
 			{
@@ -375,28 +470,15 @@ namespace TS3AudioBot
 
 			TryCatchCommand(info, answer, () =>
 			{
-				// parse (and execute) the command
-				var res = commandManager.CommandSystem.Execute(info, command);
+				// parse and execute the command
+				var s = CommandManager.ExecuteCommand(info, command);
 
 				if (!answer)
 					return;
 
 				// Write result to user
-				switch (res.ResultType)
-				{
-				case CommandResultType.String:
-					var sRes = (StringCommandResult)res;
-					if (!string.IsNullOrEmpty(sRes.Content))
-						info.Write(sRes.Content).UnwrapToLog(Log);
-					break;
-
-				case CommandResultType.Empty:
-					break;
-
-				default:
-					Log.Warn("Got result which is not a string/empty. Result: {0}", res.ToString());
-					break;
-				}
+				if (!string.IsNullOrEmpty(s))
+					info.Write(s).UnwrapToLog(Log);
 			});
 		}
 
@@ -425,9 +507,12 @@ namespace TS3AudioBot
 
 		private void EnableIdleTickWorker()
 		{
-			var idleTime = config.Events.IdleTime.Value;
+			var idleTime = config.Events.IdleDelay.Value;
 			if (idleTime <= TimeSpan.Zero || string.IsNullOrEmpty(config.Events.OnIdle.Value))
+			{
+				DisableIdleTickWorker();
 				return;
+			}
 			var newWorker = TickPool.RegisterTick(OnIdle, idleTime, false);
 			SetIdleTickWorker(newWorker);
 			newWorker.Active = true;
@@ -486,8 +571,8 @@ namespace TS3AudioBot
 		{
 			Id = Id,
 			Name = config.Name,
-			Server = tsFullClient.ConnectionData.Address,
-			Status = tsFullClient.Connected ? BotStatus.Connected : BotStatus.Connecting,
+			Server = ts3FullClient.ConnectionData.Address,
+			Status = ts3FullClient.Connected ? BotStatus.Connected : BotStatus.Connecting,
 		};
 
 		public void Dispose()
@@ -505,7 +590,7 @@ namespace TS3AudioBot
 
 				Injector.GetModule<PluginManager>()?.StopPlugins(this);
 				Injector.GetModule<PlayManager>()?.Stop();
-				Injector.GetModule<IPlayerConnection>()?.Dispose();
+				Injector.GetModule<Player>()?.Dispose();
 				Injector.GetModule<Ts3Client>()?.Dispose();
 				config.ClearEvents();
 			}

@@ -7,17 +7,17 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using Nett;
+using Newtonsoft.Json;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
+using TS3AudioBot.Helper;
+using static TS3AudioBot.Helper.TomlTools;
+
 namespace TS3AudioBot.Config
 {
-	using Helper;
-	using Nett;
-	using Newtonsoft.Json;
-	using System;
-	using System.Collections.Generic;
-	using System.Diagnostics;
-	using System.Linq;
-	using static Helper.TomlTools;
-
 	[DebuggerDisplay("unknown:{Key}")]
 	public abstract class ConfigPart : IJsonSerializable
 	{

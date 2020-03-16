@@ -7,15 +7,15 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using Nett;
+using Newtonsoft.Json;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using TS3AudioBot.Helper;
+
 namespace TS3AudioBot.Config
 {
-	using Nett;
-	using Newtonsoft.Json;
-	using System;
-	using System.Collections.Generic;
-	using System.Diagnostics;
-	using Helper;
-
 	[DebuggerDisplay("{Key}:{Value}")]
 	public class ConfigValue<T> : ConfigPart
 	{
@@ -73,7 +73,7 @@ namespace TS3AudioBot.Config
 			}
 
 			var validate = Validator?.Invoke(tomlValue) ?? R.Ok;
-			if(!validate.Ok)
+			if (!validate.Ok)
 			{
 				Log.Warn("Invalid value in '{0}', {1}", Key, validate.Error);
 				return;

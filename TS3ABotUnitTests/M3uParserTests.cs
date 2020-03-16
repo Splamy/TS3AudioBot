@@ -1,12 +1,12 @@
+using NUnit.Framework;
+using System.IO;
+using System.Text;
+using TS3AudioBot.ResourceFactories.AudioTags;
+
 namespace TS3ABotUnitTests
 {
-	using NUnit.Framework;
-	using System.IO;
-	using System.Text;
-	using TS3AudioBot.ResourceFactories.AudioTags;
-
 	[TestFixture]
-	class M3uParserTests
+	internal class M3uParserTests
 	{
 		[Test]
 		public void SimpleListTest()

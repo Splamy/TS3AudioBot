@@ -7,33 +7,33 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using TSLib.Commands;
+using TSLib.Helper;
+
 namespace TS3AudioBot.CommandSystem.Text
 {
-	using System;
-	using System.Collections.Generic;
-	using System.Linq;
-	using System.Text;
-	using TS3Client.Commands;
-	using TS3Client.Helper;
-
 	public static class LongTextTransform
 	{
 		private static readonly byte[] SeparatorWeight = new byte[] { (byte)'\n', (byte)',', (byte)' ' };
 
-		public static IEnumerable<string> Transform(string text, LongTextBehaviour behaviour, int limit = int.MaxValue, int maxMessageSize = Ts3Const.MaxSizeTextMessage)
+		public static IEnumerable<string> Transform(string text, LongTextBehaviour behaviour, int limit = int.MaxValue, int maxMessageSize = TsConst.MaxSizeTextMessage)
 		{
 			if (maxMessageSize < 4)
 				throw new ArgumentOutOfRangeException(nameof(maxMessageSize), "The minimum split length must be at least 4 bytes to fit all utf8 characters");
 
 			// Assuming worst case that each UTF-8 character which epands to 4 bytes.
 			// If the message is still shorter we can safely return in 1 block.
-			if (text.Length * 4 <= Ts3Const.MaxSizeTextMessage)
+			if (text.Length * 4 <= TsConst.MaxSizeTextMessage)
 				return new[] { text };
 
 			var bytes = Encoding.UTF8.GetBytes(text);
 
 			// If the entire text UTF-8 encoded fits in one message we can return early.
-			if (bytes.Length * 2 < Ts3Const.MaxSizeTextMessage)
+			if (bytes.Length * 2 < TsConst.MaxSizeTextMessage)
 				return new[] { text };
 
 			var list = new List<string>();
@@ -48,7 +48,7 @@ namespace TS3AudioBot.CommandSystem.Text
 
 				for (; i < block.Length; i++)
 				{
-					tokenCnt += Ts3String.IsDoubleChar(block[i]) ? 2 : 1;
+					tokenCnt += TsString.IsDoubleChar(block[i]) ? 2 : 1;
 
 					if (tokenCnt > maxMessageSize)
 					{

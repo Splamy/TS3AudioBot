@@ -7,22 +7,22 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System;
+using System.ComponentModel;
+using System.Diagnostics;
+using System.Globalization;
+using System.IO;
+using System.Text;
+using System.Text.RegularExpressions;
+using System.Threading;
+using TS3AudioBot.Config;
+using TS3AudioBot.Helper;
+using TSLib.Audio;
+using TSLib.Helper;
+
 namespace TS3AudioBot.Audio
 {
-	using Config;
-	using Helper;
-	using System;
-	using System.ComponentModel;
-	using System.Diagnostics;
-	using System.Globalization;
-	using System.IO;
-	using System.Text;
-	using System.Text.RegularExpressions;
-	using System.Threading;
-	using TS3Client.Audio;
-	using TS3Client.Helper;
-
-	public class FfmpegProducer : IAudioPassiveProducer, ISampleInfo, IDisposable
+	public class FfmpegProducer : IPlayerSource, ISampleInfo, IDisposable
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private readonly Id id;
@@ -31,7 +31,7 @@ namespace TS3AudioBot.Audio
 		private const string PreLinkConf = "-hide_banner -nostats -threads 1 -i \"";
 		private const string PostLinkConf = "\" -ac 2 -ar 48000 -f s16le -acodec pcm_s16le pipe:1";
 		private const string LinkConfIcy = "-hide_banner -nostats -threads 1 -i pipe:0 -ac 2 -ar 48000 -f s16le -acodec pcm_s16le pipe:1";
-		private readonly TimeSpan retryOnDropBeforeEnd = TimeSpan.FromSeconds(10);
+		private static readonly TimeSpan retryOnDropBeforeEnd = TimeSpan.FromSeconds(10);
 
 		private readonly ConfToolsFfmpeg config;
 
@@ -50,7 +50,7 @@ namespace TS3AudioBot.Audio
 			this.id = id;
 		}
 
-		public E<string> AudioStart(string url) => StartFfmpegProcess(url, TimeSpan.Zero);
+		public E<string> AudioStart(string url, TimeSpan? startOff = null) => StartFfmpegProcess(url, startOff ?? TimeSpan.Zero);
 
 		public E<string> AudioStartIcy(string url) => StartFfmpegProcessIcy(url);
 
@@ -184,15 +184,16 @@ namespace TS3AudioBot.Audio
 			return StartFfmpegProcess(lastLink, value);
 		}
 
-		private R<FfmpegInstance, string> StartFfmpegProcess(string url, TimeSpan offset)
+		private R<FfmpegInstance, string> StartFfmpegProcess(string url, TimeSpan? offsetOpt)
 		{
 			StopFfmpegProcess();
 			Log.Trace("Start request {0}", url);
 
 			string arguments;
+			var offset = offsetOpt ?? TimeSpan.Zero;
 			if (offset > TimeSpan.Zero)
 			{
-				var seek = $"-ss {offset.ToString(@"hh\:mm\:ss", CultureInfo.InvariantCulture)}";
+				var seek = string.Format(CultureInfo.InvariantCulture, @"-ss {0:hh\:mm\:ss\.fff}", offset);
 				arguments = string.Concat(seek, " ", PreLinkConf, url, PostLinkConf, " ", seek);
 			}
 			else
@@ -393,7 +394,7 @@ namespace TS3AudioBot.Audio
 
 			public void ReadStreamLoop(Id id)
 			{
-				Util.SetLogId(id.ToString());
+				Tools.SetLogId(id.ToString());
 				const int IcyMaxMeta = 255 * 16;
 				const int ReadBufferSize = 4096;
 

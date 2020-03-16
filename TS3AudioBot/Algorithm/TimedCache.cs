@@ -7,13 +7,13 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System;
+using System.Collections.Concurrent;
+using System.Linq;
+using TSLib.Helper;
+
 namespace TS3AudioBot.Algorithm
 {
-	using System;
-	using System.Collections.Concurrent;
-	using System.Linq;
-	using TS3AudioBot.Helper;
-
 	public class TimedCache<TK, TV>
 	{
 		public TimeSpan Timeout { get; }
@@ -30,7 +30,7 @@ namespace TS3AudioBot.Algorithm
 		public bool TryGetValue(TK key, out TV value)
 		{
 			if (!cachedData.TryGetValue(key, out var data)
-				|| Util.GetNow() - Timeout > data.Timestamp)
+				|| Tools.Now - Timeout > data.Timestamp)
 			{
 				CleanCache();
 				value = default;
@@ -42,7 +42,7 @@ namespace TS3AudioBot.Algorithm
 
 		public void Set(TK key, TV value)
 		{
-			cachedData[key] = new TimedData { Data = value, Timestamp = Util.GetNow() };
+			cachedData[key] = new TimedData { Data = value, Timestamp = Tools.Now };
 		}
 
 		public void Clear()
@@ -52,7 +52,7 @@ namespace TS3AudioBot.Algorithm
 
 		private void CleanCache()
 		{
-			var now = Util.GetNow() - Timeout;
+			var now = Tools.Now - Timeout;
 			foreach (var item in cachedData.Where(kvp => now > kvp.Value.Timestamp).ToList())
 			{
 				cachedData.TryRemove(item.Key, out _);

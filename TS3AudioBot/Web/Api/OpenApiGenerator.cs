@@ -7,18 +7,17 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using System;
+using System.Collections.Generic;
+using System.Text;
+using TS3AudioBot.CommandSystem;
+using TS3AudioBot.CommandSystem.Commands;
+using TSLib.Helper;
+
 namespace TS3AudioBot.Web.Api
 {
-	using Newtonsoft.Json;
-	using Newtonsoft.Json.Linq;
-	using System;
-	using System.Collections.Generic;
-	using System.Text;
-	using TS3AudioBot.CommandSystem;
-	using TS3AudioBot.CommandSystem.CommandResults;
-	using TS3AudioBot.CommandSystem.Commands;
-	using TS3AudioBot.Helper;
-
 	public static class OpenApiGenerator
 	{
 		private static readonly JsonSerializer seri = JsonSerializer.CreateDefault();
@@ -98,7 +97,7 @@ namespace TS3AudioBot.Web.Api
 			pathBuilder.Append(command.InvokeName.Replace(' ', '/'));
 			foreach (var param in command.CommandParameter)
 			{
-				switch (param.kind)
+				switch (param.Kind)
 				{
 				case ParamKind.Unknown:
 					break;
@@ -111,25 +110,25 @@ namespace TS3AudioBot.Web.Api
 				case ParamKind.NormalParam:
 				case ParamKind.NormalArray:
 				case ParamKind.NormalTailString:
-					if (param.kind == ParamKind.NormalArray)
-						pathBuilder.Append("/{").Append(param.param.Name).Append("}...");
+					if (param.Kind == ParamKind.NormalArray)
+						pathBuilder.Append("/{").Append(param.Name).Append("}...");
 					else
-						pathBuilder.Append("/{").Append(param.param.Name).Append("}");
+						pathBuilder.Append("/{").Append(param.Name).Append("}");
 
 					var addparam = new JObject(
-						new JProperty("name", param.param.Name),
+						new JProperty("name", param.Name),
 						new JProperty("in", "path"),
 						new JProperty("description", "useful help"),
 						new JProperty("required", true) // param.optional
 					);
 
-					var paramschema = NormalToSchema(param.type);
+					var paramschema = NormalToSchema(param.Type);
 					if (paramschema != null)
 						addparam.Add("schema", JObject.FromObject(paramschema, seri));
 					parameters.Add(addparam);
 					break;
 				default:
-					throw Util.UnhandledDefault(param.kind);
+					throw Tools.UnhandledDefault(param.Kind);
 				}
 			}
 
@@ -144,7 +143,7 @@ namespace TS3AudioBot.Web.Api
 			var tags = new JArray();
 			int spaceIndex = command.InvokeName.IndexOf(' ');
 			string baseName = spaceIndex >= 0 ? command.InvokeName.Substring(0, spaceIndex) : command.InvokeName;
-			var commandroot = commandManager.CommandSystem.RootCommand.GetCommand(baseName);
+			var commandroot = commandManager.RootGroup.GetCommand(baseName);
 			switch (commandroot)
 			{
 			case null:
@@ -235,7 +234,7 @@ namespace TS3AudioBot.Web.Api
 			else if (type == typeof(DateTime)) return OApiSchema.FromBasic("string", "date-time");
 			else if (type == typeof(string)) return OApiSchema.FromBasic("string", null);
 			else if (type == typeof(JsonEmpty) || type == typeof(void)) return null;
-			else if (type == typeof(JsonObject) || type == typeof(object) || type == typeof(ICommandResult)) return OApiSchema.FromBasic("object");
+			else if (type == typeof(JsonObject) || type == typeof(object)) return OApiSchema.FromBasic("object");
 			else if (type == typeof(ICommand)) return OApiSchema.FromBasic("λ");
 			else
 			{
@@ -243,7 +242,7 @@ namespace TS3AudioBot.Web.Api
 			}
 		}
 
-		class OApiSchema
+		private class OApiSchema
 		{
 			public string type { get; set; }
 			public string format { get; set; }

@@ -7,23 +7,21 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using Nett;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+
 namespace TS3AudioBot.Config
 {
-	using Helper;
-	using Nett;
-	using System;
-	using System.Collections.Generic;
-	using System.Diagnostics;
-
 	[DebuggerDisplay("dyntable:{Key}")]
 	public class ConfigDynamicTable<T> : ConfigEnumerable, IDynamicTable where T : ConfigPart
 	{
-		private readonly Dictionary<string, T> dynamicTables;
+		private readonly Dictionary<string, T> dynamicTables = new Dictionary<string, T>();
 		private readonly Func<string, T> createFactory;
 
 		public ConfigDynamicTable(Func<string, T> createFactory)
 		{
-			Util.Init(out dynamicTables);
 			this.createFactory = createFactory;
 		}
 

@@ -7,13 +7,13 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System;
+using System.Collections.Generic;
+using System.Text;
+using TS3AudioBot.CommandSystem.Ast;
+
 namespace TS3AudioBot.CommandSystem
 {
-	using Ast;
-	using System;
-	using System.Collections.Generic;
-	using System.Text;
-
 	internal static class CommandParser
 	{
 		public const char DefaultCommandChar = '!';

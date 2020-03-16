@@ -7,13 +7,13 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using TS3AudioBot.Localization;
+
 namespace TS3AudioBot.CommandSystem.Commands
 {
-	using CommandResults;
-	using Localization;
-	using System;
-	using System.Collections.Generic;
-	using System.Linq;
 
 	public class OverloadedFunctionCommand : ICommand
 	{
@@ -43,24 +43,21 @@ namespace TS3AudioBot.CommandSystem.Commands
 				// Sort out special arguments
 				// and remove the nullable wrapper
 				var params1 = (from p in f1.CommandParameter
-							   where p.kind.IsNormal()
-							   select FunctionCommand.UnwrapParamType(p.type)).ToList();
+							   where p.Kind.IsNormal()
+							   select FunctionCommand.UnwrapParamType(p.Type)).ToList();
 
 				var params2 = (from p in f2.CommandParameter
-							   where p.kind.IsNormal()
-							   select FunctionCommand.UnwrapParamType(p.type)).ToList();
+							   where p.Kind.IsNormal()
+							   select FunctionCommand.UnwrapParamType(p.Type)).ToList();
 
 				for (int i = 0; i < params1.Count; i++)
 				{
 					// Prefer functions with higher parameter count
 					if (i >= params2.Count)
 						return -1;
-					int i1 = Array.IndexOf(XCommandSystem.TypeOrder, params1[i]);
-					if (i1 == -1)
-						i1 = XCommandSystem.TypeOrder.Length;
-					int i2 = Array.IndexOf(XCommandSystem.TypeOrder, params2[i]);
-					if (i2 == -1)
-						i2 = XCommandSystem.TypeOrder.Length;
+					// Not found returns -1, so more important than any found index
+					int i1 = Array.IndexOf(CommandSystemTypes.TypeOrder, params1[i]);
+					int i2 = Array.IndexOf(CommandSystemTypes.TypeOrder, params2[i]);
 					// Prefer lower argument
 					if (i1 < i2)
 						return -1;
@@ -74,7 +71,7 @@ namespace TS3AudioBot.CommandSystem.Commands
 			});
 		}
 
-		public virtual ICommandResult Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<CommandResultType> returnTypes)
+		public virtual object Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<Type> returnTypes)
 		{
 			// Make arguments lazy, we only want to execute them once
 			arguments = arguments.Select(c => new LazyCommand(c)).ToArray();

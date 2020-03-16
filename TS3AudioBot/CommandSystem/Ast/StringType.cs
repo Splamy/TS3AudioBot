@@ -9,7 +9,7 @@
 
 namespace TS3AudioBot.CommandSystem.Ast
 {
-	enum StringType
+	internal enum StringType
 	{
 		FreeString,
 		QuotedString,

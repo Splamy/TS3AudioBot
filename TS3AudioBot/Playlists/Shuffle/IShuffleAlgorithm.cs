@@ -23,7 +23,7 @@ namespace TS3AudioBot.Playlists.Shuffle
 	// Output conventions:
 	//
 	// if Index = x, x >= Length
-	//   => Index = Util.MathMod(Index, Length)
+	//   => Index = Tools.MathMod(Index, Length)
 	// if Index = x, x < 0
 	//   => Index : undefined
 	// if Index = x, Length < 0

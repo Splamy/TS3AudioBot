@@ -7,6 +7,8 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using TSLib.Helper;
+
 namespace TS3AudioBot.Playlists.Shuffle
 {
 	public class NormalOrder : IShuffleAlgorithm
@@ -17,13 +19,13 @@ namespace TS3AudioBot.Playlists.Shuffle
 
 		public bool Next()
 		{
-			Index = Helper.Util.MathMod(Index + 1, Length);
+			Index = Tools.MathMod(Index + 1, Length);
 			return Index == 0;
 		}
 
 		public bool Prev()
 		{
-			Index = Helper.Util.MathMod(Index - 1, Length);
+			Index = Tools.MathMod(Index - 1, Length);
 			return Index == Length - 1;
 		}
 	}

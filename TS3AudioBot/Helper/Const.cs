@@ -11,7 +11,19 @@ namespace TS3AudioBot.Helper
 {
 	internal static class SessionConst
 	{
-		public const string Playlist = "tab_playlist";
 		public const string SearchResult = "tab_searchresult";
+	}
+
+	public static class BotPaths
+	{
+		public const string Playlists = "playlists";
+		public const string Avatars = "avatars";
+		public const string Music = "music";
+	}
+
+	public static class FilesConst
+	{
+		public const string CoreConfig = "ts3audiobot.toml";
+		public const string BotConfig = "bot.toml";
 	}
 }

@@ -7,28 +7,30 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using Newtonsoft.Json;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.Linq;
+using System.Reflection;
+using System.Text;
+using TS3AudioBot.CommandSystem.Commands;
+using TS3AudioBot.Localization;
+
 namespace TS3AudioBot.CommandSystem
 {
-	using CommandResults;
-	using Commands;
-	using Localization;
-	using System;
-	using System.Collections.Generic;
-	using System.Diagnostics;
-	using System.Linq;
-	using System.Reflection;
-	using System.Text;
-
 	[DebuggerDisplay("{DebuggerDisplay, nq}")]
+	[JsonObject(MemberSerialization.OptIn)]
 	public class BotCommand : FunctionCommand
 	{
 		private readonly string helpLookupName;
 		private string cachedFullQualifiedName;
-		private object cachedAsJsonObj;
 
+		[JsonProperty(PropertyName = "Name")]
 		public string InvokeName { get; }
 		private readonly string[] requiredRights;
 		public string RequiredRight => requiredRights[0];
+		[JsonProperty(PropertyName = "Description")]
 		public string Description => LocalizationManager.GetString(helpLookupName);
 		public UsageAttribute[] UsageList { get; }
 		public string FullQualifiedName
@@ -40,15 +42,22 @@ namespace TS3AudioBot.CommandSystem
 					var strb = new StringBuilder();
 					strb.Append(InvokeName);
 					strb.Append(" (");
-					strb.Append(string.Join(", ", CommandParameter.Where(p => !p.kind.IsNormal()).Select(p => p.type.FullName).OrderBy(p => p)));
+					strb.Append(string.Join(", ", CommandParameter.Where(p => !p.Kind.IsNormal()).Select(p => p.Type.FullName).OrderBy(p => p)));
 					strb.Append("|");
-					strb.Append(string.Join(", ", CommandParameter.Where(p => p.kind.IsNormal()).Select(p => p.type.FullName)));
+					strb.Append(string.Join(", ", CommandParameter.Where(p => p.Kind.IsNormal()).Select(p => p.Type.FullName)));
 					strb.Append(")");
 					cachedFullQualifiedName = strb.ToString();
 				}
 				return cachedFullQualifiedName;
 			}
 		}
+
+		[JsonProperty(PropertyName = "Return")]
+		public string Return { get; set; }
+		[JsonProperty(PropertyName = "Parameter")]
+		public (string name, string type, bool optional)[] Parameter { get; }
+		[JsonProperty(PropertyName = "Modules")]
+		public (string type, bool optional)[] Modules { get; }
 
 		public string DebuggerDisplay
 		{
@@ -63,20 +72,41 @@ namespace TS3AudioBot.CommandSystem
 			}
 		}
 
-		public object AsJsonObj => cachedAsJsonObj ?? (cachedAsJsonObj = new CommandSerializeObj(this));
-
 		public BotCommand(CommandBuildInfo buildInfo) : base(buildInfo.Method, buildInfo.Parent)
 		{
 			InvokeName = buildInfo.CommandData.CommandNameSpace;
 			helpLookupName = buildInfo.CommandData.OverrideHelpName ?? ("cmd_" + InvokeName.Replace(" ", "_") + "_help");
 			requiredRights = new[] { "cmd." + string.Join(".", InvokeName.Split(' ')) };
 			UsageList = buildInfo.UsageList?.ToArray() ?? Array.Empty<UsageAttribute>();
+			// Serialization
+			Return = UnwrapReturnType(CommandReturn).Name;
+			Parameter = (
+				from x in CommandParameter
+				where x.Kind.IsNormal()
+				select (x.Name, UnwrapParamType(x.Type).Name, x.Optional)).ToArray();
+			Modules = (
+				from x in CommandParameter
+				where x.Kind == ParamKind.Dependency
+				select (x.Type.Name, x.Optional)).ToArray();
 		}
 
 		public override string ToString()
 		{
 			var strb = new StringBuilder();
-			strb.Append("\n!").Append(InvokeName).Append(": ").Append(Description ?? strings.error_no_help ?? "<No help found>");
+			strb.Append("\n!")
+				.Append(InvokeName);
+
+			foreach (var (name, _, optional) in Parameter)
+			{
+				strb.Append(' ');
+				if (optional)
+					strb.Append("[<").Append(name).Append(">]");
+				else
+					strb.Append('<').Append(name).Append('>');
+			}
+
+			strb.Append(": ")
+				.Append(Description ?? strings.error_no_help ?? "<No help found>");
 
 			if (UsageList.Length > 0)
 			{
@@ -88,7 +118,7 @@ namespace TS3AudioBot.CommandSystem
 			return strb.ToString();
 		}
 
-		public override ICommandResult Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<CommandResultType> returnTypes)
+		public override object Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<Type> returnTypes)
 		{
 			// Check call complexity
 			info.UseComplexityTokens(1);
@@ -98,32 +128,6 @@ namespace TS3AudioBot.CommandSystem
 				throw new CommandException(string.Format(strings.error_missing_right, InvokeName, RequiredRight), CommandExceptionReason.MissingRights);
 
 			return base.Execute(info, arguments, returnTypes);
-		}
-
-		private class CommandSerializeObj
-		{
-			private readonly BotCommand botCmd;
-			public string Name => botCmd.InvokeName;
-			public string Description => botCmd.Description;
-			public string[] Parameter { get; }
-			public string[] Modules { get; }
-			public string Return { get; }
-
-			public CommandSerializeObj(BotCommand botCmd)
-			{
-				this.botCmd = botCmd;
-				Parameter = (
-					from x in botCmd.CommandParameter
-					where x.kind.IsNormal()
-					select UnwrapParamType(x.type).Name + (x.optional ? "?" : "")).ToArray();
-				Modules = (
-					from x in botCmd.CommandParameter
-					where x.kind == ParamKind.Dependency
-					select x.type.Name + (x.optional ? "?" : "")).ToArray();
-				Return = UnwrapReturnType(botCmd.CommandReturn).Name;
-			}
-
-			public override string ToString() => botCmd.ToString();
 		}
 	}
 

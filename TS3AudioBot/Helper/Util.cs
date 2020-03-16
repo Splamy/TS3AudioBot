@@ -7,56 +7,26 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using System.Text;
+using System.Text.RegularExpressions;
+using TS3AudioBot.CommandSystem;
+using TS3AudioBot.Localization;
+
 namespace TS3AudioBot.Helper
 {
-	using CommandSystem;
-	using Localization;
-	using Newtonsoft.Json;
-	using Newtonsoft.Json.Linq;
-	using System;
-	using System.Collections.Generic;
-	using System.Diagnostics;
-	using System.IO;
-	using System.Linq;
-	using System.Reflection;
-	using System.Text;
-	using System.Text.RegularExpressions;
-
 	public static class Util
 	{
 		public const RegexOptions DefaultRegexConfig = RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.ECMAScript;
 
 		private static readonly Regex SafeFileNameMatcher = new Regex(@"^[\w-_]+$", DefaultRegexConfig);
-
-		public static DateTime GetNow() => DateTime.Now;
-
-		public static readonly DateTime UnixTimeStart = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
-
-		public static uint ToUnix(this DateTime dateTime) => (uint)(dateTime - UnixTimeStart).TotalSeconds;
-
-		public static void Init<T>(out T obj) where T : new() => obj = new T();
-
-		public static Random Random { get; } = new Random();
-
-		public static Encoding Utf8Encoder { get; } = new UTF8Encoding(false, false);
-
-		public static int MathMod(int x, int mod) => ((x % mod) + mod) % mod;
-
-		private static long Pow(long b, int pow)
-		{
-			long ret = 1;
-			while (pow != 0)
-			{
-				if ((pow & 1) == 1)
-					ret *= b;
-				b *= b;
-				pow >>= 1;
-			}
-			return ret;
-		}
-
-		public static float Clamp(float value, float min, float max) => Math.Min(Math.Max(value, min), max);
-		public static int Clamp(int value, int min, int max) => Math.Min(Math.Max(value, min), max);
 
 		private static readonly string[] byteSuffix = { "B", "KB", "MB", "GB", "TB", "PB", "EB" };
 
@@ -103,6 +73,19 @@ namespace TS3AudioBot.Helper
 			return unchecked((int)uval);
 		}
 
+		private static long Pow(long b, int pow)
+		{
+			long ret = 1;
+			while (pow != 0)
+			{
+				if ((pow & 1) == 1)
+					ret *= b;
+				b *= b;
+				pow >>= 1;
+			}
+			return ret;
+		}
+
 		public static void UnwrapThrow(this E<LocalStr> r)
 		{
 			if (!r.Ok)
@@ -135,28 +118,29 @@ namespace TS3AudioBot.Helper
 			return strb.ToString();
 		}
 
-		public static Exception UnhandledDefault<T>(T value) where T : struct { return new MissingEnumCaseException(typeof(T).Name, value.ToString()); }
-
 		public static Stream GetEmbeddedFile(string name)
 		{
 			var assembly = Assembly.GetExecutingAssembly();
 			return assembly.GetManifestResourceStream(name);
 		}
 
-		public static R<T> TryCast<T>(this JToken token, string key)
+		public static bool TryCast<T>(this JToken token, string key, out T value)
 		{
+			value = default;
 			if (token is null)
-				return R.Err;
-			var value = token.SelectToken(key);
-			if (value is null)
-				return R.Err;
-			try {
-				var t = value.ToObject<T>();
+				return false;
+			var jValue = token.SelectToken(key);
+			if (jValue is null)
+				return false;
+			try
+			{
+				var t = jValue.ToObject<T>();
 				if ((object)t is null)
-					return R.Err;
-				return t;
+					return false;
+				value = t;
+				return true;
 			}
-			catch (JsonReaderException) { return R.Err; }
+			catch (JsonReaderException) { return false; }
 		}
 
 		public static E<LocalStr> IsSafeFileName(string name)
@@ -179,12 +163,14 @@ namespace TS3AudioBot.Helper
 			catch { return true; }
 		}
 
-		internal static void SetLogId(string id) => NLog.MappedDiagnosticsContext.Set("BotId", id);
-	}
-
-	public class MissingEnumCaseException : Exception
-	{
-		public MissingEnumCaseException(string enumTypeName, string valueName) : base($"The switch does not handle the value \"{valueName}\" from \"{enumTypeName}\".") { }
-		public MissingEnumCaseException(string message, Exception inner) : base(message, inner) { }
+		public static V GetOrNew<K, V>(this IDictionary<K, V> dict, K key) where V : new()
+		{
+			if (!dict.TryGetValue(key, out var val))
+			{
+				val = new V();
+				dict[key] = val;
+			}
+			return val;
+		}
 	}
 }

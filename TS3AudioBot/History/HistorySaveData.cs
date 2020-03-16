@@ -7,17 +7,18 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System;
+using TS3AudioBot.ResourceFactories;
+using TSLib;
+
 namespace TS3AudioBot.History
 {
-	using System;
-	using ResourceFactories;
-
 	public class HistorySaveData
 	{
 		public AudioResource Resource { get; }
-		public string InvokerUid { get; }
+		public Uid InvokerUid { get; }
 
-		public HistorySaveData(AudioResource resource, string invokerUid)
+		public HistorySaveData(AudioResource resource, Uid invokerUid)
 		{
 			Resource = resource ?? throw new ArgumentNullException(nameof(resource));
 			InvokerUid = invokerUid;

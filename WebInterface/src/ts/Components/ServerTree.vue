@@ -23,7 +23,8 @@ import {
 	CmdServerTreeUser,
 	CmdServerTreeServer,
 	CmdWhisperList,
-	CmdServerTree
+	CmdServerTree,
+	Empty
 } from "../ApiObjects";
 import { Dict, Util } from "../Util";
 import { bot, cmd, jmerge } from "../Api";
@@ -79,13 +80,11 @@ export default Vue.component("server-tree", {
 		setServerTree(tree: CmdServerTree) {
 			const nodes: Dict<IChannelBuildNode> = {};
 			nodes[0] = {
-				own: {
-					Id: 0,
-					Name: tree.Server.Name,
-					Order: 0,
-					Parent: -1,
-					HasPassword: false
-				},
+				own: (function() {
+					let c = Empty.CmdServerTreeChannel();
+					c.Name = tree.Server.Name;
+					return c;
+				})(),
 				children: [],
 				user: []
 			};
@@ -131,59 +130,6 @@ export default Vue.component("server-tree", {
 		ServerTreeNode
 	}
 });
-
-// public async changeChannel(channel: CmdServerTreeChannel) {
-// 	if (channel.Id === 0) return;
-// 	if (!channel.HasPassword) {
-// 		const res = await bot(
-// 			cmd<void>("bot", "move", String(channel.Id))
-// 		).get();
-// 		if (DisplayError.check(res, "Failed to move")) {
-// 			await this.refresh();
-// 		}
-// 		return;
-// 	}
-// 	await ModalBox.show(
-// 		"",
-// 		"This channel is password protected",
-// 		{
-// 			inputs: { name: "Enter password" }
-// 		},
-// 		{
-// 			text: "Ok",
-// 			default: true,
-// 			action: async i => {
-// 				const res = await bot(
-// 					cmd<void>("bot", "move", String(channel.Id), i.name)
-// 				).get();
-// 				if (DisplayError.check(res, "Failed to move")) {
-// 					await this.refresh();
-// 				}
-// 			}
-// 		},
-// 		{
-// 			text: "Abort"
-// 		}
-// 	);
-// }
-// private static createDetailList(obj: any): HTMLElement {
-// 	const details = <div class="details"></div>;
-// 	for (const key in obj) {
-// 		let value = obj[key];
-// 		if (value === null) {
-// 			value = "";
-// 		} else if (typeof value === "object") {
-// 			value = JSON.stringify(value);
-// 		}
-// 		details.appendChild(
-// 			<div class="detail_entry">
-// 				<div class="detail_key">{key}</div>
-// 				<div class="detail_value">{value}</div>
-// 			</div>
-// 		);
-// 	}
-// 	return details;
-// }
 
 export interface IChannelBuildNode {
 	own: CmdServerTreeChannel;

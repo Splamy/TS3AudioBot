@@ -61,7 +61,7 @@
 			</b-tooltip>
 
 			<b-tooltip label="Site Settings" position="is-bottom">
-				<b-navbar-item>
+				<b-navbar-item tag="a" @click.native="openSiteSettings()">
 					<b-icon icon="settings"></b-icon>
 					<span class="is-hidden-desktop">Site Settings</span>
 				</b-navbar-item>
@@ -79,8 +79,25 @@
 
 <script lang="ts">
 import Vue from "vue";
+import SiteSettingsModal from "../Modals/SiteSettingsModal.vue";
 
-export default Vue.extend({});
+export default Vue.extend({
+	data() {
+		return {};
+	},
+	methods: {
+		openSiteSettings() {
+			this.$buefy.modal.open({
+				parent: this,
+				component: SiteSettingsModal,
+				hasModalCard: false
+			});
+		}
+	},
+	components: {
+		SiteSettingsModal
+	}
+});
 </script>
 
 <style lang="less">

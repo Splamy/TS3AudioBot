@@ -123,9 +123,6 @@
   <data name="cmd_api_token_help" xml:space="preserve">
     <value>Generates an api token.</value>
   </data>
-  <data name="cmd_api_nonce_help" xml:space="preserve">
-    <value>Generates an api nonce.</value>
-  </data>
   <data name="cmd_bot_commander_help" xml:space="preserve">
     <value>Gets the status of the channel commander mode.</value>
   </data>
@@ -973,9 +970,15 @@ with the id {1}?</value>
     <value>Your value is out of range. Select one between {0} and {1}.</value>
   </data>
   <data name="info_number" xml:space="preserve">
-    <value>&lt;number&gt;</value>
+    <value>number</value>
   </data>
   <data name="cmd_select_help" xml:space="preserve">
     <value>Selects a song from a previous search and plays it.</value>
+  </data>
+  <data name="error_ts_file_too_big" xml:space="preserve">
+    <value>The file to upload is too big.</value>
+  </data>
+  <data name="error_ts_code_781" xml:space="preserve">
+    <value>Invalid channel password.</value>
   </data>
 </root>

@@ -6,12 +6,13 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TS3AudioBot", "TS3AudioBot\
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TS3ABotUnitTests", "TS3ABotUnitTests\TS3ABotUnitTests.csproj", "{20B6F767-5396-41D9-83D8-98B5730C6E2E}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TS3Client", "TS3Client\TS3Client.csproj", "{0EB99E9D-87E5-4534-A100-55D231C2B6A6}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TSLib", "TSLib\TSLib.csproj", "{0EB99E9D-87E5-4534-A100-55D231C2B6A6}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{ADAA5A65-0CE1-45FA-91F4-3D8D39073AB0}"
 	ProjectSection(SolutionItems) = preProject
 		.editorconfig = .editorconfig
 		Directory.Build.targets = Directory.Build.targets
+		GitVersion.yml = GitVersion.yml
 		README.md = README.md
 		TS3AudioBot.ruleset = TS3AudioBot.ruleset
 	EndProjectSection

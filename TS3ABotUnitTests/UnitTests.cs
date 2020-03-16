@@ -1,31 +1,24 @@
-// TS3AudioBot - An advanced Musicbot for Teamspeak 3
-// Copyright (C) 2017  TS3AudioBot contributors
-//
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the Open Software License v. 3.0
-//
-// You should have received a copy of the Open Software License along with this
-// program. If not, see <https://opensource.org/licenses/OSL-3.0>.
+using NUnit.Framework;
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text.RegularExpressions;
+using System.Threading;
+using TS3AudioBot;
+using TS3AudioBot.Config;
+using TS3AudioBot.Helper;
+using TS3AudioBot.History;
+using TS3AudioBot.Playlists.Shuffle;
+using TS3AudioBot.ResourceFactories;
+using TS3AudioBot.ResourceFactories.Youtube;
+using TSLib;
+using TSLib.Full;
+using TSLib.Messages;
 
 namespace TS3ABotUnitTests
 {
-	using NUnit.Framework;
-	using System;
-	using System.Collections;
-	using System.Collections.Generic;
-	using System.IO;
-	using System.Linq;
-	using System.Text.RegularExpressions;
-	using System.Threading;
-	using TS3AudioBot;
-	using TS3AudioBot.Config;
-	using TS3AudioBot.Helper;
-	using TS3AudioBot.History;
-	using TS3AudioBot.Playlists.Shuffle;
-	using TS3AudioBot.ResourceFactories;
-	using TS3Client.Full;
-	using TS3Client.Messages;
-
 	[TestFixture]
 	public class UnitTests
 	{
@@ -39,8 +32,8 @@ namespace TS3ABotUnitTests
 			string testFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "history.test");
 			if (File.Exists(testFile)) File.Delete(testFile);
 
-			var inv1 = new ClientList { ClientId = 10, Uid = "Uid1", Name = "Invoker1" };
-			var inv2 = new ClientList { ClientId = 20, Uid = "Uid2", Name = "Invoker2" };
+			var inv1 = new ClientList { ClientId = (ClientId)10, Uid = (Uid)"Uid1", Name = "Invoker1" };
+			var inv2 = new ClientList { ClientId = (ClientId)20, Uid = (Uid)"Uid2", Name = "Invoker2" };
 
 			var ar1 = new AudioResource("asdf", "sc_ar1", "soundcloud");
 			var ar2 = new AudioResource("./File.mp3", "me_ar2", "media");
@@ -48,7 +41,7 @@ namespace TS3ABotUnitTests
 
 			var data1 = new HistorySaveData(ar1, inv1.Uid);
 			var data2 = new HistorySaveData(ar2, inv2.Uid);
-			var data3 = new HistorySaveData(ar3, "Uid3");
+			var data3 = new HistorySaveData(ar3, (Uid)"Uid3");
 
 			var confHistory = ConfigTable.CreateRoot<ConfHistory>();
 			confHistory.FillDeletedIds.Value = false;
@@ -100,7 +93,7 @@ namespace TS3ABotUnitTests
 
 			var ale1 = hf.FindEntryByResource(ar1);
 			hf.RenameEntry(ale1, "sc_ar1X");
-			hf.LogAudioResourceDelayed(new HistorySaveData(ale1.AudioResource, "Uid4"));
+			hf.LogAudioResourceDelayed(new HistorySaveData(ale1.AudioResource, (Uid)"Uid4"));
 
 
 			db.Dispose();
@@ -114,14 +107,14 @@ namespace TS3ABotUnitTests
 
 			var ale2 = hf.FindEntryByResource(ar2);
 			hf.RenameEntry(ale2, "me_ar2_loong1");
-			hf.LogAudioResourceDelayed(new HistorySaveData(ale2.AudioResource, "Uid4"));
+			hf.LogAudioResourceDelayed(new HistorySaveData(ale2.AudioResource, (Uid)"Uid4"));
 
 			ale1 = hf.FindEntryByResource(ar1);
 			hf.RenameEntry(ale1, "sc_ar1X_loong1");
-			hf.LogAudioResourceDelayed(new HistorySaveData(ale1.AudioResource, "Uid4"));
+			hf.LogAudioResourceDelayed(new HistorySaveData(ale1.AudioResource, (Uid)"Uid4"));
 
 			hf.RenameEntry(ale2, "me_ar2_exxxxxtra_loong1");
-			hf.LogAudioResourceDelayed(new HistorySaveData(ale2.AudioResource, "Uid4"));
+			hf.LogAudioResourceDelayed(new HistorySaveData(ale2.AudioResource, (Uid)"Uid4"));
 
 			db.Dispose();
 
@@ -183,22 +176,28 @@ namespace TS3ABotUnitTests
 		[Test]
 		public void NormalOrderTest()
 		{
-			TestShuffleAlgorithm(new NormalOrder());
+			TestShuffleAlgorithmBiDir(new NormalOrder());
 		}
 
 		[Test]
 		public void ListedShuffleTest()
 		{
-			TestShuffleAlgorithm(new ListedShuffle());
+			TestShuffleAlgorithmBiDir(new ListedShuffle());
 		}
 
 		[Test]
 		public void LinearFeedbackShiftRegisterTest()
 		{
-			TestShuffleAlgorithm(new LinearFeedbackShiftRegister());
+			TestShuffleAlgorithmBiDir(new LinearFeedbackShiftRegister());
 		}
 
-		private static void TestShuffleAlgorithm(IShuffleAlgorithm algo)
+		private static void TestShuffleAlgorithmBiDir(IShuffleAlgorithm algo)
+		{
+			TestShuffleAlgorithm(algo, true);
+			TestShuffleAlgorithm(algo, false);
+		}
+
+		private static void TestShuffleAlgorithm(IShuffleAlgorithm algo, bool forward)
 		{
 			for (int i = 1; i < 1000; i++)
 			{
@@ -209,7 +208,8 @@ namespace TS3ABotUnitTests
 
 				for (int j = 0; j < i; j++)
 				{
-					algo.Next();
+					if (forward) algo.Next();
+					else algo.Prev();
 					int shufNum = algo.Index;
 					if (checkNumbers.Get(shufNum))
 						Assert.Fail("Duplicate number");
@@ -223,25 +223,26 @@ namespace TS3ABotUnitTests
 		[Test]
 		public void Factory_YoutubeFactoryTest()
 		{
-			using (IResourceFactory rfac = new YoutubeFactory())
+			var ctx = new ResolveContext(null, null);
+			using (IResourceResolver rfac = new YoutubeResolver(new ConfFactories()))
 			{
 				// matching links
-				Assert.AreEqual(rfac.MatchResource(@"https://www.youtube.com/watch?v=robqdGEhQWo"), MatchCertainty.Always);
-				Assert.AreEqual(rfac.MatchResource(@"https://youtu.be/robqdGEhQWo"), MatchCertainty.Always);
-				Assert.AreEqual(rfac.MatchResource(@"https://discarded-ideas.org/sites/discarded-ideas.org/files/music/darkforestkeep_symphonic.mp3"), MatchCertainty.Never);
-				Assert.AreNotEqual(rfac.MatchResource(@"http://splamy.de/youtube.com/youtu.be/fake.mp3"), MatchCertainty.Always);
+				Assert.AreEqual(rfac.MatchResource(ctx, @"https://www.youtube.com/watch?v=robqdGEhQWo"), MatchCertainty.Always);
+				Assert.AreEqual(rfac.MatchResource(ctx, @"https://youtu.be/robqdGEhQWo"), MatchCertainty.Always);
+				Assert.AreEqual(rfac.MatchResource(ctx, @"https://discarded-ideas.org/sites/discarded-ideas.org/files/music/darkforestkeep_symphonic.mp3"), MatchCertainty.Never);
+				Assert.AreNotEqual(rfac.MatchResource(ctx, @"http://splamy.de/youtube.com/youtu.be/fake.mp3"), MatchCertainty.Always);
 
 				// restoring links
-				Assert.AreEqual("https://youtu.be/robqdGEhQWo", rfac.RestoreLink(new AudioResource { ResourceId = "robqdGEhQWo" }));
+				Assert.AreEqual("https://youtu.be/robqdGEhQWo", rfac.RestoreLink(ctx, new AudioResource { ResourceId = "robqdGEhQWo" }));
 			}
 		}
 
-		/* ======================= TS3Client Tests ========================*/
+		/* ======================= TSLib Tests ========================*/
 
 		[Test]
 		public void VersionSelfCheck()
 		{
-			Ts3Crypt.VersionSelfCheck();
+			TsCrypt.VersionSelfCheck();
 		}
 	}
 

@@ -7,15 +7,14 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System;
+using System.Collections.Generic;
+using System.Threading;
+using TS3AudioBot.CommandSystem;
+using Response = System.Func<string, string>;
+
 namespace TS3AudioBot.Sessions
 {
-	using CommandSystem;
-	using Helper;
-	using System;
-	using System.Collections.Generic;
-	using System.Threading;
-	using Response = System.Func<string, string>;
-
 	public class UserSession
 	{
 		private Dictionary<string, object> assocMap;
@@ -42,20 +41,22 @@ namespace TS3AudioBot.Sessions
 			ResponseProcessor = null;
 		}
 
-		public R<TData> Get<TData>(string key)
+		public bool Get<TData>(string key, out TData value)
 		{
 			VerifyLock();
+			value = default;
 
 			if (assocMap is null)
-				return R.Err;
+				return false;
 
-			if (!assocMap.TryGetValue(key, out object value))
-				return R.Err;
+			if (!assocMap.TryGetValue(key, out object valueObj))
+				return false;
 
-			if (!(value is TData))
-				return R.Err;
+			if (!(valueObj is TData valueT))
+				return false;
 
-			return (TData)value;
+			value = valueT;
+			return true;
 		}
 
 		public void Set<TData>(string key, TData data)
@@ -63,7 +64,7 @@ namespace TS3AudioBot.Sessions
 			VerifyLock();
 
 			if (assocMap is null)
-				Util.Init(out assocMap);
+				assocMap = new Dictionary<string, object>();
 
 			assocMap[key] = data;
 		}

@@ -7,14 +7,14 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using TS3AudioBot.CommandSystem.CommandResults;
+using TS3AudioBot.Localization;
+
 namespace TS3AudioBot.CommandSystem.Commands
 {
-	using CommandResults;
-	using Localization;
-	using System;
-	using System.Collections.Generic;
-	using System.Linq;
-
 	public class CommandGroup : ICommand
 	{
 		private readonly IDictionary<string, ICommand> commands = new Dictionary<string, ICommand>();
@@ -33,19 +33,19 @@ namespace TS3AudioBot.CommandSystem.Commands
 		public bool IsEmpty => commands.Count == 0;
 		public IEnumerable<KeyValuePair<string, ICommand>> Commands => commands;
 
-		public virtual ICommandResult Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<CommandResultType> returnTypes)
+		public virtual object Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<Type> returnTypes)
 		{
 			string result;
 			if (arguments.Count == 0)
 			{
-				if (returnTypes.Contains(CommandResultType.Command))
-					return new CommandCommandResult(this);
+				if (returnTypes.Contains(typeof(ICommand)))
+					return this;
 				result = string.Empty;
 			}
 			else
 			{
-				var comResult = arguments[0].Execute(info, Array.Empty<ICommand>(), XCommandSystem.ReturnString);
-				result = ((StringCommandResult)comResult).Content;
+				var comResult = arguments[0].Execute(info, Array.Empty<ICommand>(), CommandSystemTypes.ReturnString);
+				result = ((IPrimitiveResult<string>)comResult).Get();
 			}
 
 			var filter = info.GetFilter();
@@ -71,15 +71,7 @@ namespace TS3AudioBot.CommandSystem.Commands
 		}
 
 		private static string SuggestionsJoinTrim(IEnumerable<string> commands)
-		{
-			var commandsArray = commands.Where(x => !string.IsNullOrEmpty(x)).ToArray();
-			var suggestions = string.Join(", ", commandsArray.Take(4));
-			if (commandsArray.Length > 4)
-			{
-				suggestions += ", ...";
-			}
-			return suggestions;
-		}
+			=> string.Join(", ", commands.Where(x => !string.IsNullOrEmpty(x)));
 
 		public override string ToString() => "<group>";
 	}

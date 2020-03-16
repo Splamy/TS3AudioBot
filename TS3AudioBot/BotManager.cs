@@ -7,21 +7,22 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using TS3AudioBot.Config;
+using TS3AudioBot.Dependency;
+using TS3AudioBot.Helper;
+using TSLib.Helper;
+
 namespace TS3AudioBot
 {
-	using Config;
-	using Dependency;
-	using Helper;
-	using System;
-	using System.Collections.Generic;
-	using System.Linq;
-	using System.Threading;
-
 	public class BotManager : IDisposable
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 
-		private List<Bot> activeBots;
+		private List<Bot> activeBots = new List<Bot>();
 		private readonly object lockObj = new object();
 
 		private readonly ConfRoot confRoot;
@@ -29,7 +30,6 @@ namespace TS3AudioBot
 
 		public BotManager(ConfRoot confRoot, CoreInjector coreInjector)
 		{
-			Util.Init(out activeBots);
 			this.confRoot = confRoot;
 			this.coreInjector = coreInjector;
 		}
@@ -56,7 +56,7 @@ namespace TS3AudioBot
 
 				string address = Interactive.LoopAction("Please enter the ip, domain or nickname (with port; default: 9987) where to connect to:", addr =>
 				{
-					if (TS3Client.TsDnsResolver.TryResolve(addr, out _))
+					if (TSLib.TsDnsResolver.TryResolve(addr, out _))
 						return true;
 					Console.WriteLine("The address seems invalid or could not be resolved, continue anyway? [y/N]");
 					return Interactive.UserAgree(defaultTo: false);
@@ -129,7 +129,7 @@ namespace TS3AudioBot
 
 				var botInjector = new BotInjector(coreInjector);
 				botInjector.AddModule(botInjector);
-				botInjector.AddModule(new TS3Client.Helper.Id(id.Value));
+				botInjector.AddModule(new Id(id.Value));
 				botInjector.AddModule(config);
 				if (!botInjector.TryCreate(out bot))
 					return "Failed to create new Bot";
@@ -220,6 +220,19 @@ namespace TS3AudioBot
 			return bot.GetBotLock();
 		}
 
+		internal void IterateAll(Action<Bot> body)
+		{
+			lock (lockObj)
+			{
+				if (activeBots is null)
+					return;
+				foreach (var bot in activeBots)
+				{
+					body(bot);
+				}
+			}
+		}
+
 		public void StopBot(Bot bot)
 		{
 			RemoveBot(bot);
@@ -247,6 +260,16 @@ namespace TS3AudioBot
 				if (activeBots is null)
 					return Array.Empty<BotInfo>();
 				return activeBots.Where(x => x != null).Select(x => x.GetInfo()).ToArray();
+			}
+		}
+
+		public uint GetRunningBotCount()
+		{
+			lock (lockObj)
+			{
+				if (activeBots is null)
+					return 0;
+				return (uint)activeBots.Count(x => x != null);
 			}
 		}
 

@@ -7,26 +7,26 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using NLog;
+using System;
+using System.Threading;
+using System.Threading.Tasks;
+using TS3AudioBot.CommandSystem;
+using TS3AudioBot.Config;
+using TS3AudioBot.Dependency;
+using TS3AudioBot.Environment;
+using TS3AudioBot.Helper;
+using TS3AudioBot.Plugins;
+using TS3AudioBot.ResourceFactories;
+using TS3AudioBot.Rights;
+using TS3AudioBot.Sessions;
+using TS3AudioBot.Web;
+
 namespace TS3AudioBot
 {
-	using Config;
-	using Dependency;
-	using Helper;
-	using Helper.Environment;
-	using NLog;
-	using Plugins;
-	using ResourceFactories;
-	using Rights;
-	using Sessions;
-	using System;
-	using System.Threading;
-	using TS3AudioBot.CommandSystem;
-	using Web;
-
 	public sealed class Core : IDisposable
 	{
 		private static readonly Logger Log = LogManager.GetCurrentClassLogger();
-		private const string DefaultConfigFileName = "ts3audiobot.toml";
 		private readonly string configFilePath;
 		private bool forceNextExit;
 		private readonly CoreInjector injector;
@@ -52,9 +52,10 @@ namespace TS3AudioBot
 			// Initialize the actual core
 			var core = new Core(setup.ConfigFile);
 			AppDomain.CurrentDomain.UnhandledException += core.ExceptionHandler;
+			TaskScheduler.UnobservedTaskException += UnobservedTaskExceptionHandler;
 			Console.CancelKeyPress += core.ConsoleInterruptHandler;
 
-			var initResult = core.Run(setup.Interactive);
+			var initResult = core.Run(setup);
 			if (!initResult)
 			{
 				Log.Error("Core initialization failed: {0}", initResult.Error);
@@ -65,12 +66,12 @@ namespace TS3AudioBot
 		public Core(string configFilePath = null)
 		{
 			// setting defaults
-			this.configFilePath = configFilePath ?? DefaultConfigFileName;
+			this.configFilePath = configFilePath ?? FilesConst.CoreConfig;
 
 			injector = new CoreInjector();
 		}
 
-		private E<string> Run(bool interactive = false)
+		private E<string> Run(ParameterData setup)
 		{
 			var configResult = ConfRoot.OpenOrCreate(configFilePath);
 			if (!configResult.Ok)
@@ -100,9 +101,8 @@ namespace TS3AudioBot
 			builder.RequestModule<TokenManager>();
 			builder.RequestModule<CommandManager>();
 			builder.AddModule(config.Factories);
-			// TODO fix interaction: rfm needs to be in the same injector as the commandsystem, otherwise duplicate error
-			// Also TODO find solution to move commandsystem to bot, without breaking api
-			builder.RequestModule<ResourceFactory>();
+			builder.RequestModule<ResourceResolver>();
+			builder.RequestModule<Stats>();
 
 			if (!builder.Build())
 			{
@@ -114,9 +114,10 @@ namespace TS3AudioBot
 
 			builder.GetModule<SystemMonitor>().StartTimedSnapshots();
 			builder.GetModule<CommandManager>().RegisterCollection(MainCommands.Bag);
-			builder.GetModule<RightsManager>().CreateConfigIfNotExists(interactive);
-			builder.GetModule<BotManager>().RunBots(interactive);
+			builder.GetModule<RightsManager>().CreateConfigIfNotExists(setup.Interactive);
+			builder.GetModule<BotManager>().RunBots(setup.Interactive);
 			builder.GetModule<WebServer>().StartWebServer();
+			builder.GetModule<Stats>().StartTimer(setup.SendStats);
 
 			return R.Ok;
 		}
@@ -125,7 +126,12 @@ namespace TS3AudioBot
 		{
 			Log.Fatal(e.ExceptionObject as Exception, "Critical program failure!");
 			Dispose();
-			Environment.Exit(-1);
+			System.Environment.Exit(-1);
+		}
+
+		public static void UnobservedTaskExceptionHandler(object sender, UnobservedTaskExceptionEventArgs e)
+		{
+			Log.Fatal(e.Exception, "Critical program error!");
 		}
 
 		public void ConsoleInterruptHandler(object sender, ConsoleCancelEventArgs e)
@@ -142,7 +148,7 @@ namespace TS3AudioBot
 				else
 				{
 					Log.Info("Got multiple interrupt signals, trying to force-exit.");
-					Environment.Exit(0);
+					System.Environment.Exit(0);
 				}
 			}
 		}
@@ -155,7 +161,7 @@ namespace TS3AudioBot
 			injector.GetModule<PluginManager>()?.Dispose();
 			injector.GetModule<WebServer>()?.Dispose();
 			injector.GetModule<DbStore>()?.Dispose();
-			injector.GetModule<ResourceFactory>()?.Dispose();
+			injector.GetModule<ResourceResolver>()?.Dispose();
 			TickPool.Close();
 		}
 	}

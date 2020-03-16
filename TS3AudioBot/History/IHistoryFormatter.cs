@@ -7,11 +7,11 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System;
+using System.Collections.Generic;
+
 namespace TS3AudioBot.History
 {
-	using System;
-	using System.Collections.Generic;
-
 	public interface IHistoryFormatter
 	{
 		string ProcessQuery(AudioLogEntry entry, Func<AudioLogEntry, string> format);

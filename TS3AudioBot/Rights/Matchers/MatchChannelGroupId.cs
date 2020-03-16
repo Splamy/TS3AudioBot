@@ -7,15 +7,16 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System.Collections.Generic;
+using TSLib;
+
 namespace TS3AudioBot.Rights.Matchers
 {
-	using System.Collections.Generic;
-
 	internal class MatchChannelGroupId : Matcher
 	{
-		private readonly HashSet<ulong> channelGroupIds;
+		private readonly HashSet<ChannelGroupId> channelGroupIds;
 
-		public MatchChannelGroupId(IEnumerable<ulong> channelGroupIds) => this.channelGroupIds = new HashSet<ulong>(channelGroupIds);
+		public MatchChannelGroupId(IEnumerable<ChannelGroupId> channelGroupIds) => this.channelGroupIds = new HashSet<ChannelGroupId>(channelGroupIds);
 
 		public override bool Matches(ExecuteContext ctx) => ctx.ChannelGroupId.HasValue && channelGroupIds.Contains(ctx.ChannelGroupId.Value);
 	}
