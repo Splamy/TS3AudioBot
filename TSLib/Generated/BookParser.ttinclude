@@ -11,8 +11,8 @@ public class BookDeclarations
 		{
 			foreach (var prop in struc.properties)
 			{
-				prop.get = prop.get ?? struc.accessor.get;
-				prop.set = prop.set ?? struc.accessor.set;
+				prop.get ??= struc.accessor.get;
+				prop.set ??= struc.accessor.set;
 			}
 		}
 

@@ -55,21 +55,19 @@ namespace TS3AudioBot.Helper
 					return quotedString;
 			}
 
-			return quotedString.Substring(1, quotedString.Length - 2);
+			return quotedString[1..^1];
 		}
 
 		public static string GenToken(int length)
 		{
 			const string tokenChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-			using (var rng = RandomNumberGenerator.Create())
-			{
-				var buffer = new byte[length];
-				rng.GetBytes(buffer);
-				var strb = new StringBuilder(buffer.Length);
-				for (int i = 0; i < buffer.Length; i++)
-					strb.Append(tokenChars[((tokenChars.Length - 1) * buffer[i]) / 255]);
-				return strb.ToString();
-			}
+			using var rng = RandomNumberGenerator.Create();
+			var buffer = new byte[length];
+			rng.GetBytes(buffer);
+			var strb = new StringBuilder(buffer.Length);
+			for (int i = 0; i < buffer.Length; i++)
+				strb.Append(tokenChars[((tokenChars.Length - 1) * buffer[i]) / 255]);
+			return strb.ToString();
 		}
 
 		private static readonly Regex TimeReg = new Regex(@"^(?:(\d+)d)?(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?(?:(\d+)ms)?$", Util.DefaultRegexConfig);
@@ -84,7 +82,7 @@ namespace TS3AudioBot.Helper
 
 		private static TimeSpan? ParseTimeAsSimple(string value)
 		{
-			int AsNum(string svalue)
+			static int AsNum(string svalue)
 			{
 				if (string.IsNullOrEmpty(svalue))
 					return 0;

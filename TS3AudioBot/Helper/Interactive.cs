@@ -25,7 +25,7 @@ namespace TS3AudioBot.Helper
 			}
 		}
 
-		public static string LoopAction(string question, Func<string, bool> action)
+		public static string? LoopAction(string question, Func<string, bool> action)
 		{
 			string text;
 			do

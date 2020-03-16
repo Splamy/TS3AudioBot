@@ -16,7 +16,7 @@ namespace TS3AudioBot.Config.Deprecated
 	{
 		public bool HasDefault => DefaultValue != null;
 		public string Description { get; }
-		public string DefaultValue { get; }
+		public string? DefaultValue { get; }
 
 		public InfoAttribute(string description)
 		{

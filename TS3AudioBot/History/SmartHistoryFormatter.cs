@@ -36,7 +36,7 @@ namespace TS3AudioBot.History
 			var entryLinesRev = entries.Select(e =>
 			{
 				string finStr = format(e);
-				return new Line { Value = finStr, TokenLength = TsString.TokenLength(finStr) };
+				return new Line(finStr, TsString.TokenLength(finStr));
 			});
 
 			//! entryLines[n] is the most recent entry
@@ -149,9 +149,16 @@ namespace TS3AudioBot.History
 
 		private class Line
 		{
-			public string Value { get; set; }
-			public int TokenLength { get; set; }
+			public string Value { get; }
+			public int TokenLength { get; }
 			public int BonusToken { get; set; }
+
+			public Line(string value, int tokenLength)
+			{
+				Value = value;
+				TokenLength = tokenLength;
+				BonusToken = 0;
+			}
 
 			public override string ToString() => $"[{TokenLength:0000}+{BonusToken:0000}] {Value}";
 		}

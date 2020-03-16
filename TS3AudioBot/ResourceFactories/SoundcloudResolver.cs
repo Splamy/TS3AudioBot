@@ -31,14 +31,14 @@ namespace TS3AudioBot.ResourceFactories
 
 		public string ResolverFor => "soundcloud";
 
-		public MatchCertainty MatchResource(ResolveContext _, string uri) => SoundcloudLink.IsMatch(uri).ToMatchCertainty();
+		public MatchCertainty MatchResource(ResolveContext? _, string uri) => SoundcloudLink.IsMatch(uri).ToMatchCertainty();
 
-		public MatchCertainty MatchPlaylist(ResolveContext _, string uri) => MatchResource(null, uri);
+		public MatchCertainty MatchPlaylist(ResolveContext? _, string uri) => MatchResource(null, uri);
 
-		public R<PlayResource, LocalStr> GetResource(ResolveContext _, string uri)
+		public R<PlayResource, LocalStr> GetResource(ResolveContext? _, string uri)
 		{
-			var uriObj = new Uri($"https://api.soundcloud.com/resolve.json?url={Uri.EscapeUriString(uri)}&client_id={SoundcloudClientId}");
-			if (!WebWrapper.DownloadString(out string jsonResponse, uriObj))
+			if (!WebWrapper.DownloadString($"https://api.soundcloud.com/resolve.json?url={Uri.EscapeUriString(uri)}&client_id={SoundcloudClientId}")
+				.Get(out var jsonResponse, out var _))
 			{
 				if (!SoundcloudLink.IsMatch(uri))
 					return new LocalStr(strings.error_media_invalid_uri);
@@ -70,7 +70,7 @@ namespace TS3AudioBot.ResourceFactories
 			return new PlayResource(finalRequest, resource);
 		}
 
-		public string RestoreLink(ResolveContext _, AudioResource resource)
+		public string RestoreLink(ResolveContext? _, AudioResource resource)
 		{
 			var artistName = resource.Get(AddArtist);
 			var trackName = resource.Get(AddTrack);
@@ -81,13 +81,13 @@ namespace TS3AudioBot.ResourceFactories
 			return "https://soundcloud.com";
 		}
 
-		private static JToken ParseJson(string jsonResponse)
+		private static JToken? ParseJson(string jsonResponse)
 		{
 			try { return JToken.Parse(jsonResponse); }
 			catch (JsonReaderException) { return null; }
 		}
 
-		private AudioResource CheckAndGet(JsonTrackInfo track)
+		private AudioResource? CheckAndGet(JsonTrackInfo track)
 		{
 			if (track == null || track.id == 0 || track.title == null
 				|| track.permalink == null || track.user?.permalink == null)
@@ -127,9 +127,9 @@ namespace TS3AudioBot.ResourceFactories
 
 		public R<Playlist, LocalStr> GetPlaylist(ResolveContext _, string url)
 		{
-			var uri = new Uri($"https://api.soundcloud.com/resolve.json?url={Uri.EscapeUriString(url)}&client_id={SoundcloudClientId}");
-			if (!WebWrapper.DownloadString(out string jsonResponse, uri))
-				return new LocalStr(strings.error_net_no_connection);
+			if (!WebWrapper.DownloadString($"https://api.soundcloud.com/resolve.json?url={Uri.EscapeUriString(url)}&client_id={SoundcloudClientId}")
+				.Get(out var jsonResponse, out var error))
+				return error;
 
 			var playlist = JsonConvert.DeserializeObject<JsonPlaylist>(jsonResponse);
 			if (playlist is null || playlist.title is null || playlist.tracks is null)
@@ -144,7 +144,7 @@ namespace TS3AudioBot.ResourceFactories
 				{
 					var resource = CheckAndGet(track);
 					if (resource is null)
-						return null;
+						return null!;
 					return new PlaylistItem(resource);
 				})
 				.Where(track => track != null)
@@ -155,9 +155,9 @@ namespace TS3AudioBot.ResourceFactories
 
 		public R<Stream, LocalStr> GetThumbnail(ResolveContext _, PlayResource playResource)
 		{
-			var uri = new Uri($"https://api.soundcloud.com/tracks/{playResource.BaseData.ResourceId}?client_id={SoundcloudClientId}");
-			if (!WebWrapper.DownloadString(out string jsonResponse, uri))
-				return new LocalStr(strings.error_net_no_connection);
+			if (!WebWrapper.DownloadString($"https://api.soundcloud.com/tracks/{playResource.BaseData.ResourceId}?client_id={SoundcloudClientId}")
+				.Get(out var jsonResponse, out var error))
+				return error;
 
 			var parsedDict = ParseJson(jsonResponse);
 			if (parsedDict is null)
@@ -171,9 +171,7 @@ namespace TS3AudioBot.ResourceFactories
 			// t300x300: 300px×300px
 			// large   : 100px×100px 
 			imgUrl = imgUrl.Replace("-large", "-t300x300");
-
-			var imgurl = new Uri(imgUrl);
-			return WebWrapper.GetResponseUnsafe(imgurl);
+			return WebWrapper.GetResponseUnsafe(imgUrl);
 		}
 
 		public void Dispose() { }
@@ -183,18 +181,18 @@ namespace TS3AudioBot.ResourceFactories
 		private class JsonTrackInfo
 		{
 			public int id;
-			public string title;
-			public string permalink;
-			public JsonTrackUser user;
+			public string? title;
+			public string? permalink;
+			public JsonTrackUser? user;
 		}
 		private class JsonTrackUser
 		{
-			public string permalink;
+			public string? permalink;
 		}
 		private class JsonPlaylist
 		{
-			public string title;
-			public JsonTrackInfo[] tracks;
+			public string? title;
+			public JsonTrackInfo[]? tracks;
 		}
 		// ReSharper enable ClassNeverInstantiated.Local, InconsistentNaming
 #pragma warning restore CS0649, CS0169, IDE1006

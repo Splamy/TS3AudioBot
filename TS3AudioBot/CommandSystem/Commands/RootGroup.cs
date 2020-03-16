@@ -21,21 +21,27 @@ namespace TS3AudioBot.CommandSystem.Commands
 	/// </summary>
 	public class RootGroup : CommandGroup
 	{
-		public override object Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<Type> returnTypes)
+		public override object? Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<Type?> returnTypes)
 		{
 			if (arguments.Count == 0)
 				return base.Execute(info, arguments, returnTypes);
 
 			var result = arguments[0].Execute(info, Array.Empty<ICommand>(), CommandSystemTypes.ReturnCommandOrString);
-			if (result is IPrimitiveResult<string>)
+			switch (result)
 			{
-				// Use cached result so we don't execute the first argument twice
-				var passArgs = new ICommand[arguments.Count];
-				passArgs[0] = new ResultCommand(result);
-				arguments.CopyTo(1, passArgs, 1);
-				return base.Execute(info, passArgs, returnTypes);
+			case IPrimitiveResult<string> _:
+				{
+					// Use cached result so we don't execute the first argument twice
+					var passArgs = new ICommand[arguments.Count];
+					passArgs[0] = new ResultCommand(result);
+					arguments.CopyTo(1, passArgs, 1);
+					return base.Execute(info, passArgs, returnTypes);
+				}
+			case ICommand command:
+				return command.Execute(info, arguments.TrySegment(1), returnTypes);
+			default:
+				throw new CommandException("Expected a string or command as result", CommandExceptionReason.NoReturnMatch);
 			}
-			return ((ICommand)result).Execute(info, arguments.TrySegment(1), returnTypes);
 		}
 
 		public override string ToString() => "<root>";

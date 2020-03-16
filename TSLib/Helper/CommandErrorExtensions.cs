@@ -57,7 +57,7 @@ namespace TSLib.Messages
 			return R<T[], CommandError>.OkR((T[])result.Value.Notifications);
 		}
 
-		public static R<TI, CommandError> WrapInterface<TC, TI>(in this R<TC, CommandError> result) where TC : class, IMessage, TI
+		public static R<TI, CommandError> WrapInterface<TC, TI>(in this R<TC, CommandError> result) where TC : notnull, IMessage, TI where TI : notnull
 		{
 			if (!result.Ok)
 				return result.Error;

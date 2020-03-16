@@ -15,8 +15,8 @@ public class Messages
 		{
 			foreach (var prop in struc.properties)
 			{
-				prop.get = prop.get ?? struc.accessor.get;
-				prop.set = prop.set ?? struc.accessor.set;
+				prop.get ??= struc.accessor.get;
+				prop.set ??= struc.accessor.set;
 			}
 		}*/
 
@@ -28,11 +28,11 @@ public class Messages
 		foreach(var (grp, msg) in msg_group.SelectMany(group => group.msg.Select(msg => (group:group, msg:msg))).OrderBy(x => x.msg.name))
 		{
 			// transfer all default confs
-			msg.s2c = msg.s2c ?? grp.@default.s2c;
-			msg.c2s = msg.c2s ?? grp.@default.c2s;
-			msg.response = msg.response ?? grp.@default.response;
-			msg.low = msg.low ?? grp.@default.low;
-			msg.np = msg.np ?? grp.@default.np;
+			msg.s2c      ??= grp.@default.s2c;
+			msg.c2s      ??= grp.@default.c2s;
+			msg.response ??= grp.@default.response;
+			msg.low      ??= grp.@default.low;
+			msg.np       ??= grp.@default.np;
 
 			yield return msg;
 		}
@@ -70,7 +70,7 @@ public class Messages
 				case "PermissionId": ltype = "Ts3Permission"; break;
 				default: ltype = type; break;
 			}
-			return ltype + (isArray ? "[]" : "") + (optional && NullType(type) && !isArray ? "?" : "");
+			return ltype + (isArray ? "[]" : "") + (optional ? "?" : "");
 		}
 	}
 

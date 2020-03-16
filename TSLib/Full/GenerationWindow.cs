@@ -18,10 +18,12 @@ namespace TSLib.Full
 		public int Mod { get; }
 		public int ReceiveWindow { get; }
 
-		public GenerationWindow(int mod, int? windowSize = null)
+		public GenerationWindow(int mod) : this(mod, mod / 2) { }
+
+		public GenerationWindow(int mod, int windowSize)
 		{
 			Mod = mod;
-			ReceiveWindow = windowSize ?? (Mod / 2);
+			ReceiveWindow = windowSize;
 		}
 
 		public bool SetAndDrag(int mappedValue)

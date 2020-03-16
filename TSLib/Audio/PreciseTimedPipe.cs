@@ -15,17 +15,16 @@ namespace TSLib.Audio
 {
 	public class PreciseTimedPipe : IAudioActiveConsumer, IAudioActiveProducer, IDisposable
 	{
-		public PreciseAudioTimer AudioTimer { get; private set; }
+		public PreciseAudioTimer AudioTimer { get; }
 
-		public IAudioPassiveProducer InStream { get; set; }
-		public IAudioPassiveConsumer OutStream { get; set; }
+		public IAudioPassiveProducer? InStream { get; set; }
+		public IAudioPassiveConsumer? OutStream { get; set; }
 
 		public TimeSpan AudioBufferLength { get; set; } = TimeSpan.FromMilliseconds(20);
 		public TimeSpan SendCheckInterval { get; set; } = TimeSpan.FromMilliseconds(5);
 		public int ReadBufferSize { get; set; } = 960 * 4;
 		private byte[] readBuffer = Array.Empty<byte>();
-		private readonly object lockObject = new object();
-		private Thread tickThread;
+		private readonly Thread tickThread;
 		private bool running;
 
 		private bool paused;
@@ -48,19 +47,29 @@ namespace TSLib.Audio
 			}
 		}
 
-		public PreciseTimedPipe() { }
+		public PreciseTimedPipe(ISampleInfo info, Id id)
+		{
+			running = true;
+			paused = true;
 
-		public PreciseTimedPipe(IAudioPassiveProducer inStream) : this()
+			AudioTimer = new PreciseAudioTimer(info.SampleRate, info.BitsPerSample, info.Channels);
+			AudioTimer.Start();
+
+			tickThread = new Thread(() => { Tools.SetLogId(id); ReadLoop(); }) { Name = $"AudioPipe[{id}]" };
+			tickThread.Start();
+		}
+
+		public PreciseTimedPipe(ISampleInfo info, Id id, IAudioPassiveProducer inStream) : this(info, id)
 		{
 			InStream = inStream;
 		}
 
-		public PreciseTimedPipe(IAudioPassiveConsumer outStream) : this()
+		public PreciseTimedPipe(ISampleInfo info, Id id, IAudioPassiveConsumer outStream) : this(info, id)
 		{
 			OutStream = outStream;
 		}
 
-		public PreciseTimedPipe(IAudioPassiveProducer inStream, IAudioPassiveConsumer outStream) : this()
+		public PreciseTimedPipe(ISampleInfo info, Id id, IAudioPassiveProducer inStream, IAudioPassiveConsumer outStream) : this(info, id)
 		{
 			InStream = inStream;
 			OutStream = outStream;
@@ -100,32 +109,13 @@ namespace TSLib.Audio
 			}
 		}
 
-		public void Initialize(ISampleInfo info, Id id)
-		{
-			lock (lockObject)
-			{
-				AudioTimer = new PreciseAudioTimer(info.SampleRate, info.BitsPerSample, info.Channels);
-				AudioTimer.Start();
-
-				if (running)
-					return;
-
-				running = true;
-				tickThread = new Thread(() => { Tools.SetLogId(id); ReadLoop(); }) { Name = $"AudioPipe[{id}]" };
-				tickThread.Start();
-			}
-		}
-
 		public void Dispose()
 		{
-			lock (lockObject)
-			{
-				if (!running)
-					return;
+			if (!running)
+				return;
 
-				running = false;
-				tickThread.Join();
-			}
+			running = false;
+			tickThread.Join();
 		}
 	}
 }

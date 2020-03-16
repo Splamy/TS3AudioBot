@@ -16,7 +16,7 @@ namespace TS3AudioBot.Dependency
 	{
 		private readonly Dictionary<Type, object> dynamicObjects;
 		public BasicInjector() { dynamicObjects = new Dictionary<Type, object>(); }
-		public object GetModule(Type type) => dynamicObjects.TryGetValue(type, out var mod) ? mod : null;
+		public object? GetModule(Type type) => dynamicObjects.TryGetValue(type, out var mod) ? mod : null;
 		public void AddModule(Type type, object obj) => dynamicObjects[type] = obj;
 		public IEnumerable<object> GetAllModules() => dynamicObjects.Values;
 	}

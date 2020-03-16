@@ -25,6 +25,6 @@ namespace TSLib.Messages
 
 	public interface IResponse : IMessage
 	{
-		string ReturnCode { get; set; }
+		string? ReturnCode { get; set; }
 	}
 }

@@ -16,22 +16,16 @@ namespace TS3AudioBot.Web.Api
 	{
 		private static readonly JsonSerializerSettings DefaultSettigs = new JsonSerializerSettings();
 
-		protected string AsStringResult { get; set; }
-
 		static JsonObject()
 		{
 			DefaultSettigs.Converters.Add(new IJsonSerializableConverter());
 			DefaultSettigs.Converters.Add(new TimeSpanConverter());
 		}
 
-		protected JsonObject(string stringResult)
-		{
-			AsStringResult = stringResult;
-		}
-
-		public override string ToString() => AsStringResult;
+		protected JsonObject() { }
 
 		public virtual object GetSerializeObject() => this;
 		public virtual string Serialize() => JsonConvert.SerializeObject(GetSerializeObject(), DefaultSettigs);
+		public abstract override string ToString();
 	}
 }

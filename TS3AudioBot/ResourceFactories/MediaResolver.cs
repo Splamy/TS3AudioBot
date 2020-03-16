@@ -56,7 +56,7 @@ namespace TS3AudioBot.ResourceFactories
 				return new MediaPlayResource(resData.FullUri, resource, null, true);
 			}
 
-			if (resource.ResourceTitle == null)
+			if (resource.ResourceTitle is null)
 			{
 				if (!string.IsNullOrWhiteSpace(resData.Title))
 					resource.ResourceTitle = resData.Title;
@@ -88,7 +88,7 @@ namespace TS3AudioBot.ResourceFactories
 		private static HeaderData GetStreamHeaderData(Stream stream)
 		{
 			var headerData = AudioTagReader.GetData(stream) ?? new HeaderData();
-			headerData.Title = headerData.Title ?? string.Empty;
+			headerData.Title ??= string.Empty;
 			return headerData;
 		}
 
@@ -104,26 +104,22 @@ namespace TS3AudioBot.ResourceFactories
 
 			try
 			{
-				using (var response = request.GetResponse())
+				using var response = request.GetResponse();
+				if (response.Headers["icy-metaint"] != null)
 				{
-					if (response.Headers["icy-metaint"] != null)
-					{
-						return new ResData(link.AbsoluteUri, null) { IsIcyStream = true };
-					}
-					var contentType = response.Headers[HttpResponseHeader.ContentType];
-					if (contentType == "application/vnd.apple.mpegurl"
-						|| contentType == "application/vnd.apple.mpegurl.audio")
-					{
-						return new ResData(link.AbsoluteUri, null); // No title meta info
-					}
-					else
-					{
-						using (var stream = response.GetResponseStream())
-						{
-							var headerData = GetStreamHeaderData(stream);
-							return new ResData(link.AbsoluteUri, headerData.Title) { Image = headerData.Picture };
-						}
-					}
+					return new ResData(link.AbsoluteUri, null) { IsIcyStream = true };
+				}
+				var contentType = response.Headers[HttpResponseHeader.ContentType];
+				if (contentType == "application/vnd.apple.mpegurl"
+					|| contentType == "application/vnd.apple.mpegurl.audio")
+				{
+					return new ResData(link.AbsoluteUri, null); // No title meta info
+				}
+				else
+				{
+					using var stream = response.GetResponseStream();
+					var headerData = GetStreamHeaderData(stream);
+					return new ResData(link.AbsoluteUri, headerData.Title) { Image = headerData.Picture };
 				}
 			}
 			catch (Exception ex)
@@ -137,11 +133,9 @@ namespace TS3AudioBot.ResourceFactories
 		{
 			try
 			{
-				using (var stream = File.Open(foundPath.LocalPath, FileMode.Open, FileAccess.Read, FileShare.Read))
-				{
-					var headerData = GetStreamHeaderData(stream);
-					return new ResData(foundPath.LocalPath, headerData.Title) { Image = headerData.Picture };
-				}
+				using var stream = File.Open(foundPath.LocalPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+				var headerData = GetStreamHeaderData(stream);
+				return new ResData(foundPath.LocalPath, headerData.Title) { Image = headerData.Picture };
 			}
 			catch (UnauthorizedAccessException) { return new LocalStr(strings.error_io_missing_permission); }
 			catch (Exception ex)
@@ -153,7 +147,7 @@ namespace TS3AudioBot.ResourceFactories
 
 		private R<Uri, LocalStr> TryGetUri(ConfBot conf, string uri)
 		{
-			if (Uri.TryCreate(uri, UriKind.Absolute, out Uri uriResult))
+			if (Uri.TryCreate(uri, UriKind.Absolute, out Uri? uriResult))
 			{
 				return uriResult;
 			}
@@ -165,7 +159,7 @@ namespace TS3AudioBot.ResourceFactories
 					TryInPath(Path.Combine(conf.LocalConfigDir, BotPaths.Music), uri)
 					?? TryInPath(conf.GetParent().Factories.Media.Path.Value, uri);
 
-				if (file == null)
+				if (file is null)
 					return new LocalStr(strings.error_media_file_not_found);
 				return file;
 			}
@@ -247,11 +241,11 @@ namespace TS3AudioBot.ResourceFactories
 			}
 		}
 
-		private R<Playlist, LocalStr> GetPlaylistContent(Stream stream, string url, string mime = null)
+		private R<Playlist, LocalStr> GetPlaylistContent(Stream stream, string url, string? mime = null)
 		{
-			string name = null;
+			string? name = null;
 			List<PlaylistItem> items;
-			mime = mime.ToLowerInvariant();
+			mime = mime?.ToLowerInvariant();
 			url = url.ToLowerInvariant();
 			string anyId = mime ?? url;
 
@@ -347,7 +341,7 @@ namespace TS3AudioBot.ResourceFactories
 
 		public R<Stream, LocalStr> GetThumbnail(ResolveContext _, PlayResource playResource)
 		{
-			byte[] rawImgData;
+			byte[]? rawImgData;
 
 			if (playResource is MediaPlayResource mediaPlayResource)
 			{
@@ -360,10 +354,8 @@ namespace TS3AudioBot.ResourceFactories
 				if (!result)
 					return result.Error;
 
-				using (var stream = result.Value)
-				{
-					rawImgData = AudioTagReader.GetData(stream)?.Picture;
-				}
+				using var stream = result.Value;
+				rawImgData = AudioTagReader.GetData(stream)?.Picture;
 			}
 
 			if (rawImgData is null)
@@ -378,15 +370,16 @@ namespace TS3AudioBot.ResourceFactories
 	internal class ResData
 	{
 		public string FullUri { get; }
-		public string Title { get; }
-		public byte[] Image { get; set; }
+		public string? Title { get; }
+		public byte[]? Image { get; set; }
 
 		public bool IsIcyStream { get; set; } = false;
 
-		public ResData(string fullUri, string title)
+		public ResData(string fullUri, string? title)
 		{
 			FullUri = fullUri;
 			Title = title;
+			Image = null;
 		}
 	}
 
@@ -403,10 +396,10 @@ namespace TS3AudioBot.ResourceFactories
 
 	public class MediaPlayResource : PlayResource
 	{
-		public byte[] Image { get; }
+		public byte[]? Image { get; }
 		public bool IsIcyStream { get; }
 
-		public MediaPlayResource(string uri, AudioResource baseData, byte[] image, bool isIcyStream) : base(uri, baseData)
+		public MediaPlayResource(string uri, AudioResource baseData, byte[]? image, bool isIcyStream) : base(uri, baseData)
 		{
 			Image = image;
 			IsIcyStream = isIcyStream;

@@ -23,14 +23,14 @@ using CmdR = System.E<TSLib.Messages.CommandError>;
 
 namespace TSLib.Query
 {
-	public sealed class TsQueryClient : TsBaseFunctions
+	public sealed partial class TsQueryClient : TsBaseFunctions
 	{
 		private readonly object sendQueueLock = new object();
-		private TcpClient tcpClient;
-		private NetworkStream tcpStream;
-		private StreamReader tcpReader;
-		private StreamWriter tcpWriter;
-		private CancellationTokenSource cts;
+		private readonly TcpClient tcpClient;
+		private NetworkStream? tcpStream;
+		private StreamReader? tcpReader;
+		private StreamWriter? tcpWriter;
+		private CancellationTokenSource? cts;
 		private readonly SyncMessageProcessor msgProc;
 		private readonly IEventDispatcher dispatcher;
 		private readonly Pipe dataPipe = new Pipe();
@@ -41,11 +41,8 @@ namespace TSLib.Query
 		public override bool Connecting => connecting && !Connected;
 		protected override Deserializer Deserializer => msgProc.Deserializer;
 
-		public override event NotifyEventHandler<TextMessage> OnTextMessage;
-		public override event NotifyEventHandler<ClientEnterView> OnClientEnterView;
-		public override event NotifyEventHandler<ClientLeftView> OnClientLeftView;
-		public override event EventHandler<EventArgs> OnConnected;
-		public override event EventHandler<DisconnectEventArgs> OnDisconnected;
+		public override event EventHandler<EventArgs>? OnConnected;
+		public override event EventHandler<DisconnectEventArgs>? OnDisconnected;
 
 		public TsQueryClient()
 		{
@@ -59,6 +56,7 @@ namespace TSLib.Query
 			if (!TsDnsResolver.TryResolve(conData.Address, out remoteAddress, TsDnsResolver.TsQueryDefaultPort))
 				throw new TsException("Could not read or resolve address.");
 
+			NetworkStream tcpStream;
 			try
 			{
 				connecting = true;
@@ -82,7 +80,7 @@ namespace TSLib.Query
 
 			cts = new CancellationTokenSource();
 			dispatcher.Init(InvokeEvent, conData.LogId);
-			NetworkLoop(cts.Token).ConfigureAwait(false);
+			NetworkLoop(tcpStream, cts.Token).ConfigureAwait(false);
 			OnConnected?.Invoke(this, EventArgs.Empty);
 		}
 
@@ -91,13 +89,14 @@ namespace TSLib.Query
 			lock (sendQueueLock)
 			{
 				SendRaw("quit");
-				cts.Cancel();
+				cts?.Cancel();
+				cts = null;
 				if (tcpClient.Connected)
-					tcpClient?.Dispose();
+					tcpClient.Dispose();
 			}
 		}
 
-		private async Task NetworkLoop(CancellationToken cancellationToken)
+		private async Task NetworkLoop(NetworkStream tcpStream, CancellationToken cancellationToken)
 		{
 			await Task.WhenAll(NetworkToPipeLoopAsync(tcpStream, dataPipe.Writer, cancellationToken), PipeProcessorAsync(dataPipe.Reader, cancellationToken)).ConfigureAwait(false);
 			OnDisconnected?.Invoke(this, new DisconnectEventArgs(Reason.LeftServer));
@@ -106,7 +105,7 @@ namespace TSLib.Query
 		private async Task NetworkToPipeLoopAsync(NetworkStream stream, PipeWriter writer, CancellationToken cancellationToken = default)
 		{
 			const int minimumBufferSize = 4096;
-#if !(NETCOREAPP2_2 || NETCOREAPP3_0)
+#if !(NETSTANDARD2_1 || NETCOREAPP3_0)
 			var dataReadBuffer = new byte[minimumBufferSize];
 #endif
 
@@ -115,7 +114,7 @@ namespace TSLib.Query
 				try
 				{
 					var mem = writer.GetMemory(minimumBufferSize);
-#if NETCOREAPP2_2 || NETCOREAPP3_0
+#if NETSTANDARD2_1 || NETCOREAPP3_0
 					int bytesRead = await stream.ReadAsync(mem, cancellationToken).ConfigureAwait(false);
 #else
 					int bytesRead = await stream.ReadAsync(dataReadBuffer, 0, dataReadBuffer.Length, cancellationToken).ConfigureAwait(false);
@@ -168,42 +167,16 @@ namespace TSLib.Query
 			reader.Complete();
 		}
 
-		private void InvokeEvent(LazyNotification lazyNotification)
-		{
-			var notification = lazyNotification.Notifications;
-			switch (lazyNotification.NotifyType)
-			{
-			case NotificationType.ChannelCreated: break;
-			case NotificationType.ChannelDeleted: break;
-			case NotificationType.ChannelChanged: break;
-			case NotificationType.ChannelEdited: break;
-			case NotificationType.ChannelMoved: break;
-			case NotificationType.ChannelPasswordChanged: break;
-			case NotificationType.ClientEnterView: OnClientEnterView?.Invoke(this, notification.Cast<ClientEnterView>()); break;
-			case NotificationType.ClientLeftView: OnClientLeftView?.Invoke(this, notification.Cast<ClientLeftView>()); break;
-			case NotificationType.ClientMoved: break;
-			case NotificationType.ServerEdited: break;
-			case NotificationType.TextMessage: OnTextMessage?.Invoke(this, notification.Cast<TextMessage>()); break;
-			case NotificationType.TokenUsed: break;
-			// special
-			case NotificationType.CommandError: break;
-			case NotificationType.Unknown:
-			default: throw Tools.UnhandledDefault(lazyNotification.NotifyType);
-			}
-		}
-
 		public override R<T[], CommandError> Send<T>(TsCommand com) // Synchronous
 		{
-			using (var wb = new WaitBlock(msgProc.Deserializer, false))
+			using var wb = new WaitBlockSync(msgProc.Deserializer);
+			lock (sendQueueLock)
 			{
-				lock (sendQueueLock)
-				{
-					msgProc.EnqueueRequest(wb);
-					SendRaw(com.ToString());
-				}
-
-				return wb.WaitForMessage<T>();
+				msgProc.EnqueueRequest(wb);
+				SendRaw(com.ToString());
 			}
+
+			return wb.WaitForMessage<T>();
 		}
 
 		public override R<T[], CommandError> SendHybrid<T>(TsCommand com, NotificationType type)
@@ -213,8 +186,8 @@ namespace TSLib.Query
 		{
 			if (!tcpClient.Connected)
 				return;
-			tcpWriter.WriteLine(data);
-			tcpWriter.Flush();
+			tcpWriter?.WriteLine(data);
+			tcpWriter?.Flush();
 		}
 
 		#region QUERY SPECIFIC COMMANDS
@@ -255,7 +228,7 @@ namespace TSLib.Query
 		// Splitted base commands
 
 		public override R<IChannelCreateResponse, CommandError> ChannelCreate(string name,
-			string namePhonetic = null, string topic = null, string description = null, string password = null,
+			string? namePhonetic = null, string? topic = null, string? description = null, string? password = null,
 			Codec? codec = null, int? codecQuality = null, int? codecLatencyFactor = null, bool? codecEncrypted = null,
 			int? maxClients = null, int? maxFamilyClients = null, bool? maxClientsUnlimited = null,
 			bool? maxFamilyClientsUnlimited = null, bool? maxFamilyClientsInherited = null, ChannelId? order = null,
@@ -303,10 +276,8 @@ namespace TSLib.Query
 			{
 				tcpWriter?.Dispose();
 				tcpWriter = null;
-
 				tcpReader?.Dispose();
 				tcpReader = null;
-
 				msgProc.DropQueue();
 				dispatcher.Dispose();
 			}

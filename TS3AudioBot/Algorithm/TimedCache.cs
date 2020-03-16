@@ -9,12 +9,13 @@
 
 using System;
 using System.Collections.Concurrent;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using TSLib.Helper;
 
 namespace TS3AudioBot.Algorithm
 {
-	public class TimedCache<TK, TV>
+	public class TimedCache<TK, TV> where TK : notnull
 	{
 		public TimeSpan Timeout { get; }
 		private readonly ConcurrentDictionary<TK, TimedData> cachedData;
@@ -27,13 +28,13 @@ namespace TS3AudioBot.Algorithm
 			cachedData = new ConcurrentDictionary<TK, TimedData>();
 		}
 
-		public bool TryGetValue(TK key, out TV value)
+		public bool TryGetValue(TK key, [MaybeNullWhen(false)] out TV value)
 		{
 			if (!cachedData.TryGetValue(key, out var data)
 				|| Tools.Now - Timeout > data.Timestamp)
 			{
 				CleanCache();
-				value = default;
+				value = default!;
 				return false;
 			}
 			value = data.Data;

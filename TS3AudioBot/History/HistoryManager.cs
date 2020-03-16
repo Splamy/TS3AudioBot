@@ -27,11 +27,10 @@ namespace TS3AudioBot.History
 		private const string AudioLogEntriesTable = "audioLogEntries";
 		private const string ResourceTitleQueryColumn = "lowTitle";
 
-		private LiteCollection<AudioLogEntry> audioLogEntries;
+		private readonly LiteCollection<AudioLogEntry> audioLogEntries;
 		private readonly LinkedList<int> unusedIds = new LinkedList<int>();
 		private readonly object dbLock = new object();
 		private readonly ConfHistory config;
-		private readonly DbStore database;
 
 		public IHistoryFormatter Formatter { get; private set; }
 		public uint HighestId => (uint)audioLogEntries.Max().AsInt32;
@@ -47,20 +46,14 @@ namespace TS3AudioBot.History
 			Formatter = new SmartHistoryFormatter();
 
 			this.config = config;
-			this.database = database;
 
-			Initialize();
-		}
-
-		private void Initialize()
-		{
 			var meta = database.GetMetaData(AudioLogEntriesTable);
 
 			if (meta.Version > CurrentHistoryVersion)
 			{
 				Log.Error("Database table \"{0}\" is higher than the current version. (table:{1}, app:{2}). " +
 					"Please download the latest TS3AudioBot to read the history.", AudioLogEntriesTable, meta.Version, CurrentHistoryVersion);
-				return;
+				throw new NotSupportedException();
 			}
 
 			audioLogEntries = database.GetCollection<AudioLogEntry>(AudioLogEntriesTable);
@@ -111,7 +104,7 @@ namespace TS3AudioBot.History
 			// TODO load unused id list
 		}
 
-		public R<AudioLogEntry> LogAudioResource(HistorySaveData saveData)
+		public AudioLogEntry? LogAudioResource(HistorySaveData saveData)
 		{
 			if (saveData is null)
 				throw new ArgumentNullException(nameof(saveData));
@@ -125,7 +118,7 @@ namespace TS3AudioBot.History
 					if (!createResult.Ok)
 					{
 						Log.Warn(createResult.Error, "AudioLogEntry could not be created!");
-						return R.Err;
+						return null;
 					}
 					ale = createResult.Value;
 				}
@@ -159,19 +152,19 @@ namespace TS3AudioBot.History
 				return new Exception("Track name is empty");
 
 			int nextHid;
-			if (config.FillDeletedIds && unusedIds.Count > 0)
+			var first = unusedIds.First;
+			if (config.FillDeletedIds && first != null)
 			{
-				nextHid = unusedIds.First.Value;
-				unusedIds.RemoveFirst();
+				nextHid = first.Value;
+				unusedIds.Remove(first);
 			}
 			else
 			{
 				nextHid = 0;
 			}
 
-			var ale = new AudioLogEntry(nextHid, saveData.Resource)
+			var ale = new AudioLogEntry(nextHid, saveData.Resource, saveData.InvokerUid.Value)
 			{
-				UserUid = saveData.InvokerUid.Value,
 				Timestamp = Tools.Now,
 				PlayCount = 1,
 			};
@@ -184,7 +177,7 @@ namespace TS3AudioBot.History
 			catch (Exception ex) { return ex; }
 		}
 
-		private AudioLogEntry FindByUniqueId(string uniqueId) => audioLogEntries.FindOne(x => x.AudioResource.UniqueId == uniqueId);
+		private AudioLogEntry? FindByUniqueId(string uniqueId) => audioLogEntries.FindOne(x => x.AudioResource.UniqueId == uniqueId);
 
 		/// <summary>Gets all Entries matching the search criteria.
 		/// The entries are sorted by last playtime descending.</summary>
@@ -210,7 +203,7 @@ namespace TS3AudioBot.History
 			if (search.UserUid != null)
 				query = Query.And(query, Query.EQ(nameof(AudioLogEntry.UserUid), search.UserUid));
 
-			if (search.LastInvokedAfter.HasValue)
+			if (search.LastInvokedAfter != null)
 				query = Query.And(query, Query.GTE(nameof(AudioLogEntry.Timestamp), search.LastInvokedAfter.Value));
 
 			return audioLogEntries.Find(query, 0, search.MaxResults);
@@ -223,7 +216,7 @@ namespace TS3AudioBot.History
 		public string Format(IEnumerable<AudioLogEntry> aleList)
 			=> Formatter.ProcessQuery(aleList, SmartHistoryFormatter.DefaultAleFormat);
 
-		public AudioLogEntry FindEntryByResource(AudioResource resource)
+		public AudioLogEntry? FindEntryByResource(AudioResource resource)
 		{
 			if (resource is null)
 				throw new ArgumentNullException(nameof(resource));
@@ -316,7 +309,7 @@ namespace TS3AudioBot.History
 			foreach (var audioLogEntry in audioLogEntries.FindAll())
 			{
 #pragma warning disable CS0612
-				if (!audioLogEntry.UserInvokeId.HasValue)
+				if (audioLogEntry.UserInvokeId is null)
 					continue;
 
 				if (audioLogEntry.UserUid != null || audioLogEntry.UserInvokeId.Value == 0)

@@ -51,8 +51,8 @@ namespace TS3AudioBot.Audio
 
 		private readonly Dictionary<ChannelId, bool> channelSubscriptionsSetup = new Dictionary<ChannelId, bool>();
 		private readonly HashSet<ClientId> clientSubscriptionsSetup = new HashSet<ClientId>();
-		private ChannelId[] channelSubscriptionsCache;
-		private ClientId[] clientSubscriptionsCache;
+		private ChannelId[] channelSubscriptionsCache = Array.Empty<ChannelId>();
+		private ClientId[] clientSubscriptionsCache = Array.Empty<ClientId>();
 		private bool subscriptionSetupChanged;
 		private readonly object subscriptionLockObj = new object();
 
@@ -64,7 +64,7 @@ namespace TS3AudioBot.Audio
 			subscriptionSetupChanged = true;
 		}
 
-		public void Write(Span<byte> data, Meta meta)
+		public void Write(Span<byte> data, Meta? meta)
 		{
 			UpdatedSubscriptionCache();
 

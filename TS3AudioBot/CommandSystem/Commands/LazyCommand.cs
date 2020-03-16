@@ -20,14 +20,14 @@ namespace TS3AudioBot.CommandSystem.Commands
 		/// <summary>
 		/// The cached result, if available.
 		/// </summary>
-		private object result;
+		private object? result;
 
 		public LazyCommand(ICommand innerCommandArg)
 		{
 			innerCommand = innerCommandArg;
 		}
 
-		public virtual object Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<Type> returnTypes)
+		public virtual object? Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<Type?> returnTypes)
 		{
 			if (!executed)
 			{

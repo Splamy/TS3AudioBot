@@ -13,7 +13,7 @@ namespace TS3AudioBot.Dependency
 {
 	public interface IInjector
 	{
-		object GetModule(Type type);
+		object? GetModule(Type type);
 		void AddModule(Type type, object obj);
 	}
 }

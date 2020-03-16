@@ -15,7 +15,7 @@ namespace TS3AudioBot.Web.Api
 	public class JsonArray<T> : JsonValue<IList<T>>
 	{
 		public JsonArray(IList<T> value, string msg) : base(value, msg) { }
-		public JsonArray(IList<T> value, Func<IList<T>, string> asString = null)
+		public JsonArray(IList<T> value, Func<IList<T>, string>? asString = null)
 			: base(value, asString)
 		{ }
 	}

@@ -36,6 +36,8 @@ namespace TS3AudioBot.Rights
 			Errors = new List<string>();
 			Warnings = new List<string>();
 			RegisteredRights = registeredRights;
+			Groups = Array.Empty<RightsGroup>();
+			Rules = Array.Empty<RightsRule>();
 		}
 
 		public void SplitDeclarations()

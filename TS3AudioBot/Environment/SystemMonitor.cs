@@ -22,10 +22,10 @@ namespace TS3AudioBot.Environment
 		private static readonly Process CurrentProcess = Process.GetCurrentProcess();
 		private readonly ReaderWriterLockSlim historyLock = new ReaderWriterLockSlim();
 		private readonly Queue<SystemMonitorSnapshot> history = new Queue<SystemMonitorSnapshot>();
-		private TickWorker ticker = null;
+		private TickWorker? ticker = null;
 
 		private bool historyChanged = true;
-		private SystemMonitorReport lastReport = null;
+		private SystemMonitorReport? lastReport = null;
 		private DateTime lastSnapshotTime = DateTime.MinValue;
 		private TimeSpan lastCpuTime = TimeSpan.Zero;
 
@@ -84,10 +84,10 @@ namespace TS3AudioBot.Environment
 				if (historyChanged || lastReport == null)
 				{
 					lastReport = new SystemMonitorReport
-					{
-						Memory = history.Select(x => x.Memory).ToArray(),
-						Cpu = history.Select(x => x.Cpu).ToArray(),
-					};
+					(
+						 memory: history.Select(x => x.Memory).ToArray(),
+						 cpu: history.Select(x => x.Cpu).ToArray()
+					);
 					historyChanged = false;
 				}
 				return lastReport;
@@ -101,8 +101,14 @@ namespace TS3AudioBot.Environment
 
 	public class SystemMonitorReport
 	{
-		public long[] Memory { get; set; }
-		public float[] Cpu { get; set; }
+		public long[] Memory { get; }
+		public float[] Cpu { get; }
+
+		public SystemMonitorReport(long[] memory, float[] cpu)
+		{
+			Memory = memory;
+			Cpu = cpu;
+		}
 	}
 
 	public struct SystemMonitorSnapshot

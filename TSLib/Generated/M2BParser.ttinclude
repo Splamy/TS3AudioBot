@@ -8,7 +8,7 @@ public class M2BDeclarations
 
 		foreach (var rule in toml.rule)
 		{
-			rule.properties = rule.properties ?? new List<M2BPropMove>();
+			rule.properties ??= new List<M2BPropMove>();
 			
 			// Add implicit move operations
 			var msg = msgs.GetOrderedMsg().First(x => x.name == rule.from);

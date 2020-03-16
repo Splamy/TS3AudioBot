@@ -49,6 +49,10 @@ namespace TSLib
 		private readonly AutoResetEvent eventBlock = new AutoResetEvent(false);
 		private volatile bool run;
 
+#pragma warning disable CS8618 // !NRT on Init
+		public ExtraThreadEventDispatcher() { }
+#pragma warning restore CS8618
+
 		public void Init(Action<LazyNotification> dispatcher, Id id)
 		{
 			run = true;
@@ -95,33 +99,5 @@ namespace TSLib
 			run = false;
 			eventBlock.Set();
 		}
-	}
-
-	internal sealed class NoEventDispatcher : IEventDispatcher
-	{
-		public void Init(Action<LazyNotification> dispatcher, Id id) { }
-		public void Invoke(LazyNotification lazyNotification) { }
-		public void DoWork() { }
-		public void Dispose() { }
-	}
-
-	internal sealed class AutoThreadPooledEventDispatcher : IEventDispatcher
-	{
-		private Action<LazyNotification> dispatcher;
-		private Id id;
-
-		public void Init(Action<LazyNotification> dispatcher, Id id)
-		{
-			this.dispatcher = dispatcher;
-			this.id = id;
-		}
-		public void Invoke(LazyNotification lazyNotification) => ThreadPool.QueueUserWorkItem(Call, lazyNotification);
-		private void Call(object obj)
-		{
-			using (NLog.MappedDiagnosticsContext.SetScoped("BotId", id))
-				dispatcher.Invoke((LazyNotification)obj);
-		}
-		public void DoWork() { }
-		public void Dispose() { }
 	}
 }

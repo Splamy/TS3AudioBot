@@ -47,12 +47,15 @@ using IconHash = System.Int32;
 using ConnectionId = System.UInt32;
 #pragma warning restore CS8019
 
+#nullable enable
 namespace TSLib.Full.Book
 {
 
 	public sealed partial class ServerGroup
 	{
+		#pragma warning disable CS8618
 		public ServerGroup()
+		#pragma warning restore CS8618
 		{
 			
 		}
@@ -72,7 +75,9 @@ namespace TSLib.Full.Book
 
 	public sealed partial class File
 	{
+		#pragma warning disable CS8618
 		public File()
+		#pragma warning restore CS8618
 		{
 			
 		}
@@ -86,7 +91,9 @@ namespace TSLib.Full.Book
 
 	public sealed partial class OptionalChannelData
 	{
+		#pragma warning disable CS8618
 		public OptionalChannelData()
+		#pragma warning restore CS8618
 		{
 			
 		}
@@ -97,7 +104,9 @@ namespace TSLib.Full.Book
 
 	public sealed partial class Channel
 	{
+		#pragma warning disable CS8618
 		public Channel()
+		#pragma warning restore CS8618
 		{
 			
 		}
@@ -106,11 +115,11 @@ namespace TSLib.Full.Book
 		public ChannelId Id { get; internal set; }
 		public ChannelId Parent { get; set; }
 		public str Name { get; set; }
-		public str Topic { get; set; }
+		public str? Topic { get; set; }
 		public Codec? Codec { get; set; }
 		public u8? CodecQuality { get; set; }
-		public MaxClients MaxClients { get; set; }
-		public MaxClients MaxFamilyClients { get; set; }
+		public MaxClients? MaxClients { get; set; }
+		public MaxClients? MaxFamilyClients { get; set; }
 		public ChannelId Order { get; set; }
 		public ChannelType ChannelType { get; set; }
 		public bool? IsDefault { get; set; }
@@ -120,17 +129,19 @@ namespace TSLib.Full.Book
 		public Duration? DeleteDelay { get; set; }
 		public i32? NeededTalkPower { get; set; }
 		public bool ForcedSilence { get; internal set; }
-		public str PhoneticName { get; set; }
+		public str? PhoneticName { get; set; }
 		public IconHash? IconId { get; set; }
 		public bool? IsPrivate { get; set; }
 		public bool Subscribed { get; set; }
 		public ChannelPermissionHint? PermissionHints { get; set; }
-		public OptionalChannelData OptionalData { get; internal set; }
+		public OptionalChannelData? OptionalData { get; internal set; }
 	}
 
 	public sealed partial class OptionalClientData
 	{
+		#pragma warning disable CS8618
 		public OptionalClientData()
+		#pragma warning restore CS8618
 		{
 			
 		}
@@ -138,7 +149,7 @@ namespace TSLib.Full.Book
 	
 		public str Version { get; set; }
 		public str Platform { get; set; }
-		public str LoginName { get; internal set; }
+		public str? LoginName { get; internal set; }
 		public DateTime Created { get; internal set; }
 		public DateTime LastConnected { get; internal set; }
 		public u32 TotalConnection { get; internal set; }
@@ -150,7 +161,9 @@ namespace TSLib.Full.Book
 
 	public sealed partial class ConnectionClientData
 	{
+		#pragma warning disable CS8618
 		public ConnectionClientData()
+		#pragma warning restore CS8618
 		{
 			
 		}
@@ -159,7 +172,7 @@ namespace TSLib.Full.Book
 		public Duration Ping { get; internal set; }
 		public Duration PingDeviation { get; internal set; }
 		public Duration ConnectedTime { get; internal set; }
-		public SocketAddr ClientAddress { get; internal set; }
+		public SocketAddr? ClientAddress { get; internal set; }
 		public u64 PacketsSentSpeech { get; internal set; }
 		public u64 PacketsSentKeepalive { get; internal set; }
 		public u64 PacketsSentControl { get; internal set; }
@@ -199,7 +212,9 @@ namespace TSLib.Full.Book
 
 	public sealed partial class Client
 	{
+		#pragma warning disable CS8618
 		public Client()
+		#pragma warning restore CS8618
 		{
 			ServerGroups = new HashSet<ServerGroupId>();
 			
@@ -221,7 +236,7 @@ namespace TSLib.Full.Book
 		public ClientDbId DatabaseId { get; internal set; }
 		public ChannelGroupId ChannelGroup { get; set; }
 		public HashSet<ServerGroupId> ServerGroups { get; set; }
-		public str AwayMessage { get; set; }
+		public str? AwayMessage { get; set; }
 		public ClientType ClientType { get; internal set; }
 		public str AvatarHash { get; internal set; }
 		public i32 TalkPower { get; internal set; }
@@ -237,13 +252,15 @@ namespace TSLib.Full.Book
 		public ChannelId InheritedChannelGroupFromChannel { get; internal set; }
 		public str Badges { get; set; }
 		public ClientPermissionHint? PermissionHints { get; set; }
-		public OptionalClientData OptionalData { get; internal set; }
-		public ConnectionClientData ConnectionData { get; internal set; }
+		public OptionalClientData? OptionalData { get; internal set; }
+		public ConnectionClientData? ConnectionData { get; internal set; }
 	}
 
 	public sealed partial class OptionalServerData
 	{
+		#pragma warning disable CS8618
 		public OptionalServerData()
+		#pragma warning restore CS8618
 		{
 			
 		}
@@ -295,7 +312,9 @@ namespace TSLib.Full.Book
 
 	public sealed partial class ConnectionServerData
 	{
+		#pragma warning disable CS8618
 		public ConnectionServerData()
+		#pragma warning restore CS8618
 		{
 			
 		}
@@ -320,7 +339,9 @@ namespace TSLib.Full.Book
 
 	public sealed partial class Server
 	{
+		#pragma warning disable CS8618
 		public Server()
+		#pragma warning restore CS8618
 		{
 			Ips = new HashSet<IpAddr>();
 			
@@ -355,13 +376,15 @@ namespace TSLib.Full.Book
 		public Duration TempChannelDefaultDeleteDelay { get; set; }
 		public u16 ProtocolVersion { get; internal set; }
 		public LicenseType License { get; internal set; }
-		public OptionalServerData OptionalData { get; internal set; }
-		public ConnectionServerData ConnectionData { get; internal set; }
+		public OptionalServerData? OptionalData { get; internal set; }
+		public ConnectionServerData? ConnectionData { get; internal set; }
 	}
 
 	public sealed partial class Connection
 	{
+		#pragma warning disable CS8618
 		public Connection()
+		#pragma warning restore CS8618
 		{
 			Clients = new Dictionary<ClientId,Client>();
 			Channels = new Dictionary<ChannelId,Channel>();
@@ -379,7 +402,9 @@ namespace TSLib.Full.Book
 
 	public sealed partial class ChatEntry
 	{
+		#pragma warning disable CS8618
 		public ChatEntry()
+		#pragma warning restore CS8618
 		{
 			
 		}

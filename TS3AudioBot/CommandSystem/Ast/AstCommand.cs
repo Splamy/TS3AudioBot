@@ -18,6 +18,8 @@ namespace TS3AudioBot.CommandSystem.Ast
 
 		public List<AstNode> Parameter { get; } = new List<AstNode>();
 
+		public AstCommand(string fullRequest) : base(fullRequest) { }
+
 		public override void Write(StringBuilder strb, int depth)
 		{
 			strb.Space(depth);

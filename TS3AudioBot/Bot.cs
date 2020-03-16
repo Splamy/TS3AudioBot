@@ -39,8 +39,8 @@ namespace TS3AudioBot
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 
 		private readonly ConfBot config;
-		private TickWorker idleTickWorker;
-		private TickWorker aloneTickWorker;
+		private TickWorker? idleTickWorker = null;
+		private TickWorker? aloneTickWorker = null;
 
 		internal object SyncRoot { get; } = new object();
 		internal bool IsDisposed { get; private set; }
@@ -48,7 +48,7 @@ namespace TS3AudioBot
 
 		public Id Id { get; }
 		/// <summary>This is the template name. Can be null.</summary>
-		public string Name => config.Name;
+		public string? Name => config.Name;
 		public bool QuizMode { get; set; }
 
 		private ResolveContext resourceResolver;
@@ -60,7 +60,9 @@ namespace TS3AudioBot
 		private Player player;
 		private Stats stats;
 
+#pragma warning disable CS8618 // !NRT in InitializeBot
 		public Bot(Id id, ConfBot config, BotInjector injector)
+#pragma warning restore CS8618
 		{
 			this.Id = id;
 			this.config = config;
@@ -113,17 +115,17 @@ namespace TS3AudioBot
 				return "Could not load all bot modules";
 			}
 
-			resourceResolver = Injector.GetModule<ResolveContext>();
-			ts3FullClient = Injector.GetModule<TsFullClient>();
-			ts3client = Injector.GetModule<Ts3Client>();
-			player = Injector.GetModule<Player>();
-			player.SetTarget(Injector.GetModule<CustomTargetPipe>());
+			resourceResolver = Injector.GetModule<ResolveContext>()!;
+			ts3FullClient = Injector.GetModule<TsFullClient>()!;
+			ts3client = Injector.GetModule<Ts3Client>()!;
+			player = Injector.GetModule<Player>()!;
+			player.SetTarget(Injector.GetModule<CustomTargetPipe>()!);
 			Injector.AddModule(ts3FullClient.Book);
 
-			playManager = Injector.GetModule<PlayManager>();
-			targetManager = Injector.GetModule<IVoiceTarget>();
-			sessionManager = Injector.GetModule<SessionManager>();
-			stats = Injector.GetModule<Stats>();
+			playManager = Injector.GetModule<PlayManager>()!;
+			targetManager = Injector.GetModule<IVoiceTarget>()!;
+			sessionManager = Injector.GetModule<SessionManager>()!;
+			stats = Injector.GetModule<Stats>()!;
 
 			player.OnSongEnd += playManager.SongStoppedEvent;
 			player.OnSongUpdated += (s, e) => playManager.Update(e);
@@ -138,7 +140,7 @@ namespace TS3AudioBot
 			playManager.OnResourceUpdated += LoggedUpdateBotStatus;
 			// Log our resource in the history
 			if (Injector.TryGet<HistoryManager>(out var historyManager))
-				playManager.AfterResourceStarted += (s, e) => historyManager.LogAudioResource(new HistorySaveData(e.PlayResource.BaseData, e.MetaData.ResourceOwnerUid));
+				playManager.AfterResourceStarted += (s, e) => { if (e.MetaData != null) historyManager.LogAudioResource(new HistorySaveData(e.PlayResource.BaseData, e.MetaData.ResourceOwnerUid)); };
 			// Update our thumbnail
 			playManager.AfterResourceStarted += GenerateStatusImage;
 			playManager.PlaybackStopped += GenerateStatusImage;
@@ -158,7 +160,7 @@ namespace TS3AudioBot
 
 			commandManager.RegisterCollection(MainCommands.Bag);
 			// TODO remove after plugin rework
-			var pluginManager = Injector.GetModule<PluginManager>();
+			var pluginManager = Injector.GetModule<PluginManager>()!;
 			foreach (var plugin in pluginManager.Plugins)
 				if (plugin.Type == PluginType.CorePlugin || plugin.Type == PluginType.Commands)
 					commandManager.RegisterCollection(plugin.CorePlugin.Bag);
@@ -170,7 +172,7 @@ namespace TS3AudioBot
 			return ts3client.Connect();
 		}
 
-		private void OnBotConnected(object sender, EventArgs e)
+		private void OnBotConnected(object? sender, EventArgs e)
 		{
 			Log.Info("Bot \"{0}\"({1}) connected.", config.Name, Id);
 
@@ -188,7 +190,7 @@ namespace TS3AudioBot
 			}
 		}
 
-		private void OnBotDisconnect(object sender, DisconnectEventArgs e)
+		private void OnBotDisconnect(object? sender, DisconnectEventArgs e)
 		{
 			DisableIdleTickWorker();
 
@@ -202,7 +204,7 @@ namespace TS3AudioBot
 			Dispose();
 		}
 
-		private void OnMessageReceived(object sender, TextMessage textMessage)
+		private void OnMessageReceived(object? sender, TextMessage textMessage)
 		{
 			if (textMessage?.Message == null)
 			{
@@ -226,7 +228,7 @@ namespace TS3AudioBot
 			ChannelId? channelId = null;
 			ClientDbId? databaseId = null;
 			ChannelGroupId? channelGroup = null;
-			ServerGroupId[] serverGroups = null;
+			ServerGroupId[]? serverGroups = null;
 
 			if (ts3FullClient.Book.Clients.TryGetValue(textMessage.InvokerId, out var bookClient))
 			{
@@ -235,14 +237,14 @@ namespace TS3AudioBot
 				serverGroups = bookClient.ServerGroups.ToArray();
 				channelGroup = bookClient.ChannelGroup;
 			}
-			else if (!ts3client.GetClientInfoById(textMessage.InvokerId).GetOk(out var infoClient).GetError(out var infoClientError))
+			else if (ts3client.GetClientInfoById(textMessage.InvokerId).Get(out var infoClient, out var infoClientError))
 			{
 				channelId = infoClient.ChannelId;
 				databaseId = infoClient.DatabaseId;
 				serverGroups = infoClient.ServerGroups;
 				channelGroup = infoClient.ChannelGroup;
 			}
-			else if (!ts3client.GetCachedClientById(textMessage.InvokerId).GetOk(out var cachedClient).GetError(out var cachedClientError))
+			else if (ts3client.GetCachedClientById(textMessage.InvokerId).Get(out var cachedClient, out var cachedClientError))
 			{
 				channelId = cachedClient.ChannelId;
 				databaseId = cachedClient.DatabaseId;
@@ -257,7 +259,7 @@ namespace TS3AudioBot
 					cachedClientError.Str, infoClientError.Str);
 			}
 
-			var invoker = new ClientCall(textMessage.InvokerUid, textMessage.Message,
+			var invoker = new ClientCall(textMessage.InvokerUid ?? InvokerData.AnonymousUid, textMessage.Message,
 				clientId: textMessage.InvokerId,
 				visibiliy: textMessage.Target,
 				nickName: textMessage.InvokerName,
@@ -288,13 +290,13 @@ namespace TS3AudioBot
 			}
 		}
 
-		private void OnClientLeftView(object sender, ClientLeftView eventArgs)
+		private void OnClientLeftView(object? sender, ClientLeftView eventArgs)
 		{
 			targetManager.WhisperClientUnsubscribe(eventArgs.ClientId);
 			sessionManager.RemoveSession(eventArgs.ClientId);
 		}
 
-		private void OnAloneChanged(object sender, AloneChanged e)
+		private void OnAloneChanged(object? sender, AloneChanged e)
 		{
 			string script;
 			TimeSpan delay;
@@ -329,7 +331,7 @@ namespace TS3AudioBot
 			}
 		}
 
-		private void SetAloneTickWorker(TickWorker worker)
+		private void SetAloneTickWorker(TickWorker? worker)
 		{
 			var oldWoker = Interlocked.Exchange(ref aloneTickWorker, worker);
 			if (oldWoker != null)
@@ -338,19 +340,19 @@ namespace TS3AudioBot
 			}
 		}
 
-		private void LoggedUpdateBotStatus(object sender, EventArgs e)
+		private void LoggedUpdateBotStatus(object? sender, EventArgs e)
 		{
 			if (IsDisposed)
 				return;
 			UpdateBotStatus().UnwrapToLog(Log);
 		}
 
-		public E<LocalStr> UpdateBotStatus(string overrideStr = null)
+		public E<LocalStr> UpdateBotStatus(string? overrideStr = null)
 		{
 			if (!config.SetStatusDescription)
 				return R.Ok;
 
-			string setString;
+			string? setString;
 			if (overrideStr != null)
 			{
 				setString = overrideStr;
@@ -369,12 +371,12 @@ namespace TS3AudioBot
 			return ts3client.ChangeDescription(setString ?? "");
 		}
 
-		private void GenerateStatusImage(object sender, EventArgs e)
+		private void GenerateStatusImage(object? sender, EventArgs e)
 		{
 			if (!config.GenerateStatusAvatar || IsDisposed)
 				return;
 
-			Stream GetRandomFile(string prefix)
+			Stream? GetRandomFile(string prefix)
 			{
 				try
 				{
@@ -396,7 +398,7 @@ namespace TS3AudioBot
 				}
 			}
 
-			void Upload(Stream setStream)
+			void Upload(Stream? setStream)
 			{
 				if (setStream != null)
 				{
@@ -411,17 +413,17 @@ namespace TS3AudioBot
 
 			Task.Run(() =>
 			{
-				Stream setStream = null;
+				Stream? setStream = null;
 				if (e is PlayInfoEventArgs startEvent)
 				{
 					setStream = ImageUtil.ResizeImageSave(resourceResolver.GetThumbnail(startEvent.PlayResource).OkOr(null), out _).OkOr(null);
-					setStream = setStream ?? GetRandomFile("play*");
+					setStream ??= GetRandomFile("play*");
 					Upload(setStream);
 				}
 				else
 				{
 					setStream = GetRandomFile("sleep*");
-					setStream = setStream ?? Util.GetEmbeddedFile("TS3AudioBot.Media.SleepingKitty.png");
+					setStream ??= Util.GetEmbeddedFile("TS3AudioBot.Media.SleepingKitty.png");
 					Upload(setStream);
 				}
 
@@ -433,7 +435,7 @@ namespace TS3AudioBot
 			});
 		}
 
-		private void BeforeResourceStarted(object sender, PlayInfoEventArgs e)
+		private void BeforeResourceStarted(object? sender, PlayInfoEventArgs e)
 		{
 			const string DefaultVoiceScript = "!whisper off";
 			const string DefaultWhisperScript = "!xecute (!whisper subscription) (!unsubscribe temporary) (!subscribe channeltemp (!getmy channel))";
@@ -482,7 +484,7 @@ namespace TS3AudioBot
 			});
 		}
 
-		private ExecutionInformation CreateExecInfo(InvokerData invoker = null, UserSession session = null)
+		private ExecutionInformation CreateExecInfo(InvokerData? invoker = null, UserSession? session = null)
 		{
 			var info = new ExecutionInformation(Injector);
 			if (invoker is ClientCall ci)
@@ -520,7 +522,7 @@ namespace TS3AudioBot
 
 		private void DisableIdleTickWorker() => SetIdleTickWorker(null);
 
-		private void SetIdleTickWorker(TickWorker worker)
+		private void SetIdleTickWorker(TickWorker? worker)
 		{
 			var oldWoker = Interlocked.Exchange(ref idleTickWorker, worker);
 			if (oldWoker != null)
@@ -556,7 +558,7 @@ namespace TS3AudioBot
 			}
 		}
 
-		public BotLock GetBotLock()
+		public BotLock? GetBotLock()
 		{
 			Monitor.Enter(SyncRoot);
 			if (IsDisposed)
@@ -571,7 +573,7 @@ namespace TS3AudioBot
 		{
 			Id = Id,
 			Name = config.Name,
-			Server = ts3FullClient.ConnectionData.Address,
+			Server = ts3FullClient.ConnectionData?.Address,
 			Status = ts3FullClient.Connected ? BotStatus.Connected : BotStatus.Connecting,
 		};
 
@@ -600,8 +602,8 @@ namespace TS3AudioBot
 	public class BotInfo
 	{
 		public int? Id { get; set; }
-		public string Name { get; set; }
-		public string Server { get; set; }
+		public string? Name { get; set; }
+		public string? Server { get; set; }
 		public BotStatus Status { get; set; }
 
 		public override string ToString() => $"Id: {Id} Name: {Name} Server: {Server} Status: {Status.ToString()}"; // LOC: TODO

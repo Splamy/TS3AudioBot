@@ -32,8 +32,8 @@ namespace TS3ABotUnitTests
 			string testFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "history.test");
 			if (File.Exists(testFile)) File.Delete(testFile);
 
-			var inv1 = new ClientList { ClientId = (ClientId)10, Uid = (Uid)"Uid1", Name = "Invoker1" };
-			var inv2 = new ClientList { ClientId = (ClientId)20, Uid = (Uid)"Uid2", Name = "Invoker2" };
+			var inv1 = new { ClientId = (ClientId)10, Uid = (Uid)"Uid1", Name = "Invoker1" };
+			var inv2 = new { ClientId = (ClientId)20, Uid = (Uid)"Uid2", Name = "Invoker2" };
 
 			var ar1 = new AudioResource("asdf", "sc_ar1", "soundcloud");
 			var ar2 = new AudioResource("./File.mp3", "me_ar2", "media");
@@ -224,17 +224,15 @@ namespace TS3ABotUnitTests
 		public void Factory_YoutubeFactoryTest()
 		{
 			var ctx = new ResolveContext(null, null);
-			using (IResourceResolver rfac = new YoutubeResolver(new ConfFactories()))
-			{
-				// matching links
-				Assert.AreEqual(rfac.MatchResource(ctx, @"https://www.youtube.com/watch?v=robqdGEhQWo"), MatchCertainty.Always);
-				Assert.AreEqual(rfac.MatchResource(ctx, @"https://youtu.be/robqdGEhQWo"), MatchCertainty.Always);
-				Assert.AreEqual(rfac.MatchResource(ctx, @"https://discarded-ideas.org/sites/discarded-ideas.org/files/music/darkforestkeep_symphonic.mp3"), MatchCertainty.Never);
-				Assert.AreNotEqual(rfac.MatchResource(ctx, @"http://splamy.de/youtube.com/youtu.be/fake.mp3"), MatchCertainty.Always);
+			using IResourceResolver rfac = new YoutubeResolver(new ConfFactories());
+			// matching links
+			Assert.AreEqual(rfac.MatchResource(ctx, @"https://www.youtube.com/watch?v=robqdGEhQWo"), MatchCertainty.Always);
+			Assert.AreEqual(rfac.MatchResource(ctx, @"https://youtu.be/robqdGEhQWo"), MatchCertainty.Always);
+			Assert.AreEqual(rfac.MatchResource(ctx, @"https://discarded-ideas.org/sites/discarded-ideas.org/files/music/darkforestkeep_symphonic.mp3"), MatchCertainty.Never);
+			Assert.AreNotEqual(rfac.MatchResource(ctx, @"http://splamy.de/youtube.com/youtu.be/fake.mp3"), MatchCertainty.Always);
 
-				// restoring links
-				Assert.AreEqual("https://youtu.be/robqdGEhQWo", rfac.RestoreLink(ctx, new AudioResource { ResourceId = "robqdGEhQWo" }));
-			}
+			// restoring links
+			Assert.AreEqual("https://youtu.be/robqdGEhQWo", rfac.RestoreLink(ctx, new AudioResource { ResourceId = "robqdGEhQWo" }));
 		}
 
 		/* ======================= TSLib Tests ========================*/

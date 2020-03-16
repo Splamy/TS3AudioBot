@@ -26,11 +26,11 @@ namespace TS3AudioBot.CommandSystem.Commands
 			AliasString = command;
 		}
 
-		public object Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<Type> returnTypes)
+		public object? Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<Type?> returnTypes)
 		{
 			info.UseComplexityTokens(1);
 
-			IReadOnlyList<ICommand> backupArguments = null;
+			IReadOnlyList<ICommand>? backupArguments = null;
 			if (!info.TryGet<AliasContext>(out var aliasContext))
 			{
 				aliasContext = new AliasContext();
@@ -50,6 +50,6 @@ namespace TS3AudioBot.CommandSystem.Commands
 
 	public class AliasContext
 	{
-		public IReadOnlyList<ICommand> Arguments { get; set; }
+		public IReadOnlyList<ICommand>? Arguments { get; set; }
 	}
 }

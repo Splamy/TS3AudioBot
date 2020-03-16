@@ -15,11 +15,11 @@ namespace TSLib.Audio
 	public class AudioPacketReader : IAudioPipe
 	{
 		public bool Active => OutStream?.Active ?? false;
-		public IAudioPassiveConsumer OutStream { get; set; }
+		public IAudioPassiveConsumer? OutStream { get; set; }
 
-		public void Write(Span<byte> data, Meta meta)
+		public void Write(Span<byte> data, Meta? meta)
 		{
-			if (OutStream is null)
+			if (OutStream is null || meta is null)
 				return;
 
 			if (data.Length < 5) // Invalid packet

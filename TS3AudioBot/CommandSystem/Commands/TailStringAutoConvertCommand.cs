@@ -29,10 +29,12 @@ namespace TS3AudioBot.CommandSystem.Commands
 			Content = contentArg;
 		}
 
-		public virtual object Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<Type> returnTypes)
+		public virtual object? Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<Type?> returnTypes)
 		{
 			foreach (var type in returnTypes)
 			{
+				if (type is null)
+					return null;
 				if (type == typeof(TailString))
 					return Content;
 
@@ -48,7 +50,7 @@ namespace TS3AudioBot.CommandSystem.Commands
 					Log.Debug("Converting command result {0} to {1} failed", Content, type);
 				}
 			}
-			throw new CommandException(strings.error_cmd_no_matching_overload, CommandExceptionReason.NoReturnMatch);
+			throw new CommandException(strings.error_nothing_to_return, CommandExceptionReason.NoReturnMatch);
 		}
 
 		public override string ToString() => "<auto-convert-result>";

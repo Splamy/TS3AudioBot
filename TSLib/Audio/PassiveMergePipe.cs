@@ -64,7 +64,7 @@ namespace TSLib.Audio
 			}
 		}
 
-		public int Read(byte[] buffer, int offset, int length, out Meta meta)
+		public int Read(byte[] buffer, int offset, int length, out Meta? meta)
 		{
 			if (changed)
 			{

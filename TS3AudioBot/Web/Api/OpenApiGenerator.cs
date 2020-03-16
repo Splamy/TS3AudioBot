@@ -88,7 +88,7 @@ namespace TS3AudioBot.Web.Api
 			);
 		}
 
-		private static JToken GenerateCommand(CommandManager commandManager, BotCommand command, HashSet<string> addedCommandPaths)
+		private static JToken? GenerateCommand(CommandManager commandManager, BotCommand command, HashSet<string> addedCommandPaths)
 		{
 			var parameters = new JArray();
 
@@ -206,16 +206,15 @@ namespace TS3AudioBot.Web.Api
 			return new JProperty(name, new JObject(token));
 		}
 
-		private static OApiSchema NormalToSchema(Type type)
+		private static OApiSchema? NormalToSchema(Type type)
 		{
 			type = FunctionCommand.UnwrapReturnType(type);
 
 			if (type.IsArray)
 			{
-				return new OApiSchema
+				return new OApiSchema("array")
 				{
-					type = "array",
-					items = NormalToSchema(type.GetElementType())
+					items = NormalToSchema(type.GetElementType()!)
 				};
 			}
 
@@ -245,13 +244,18 @@ namespace TS3AudioBot.Web.Api
 		private class OApiSchema
 		{
 			public string type { get; set; }
-			public string format { get; set; }
-			public OApiSchema additionalProperties { get; set; }
-			public OApiSchema items { get; set; }
+			public string? format { get; set; }
+			public OApiSchema? additionalProperties { get; set; }
+			public OApiSchema? items { get; set; }
 
-			public static OApiSchema FromBasic(string type, string format = null) => new OApiSchema { type = type, format = format };
+			public OApiSchema(string type)
+			{
+				this.type = type;
+			}
 
-			public OApiSchema ObjWrap() => new OApiSchema { type = "object", additionalProperties = this };
+			public static OApiSchema FromBasic(string type, string? format = null) => new OApiSchema(type) { format = format };
+
+			public OApiSchema ObjWrap() => new OApiSchema("object") { additionalProperties = this };
 		}
 	}
 }

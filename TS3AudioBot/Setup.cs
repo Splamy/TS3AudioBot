@@ -184,7 +184,7 @@ namespace TS3AudioBot
 	internal class ParameterData
 	{
 		public ExitType Exit { get; set; } = ExitType.No;
-		public string ConfigFile { get; set; } = null;
+		public string? ConfigFile { get; set; } = null;
 		public bool SkipVerifications { get; set; } = false;
 		public bool HideBanner { get; set; } = false;
 		public bool Interactive { get; set; } = true;

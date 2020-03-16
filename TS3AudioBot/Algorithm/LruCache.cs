@@ -8,10 +8,11 @@
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 
 namespace TS3AudioBot.Algorithm
 {
-	public class LruCache<TK, TV>
+	public class LruCache<TK, TV> where TK : notnull
 	{
 		private readonly int maxCapacity;
 		private readonly Dictionary<TK, LinkedListNode<(TK key, TV value)>> cacheDict = new Dictionary<TK, LinkedListNode<(TK, TV)>>();
@@ -22,7 +23,7 @@ namespace TS3AudioBot.Algorithm
 			maxCapacity = capacity;
 		}
 
-		public bool TryGetValue(TK key, out TV value)
+		public bool TryGetValue(TK key, [MaybeNullWhen(false)] out TV value)
 		{
 			if (cacheDict.TryGetValue(key, out var node))
 			{
@@ -30,7 +31,7 @@ namespace TS3AudioBot.Algorithm
 				value = node.Value.value;
 				return true;
 			}
-			value = default;
+			value = default!;
 			return false;
 		}
 
@@ -50,7 +51,7 @@ namespace TS3AudioBot.Algorithm
 			cacheDict.Add(key, node);
 		}
 
-		public void Remove(TK key) => cacheDict.Remove(key);
+		public bool Remove(TK key) => cacheDict.Remove(key);
 
 		private void Renew(LinkedListNode<(TK, TV)> node)
 		{
@@ -61,6 +62,8 @@ namespace TS3AudioBot.Algorithm
 		private void RemoveOldest()
 		{
 			var node = lruList.First;
+			if (node is null)
+				return;
 			lruList.RemoveFirst();
 			cacheDict.Remove(node.Value.key);
 		}

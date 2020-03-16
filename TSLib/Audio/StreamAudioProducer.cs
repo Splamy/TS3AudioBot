@@ -17,7 +17,7 @@ namespace TSLib.Audio
 
 		public StreamAudioProducer(Stream stream) { this.stream = stream; }
 
-		public int Read(byte[] buffer, int offset, int length, out Meta meta)
+		public int Read(byte[] buffer, int offset, int length, out Meta? meta)
 		{
 			meta = default;
 			return stream.Read(buffer, offset, length);

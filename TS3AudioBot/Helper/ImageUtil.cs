@@ -24,15 +24,15 @@ namespace TS3AudioBot.Helper
 
 		public const int ResizeMaxWidthDefault = 320;
 
-		public static R<Stream, LocalStr> ResizeImageSave(Stream imgStream, out string mime, int resizeMaxWidth = ResizeMaxWidthDefault)
+		public static R<Stream, LocalStr> ResizeImageSave(Stream? imgStream, out string? mime, int resizeMaxWidth = ResizeMaxWidthDefault)
 		{
 			mime = null;
-			if (imgStream == null)
-				return new LocalStr("Stream not found");
+			if (imgStream is null)
+				return new LocalStr("No image found"); // TODO loc
 			try
 			{
-				using (var limitStream = new LimitStream(imgStream, Limits.MaxImageStreamSize))
-					return ResizeImage(limitStream, out mime, resizeMaxWidth);
+				using var limitStream = new LimitStream(imgStream, Limits.MaxImageStreamSize);
+				return ResizeImage(limitStream, out mime, resizeMaxWidth);
 			}
 			catch (NotSupportedException)
 			{
@@ -46,23 +46,21 @@ namespace TS3AudioBot.Helper
 			}
 		}
 
-		private static Stream ResizeImage(Stream imgStream, out string mime, int resizeMaxWidth = ResizeMaxWidthDefault)
+		private static R<Stream, LocalStr> ResizeImage(Stream imgStream, out string? mime, int resizeMaxWidth = ResizeMaxWidthDefault)
 		{
 			mime = null;
-			using (var img = Image.Load(imgStream))
-			{
-				if (img.Width > Limits.MaxImageDimension || img.Height > Limits.MaxImageDimension
-					|| img.Width == 0 || img.Height == 0)
-					return null;
+			using var img = Image.Load(imgStream);
+			if (img.Width > Limits.MaxImageDimension || img.Height > Limits.MaxImageDimension
+				|| img.Width == 0 || img.Height == 0)
+				return new LocalStr("Dropping image because too large"); // TODO
 
-				if (img.Width <= resizeMaxWidth)
-					return SaveAdaptive(img, out mime);
-
-				float ratio = img.Width / (float)img.Height;
-				img.Mutate(x => x.Resize(resizeMaxWidth, (int)(resizeMaxWidth / ratio)));
-
+			if (img.Width <= resizeMaxWidth)
 				return SaveAdaptive(img, out mime);
-			}
+
+			float ratio = img.Width / (float)img.Height;
+			img.Mutate(x => x.Resize(resizeMaxWidth, (int)(resizeMaxWidth / ratio)));
+
+			return SaveAdaptive(img, out mime);
 		}
 
 		private static Stream SaveAdaptive(Image img, out string mime)

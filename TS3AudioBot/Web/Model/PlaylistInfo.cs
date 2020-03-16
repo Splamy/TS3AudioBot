@@ -29,6 +29,12 @@ namespace TS3AudioBot.Web.Model
 		/// This might only be a part of the entire playlist.
 		/// Check <see cref="SongCount"> for the entire count.</summary>
 		[JsonProperty(PropertyName = "Items", NullValueHandling = NullValueHandling.Ignore)]
-		public PlaylistItemGetData[] Items { get; set; }
+		public PlaylistItemGetData[]? Items { get; set; }
+
+		public PlaylistInfo(string id, string title)
+		{
+			Id = id;
+			Title = title;
+		}
 	}
 }

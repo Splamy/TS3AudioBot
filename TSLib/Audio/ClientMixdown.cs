@@ -20,9 +20,9 @@ namespace TSLib.Audio
 
 		private readonly Dictionary<ClientId, ClientMix> mixdownBuffer = new Dictionary<ClientId, ClientMix>();
 
-		public void Write(Span<byte> data, Meta meta)
+		public void Write(Span<byte> data, Meta? meta)
 		{
-			if (data.IsEmpty)
+			if (data.IsEmpty || meta is null)
 				return;
 
 			if (!mixdownBuffer.TryGetValue(meta.In.Sender, out var mix))
@@ -58,7 +58,7 @@ namespace TSLib.Audio
 		{
 			public byte[] Buffer { get; }
 			public int Length { get; set; } = 0;
-			public Meta LastMeta { get; set; }
+			public Meta? LastMeta { get; set; }
 
 			private readonly object rwLock = new object();
 
@@ -78,7 +78,7 @@ namespace TSLib.Audio
 				}
 			}
 
-			public int Read(byte[] buffer, int offset, int length, out Meta meta)
+			public int Read(byte[] buffer, int offset, int length, out Meta? meta)
 			{
 				lock (rwLock)
 				{

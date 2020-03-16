@@ -12,6 +12,7 @@ using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -92,7 +93,7 @@ namespace TS3AudioBot.Helper
 				throw new CommandException(r.Error.Str, CommandExceptionReason.CommandError);
 		}
 
-		public static T UnwrapThrow<T>(this R<T, LocalStr> r)
+		public static T UnwrapThrow<T>(this R<T, LocalStr> r) where T : notnull
 		{
 			if (r.Ok)
 				return r.Value;
@@ -100,14 +101,14 @@ namespace TS3AudioBot.Helper
 				throw new CommandException(r.Error.Str, CommandExceptionReason.CommandError);
 		}
 
-		public static bool UnwrapToLog(this E<LocalStr> r, NLog.Logger logger, NLog.LogLevel level = null)
+		public static bool UnwrapToLog(this E<LocalStr> r, NLog.Logger logger, NLog.LogLevel? level = null)
 		{
 			if (!r.Ok)
 				logger.Log(level ?? NLog.LogLevel.Warn, r.Error.Str);
 			return r.Ok;
 		}
 
-		public static string UnrollException(this Exception ex)
+		public static string UnrollException(this Exception? ex)
 		{
 			var strb = new StringBuilder();
 			while (ex != null)
@@ -118,15 +119,15 @@ namespace TS3AudioBot.Helper
 			return strb.ToString();
 		}
 
-		public static Stream GetEmbeddedFile(string name)
+		public static Stream? GetEmbeddedFile(string name)
 		{
 			var assembly = Assembly.GetExecutingAssembly();
 			return assembly.GetManifestResourceStream(name);
 		}
 
-		public static bool TryCast<T>(this JToken token, string key, out T value)
+		public static bool TryCast<T>(this JToken token, string key, [MaybeNullWhen(false)] out T value) where T : notnull
 		{
-			value = default;
+			value = default!;
 			if (token is null)
 				return false;
 			var jValue = token.SelectToken(key);
@@ -135,7 +136,7 @@ namespace TS3AudioBot.Helper
 			try
 			{
 				var t = jValue.ToObject<T>();
-				if ((object)t is null)
+				if (t is null)
 					return false;
 				value = t;
 				return true;
@@ -154,7 +155,7 @@ namespace TS3AudioBot.Helper
 			return R.Ok;
 		}
 
-		public static IEnumerable<TResult> SelectOk<TSource, TResult, TErr>(this IEnumerable<TSource> source, Func<TSource, R<TResult, TErr>> selector)
+		public static IEnumerable<TResult> SelectOk<TSource, TResult, TErr>(this IEnumerable<TSource> source, Func<TSource, R<TResult, TErr>> selector) where TSource : notnull where TResult : notnull where TErr : notnull
 			=> source.Select(selector).Where(x => x.Ok).Select(x => x.Value);
 
 		public static bool HasExitedSafe(this Process process)

@@ -20,6 +20,7 @@ using System.Collections.Generic;
 
 <#= ConversionSet #>
 
+#nullable enable
 namespace TSLib.Full.Book
 {
 <#
@@ -30,7 +31,9 @@ foreach (var struc in gen.@struct)
 #>
 	public sealed partial class <#= struc.name #>
 	{
+		#pragma warning disable CS8618
 		public <#= struc.name #>()
+		#pragma warning restore CS8618
 		{
 			<# ClearIndent();
 			PushIndent("\t\t\t");
@@ -58,8 +61,7 @@ foreach (var struc in gen.@struct)
 				Write($"Dictionary<{prop.key},{prop.type}>");
 				break;
 			default:
-				// TODO better
-				Write($"{prop.type}{(prop.opt == true && NullType(prop.type) ? "?" : "")}");
+				Write($"{prop.type}{(prop.opt == true ? "?" : "")}");
 				break;
 			}
 		#> <#= prop.name #> { <#= prop.get.Value?"":"internal " #>get; <#= prop.set.Value?"":"internal " #>set; }<# } #>

@@ -23,11 +23,10 @@ namespace TSLib.Commands
 	{
 		private static readonly Regex CommandMatch = new Regex("[a-z0-9_]+", RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.ECMAScript);
 
-		protected string raw = null;
-		protected bool cached = false;
+		protected string? raw = null;
 		public bool ExpectResponse { get; set; }
 		public string Command { get; }
-		private ICollection<ICommandPart> parameter;
+		private ICollection<ICommandPart>? parameter = null;
 
 		/// <summary>Creates a new command.</summary>
 		/// <param name="command">The command name.</param>
@@ -51,8 +50,8 @@ namespace TSLib.Commands
 		[DebuggerStepThrough]
 		public virtual TsCommand Add(ICommandPart addParameter)
 		{
-			cached = false;
-			if(parameter == null)
+			raw = null;
+			if (parameter == null)
 				parameter = new List<ICommandPart>();
 			else if (parameter.IsReadOnly)
 				parameter = new List<ICommandPart>(parameter);
@@ -79,11 +78,8 @@ namespace TSLib.Commands
 		/// <returns>The formatted query-like command.</returns>
 		public override string ToString()
 		{
-			if (!cached)
-			{
+			if (raw is null)
 				raw = BuildToString(Command, GetParameter());
-				cached = true;
-			}
 			return raw;
 		}
 
@@ -101,8 +97,8 @@ namespace TSLib.Commands
 				throw new ArgumentException("Invalid command characters", nameof(command));
 
 			var strb = new StringBuilder(TsString.Escape(command));
-			List<CommandMultiParameter> multiParamList = null;
-			List<CommandOption> optionList = null;
+			List<CommandMultiParameter>? multiParamList = null;
+			List<CommandOption>? optionList = null;
 
 			foreach (var param in parameter)
 			{
@@ -164,10 +160,9 @@ namespace TSLib.Commands
 
 	public class TsRawCommand : TsCommand
 	{
-		public TsRawCommand(string raw) : base(null)
+		public TsRawCommand(string raw) : base(null!)
 		{
 			this.raw = raw;
-			this.cached = true;
 		}
 
 		public override TsCommand Add(ICommandPart addParameter)
@@ -177,7 +172,7 @@ namespace TSLib.Commands
 
 		public override string ToString()
 		{
-			return raw;
+			return raw!;
 		}
 	}
 }

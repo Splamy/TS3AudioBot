@@ -41,9 +41,9 @@ namespace TSLib.Full
 		/// <summary>The disonnect message when leaving.</summary>
 		public string QuitMessage { get; set; } = "Disconnected";
 		/// <summary>The <see cref="Full.VersionSign"/> used to connect.</summary>
-		public VersionSign VersionSign { get; private set; }
+		public VersionSign VersionSign => connectionDataFull.VersionSign;
 		/// <summary>The <see cref="Full.IdentityData"/> used to connect.</summary>
-		public IdentityData Identity => tsCrypt.Identity;
+		public IdentityData Identity => connectionDataFull.Identity;
 		private TsClientStatus status;
 		public override bool Connected { get { lock (statusLock) return status == TsClientStatus.Connected; } }
 		public override bool Connecting { get { lock (statusLock) return status == TsClientStatus.Connecting; } }
@@ -51,14 +51,16 @@ namespace TSLib.Full
 		private ConnectionDataFull connectionDataFull;
 		public Connection Book { get; set; } = new Connection();
 
-		public override event EventHandler<EventArgs> OnConnected;
-		public override event EventHandler<DisconnectEventArgs> OnDisconnected;
-		public event EventHandler<CommandError> OnErrorEvent;
+		public override event EventHandler<EventArgs>? OnConnected;
+		public override event EventHandler<DisconnectEventArgs>? OnDisconnected;
+		public event EventHandler<CommandError>? OnErrorEvent;
 
 		/// <summary>Creates a new client. A client can manage one connection to a server.</summary>
 		/// <param name="dispatcherType">The message processing method for incomming notifications.
 		/// See <see cref="EventDispatchType"/> for further information about each type.</param>
+#pragma warning disable CS8618 // !NRT on Connect
 		public TsFullClient()
+#pragma warning restore CS8618
 		{
 			status = TsClientStatus.Disconnected;
 			msgProc = new AsyncMessageProcessor(MessageHelper.GetToClientNotificationType);
@@ -88,9 +90,7 @@ namespace TSLib.Full
 				returnCode = 0;
 				status = TsClientStatus.Connecting;
 
-				VersionSign = conDataFull.VersionSign;
-				tsCrypt = new TsCrypt();
-				tsCrypt.Identity = conDataFull.Identity;
+				tsCrypt = new TsCrypt(conDataFull.Identity);
 
 				var ctx = new ConnectionContext { WasExit = false };
 				context = ctx;
@@ -121,7 +121,7 @@ namespace TSLib.Full
 			}
 		}
 
-		private void DisconnectInternal(ConnectionContext ctx, CommandError error = null, TsClientStatus? setStatus = null)
+		private void DisconnectInternal(ConnectionContext ctx, CommandError? error = null, TsClientStatus? setStatus = null)
 		{
 			bool triggerEventSafe = false;
 
@@ -143,7 +143,6 @@ namespace TSLib.Full
 					packetHandler.Stop();
 					msgProc.DropQueue();
 					dispatcher.Dispose();
-					dispatcher = null;
 					triggerEventSafe = true;
 					break;
 				case TsClientStatus.Disconnecting:
@@ -339,16 +338,14 @@ namespace TSLib.Full
 		/// Or <code>R(ERR)</code> with the returned error if no response is expected.</returns>
 		public override R<T[], CommandError> Send<T>(TsCommand com)
 		{
-			using (var wb = new WaitBlock(msgProc.Deserializer, false))
-			{
-				var result = SendCommandBase(wb, com);
-				if (!result.Ok)
-					return result.Error;
-				if (com.ExpectResponse)
-					return wb.WaitForMessage<T>();
-				else
-					return Array.Empty<T>();
-			}
+			using var wb = new WaitBlockSync(msgProc.Deserializer);
+			var result = SendCommandBase(wb, com);
+			if (!result.Ok)
+				return result.Error;
+			if (com.ExpectResponse)
+				return wb.WaitForMessage<T>();
+			else
+				return Array.Empty<T>();
 		}
 
 		/// <summary>
@@ -367,13 +364,11 @@ namespace TSLib.Full
 			if (!com.ExpectResponse)
 				throw new ArgumentException("A special command must take a response");
 
-			using (var wb = new WaitBlock(msgProc.Deserializer, false, dependsOn))
-			{
-				var result = SendCommandBase(wb, com);
-				if (!result.Ok)
-					return result.Error;
-				return wb.WaitForNotification();
-			}
+			using var wb = new WaitBlockSync(msgProc.Deserializer, dependsOn);
+			var result = SendCommandBase(wb, com);
+			if (!result.Ok)
+				return result.Error;
+			return wb.WaitForNotification();
 		}
 
 		private E<CommandError> SendCommandBase(WaitBlock wb, TsCommand com)
@@ -401,18 +396,16 @@ namespace TSLib.Full
 
 		public async Task<R<T[], CommandError>> SendCommandAsync<T>(TsCommand com) where T : IResponse, new()
 		{
-			using (var wb = new WaitBlock(msgProc.Deserializer, true))
-			{
-				var result = SendCommandBase(wb, com);
-				if (!result.Ok)
-					return result.Error;
-				if (com.ExpectResponse)
-					return await wb.WaitForMessageAsync<T>().ConfigureAwait(false);
-				else
-					// This might not be the nicest way to return in this case
-					// but we don't know what the response is, so this acceptable.
-					return CommandError.NoResult;
-			}
+			using var wb = new WaitBlockAsync(msgProc.Deserializer);
+			var result = SendCommandBase(wb, com);
+			if (!result.Ok)
+				return result.Error;
+			if (com.ExpectResponse)
+				return await wb.WaitForMessageAsync<T>().ConfigureAwait(false);
+			else
+				// This might not be the nicest way to return in this case
+				// but we don't know what the response is, so this acceptable.
+				return CommandError.NoResult;
 		}
 
 		/// <summary>Release all resources. Will try to disconnect before disposing.</summary>
@@ -423,16 +416,16 @@ namespace TSLib.Full
 
 		#region Audio
 		/// <summary>Receive voice packets.</summary>
-		public IAudioPassiveConsumer OutStream { get; set; }
+		public IAudioPassiveConsumer? OutStream { get; set; }
 		/// <summary>When voice data can be sent.</summary>
 		// TODO may set to false if no talk power, etc.
 		public bool Active => true;
 		/// <summary>Send voice data.</summary>
 		/// <param name="data">The encoded audio buffer.</param>
 		/// <param name="meta">The metadata where to send the packet.</param>
-		public void Write(Span<byte> data, Meta meta)
+		public void Write(Span<byte> data, Meta? meta)
 		{
-			if (meta.Out is null
+			if (meta?.Out is null
 				|| meta.Out.SendMode == TargetSendMode.None
 				|| !meta.Codec.HasValue
 				|| meta.Codec.Value == Codec.Raw)
@@ -446,7 +439,7 @@ namespace TSLib.Full
 				SendAudio(data, meta.Codec.Value);
 				break;
 			case TargetSendMode.Whisper:
-				SendAudioWhisper(data, meta.Codec.Value, meta.Out.ChannelIds, meta.Out.ClientIds);
+				SendAudioWhisper(data, meta.Codec.Value, meta.Out.ChannelIds!, meta.Out.ClientIds!);
 				break;
 			case TargetSendMode.WhisperGroup:
 				SendAudioGroupWhisper(data, meta.Codec.Value, meta.Out.GroupWhisperType, meta.Out.GroupWhisperTarget, meta.Out.TargetId);
@@ -463,7 +456,7 @@ namespace TSLib.Full
 				{ "client_is_channel_commander", isChannelCommander },
 			});
 
-		public CmdR RequestTalkPower(string message = null)
+		public CmdR RequestTalkPower(string? message = null)
 			=> SendVoid(new TsCommand("clientupdate") {
 				{ "client_talk_request", true },
 				{ "client_talk_request_msg", message },
@@ -606,7 +599,7 @@ namespace TSLib.Full
 		// Splitted base commands
 
 		public override R<IChannelCreateResponse, CommandError> ChannelCreate(string name,
-			string namePhonetic = null, string topic = null, string description = null, string password = null,
+			string? namePhonetic = null, string? topic = null, string? description = null, string? password = null,
 			Codec? codec = null, int? codecQuality = null, int? codecLatencyFactor = null, bool? codecEncrypted = null,
 			int? maxClients = null, int? maxFamilyClients = null, bool? maxClientsUnlimited = null,
 			bool? maxFamilyClientsUnlimited = null, bool? maxFamilyClientsInherited = null, ChannelId? order = null,

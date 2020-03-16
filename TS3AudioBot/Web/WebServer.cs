@@ -26,10 +26,10 @@ namespace TS3AudioBot.Web
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 
-		private CancellationTokenSource cancelToken;
+		private CancellationTokenSource? cancelToken;
 		private readonly ConfWeb config;
 		private readonly CoreInjector coreInjector;
-		private Api.WebApi api;
+		private Api.WebApi? api;
 
 		public WebServer(ConfWeb config, CoreInjector coreInjector)
 		{
@@ -72,7 +72,7 @@ namespace TS3AudioBot.Web
 			}
 		}
 
-		private string FindWebFolder()
+		private string? FindWebFolder()
 		{
 			var webData = config.Interface;
 			if (string.IsNullOrEmpty(webData.Path))
@@ -126,10 +126,13 @@ namespace TS3AudioBot.Web
 				{
 					app.UseCors("TS3AB");
 
-					app.Map(new PathString("/api"), map =>
+					if (api != null) // api enabled
 					{
-						map.Run(ctx => Task.Run(() => Log.Swallow(() => api.ProcessApiV1Call(ctx))));
-					});
+						app.Map(new PathString("/api"), map =>
+						{
+							map.Run(ctx => Task.Run(() => Log.Swallow(() => api.ProcessApiV1Call(ctx))));
+						});
+					}
 
 					if (config.Interface.Enabled)
 					{

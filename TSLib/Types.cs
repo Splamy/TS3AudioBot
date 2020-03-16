@@ -18,7 +18,7 @@ namespace TSLib
 			if (uid == "anonymous" || uid == "serveradmin")
 				return true;
 			var result = TsCrypt.Base64Decode(uid);
-			return result.Ok && result.Value.Length == 20;
+			return result != null && result.Length == 20;
 		}
 	}
 

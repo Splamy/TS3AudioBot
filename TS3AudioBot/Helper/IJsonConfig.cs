@@ -28,11 +28,9 @@ namespace TS3AudioBot.Helper
 			if (jsonConfig.ExpectsString)
 				json = JsonConvert.SerializeObject(json);
 
-			using (var sr = new StringReader(json))
-			using (var reader = new JsonTextReader(sr))
-			{
-				return jsonConfig.FromJson(reader);
-			}
+			using var sr = new StringReader(json);
+			using var reader = new JsonTextReader(sr);
+			return jsonConfig.FromJson(reader);
 		}
 
 		public static string ToJson(this IJsonSerializable jsonConfig)
@@ -58,15 +56,22 @@ namespace TS3AudioBot.Helper
 			return typeof(IJsonSerializable).IsAssignableFrom(objectType);
 		}
 
-		public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
+		public override object? ReadJson(JsonReader reader, Type objectType, object? existingValue, JsonSerializer serializer)
 		{
 			throw new NotImplementedException();
 		}
 
-		public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
+		public override void WriteJson(JsonWriter writer, object? value, JsonSerializer serializer)
 		{
-			var obj = (IJsonSerializable)value;
-			obj.ToJson(writer);
+			if (value is null)
+			{
+				writer.WriteNull();
+			}
+			else
+			{
+				var obj = (IJsonSerializable)value;
+				obj.ToJson(writer);
+			}
 		}
 	}
 }

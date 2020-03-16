@@ -36,10 +36,10 @@ namespace TS3AudioBot.Config
 		private void GetMember()
 		{
 			Properties.Clear();
-			Properties.AddRange(GetConfigPartProperties().Select(x => (ConfigPart)x.GetValue(this)));
+			Properties.AddRange(GetConfigPartProperties().Select(x => (ConfigPart)x.GetValue(this)!));
 		}
 
-		public override void FromToml(TomlObject tomlObject)
+		public override void FromToml(TomlObject? tomlObject)
 		{
 			base.FromToml(tomlObject);
 
@@ -54,8 +54,8 @@ namespace TS3AudioBot.Config
 		{
 			foreach (var prop in GetConfigPartProperties())
 			{
-				var self = (ConfigPart)prop.GetValue(this);
-				var other = (ConfigPart)prop.GetValue(derived);
+				var self = (ConfigPart)prop.GetValue(this)!;
+				var other = (ConfigPart)prop.GetValue(derived)!;
 				self.Derive(other);
 			}
 		}

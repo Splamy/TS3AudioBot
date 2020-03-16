@@ -7,7 +7,6 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
-using System;
 using System.Collections.Generic;
 using TSLib;
 
@@ -35,14 +34,14 @@ namespace TS3AudioBot.Sessions
 			}
 		}
 
-		public R<UserSession> GetSession(ClientId id)
+		public UserSession? GetSession(ClientId id)
 		{
 			lock (openSessions)
 			{
 				if (openSessions.TryGetValue(id, out var session))
 					return session;
 				else
-					return R.Err;
+					return null;
 			}
 		}
 

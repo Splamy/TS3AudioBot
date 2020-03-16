@@ -24,8 +24,8 @@ namespace TS3AudioBot.ResourceFactories
 	public static class YoutubeDlHelper
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
-		public static ConfPath DataObj { private get; set; }
-		private static string YoutubeDlPath => DataObj?.Path.Value;
+		public static ConfPath? DataObj { private get; set; }
+		private static string? YoutubeDlPath => DataObj?.Path.Value;
 
 		const string ParamGetSingleVideo = " --no-warnings --dump-json --id --";
 		const string ParamGetPlaylist = "--no-warnings --yes-playlist --flat-playlist --dump-single-json --id --";

@@ -22,7 +22,7 @@ namespace TS3AudioBot.Dependency
 			OwnInjector = own ?? throw new ArgumentNullException(nameof(parent));
 		}
 
-		public object GetModule(Type type)
+		public object? GetModule(Type type)
 		{
 			var obj = OwnInjector.GetModule(type);
 			if (obj != null) return obj;

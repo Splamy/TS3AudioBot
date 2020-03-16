@@ -25,12 +25,6 @@ namespace TSLib
 	public abstract partial class TsBaseFunctions : IDisposable
 	{
 		protected readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
-		/// <summary>When this client receives any visible message.</summary>
-		public abstract event NotifyEventHandler<TextMessage> OnTextMessage;
-		/// <summary>When another client enters visiblility.</summary>
-		public abstract event NotifyEventHandler<ClientEnterView> OnClientEnterView;
-		/// <summary>When another client leaves visiblility.</summary>
-		public abstract event NotifyEventHandler<ClientLeftView> OnClientLeftView;
 		/// <summary>After the client connected.</summary>
 		public abstract event EventHandler<EventArgs> OnConnected;
 		/// <summary>After the client disconnected.</summary>
@@ -43,11 +37,11 @@ namespace TSLib
 		/// <summary>The derived client type.</summary>
 		public abstract ClientType ClientType { get; }
 		/// <summary>The connection data this client was last connected with (or is currently connected to).</summary>
-		public ConnectionData ConnectionData { get; protected set; }
-		internal IPEndPoint remoteAddress;
-		private FileTransferManager ftm;
+		public ConnectionData? ConnectionData { get; protected set; }
+		internal IPEndPoint? remoteAddress;
+		private FileTransferManager? ftm;
 		/// <summary>An instance to a <see cref="FileTransferManager"/> dedicated for this client.</summary>
-		public FileTransferManager FileTransferManager => ftm ?? (ftm = new FileTransferManager(this));
+		public FileTransferManager FileTransferManager => ftm ??= new FileTransferManager(this);
 		protected abstract Deserializer Deserializer { get; }
 
 		public abstract void Connect(ConnectionData conData);
@@ -77,7 +71,7 @@ namespace TSLib
 #pragma warning restore CS1998
 		#endregion
 
-		private string GenPassword(string password)
+		private string? GenPassword(string? password)
 		{
 			if (ClientType == ClientType.Full && password != null)
 				return Full.TsCrypt.HashPassword(password);
@@ -133,35 +127,35 @@ namespace TSLib
 				{ "msg", message },
 			});
 
-		public CmdR KickClientFromServer(ClientId clientId, string reasonMsg = null)
+		public CmdR KickClientFromServer(ClientId clientId, string? reasonMsg = null)
 			=> KickClient(new[] { clientId }, ReasonIdentifier.Server, reasonMsg);
 
-		public CmdR KickClientFromServer(ClientId[] clientIds, string reasonMsg = null)
+		public CmdR KickClientFromServer(ClientId[] clientIds, string? reasonMsg = null)
 			=> KickClient(clientIds, ReasonIdentifier.Server, reasonMsg);
 
-		public CmdR KickClientFromChannel(ClientId clientId, string reasonMsg = null)
+		public CmdR KickClientFromChannel(ClientId clientId, string? reasonMsg = null)
 			=> KickClient(new[] { clientId }, ReasonIdentifier.Channel, reasonMsg);
 
-		public CmdR KickClientFromChannel(ClientId[] clientIds, string reasonMsg = null)
+		public CmdR KickClientFromChannel(ClientId[] clientIds, string? reasonMsg = null)
 			=> KickClient(clientIds, ReasonIdentifier.Channel, reasonMsg);
 
 		/// <summary>Kicks one or more clients specified with clid from their currently joined channel or from the server, depending on <paramref name="reasonId"/>.
 		/// The reasonmsg parameter specifies a text message sent to the kicked clients.
 		/// This parameter is optional and may only have a maximum of 40 characters.</summary>
-		public CmdR KickClient(ClientId[] clientIds, ReasonIdentifier reasonId, string reasonMsg = null)
+		public CmdR KickClient(ClientId[] clientIds, ReasonIdentifier reasonId, string? reasonMsg = null)
 			=> SendVoid(new TsCommand("clientkick") {
 				{ "reasonid", (int)reasonId },
 				{ "clid", clientIds },
 				{ "reasonmsg", reasonMsg },
 			});
 
-		public CmdR BanClient(ushort clientId, TimeSpan? duration = null, string reasonMsg = null)
+		public CmdR BanClient(ushort clientId, TimeSpan? duration = null, string? reasonMsg = null)
 			=> BanClient(new CommandParameter("clid", clientId), reasonMsg, duration);
 
-		public CmdR BanClient(Uid clientUid = default, TimeSpan? duration = null, string reasonMsg = null)
+		public CmdR BanClient(Uid clientUid = default, TimeSpan? duration = null, string? reasonMsg = null)
 			=> BanClient(new CommandParameter("uid", clientUid), reasonMsg, duration);
 
-		private CmdR BanClient(ICommandPart clientIdentifier, string reasonMsg = null, TimeSpan? duration = null)
+		private CmdR BanClient(ICommandPart clientIdentifier, string? reasonMsg = null, TimeSpan? duration = null)
 			=> SendVoid(new TsCommand("banclient") {
 				clientIdentifier,
 				{ "banreason", reasonMsg },
@@ -169,8 +163,8 @@ namespace TSLib
 			});
 
 		public CmdR ChannelEdit(ChannelId channelId,
-			string name = null, string namePhonetic = null, string topic = null, string description = null,
-			string password = null, Codec? codec = null, int? codecQuality = null, int? codecLatencyFactor = null,
+			string? name = null, string? namePhonetic = null, string? topic = null, string? description = null,
+			string? password = null, Codec? codec = null, int? codecQuality = null, int? codecLatencyFactor = null,
 			bool? codecEncrypted = null, int? maxClients = null, int? maxFamilyClients = null, bool? maxClientsUnlimited = null,
 			bool? maxFamilyClientsUnlimited = null, bool? maxFamilyClientsInherited = null, ChannelId? order = null,
 			ChannelType? type = null, TimeSpan? deleteDelay = null, int? neededTalkPower = null)
@@ -180,14 +174,14 @@ namespace TSLib
 				maxFamilyClientsInherited, order, null, type, deleteDelay, neededTalkPower));
 
 		public abstract R<IChannelCreateResponse, CommandError> ChannelCreate(string name,
-			string namePhonetic = null, string topic = null, string description = null, string password = null,
+			string? namePhonetic = null, string? topic = null, string? description = null, string? password = null,
 			Codec? codec = null, int? codecQuality = null, int? codecLatencyFactor = null, bool? codecEncrypted = null,
 			int? maxClients = null, int? maxFamilyClients = null, bool? maxClientsUnlimited = null,
 			bool? maxFamilyClientsUnlimited = null, bool? maxFamilyClientsInherited = null, ChannelId? order = null,
 			ChannelId? parent = null, ChannelType? type = null, TimeSpan? deleteDelay = null, int? neededTalkPower = null);
 
 		protected TsCommand ChannelOp(string op, ChannelId? channelId,
-			string name, string namePhonetic, string topic, string description, string password,
+			string? name, string? namePhonetic, string? topic, string? description, string? password,
 			Codec? codec, int? codecQuality, int? codecLatencyFactor, bool? codecEncrypted, int? maxClients,
 			int? maxFamilyClients, bool? maxClientsUnlimited, bool? maxFamilyClientsUnlimited, bool? maxFamilyClientsInherited,
 			ChannelId? order, ChannelId? parent, ChannelType? type, TimeSpan? deleteDelay, int? neededTalkPower)
@@ -358,7 +352,7 @@ namespace TSLib
 			return FileTransferDeleteFile(ChannelId.Null, new[] { path });
 		}
 
-		public CmdR ClientMove(ClientId clientId, ChannelId channelId, string channelPassword = null)
+		public CmdR ClientMove(ClientId clientId, ChannelId channelId, string? channelPassword = null)
 			=> SendVoid(new TsCommand("clientmove") {
 				{ "clid", clientId },
 				{ "cid", channelId },

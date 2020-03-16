@@ -30,7 +30,7 @@ namespace TS3AudioBot.CommandSystem.Commands
 			Functions.Add(command);
 			SortList();
 		}
-		public void RemoveCommand(FunctionCommand command) => Functions.Remove(command);
+		public bool RemoveCommand(FunctionCommand command) => Functions.Remove(command);
 
 		private void SortList()
 		{
@@ -71,12 +71,12 @@ namespace TS3AudioBot.CommandSystem.Commands
 			});
 		}
 
-		public virtual object Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<Type> returnTypes)
+		public virtual object? Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<Type?> returnTypes)
 		{
 			// Make arguments lazy, we only want to execute them once
 			arguments = arguments.Select(c => new LazyCommand(c)).ToArray();
 
-			CommandException contextException = null;
+			CommandException? contextException = null;
 			foreach (var f in Functions)
 			{
 				// Try to call each overload

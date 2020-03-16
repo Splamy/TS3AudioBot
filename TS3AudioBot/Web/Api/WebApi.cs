@@ -100,7 +100,7 @@ namespace TS3AudioBot.Web.Api
 
 			var command = BuildCommand(apiCallData.RequestUrl);
 
-			if (ProcessBodyData(request, apiCallData).GetError(out var err))
+			if (!ProcessBodyData(request, apiCallData).GetOk(out var err))
 			{
 				ReturnError(err, response);
 				return;
@@ -122,8 +122,8 @@ namespace TS3AudioBot.Web.Api
 				{
 					var returnString = json.Serialize();
 					response.StatusCode = returnString.Length == 0 ? (int)HttpStatusCode.NoContent : (int)HttpStatusCode.OK;
-					using (var responseStream = new StreamWriter(response.Body))
-						responseStream.Write(returnString);
+					using var responseStream = new StreamWriter(response.Body);
+					responseStream.Write(returnString);
 				}
 				else if (res is DataStream data)
 				{
@@ -194,7 +194,7 @@ namespace TS3AudioBot.Web.Api
 
 			try
 			{
-				JsonError jsonError = null;
+				JsonError? jsonError = null;
 
 				switch (ex)
 				{
@@ -216,9 +216,9 @@ namespace TS3AudioBot.Web.Api
 					break;
 				}
 
-				jsonError = jsonError ?? new JsonError(ex.Message, CommandExceptionReason.Unknown);
-				using (var responseStream = new StreamWriter(response.Body))
-					responseStream.Write(jsonError.Serialize());
+				jsonError ??= new JsonError(ex.Message, CommandExceptionReason.Unknown);
+				using var responseStream = new StreamWriter(response.Body);
+				responseStream.Write(jsonError.Serialize());
 			}
 			catch (Exception htex) { Log.Warn(htex, "Failed to respond to HTTP request."); }
 		}
@@ -335,11 +335,10 @@ namespace TS3AudioBot.Web.Api
 			}
 			catch (Exception) { return "Malformed base64 string"; }
 
-			var result = tokenManager.GetToken(userUid);
-			if (!result.Ok)
+			var dbToken = tokenManager.GetToken(userUid);
+			if (dbToken is null)
 				return ErrorNoUserOrToken;
 
-			var dbToken = result.Value;
 			if (dbToken.Value != token)
 				return ErrorAuthFailure;
 

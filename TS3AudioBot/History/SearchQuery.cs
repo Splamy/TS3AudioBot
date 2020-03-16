@@ -13,8 +13,8 @@ namespace TS3AudioBot.History
 {
 	public class SeachQuery
 	{
-		public string TitlePart { get; set; }
-		public string UserUid { get; set; }
+		public string? TitlePart { get; set; }
+		public string? UserUid { get; set; }
 		public DateTime? LastInvokedAfter { get; set; }
 		public int MaxResults { get; set; }
 

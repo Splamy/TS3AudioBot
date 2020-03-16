@@ -24,25 +24,48 @@ namespace TSLib.Audio
 
 		public bool CloneMeta { get; set; } = false;
 
-		public IAudioPassiveConsumer OutStream
+		public IAudioPassiveConsumer? OutStream
 		{
 			get => this;
-			set => Add(value);
+			set
+			{
+				if (value is null)
+					Clear();
+				else
+					Add(value);
+			}
 		}
 
-		public void Add(IAudioPassiveConsumer addConsumer)
+		public void Add(IAudioPassiveConsumer consumer)
 		{
-			if (!consumerList.Contains(addConsumer) && addConsumer != this)
+			lock (listLock)
 			{
-				lock (listLock)
+				if (!consumerList.Contains(consumer) && consumer != this)
 				{
-					consumerList.Add(addConsumer);
+					consumerList.Add(consumer);
 					changed = true;
 				}
 			}
 		}
 
-		public void Write(Span<byte> data, Meta meta)
+		public void Remove(IAudioPassiveConsumer consumer)
+		{
+			lock (listLock)
+			{
+				changed |= consumerList.Remove(consumer);
+			}
+		}
+
+		public void Clear()
+		{
+			lock (listLock)
+			{
+				changed |= consumerList.Count > 0;
+				consumerList.Clear();
+			}
+		}
+
+		public void Write(Span<byte> data, Meta? meta)
 		{
 			if (changed)
 			{

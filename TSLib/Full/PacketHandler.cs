@@ -42,7 +42,7 @@ namespace TSLib.Full
 		// Out Packets
 		private readonly ushort[] packetCounter;
 		private readonly uint[] generationCounter;
-		private ResendPacket<TOut> initPacketCheck;
+		private ResendPacket<TOut>? initPacketCheck;
 		private readonly Dictionary<ushort, ResendPacket<TOut>> packetAckManager = new Dictionary<ushort, ResendPacket<TOut>>();
 		// In Packets
 		private readonly GenerationWindow receiveWindowVoice;
@@ -53,7 +53,7 @@ namespace TSLib.Full
 		private readonly object sendLoopLock = new object();
 		private readonly TsCrypt tsCrypt;
 		private Socket socket;
-		private Timer resendTimer;
+		private Timer? resendTimer;
 		private DateTime pingCheck;
 		private int pingCheckRunning; // bool
 		private readonly Id id; // Log id
@@ -61,13 +61,15 @@ namespace TSLib.Full
 		public NetworkStats NetworkStats { get; }
 
 		public ClientId ClientId { get; set; }
-		private IPEndPoint remoteAddress;
+		private IPEndPoint? remoteAddress;
 		private int closed; // bool
 
-		public PacketEvent<TIn> PacketEvent;
-		public Action<Reason?> StopEvent;
+		public PacketEvent<TIn>? PacketEvent;
+		public Action<Reason?>? StopEvent;
 
+#pragma warning disable CS8618 // !NRT 'socket'
 		public PacketHandler(TsCrypt ts3Crypt, Id id)
+#pragma warning restore CS8618
 		{
 			receiveQueueCommand = new RingQueue<Packet<TIn>>(ReceivePacketWindowSize, ushort.MaxValue + 1);
 			receiveQueueCommandLow = new RingQueue<Packet<TIn>>(ReceivePacketWindowSize, ushort.MaxValue + 1);
@@ -253,7 +255,7 @@ namespace TSLib.Full
 			var packet = new Packet<TOut>(data, packetType, ids.Id, ids.Generation) { PacketType = packetType };
 			if (typeof(TOut) == typeof(C2S)) // TODO: XXX
 			{
-				var meta = (C2S)(object)packet.HeaderExt;
+				var meta = (C2S)(object)packet.HeaderExt!;
 				meta.ClientId = ClientId.Value;
 				packet.HeaderExt = (TOut)(object)meta;
 			}
@@ -325,7 +327,7 @@ namespace TSLib.Full
 
 		private static bool NeedsSplitting(int dataSize) => dataSize + OutHeaderSize > MaxOutPacketSize;
 
-		private static void FetchPacketEvent(object selfObj, SocketAsyncEventArgs args)
+		private static void FetchPacketEvent(object? selfObj, SocketAsyncEventArgs args)
 		{
 			var self = (PacketHandler<TIn, TOut>)args.UserToken;
 

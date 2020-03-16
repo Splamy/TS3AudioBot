@@ -28,7 +28,7 @@ namespace TS3AudioBot.CommandSystem.Commands
 			internArguments = arguments;
 		}
 
-		public virtual object Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<Type> returnTypes)
+		public virtual object? Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<Type?> returnTypes)
 		{
 			var merged = new ICommand[internArguments.Count + arguments.Count];
 			internArguments.CopyTo(0, merged, 0);

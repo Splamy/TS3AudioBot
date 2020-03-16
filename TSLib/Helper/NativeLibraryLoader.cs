@@ -20,21 +20,18 @@ namespace TSLib.Helper
 		[DllImport("kernel32.dll", SetLastError = true)]
 		private static extern IntPtr LoadLibrary(string dllToLoad);
 
-		public static bool DirectLoadLibrary(string lib, Action dummyLoad = null)
+		public static bool DirectLoadLibrary(string lib, Action? dummyLoad = null)
 		{
 			if (Tools.IsLinux)
 			{
-				if (dummyLoad != null)
+				try
 				{
-					try
-					{
-						dummyLoad.Invoke();
-					}
-					catch (DllNotFoundException ex)
-					{
-						Log.Error(ex, "Failed to load library \"{0}\".", lib);
-						return false;
-					}
+					dummyLoad?.Invoke();
+				}
+				catch (DllNotFoundException ex)
+				{
+					Log.Error(ex, "Failed to load library \"{0}\".", lib);
+					return false;
 				}
 			}
 			else

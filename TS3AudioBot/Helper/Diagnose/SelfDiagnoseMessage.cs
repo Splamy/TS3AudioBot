@@ -13,9 +13,15 @@ namespace TS3AudioBot.Helper.Diagnose
 {
 	public class SelfDiagnoseMessage
 	{
-		public string Description { get; set; }
+		public string Description { get; }
 		public string Level => LevelValue.ToString();
 		[JsonIgnore]
-		public SelfDiagnoseLevel LevelValue { get; set; }
+		public SelfDiagnoseLevel LevelValue { get; }
+
+		public SelfDiagnoseMessage(string description, SelfDiagnoseLevel levelValue)
+		{
+			Description = description;
+			LevelValue = levelValue;
+		}
 	}
 }
