@@ -129,19 +129,22 @@ namespace TS3AudioBot
 			player.OnSongUpdated += (s, e) => playManager.Update(e);
 			// Update idle status events
 			playManager.BeforeResourceStarted += (s, e) => DisableIdleTickWorker();
-			playManager.AfterResourceStopped += (s, e) => EnableIdleTickWorker();
+			playManager.PlaybackStopped += (s, e) => EnableIdleTickWorker();
 			// Used for the voice_mode script
 			playManager.BeforeResourceStarted += BeforeResourceStarted;
 			// Update the own status text to the current song title
 			playManager.AfterResourceStarted += LoggedUpdateBotStatus;
-			playManager.AfterResourceStopped += LoggedUpdateBotStatus;
+			playManager.PlaybackStopped += LoggedUpdateBotStatus;
 			playManager.OnResourceUpdated += LoggedUpdateBotStatus;
 			// Log our resource in the history
 			if (Injector.TryGet<HistoryManager>(out var historyManager))
 				playManager.AfterResourceStarted += (s, e) => historyManager.LogAudioResource(new HistorySaveData(e.PlayResource.BaseData, e.MetaData.ResourceOwnerUid));
 			// Update our thumbnail
 			playManager.AfterResourceStarted += GenerateStatusImage;
-			playManager.AfterResourceStopped += GenerateStatusImage;
+			playManager.PlaybackStopped += GenerateStatusImage;
+			// Stats
+			playManager.AfterResourceStarted += (s, e) => stats.TrackSongStart(Id, e.ResourceData.AudioType);
+			playManager.ResourceStopped += (s, e) => stats.TrackSongStop(Id);
 			// Register callback for all messages happening
 			ts3client.OnMessageReceived += OnMessageReceived;
 			// Register callback to remove open private sessions, when user disconnects
@@ -163,7 +166,7 @@ namespace TS3AudioBot
 			foreach (var alias in config.Commands.Alias.GetAllItems())
 				commandManager.RegisterAlias(alias.Key, alias.Value).UnwrapToLog(Log);
 
-			// Connect the query after everyting is set up
+			// Connect after everyting is set up
 			return ts3client.Connect();
 		}
 

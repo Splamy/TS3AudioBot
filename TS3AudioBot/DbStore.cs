@@ -50,6 +50,8 @@ namespace TS3AudioBot
 			return database.GetCollection<T>(name);
 		}
 
+		public void DropCollection(string name) => database.DropCollection(name);
+
 		public void CleanFile()
 		{
 			database.Shrink();

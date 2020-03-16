@@ -17,6 +17,7 @@ using TS3AudioBot.Config;
 using TS3AudioBot.Helper;
 using TS3AudioBot.Localization;
 using TS3AudioBot.Playlists;
+using TS3AudioBot.ResourceFactories.Youtube;
 
 namespace TS3AudioBot.ResourceFactories
 {

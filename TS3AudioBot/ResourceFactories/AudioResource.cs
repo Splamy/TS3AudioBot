@@ -84,12 +84,7 @@ namespace TS3AudioBot.ResourceFactories
 				&& ResourceId == other.ResourceId;
 		}
 
-		public override int GetHashCode()
-		{
-			int hash = 0x7FFFF + AudioType.GetHashCode();
-			hash = (hash * 0x1FFFF) + ResourceId.GetHashCode();
-			return hash;
-		}
+		public override int GetHashCode() => (AudioType, ResourceId).GetHashCode();
 
 		public override string ToString()
 		{

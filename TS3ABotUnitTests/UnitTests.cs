@@ -12,6 +12,7 @@ using TS3AudioBot.Helper;
 using TS3AudioBot.History;
 using TS3AudioBot.Playlists.Shuffle;
 using TS3AudioBot.ResourceFactories;
+using TS3AudioBot.ResourceFactories.Youtube;
 using TSLib;
 using TSLib.Full;
 using TSLib.Messages;

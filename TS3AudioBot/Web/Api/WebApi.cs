@@ -22,6 +22,7 @@ using TS3AudioBot.CommandSystem.Ast;
 using TS3AudioBot.CommandSystem.Commands;
 using TS3AudioBot.Config;
 using TS3AudioBot.Dependency;
+using TS3AudioBot.Environment;
 using TS3AudioBot.Helper;
 using TS3AudioBot.Localization;
 using TS3AudioBot.Sessions;
@@ -45,12 +46,14 @@ namespace TS3AudioBot.Web.Api
 		private readonly ConfWebApi config;
 		private readonly CoreInjector coreInjector;
 		private readonly TokenManager tokenManager;
+		private readonly Stats stats;
 
-		public WebApi(ConfWebApi config, CoreInjector coreInjector, TokenManager tokenManager)
+		public WebApi(ConfWebApi config, CoreInjector coreInjector, TokenManager tokenManager, Stats stats)
 		{
 			this.config = config;
 			this.coreInjector = coreInjector;
 			this.tokenManager = tokenManager;
+			this.stats = stats;
 		}
 
 		public void ProcessApiV1Call(HttpContext context)
@@ -107,6 +110,7 @@ namespace TS3AudioBot.Web.Api
 
 			try
 			{
+				stats.TrackCommandApiCall();
 				Thread.CurrentThread.CurrentUICulture = CultureInfo.InvariantCulture;
 				var res = command.Execute(execInfo, Array.Empty<ICommand>(), CommandSystemTypes.ReturnJsonOrDataOrNothing);
 

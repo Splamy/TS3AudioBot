@@ -17,8 +17,9 @@ using TS3AudioBot.Config;
 using TS3AudioBot.Helper;
 using TS3AudioBot.Localization;
 using TS3AudioBot.Playlists;
+using TSLib.Helper;
 
-namespace TS3AudioBot.ResourceFactories
+namespace TS3AudioBot.ResourceFactories.Youtube
 {
 	public sealed class YoutubeResolver : IResourceResolver, IPlaylistResolver, IThumbnailResolver, ISearchResolver
 	{
@@ -28,12 +29,12 @@ namespace TS3AudioBot.ResourceFactories
 		private static readonly Regex ListMatch = new Regex(@"(&|\?)list=([\w\-_]+)", Util.DefaultRegexConfig);
 		private static readonly Regex StreamCodecMatch = new Regex(@"CODECS=""([^""]*)""", Util.DefaultRegexConfig);
 		private static readonly Regex StreamBitrateMatch = new Regex(@"BANDWIDTH=(\d+)", Util.DefaultRegexConfig);
-		private string YoutubeProjectId => conf.YoutubeApiKey.Value;
-		private readonly ConfFactories conf;
+		private string YoutubeProjectId => conf.ApiKey.Value;
+		private readonly ConfResolverYoutube conf;
 
 		public YoutubeResolver(ConfFactories conf)
 		{
-			this.conf = conf;
+			this.conf = conf.Youtube;
 		}
 
 		public string ResolverFor => "youtube";
@@ -55,11 +56,21 @@ namespace TS3AudioBot.ResourceFactories
 
 		public R<PlayResource, LocalStr> GetResourceById(ResolveContext _, AudioResource resource)
 		{
-			var result = ResolveResourceInternal(resource);
-			if (result.Ok)
-				return result;
+			var priority = conf.ResolverPriority.Value;
+			switch (priority)
+			{
+			case LoaderPriority.Internal:
+				var result = ResolveResourceInternal(resource);
+				if (result.Ok)
+					return result;
+				goto case LoaderPriority.YoutubeDl;
 
-			return YoutubeDlWrapped(resource);
+			case LoaderPriority.YoutubeDl:
+				return YoutubeDlWrapped(resource);
+
+			default:
+				throw Tools.UnhandledDefault(priority);
+			}
 		}
 
 		private R<PlayResource, LocalStr> ResolveResourceInternal(AudioResource resource)
@@ -305,7 +316,7 @@ namespace TS3AudioBot.ResourceFactories
 						+ "&fields=" + Uri.EscapeDataString("items(contentDetails/videoId,snippet/title),nextPageToken")
 						+ "&maxResults=50"
 						+ "&playlistId=" + id
-						+ (nextToken != null ? ("&pageToken=" + nextToken) : string.Empty)
+						+ (nextToken != null ? "&pageToken=" + nextToken : string.Empty)
 						+ "&key=" + YoutubeProjectId);
 
 				if (!WebWrapper.DownloadString(out string response, queryString))
@@ -359,7 +370,7 @@ namespace TS3AudioBot.ResourceFactories
 				return result.Error;
 
 			var response = result.Value;
-			resource.ResourceTitle = response.track ?? $"Youtube-{resource.ResourceId}";
+			resource.ResourceTitle = response.track ?? response.title ?? $"Youtube-{resource.ResourceId}";
 			var format = YoutubeDlHelper.FilterBest(response.formats);
 			string url = format?.url;
 
@@ -443,100 +454,5 @@ namespace TS3AudioBot.ResourceFactories
 		}
 
 		public void Dispose() { }
-
-		#region Youtube Api Json
-#pragma warning disable CS0649, CS0169, IDE1006
-		// ReSharper disable ClassNeverInstantiated.Local, InconsistentNaming
-		private class JsonVideoListResponse // # youtube#videoListResponse
-		{
-			public string nextPageToken { get; set; }
-			public JsonVideo[] items { get; set; }
-		}
-		private class JsonVideo // youtube#video
-		{
-			public JsonContentDetails contentDetails { get; set; }
-			public JsonSnippet snippet { get; set; }
-		}
-		private class JsonSearchListResponse // youtube#searchListResponse
-		{
-			public JsonSearchResult[] items { get; set; }
-		}
-		private class JsonSearchResult // youtube#searchResult
-		{
-			public JsonContentDetails id { get; set; }
-			public JsonSnippet snippet { get; set; }
-		}
-		private class JsonContentDetails
-		{
-			public string videoId { get; set; }
-		}
-		private class JsonSnippet
-		{
-			public string title { get; set; }
-			public JsonThumbnailList thumbnails { get; set; }
-		}
-		private class JsonThumbnailList
-		{
-			public JsonThumbnail @default { get; set; }
-			public JsonThumbnail medium { get; set; }
-			public JsonThumbnail high { get; set; }
-			public JsonThumbnail standard { get; set; }
-			public JsonThumbnail maxres { get; set; }
-		}
-		private class JsonThumbnail
-		{
-			public string url { get; set; }
-			public int heigth { get; set; }
-			public int width { get; set; }
-		}
-		// Custom json
-		private class JsonPlayerResponse
-		{
-			public JsonStreamingData streamingData { get; set; }
-			public JsonVideoDetails videoDetails { get; set; }
-		}
-		private class JsonStreamingData
-		{
-			public string dashManifestUrl { get; set; }
-			public string hlsManifestUrl { get; set; }
-		}
-		private class JsonVideoDetails
-		{
-			public string title { get; set; }
-			public bool? isLive { get; set; }
-			public bool useCipher { get; set; }
-			public bool isLiveContent { get; set; }
-		}
-		private class JsonPlayFormat
-		{
-			public string mimeType { get; set; }
-			public int bitrate { get; set; }
-			public string cipher { get; set; }
-			public string url { get; set; }
-		}
-		// ReSharper enable ClassNeverInstantiated.Local, InconsistentNaming
-#pragma warning restore CS0649, CS0169, IDE1006
-		#endregion
-	}
-
-	public sealed class VideoData
-	{
-		public string Link { get; set; }
-		public string Qualitydesciption { get; set; }
-		public VideoCodec Codec { get; set; }
-		public bool AudioOnly { get; set; }
-		public bool VideoOnly { get; set; }
-
-		public override string ToString() => $"{Qualitydesciption} @ {Codec} - {Link}";
-	}
-
-	public enum VideoCodec
-	{
-		Unknown,
-		Mp4,
-		M4A,
-		Webm,
-		Flv,
-		ThreeGp,
 	}
 }

@@ -37,8 +37,8 @@ namespace TS3AudioBot.Audio
 		public event EventHandler<PlayInfoEventArgs> OnResourceUpdated;
 		public event EventHandler<PlayInfoEventArgs> BeforeResourceStarted;
 		public event EventHandler<PlayInfoEventArgs> AfterResourceStarted;
-		public event EventHandler<SongEndEventArgs> BeforeResourceStopped;
-		public event EventHandler AfterResourceStopped;
+		public event EventHandler<SongEndEventArgs> ResourceStopped;
+		public event EventHandler PlaybackStopped;
 
 		public PlayManager(ConfBot config, Player playerConnection, PlaylistManager playlistManager, ResolveContext resourceResolver, Stats stats)
 		{
@@ -251,7 +251,7 @@ namespace TS3AudioBot.Audio
 
 		private void StopInternal(bool songEndedByCallback)
 		{
-			BeforeResourceStopped?.Invoke(this, new SongEndEventArgs(songEndedByCallback));
+			ResourceStopped?.Invoke(this, new SongEndEventArgs(songEndedByCallback));
 
 			if (songEndedByCallback)
 			{
@@ -266,7 +266,7 @@ namespace TS3AudioBot.Audio
 			}
 
 			CurrentPlayData = null;
-			AfterResourceStopped?.Invoke(this, EventArgs.Empty);
+			PlaybackStopped?.Invoke(this, EventArgs.Empty);
 		}
 
 		public void Update(SongInfoChanged newInfo)

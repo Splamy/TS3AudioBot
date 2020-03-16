@@ -1,7 +1,7 @@
 // TSLib - A free TeamSpeak 3 and 5 client library
 // Copyright (C) 2017  TSLib contributors
 //
-// This program is free software: you can redistringibute it and/or modify
+// This program is free software: you can redistribute it and/or modify
 // it under the terms of the Open Software License v. 3.0
 //
 // You should have received a copy of the Open Software License along with this
@@ -140,9 +140,9 @@ namespace TSLib.Full.Book
 			else return ChannelType.Temporary;
 		}
 
-		private string AwayCevFun(ClientEnterView msg) => AwayFun(msg.IsAway, msg.AwayMessage);
-		private string AwayCuFun(ClientUpdated msg) => AwayFun(msg.IsAway, msg.AwayMessage);
-		private string AwayFun(bool? away, string msg)
+		private static string AwayCevFun(ClientEnterView msg) => AwayFun(msg.IsAway, msg.AwayMessage);
+		private static string AwayCuFun(ClientUpdated msg) => AwayFun(msg.IsAway, msg.AwayMessage);
+		private static string AwayFun(bool? away, string msg)
 		{
 			if (away == true)
 				return msg ?? "";
@@ -164,6 +164,8 @@ namespace TSLib.Full.Book
 				return new TalkPowerRequest() { Time = time.Value, Message = message ?? "" };
 			return null;
 		}
+
+		private static ClientType ClientTypeCevFun(ClientEnterView msg) => msg.ClientType;
 
 		private ChannelId ChannelOrderCcFun(ChannelCreated msg)
 		{

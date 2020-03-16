@@ -7,11 +7,10 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
-//#define FEATURE_TRACK
-
 using LiteDB;
 using Newtonsoft.Json;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using TS3AudioBot.Config;
@@ -24,29 +23,34 @@ namespace TS3AudioBot.Environment
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private const string StatsTable = "stats";
-		private static readonly TimeSpan CheckInterval = TimeSpan.FromSeconds(5); // = TimeSpan.FromHours(1);
-		private static readonly TimeSpan SendInterval = TimeSpan.FromSeconds(15); // = TimeSpan.FromDays(7);
+		private const int StatsVersion = 1;
+		private static readonly TimeSpan CheckInterval = TimeSpan.FromMinutes(1);
+		private static readonly TimeSpan SendInterval = TimeSpan.FromMinutes(2);
+		private static readonly JsonSerializerSettings JsonSettings = new JsonSerializerSettings
+		{
+			NullValueHandling = NullValueHandling.Ignore,
+			Formatting = Formatting.None,
+		};
+		private static readonly Newtonsoft.Json.JsonSerializer JsonSer = Newtonsoft.Json.JsonSerializer.Create(JsonSettings);
 
 		private readonly ConfRoot conf;
 		private readonly DbStore database;
 		private readonly BotManager botManager;
 		private TickWorker ticker;
-		private readonly object lockObj = new object();
 		private bool uploadParamEnabled;
-
-		private DateTime runtimeLastTrack;
-		private LiteCollection<StatsData> trackEntries;
-		private StatsPoints statsPoints = new StatsPoints();
-		private StatsData CurrentStatsData => statsPoints.LastCheck;
 		private bool UploadEnabled => uploadParamEnabled && conf.Configs.SendStats;
 
-		private const int StatsVersion = 1;
-
-		// Track loops:
-		// Minute [60]
-		// Hour   [24]
-		// Day    [07]
-		// Week   1
+		private DbMetaData meta;
+		private StatsData overallStats;
+		private StatsMeta statsPoints;
+		private LiteCollection<StatsData> trackEntries;
+		private readonly StatsData CurrentStatsData = new StatsData()
+		{
+			SongStats = new ConcurrentDictionary<string, StatsFactory>()
+		};
+		private DateTime runtimeLastTrack;
+		// bot id -> factory
+		private readonly ConcurrentDictionary<Id, string> runningSongsPerFactory = new ConcurrentDictionary<Id, string>();
 
 		public Stats(ConfRoot conf, DbStore database, BotManager botManager)
 		{
@@ -54,38 +58,46 @@ namespace TS3AudioBot.Environment
 			this.database = database;
 			this.botManager = botManager;
 			uploadParamEnabled = true;
-
 			runtimeLastTrack = Tools.Now;
 
-#if FEATURE_TRACK
 			ReadAndUpgradeStats();
-#endif
 		}
 
 		private void ReadAndUpgradeStats()
 		{
-			var meta = database.GetMetaData(StatsTable);
+			meta = database.GetMetaData(StatsTable);
 			trackEntries = database.GetCollection<StatsData>(StatsTable);
-			bool save = false;
+			trackEntries.EnsureIndex(x => x.Time);
 
 			if (meta.Version != StatsVersion)
 			{
-				statsPoints.LastCheck.LastWrite = Tools.Now;
-				statsPoints.LastWeek.LastWrite = Tools.Now;
-				statsPoints.Overall.LastWrite = Tools.Now;
+				statsPoints = new StatsMeta
+				{
+					LastSend = Tools.Now,
+				};
 				meta.Version = StatsVersion;
-				meta.CustomData = JsonConvert.SerializeObject(CurrentStatsData);
-				save = true;
+				UpdateMeta();
 			}
 			else
 			{
-				statsPoints = JsonConvert.DeserializeObject<StatsPoints>(meta.CustomData);
+				statsPoints = JsonConvert.DeserializeObject<StatsMeta>(meta.CustomData, JsonSettings);
 				// Upgrade steps here
 			}
 
-			save = false;
-			if (save)
-				database.UpdateMetaData(meta);
+			overallStats = trackEntries.FindById(0);
+			if (overallStats is null)
+			{
+				overallStats = new StatsData
+				{
+					Id = 0
+				};
+			}
+		}
+
+		private void UpdateMeta()
+		{
+			meta.CustomData = JsonConvert.SerializeObject(statsPoints, JsonSettings);
+			database.UpdateMetaData(meta);
 		}
 
 		public void StartTimer(bool upload)
@@ -93,227 +105,213 @@ namespace TS3AudioBot.Environment
 			uploadParamEnabled = upload;
 			if (ticker != null)
 				throw new InvalidOperationException();
-#if FEATURE_TRACK
-			ticker = TickPool.RegisterTick(() => SaveRunningValues(true), CheckInterval, true);
-#endif
+			ticker = TickPool.RegisterTick(() => TrackPoint(), CheckInterval, true);
 		}
 
 		private void SendStats(StatsPing sendPacket)
 		{
 			try
 			{
-				var sendData = JsonConvert.SerializeObject(sendPacket);
-				var sendBytes = Tools.Utf8Encoder.GetBytes(sendData);
-				//sendBytes = Tools.Utf8Encoder.GetBytes("{ \"Platform\": \"Win\" }");
-
-				var request = WebWrapper.CreateRequest(new Uri("http://127.0.0.1:50580/api/tab/stats")).Unwrap(); // "https://splamy.de/api/tab/stats"
+				Log.Debug("Send: {@data}", sendPacket);
+				var request = WebWrapper.CreateRequest(new Uri("https://splamy.de/api/tab/stats")).Unwrap();
+				request.Timeout = 2000; // ms
 				request.Method = "POST";
 				request.ContentType = "application/json";
-				request.ContentLength = sendBytes.Length;
 				using (var rStream = request.GetRequestStream())
-					rStream.Write(sendBytes, 0, sendBytes.Length);
-				//using (var sw = new StreamWriter(rStream, Tools.Utf8Encoder))
-				//{
-				//	var serializer = new JsonSerializer
-				//	{
-				//		Formatting = Formatting.None,
-				//	};
-				//	serializer.Serialize(sw, sendPacket);
-				//}
-				using (var response = request.GetResponse()) ;
+				using (var sw = new StreamWriter(rStream, Tools.Utf8Encoder))
+				{
+					JsonSer.Serialize(sw, sendPacket);
+				}
+				request.GetResponse().Dispose();
 			}
-			catch (Exception ex) { Log.Info(ex, "Could not upload stats"); }
+			catch (Exception ex) { Log.Debug(ex, "Could not upload stats"); }
 		}
 
-		private StatsPing GetWeeklyStats()
+		private StatsPing GetStatsTill(DateTime date)
 		{
 			var sendPacket = new StatsPing
 			{
 				BotVersion = SystemData.AssemblyData.ToString(),
 				Platform = SystemData.PlatformData,
 				Runtime = SystemData.RuntimeData.FullName,
-				RunningBots = botManager.GetRunningBotCount(),
-				TrackTime = Tools.Now - runtimeLastTrack,
 			};
-			lock (lockObj)
-			{
-				sendPacket.SongStats = new Dictionary<string, StatsFactory>(statsPoints.LastWeek.SongStats);
-				sendPacket.Commands = statsPoints.LastWeek.Commands;
-				sendPacket.TotalUptime = statsPoints.LastWeek.TotalUptime;
-			}
+
+			var entries = trackEntries.Find(x => x.Time > date);
+			foreach (var entry in entries)
+				sendPacket.Add(entry);
 			return sendPacket;
 		}
 
-		public void TrackSongLoad(string factory, bool successful, bool fromUser)
+		private void TrackPoint()
 		{
-			lock (lockObj)
+			var nextId = statsPoints.GenNextIndex();
+
+			var now = Tools.Now;
+			CurrentStatsData.Time = now;
+			CurrentStatsData.Id = nextId;
+			var trackTime = now - runtimeLastTrack;
+			runtimeLastTrack = now;
+			CurrentStatsData.TotalUptime += trackTime;
+			CurrentStatsData.RunningBots = botManager.GetRunningBotCount();
+			CurrentStatsData.BotsRuntime = TimeSpan.FromTicks(trackTime.Ticks * CurrentStatsData.RunningBots);
+			foreach (var factory in runningSongsPerFactory.Values)
+				CurrentStatsData.SongStats.GetOrNew(factory).Playtime += trackTime;
+
+			Log.Debug("Track: {@data}", CurrentStatsData);
+			trackEntries.Upsert(CurrentStatsData);
+			overallStats.Add(CurrentStatsData);
+			trackEntries.Upsert(overallStats);
+			CurrentStatsData.Reset();
+
+			if (UploadEnabled && statsPoints.LastSend + SendInterval < now)
 			{
-				var statsFactory = CurrentStatsData.SongStats.GetOrNew(factory ?? "");
-				statsFactory.Requests++;
-				if (successful) statsFactory.Loaded++;
-				if (fromUser) statsFactory.FromUser++;
+				var sendData = GetStatsTill(statsPoints.LastSend);
+				SendStats(sendData);
+				statsPoints.LastSend = now;
 			}
+
+			UpdateMeta();
 		}
 
-		public void TrackSongPlayback(string factory, TimeSpan time)
+		// Track operations
+
+		public void TrackSongLoad(string factory, bool successful, bool fromUser)
 		{
-			lock (lockObj)
-			{
-				var statsFactory = CurrentStatsData.SongStats.GetOrNew(factory ?? "");
-				statsFactory.Playtime += time;
-			}
+			var statsFactory = CurrentStatsData.SongStats.GetOrNew(factory ?? "");
+			statsFactory.PlayRequests++;
+			if (successful) statsFactory.PlaySucessful++;
+			if (fromUser) statsFactory.PlayFromUser++;
 		}
 
 		public void TrackCommandCall(bool byUser)
 		{
-			lock (lockObj)
+			CurrentStatsData.CommandCalls++;
+			if (byUser) CurrentStatsData.CommandFromUser++;
+		}
+
+		public void TrackCommandApiCall()
+		{
+			CurrentStatsData.CommandCalls++;
+			CurrentStatsData.CommandFromApi++;
+		}
+
+		public void TrackSongStart(Id bot, string factory)
+		{
+			factory = factory ?? "";
+			runningSongsPerFactory[bot] = factory;
+			var statsFactory = CurrentStatsData.SongStats.GetOrNew(factory);
+			statsFactory.Playtime -= (Tools.Now - runtimeLastTrack);
+		}
+
+		public void TrackSongStop(Id bot)
+		{
+			if (runningSongsPerFactory.TryRemove(bot, out var factory))
 			{
-				CurrentStatsData.Commands.CommandCalls++;
-				if (byUser) CurrentStatsData.Commands.FromUser++;
+				var statsFactory = CurrentStatsData.SongStats.GetOrNew(factory);
+				statsFactory.Playtime += (Tools.Now - runtimeLastTrack);
 			}
-		}
-
-		private void TrackRuntime()
-		{
-			var now = Tools.Now;
-			var trackTime = now - runtimeLastTrack;
-			runtimeLastTrack = now;
-			CurrentStatsData.TotalUptime += trackTime;
-			Log.Info("Track Runtime: {tt} {@cur}", trackTime, CurrentStatsData);
-		}
-
-		private void SaveRunningValues(bool upload)
-		{
-			TrackRuntime();
-
-			var now = Tools.Now;
-			StatsPing sendData = null;
-
-			lock (lockObj)
-			{
-				Log.Info("LastCheck: {@data}", statsPoints.LastCheck);
-				if (statsPoints.LastCheck.LastWrite + CheckInterval < now)
-				{
-					Log.Info("LastWeek PRE: {@data}", statsPoints.LastWeek);
-					statsPoints.LastWeek.Add(statsPoints.LastCheck);
-					statsPoints.LastCheck.Reset();
-					statsPoints.LastCheck.LastWrite = now;
-				}
-				Log.Info("LastWeek: {@data}", statsPoints.LastWeek);
-				if (statsPoints.LastWeek.LastWrite + SendInterval < now)
-				{
-					if (upload && UploadEnabled)
-						sendData = GetWeeklyStats();
-
-					statsPoints.Overall.Add(statsPoints.LastWeek);
-					statsPoints.LastWeek.Reset();
-					statsPoints.LastWeek.LastWrite = now;
-				}
-			}
-
-			if (sendData != null)
-				SendStats(sendData);
-		}
-
-		private string GetSerializedData()
-		{
-			return JsonConvert.SerializeObject(statsPoints);
 		}
 	}
 
-	internal class StatsPing
+	internal class StatsPing : StatsData
 	{
 		// Meta
 		public string BotVersion { get; set; }
 		public string Platform { get; set; }
 		public string Runtime { get; set; }
-		public uint RunningBots { get; set; }
-		public TimeSpan TrackTime { get; set; }
-		// StatsData
-		public TimeSpan TotalUptime { get; set; }
-		public IDictionary<string, StatsFactory> SongStats { get; set; }
-		public StatsCommands Commands { get; set; }
 	}
 
-	internal class StatsPoints
+	internal class StatsMeta
 	{
-		public StatsData LastCheck { get; set; } = new StatsData();
-		public StatsData LastWeek { get; set; } = new StatsData();
-		public StatsData Overall { get; set; } = new StatsData();
+		public const int RingOff = 1;
+		public const int RingSize = 60 * 24 * 7; /* min * day * week */
 
-		public LinkedList<StatsData> Minutes { get; set; } = new LinkedList<StatsData>();
-		public LinkedList<StatsData> Hours { get; set; } = new LinkedList<StatsData>();
-		public LinkedList<StatsData> Days { get; set; } = new LinkedList<StatsData>();
+		public int CurrentIndex { get; set; } = 0;
+		public DateTime LastSend = DateTime.MinValue;
+
+		public int GenNextIndex()
+		{
+			CurrentIndex = (CurrentIndex + 1) % RingSize;
+			return CurrentIndex + RingOff;
+		}
 	}
 
 	internal class StatsData
 	{
-		public DateTime LastWrite = DateTime.MinValue;
+		[JsonIgnore]
+		public int Id { get; set; }
+		[JsonIgnore]
+		public DateTime Time { get; set; }
+		public uint RunningBots { get; set; }
+		public TimeSpan BotsRuntime { get; set; } = TimeSpan.Zero;
 
 		public TimeSpan TotalUptime { get; set; } = TimeSpan.Zero;
-		public Dictionary<string, StatsFactory> SongStats { get; set; } = new Dictionary<string, StatsFactory>();
-		public StatsCommands Commands { get; set; } = new StatsCommands();
+		public IDictionary<string, StatsFactory> SongStats { get; set; } = new Dictionary<string, StatsFactory>();
+
+		public uint CommandCalls { get; set; }
+		///<summary>How many actually were started by a user (and not i.e. by event)</summary>
+		public uint CommandFromUser { get; set; }
+		public uint CommandFromApi { get; set; }
+
+		public bool ShouldSerializeSongStats() => SongStats.Count > 0;
+		public bool ShouldSerializeCommandCalls() => CommandCalls != 0;
+		public bool ShouldSerializeCommandFromUser() => CommandFromUser != 0;
+		public bool ShouldSerializeCommandFromApi() => CommandFromApi != 0;
 
 		public void Add(StatsData other)
 		{
 			TotalUptime += other.TotalUptime;
+			BotsRuntime += other.BotsRuntime;
 			foreach (var kvp in other.SongStats)
 				SongStats.GetOrNew(kvp.Key).Add(kvp.Value);
-			Commands.Add(other.Commands);
+			CommandCalls += other.CommandCalls;
+			CommandFromUser += other.CommandFromUser;
+			CommandFromApi += other.CommandFromApi;
 		}
 
 		public void Reset()
 		{
 			TotalUptime = TimeSpan.Zero;
+			RunningBots = 0;
+			BotsRuntime = TimeSpan.Zero;
 			SongStats.Clear();
-			Commands.Reset();
+			CommandCalls = 0;
+			CommandFromUser = 0;
+			CommandFromApi = 0;
 		}
 	}
 
 	internal class StatsFactory
 	{
-		public uint Requests { get; set; } = 0;
-		public uint Loaded { get; set; } = 0;
+		public uint PlayRequests { get; set; }
+		public uint PlaySucessful { get; set; }
 		///<summary>How many actually were started by a user (and not i.e. from a playlist)</summary>
-		public uint FromUser { get; set; } = 0;
-		public uint SearchRequests { get; set; } = 0;
-		public TimeSpan Playtime { get; set; } = TimeSpan.Zero;
+		public uint PlayFromUser { get; set; }
+		public uint SearchRequests { get; set; }
+		public TimeSpan Playtime { get; set; }
+
+		public bool ShouldSerializePlayRequests() => PlayRequests != 0;
+		public bool ShouldSerializePlaySucessful() => PlaySucessful != 0;
+		public bool ShouldSerializePlayFromUser() => PlayFromUser != 0;
+		public bool ShouldSerializeSearchRequests() => SearchRequests != 0;
+		public bool ShouldSerializePlaytime() => Playtime != TimeSpan.Zero;
 
 		public void Add(StatsFactory other)
 		{
-			Requests += other.Requests;
-			Loaded += other.Loaded;
-			FromUser += other.FromUser;
-			Playtime += other.Playtime;
+			PlayRequests += other.PlayRequests;
+			PlaySucessful += other.PlaySucessful;
+			PlayFromUser += other.PlayFromUser;
 			SearchRequests += other.SearchRequests;
+			Playtime += other.Playtime;
 		}
 
 		public void Reset()
 		{
-			Requests = 0;
-			Loaded = 0;
-			FromUser = 0;
-			Playtime = TimeSpan.Zero;
+			PlayRequests = 0;
+			PlaySucessful = 0;
+			PlayFromUser = 0;
 			SearchRequests = 0;
-		}
-	}
-
-	internal class StatsCommands
-	{
-		public uint CommandCalls { get; set; } = 0;
-		///<summary>How many actually were started by a user (and not i.e. by event)</summary>
-		public uint FromUser { get; set; } = 0;
-
-		public void Add(StatsCommands other)
-		{
-			CommandCalls += other.CommandCalls;
-			FromUser += other.FromUser;
-		}
-
-		public void Reset()
-		{
-			CommandCalls = 0;
-			FromUser = 0;
+			Playtime = TimeSpan.Zero;
 		}
 	}
 }

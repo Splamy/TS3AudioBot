@@ -100,7 +100,7 @@ namespace TS3AudioBot
 			builder.RequestModule<BotManager>();
 			builder.RequestModule<TokenManager>();
 			builder.RequestModule<CommandManager>();
-			builder.AddModule(config.Factories); // XXX: Temporary for youtube-dl
+			builder.AddModule(config.Factories);
 			builder.RequestModule<ResourceResolver>();
 			builder.RequestModule<Stats>();
 
