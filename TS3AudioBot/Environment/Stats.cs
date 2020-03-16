@@ -25,7 +25,7 @@ namespace TS3AudioBot.Environment
 		private const string StatsTable = "stats";
 		private const int StatsVersion = 1;
 		private static readonly TimeSpan CheckInterval = TimeSpan.FromMinutes(1);
-		private static readonly TimeSpan SendInterval = TimeSpan.FromMinutes(2);
+		private static readonly TimeSpan SendInterval = TimeSpan.FromDays(1);
 		private static readonly JsonSerializerSettings JsonSettings = new JsonSerializerSettings
 		{
 			NullValueHandling = NullValueHandling.Ignore,
@@ -136,9 +136,16 @@ namespace TS3AudioBot.Environment
 				Runtime = SystemData.RuntimeData.FullName,
 			};
 
+			uint count = 0;
+			uint avgBots = 0;
 			var entries = trackEntries.Find(x => x.Time > date);
 			foreach (var entry in entries)
+			{
+				count++;
 				sendPacket.Add(entry);
+				avgBots += entry.RunningBots;
+			}
+			sendPacket.RunningBots = avgBots / count;
 			return sendPacket;
 		}
 
