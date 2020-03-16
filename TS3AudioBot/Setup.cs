@@ -101,12 +101,14 @@ namespace TS3AudioBot
 				case "?":
 				case "-h":
 				case "--help":
+					Console.WriteLine(" --help -h           Prints this help...");
 					Console.WriteLine(" --config -c <file>  Specifies the path to the config file.");
 					Console.WriteLine(" --version -V        Gets the bot version.");
 					Console.WriteLine(" --skip-checks       Skips checking the system for all required tools.");
 					Console.WriteLine(" --hide-banner       Does not print the version information header.");
 					Console.WriteLine(" --non-interactive   Disables console prompts from setup tools.");
-					Console.WriteLine(" --help -h           Prints this help...");
+					Console.WriteLine(" --stats-example     Shows you what the bot sends to the global stats tracker.");
+					Console.WriteLine(" --stats-disabled    Disables sending to the global stats tracker.");
 					return Cancel();
 
 				case "-c":
@@ -136,8 +138,12 @@ namespace TS3AudioBot
 					break;
 
 				case "--stats-example":
-					data.StatsExample = true;
-					break;
+					Console.WriteLine("The bot will contribute to the stats counter about once per day.");
+					Console.WriteLine("We do NOT store any IP or identifiable information.");
+					Console.WriteLine("Please keep this feature enabled to help us improve and grow.");
+					Console.WriteLine("An example stats packet looks like this:");
+					Console.WriteLine(Stats.CreateExample());
+					return Cancel();
 
 				case "--stats-disabled":
 					data.SendStats = false;
@@ -184,7 +190,6 @@ namespace TS3AudioBot
 		public bool Interactive { get; set; } = true;
 		public bool Llgc { get; set; } = true;
 		public bool SendStats { get; set; } = true;
-		public bool StatsExample { get; set; } = false;
 	}
 
 	internal enum ExitType

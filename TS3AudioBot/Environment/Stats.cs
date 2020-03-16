@@ -129,12 +129,7 @@ namespace TS3AudioBot.Environment
 
 		private StatsPing GetStatsTill(DateTime date)
 		{
-			var sendPacket = new StatsPing
-			{
-				BotVersion = SystemData.AssemblyData.ToString(),
-				Platform = SystemData.PlatformData,
-				Runtime = SystemData.RuntimeData.FullName,
-			};
+			var sendPacket = GetDefaultStatsPing();
 
 			uint count = 0;
 			uint avgBots = 0;
@@ -217,6 +212,37 @@ namespace TS3AudioBot.Environment
 				var statsFactory = CurrentStatsData.SongStats.GetOrNew(factory);
 				statsFactory.Playtime += (Tools.Now - runtimeLastTrack);
 			}
+		}
+
+		private static StatsPing GetDefaultStatsPing()
+		{
+			return new StatsPing
+			{
+				BotVersion = SystemData.AssemblyData.ToString(),
+				Platform = SystemData.PlatformData,
+				Runtime = SystemData.RuntimeData.FullName,
+			};
+		}
+
+		public static string CreateExample()
+		{
+			var sendData = GetDefaultStatsPing();
+			sendData.TotalUptime = TimeSpan.FromHours(12.34);
+			sendData.BotsRuntime = TimeSpan.FromHours(4.20);
+			sendData.CommandCalls = 1234;
+			sendData.CommandFromApi = 100;
+			sendData.RunningBots = 3;
+			sendData.SongStats = new Dictionary<string, StatsFactory>()
+			{
+				{"youtube", new StatsFactory{
+					PlayRequests = 100,
+					PlayFromUser = 42,
+					Playtime = TimeSpan.FromMinutes(12.34),
+					SearchRequests = 5,
+				}}
+			};
+
+			return JsonConvert.SerializeObject(sendData, Formatting.Indented);
 		}
 	}
 
