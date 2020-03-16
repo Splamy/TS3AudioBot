@@ -164,7 +164,7 @@ namespace TS3AudioBot.Helper
 			catch { return true; }
 		}
 
-		public static V GetOrNew<K, V>(this IDictionary<K, V> dict, K key) where V : new()
+		public static V GetOrNew<K, V>(this IDictionary<K, V> dict, K key) where K : notnull where V : new()
 		{
 			if (!dict.TryGetValue(key, out var val))
 			{

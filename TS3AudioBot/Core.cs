@@ -125,7 +125,7 @@ namespace TS3AudioBot
 			System.Environment.Exit(-1);
 		}
 
-		public static void UnobservedTaskExceptionHandler(object sender, UnobservedTaskExceptionEventArgs e)
+		public static void UnobservedTaskExceptionHandler(object? sender, UnobservedTaskExceptionEventArgs e)
 		{
 			Log.Fatal(e.Exception, "Critical program error!");
 		}

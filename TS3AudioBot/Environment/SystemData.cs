@@ -143,7 +143,7 @@ namespace TS3AudioBot.Environment
 			return new PlatformVersion(Runtime.Unknown, "? (?)", null);
 		}
 
-		private static PlatformVersion GetNetCoreVersion()
+		private static PlatformVersion? GetNetCoreVersion()
 		{
 			var assembly = typeof(System.Runtime.GCSettings).GetTypeInfo().Assembly;
 			var assemblyPath = assembly.CodeBase?.Split(new[] { '/', '\\' }, StringSplitOptions.RemoveEmptyEntries);
@@ -157,7 +157,7 @@ namespace TS3AudioBot.Environment
 			return new PlatformVersion(Runtime.Core, $".NET Core ({version})", semVer);
 		}
 
-		private static PlatformVersion GetMonoVersion()
+		private static PlatformVersion? GetMonoVersion()
 		{
 			var type = Type.GetType("Mono.Runtime");
 			if (type is null)
@@ -217,9 +217,9 @@ namespace TS3AudioBot.Environment
 	{
 		public Runtime Runtime;
 		public string FullName;
-		public Version SemVer;
+		public Version? SemVer;
 
-		public PlatformVersion(Runtime runtime, string fullName, Version semVer)
+		public PlatformVersion(Runtime runtime, string fullName, Version? semVer)
 		{
 			Runtime = runtime;
 			FullName = fullName;

@@ -1944,6 +1944,7 @@ namespace TSLib.Messages
 		public str PhoneticName { get; set; }
 		public IconHash IconId { get; set; }
 		public bool? IsPrivate { get; set; }
+		public str? Guid { get; set; }
 		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
@@ -1975,6 +1976,7 @@ namespace TSLib.Messages
 			case "channel_name_phonetic": PhoneticName = (str)TsString.Unescape(value); break;
 			case "channel_icon_id": { if(!value.IsEmpty && value[0] == (u8)'-') { if(Utf8Parser.TryParse(value, out i32 oval, out _)) IconId = oval; } else { if(Utf8Parser.TryParse(value, out u64 oval, out _)) IconId = unchecked((i32)oval); } } break;
 			case "channel_flag_private": IsPrivate = value.Length > 0 && value[0] != '0'; break;
+			case "channel_unique_identifier": Guid = (str)TsString.Unescape(value); break;
 			
 			}
 
@@ -2012,6 +2014,7 @@ namespace TSLib.Messages
 				case "channel_name_phonetic": foreach(var toi in toc) { toi.PhoneticName = PhoneticName; } break;
 				case "channel_icon_id": foreach(var toi in toc) { toi.IconId = IconId; } break;
 				case "channel_flag_private": foreach(var toi in toc) { toi.IsPrivate = IsPrivate; } break;
+				case "channel_unique_identifier": foreach(var toi in toc) { toi.Guid = Guid; } break;
 				}
 			}
 

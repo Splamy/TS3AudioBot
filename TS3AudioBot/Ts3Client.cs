@@ -167,7 +167,7 @@ namespace TS3AudioBot
 					versionSign: versionSign,
 					username: config.Connect.Name,
 					serverPassword: config.Connect.ServerPassword.Get(),
-					defaultChannel: config.Connect.Channel,
+					defaultChannel: reconnectChannel?.ToPath() ?? config.Connect.Channel,
 					defaultChannelPassword: config.Connect.ChannelPassword.Get(),
 					logId: id);
 

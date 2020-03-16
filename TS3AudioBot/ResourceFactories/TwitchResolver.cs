@@ -22,7 +22,7 @@ namespace TS3AudioBot.ResourceFactories
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private static readonly Regex TwitchMatch = new Regex(@"^(https?://)?(www\.)?twitch\.tv/(\w+)", Util.DefaultRegexConfig);
 		private static readonly Regex M3U8ExtMatch = new Regex(@"#([\w-]+)(:(([\w-]+)=(""[^""]*""|[^,]+),?)*)?", Util.DefaultRegexConfig);
-		private const string TwitchClientId = "t9nlhlxnfux3gk2d6z1p093rj2c71i3";
+		//private const string TwitchClientId = "t9nlhlxnfux3gk2d6z1p093rj2c71i3";
 		// See: https://github.com/streamlink/streamlink/issues/2680
 		private const string TwitchClientIdPrivate = "kimne78kx3ncx6brgo4mv6wki5h1ko";
 
@@ -149,8 +149,8 @@ namespace TS3AudioBot.ResourceFactories
 #pragma warning disable IDE1006 // Naming Styles
 		private class JsonAccessToken
 		{
-			public string token { get; set; }
-			public string sig { get; set; }
+			public string? token { get; set; }
+			public string? sig { get; set; }
 			public DateTime expires_at { get; set; }
 		}
 #pragma warning restore IDE1006 // Naming Styles

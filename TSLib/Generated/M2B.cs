@@ -270,13 +270,13 @@ namespace TSLib.Full.Book
 			var obj = new Client();
 			{ var tmpv = msg.TargetChannelId; if (tmpv != null) obj.Channel = (ChannelId)tmpv; }
 			{ var tmpv = AwayCevFun(msg); if (tmpv != null) obj.AwayMessage = (str)tmpv; }
+			{ var tmpv = ClientTypeCevFun(msg); if (tmpv != null) obj.ClientType = (ClientType)tmpv; }
 			{ var tmpv = TalkPowerCevFun(msg); if (tmpv != null) obj.TalkPowerRequest = (TalkPowerRequest)tmpv; }
 			obj.PermissionHints = null;
 			obj.OptionalData = null;
 			obj.ConnectionData = null;
 			{ var tmpv = msg.DatabaseId; if (tmpv != null) obj.DatabaseId = (ClientDbId)tmpv; }
 			{ var tmpv = msg.Name; if (tmpv != null) obj.Name = (str)tmpv; }
-			{ var tmpv = msg.ClientType; if (tmpv != null) obj.ClientType = (ClientType)tmpv; }
 			{ var tmpv = msg.Uid; if (tmpv != null) obj.Uid = (Uid)tmpv; }
 			{ var tmpv = msg.AvatarHash; if (tmpv != null) obj.AvatarHash = (str)tmpv; }
 			{ var tmpv = msg.Description; if (tmpv != null) obj.Description = (str)tmpv; }

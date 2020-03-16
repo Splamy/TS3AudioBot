@@ -27,7 +27,6 @@ namespace TSLib.Query
 	{
 		private readonly object sendQueueLock = new object();
 		private readonly TcpClient tcpClient;
-		private NetworkStream? tcpStream;
 		private StreamReader? tcpReader;
 		private StreamWriter? tcpWriter;
 		private CancellationTokenSource? cts;
@@ -47,6 +46,7 @@ namespace TSLib.Query
 		public TsQueryClient()
 		{
 			connecting = false;
+			tcpClient = new TcpClient();
 			msgProc = new SyncMessageProcessor(MessageHelper.GetToClientNotificationType);
 			dispatcher = new ExtraThreadEventDispatcher();
 		}
@@ -61,7 +61,6 @@ namespace TSLib.Query
 			{
 				connecting = true;
 
-				tcpClient = new TcpClient(remoteAddress.AddressFamily);
 				tcpClient.Connect(remoteAddress);
 
 				ConnectionData = conData;

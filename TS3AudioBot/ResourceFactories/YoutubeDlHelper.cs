@@ -99,7 +99,7 @@ namespace TS3AudioBot.ResourceFactories
 			return null;
 		}
 
-		public static R<T, LocalStr> RunYoutubeDl<T>(string path, string args)
+		public static R<T, LocalStr> RunYoutubeDl<T>(string path, string args) where T : notnull
 		{
 			try
 			{
@@ -107,53 +107,51 @@ namespace TS3AudioBot.ResourceFactories
 				var stdOut = new StringBuilder();
 				var stdErr = new StringBuilder();
 
-				using (var tmproc = new Process())
+				using var tmproc = new Process();
+				tmproc.StartInfo.FileName = path;
+				tmproc.StartInfo.Arguments = args;
+				tmproc.StartInfo.UseShellExecute = false;
+				tmproc.StartInfo.CreateNoWindow = true;
+				tmproc.StartInfo.RedirectStandardOutput = true;
+				tmproc.StartInfo.RedirectStandardError = true;
+				tmproc.EnableRaisingEvents = true;
+				tmproc.Start();
+				tmproc.OutputDataReceived += (s, e) =>
 				{
-					tmproc.StartInfo.FileName = path;
-					tmproc.StartInfo.Arguments = args;
-					tmproc.StartInfo.UseShellExecute = false;
-					tmproc.StartInfo.CreateNoWindow = true;
-					tmproc.StartInfo.RedirectStandardOutput = true;
-					tmproc.StartInfo.RedirectStandardError = true;
-					tmproc.EnableRaisingEvents = true;
-					tmproc.Start();
-					tmproc.OutputDataReceived += (s, e) =>
-					{
-						if (e.Data is null)
-							stdOutDone = true;
-						else
-							stdOut.Append(e.Data);
-					};
-					tmproc.ErrorDataReceived += (s, e) => stdErr.Append(e.Data);
-					tmproc.BeginOutputReadLine();
-					tmproc.BeginErrorReadLine();
-					tmproc.WaitForExit(20000);
+					if (e.Data is null)
+						stdOutDone = true;
+					else
+						stdOut.Append(e.Data);
+				};
+				tmproc.ErrorDataReceived += (s, e) => stdErr.Append(e.Data);
+				tmproc.BeginOutputReadLine();
+				tmproc.BeginErrorReadLine();
+				tmproc.WaitForExit(20000);
 
-					if (!tmproc.HasExitedSafe())
-					{
-						try { tmproc.Kill(); }
-						catch (Exception ex) { Log.Debug(ex, "Failed to kill"); }
-					}
-
-					var timeout = Stopwatch.StartNew();
-					while (!stdOutDone)
-					{
-						if (timeout.Elapsed >= TimeSpan.FromSeconds(5))
-						{
-							stdErr.Append(strings.error_ytdl_empty_response).Append(" (timeout)");
-							break;
-						}
-						Thread.Sleep(50);
-					}
-
-					if (stdErr.Length > 0)
-					{
-						Log.Debug("youtube-dl failed to load the resource:\n{0}", stdErr);
-						return new LocalStr(strings.error_ytdl_song_failed_to_load);
-					}
-
-					return ParseResponse<T>(stdOut.ToString());
+				if (!tmproc.HasExitedSafe())
+				{
+					try { tmproc.Kill(); }
+					catch (Exception ex) { Log.Debug(ex, "Failed to kill"); }
 				}
+
+				var timeout = Stopwatch.StartNew();
+				while (!stdOutDone)
+				{
+					if (timeout.Elapsed >= TimeSpan.FromSeconds(5))
+					{
+						stdErr.Append(strings.error_ytdl_empty_response).Append(" (timeout)");
+						break;
+					}
+					Thread.Sleep(50);
+				}
+
+				if (stdErr.Length > 0)
+				{
+					Log.Debug("youtube-dl failed to load the resource:\n{0}", stdErr);
+					return new LocalStr(strings.error_ytdl_song_failed_to_load);
+				}
+
+				return ParseResponse<T>(stdOut.ToString());
 			}
 			catch (Win32Exception ex)
 			{
@@ -162,7 +160,7 @@ namespace TS3AudioBot.ResourceFactories
 			}
 		}
 
-		public static R<T, LocalStr> ParseResponse<T>(string json)
+		public static R<T, LocalStr> ParseResponse<T>(string json) where T : notnull
 		{
 			try
 			{
@@ -178,9 +176,12 @@ namespace TS3AudioBot.ResourceFactories
 			}
 		}
 
-		public static JsonYtdlFormat FilterBest(IEnumerable<JsonYtdlFormat> formats)
+		public static JsonYtdlFormat? FilterBest(IEnumerable<JsonYtdlFormat>? formats)
 		{
-			JsonYtdlFormat best = null;
+			if (formats is null)
+				return null;
+
+			JsonYtdlFormat? best = null;
 			foreach (var format in formats)
 			{
 				if (format.acodec == "none")
@@ -199,27 +200,27 @@ namespace TS3AudioBot.ResourceFactories
 #pragma warning disable CS0649, CS0169, IDE1006
 	public abstract class JsonYtdlBase
 	{
-		public string extractor { get; set; }
-		public string extractor_key { get; set; }
+		public string? extractor { get; set; }
+		public string? extractor_key { get; set; }
 	}
 
 	public class JsonYtdlDump : JsonYtdlBase
 	{
-		public string title { get; set; }
-		public string track { get; set; }
+		public string? title { get; set; }
+		public string? track { get; set; }
 		// TODO int -> timespan converter
 		public float duration { get; set; }
-		public string id { get; set; }
-		public JsonYtdlFormat[] formats { get; set; }
-		public JsonYtdlFormat[] requested_formats { get; set; }
+		public string? id { get; set; }
+		public JsonYtdlFormat[]? formats { get; set; }
+		public JsonYtdlFormat[]? requested_formats { get; set; }
 
-		public string AutoTitle => title;
+		public string? AutoTitle => track ?? title;
 	}
 
 	public class JsonYtdlFormat
 	{
-		public string vcodec { get; set; }
-		public string acodec { get; set; }
+		public string? vcodec { get; set; }
+		public string? acodec { get; set; }
 		/// <summary>audioBitRate</summary>
 		public float? abr { get; set; }
 		/// <summary>audioSampleRate</summary>
@@ -227,23 +228,23 @@ namespace TS3AudioBot.ResourceFactories
 		/// <summary>totalBitRate</summary>
 		public float? tbr { get; set; }
 		//public object http_headers { get; set; }
-		public string format { get; set; }
-		public string format_id { get; set; }
-		public string url { get; set; }
-		public string ext { get; set; }
+		public string? format { get; set; }
+		public string? format_id { get; set; }
+		public string? url { get; set; }
+		public string? ext { get; set; }
 	}
 
 	public class JsonYtdlPlaylistDump : JsonYtdlBase
 	{
-		public string id { get; set; }
-		public string title { get; set; }
-		public JsonYtdlPlaylistEntry[] entries { get; set; }
+		public string? id { get; set; }
+		public string? title { get; set; }
+		public JsonYtdlPlaylistEntry[]? entries { get; set; }
 	}
 
 	public class JsonYtdlPlaylistEntry
 	{
-		public string title { get; set; }
-		public string id { get; set; }
+		public string? title { get; set; }
+		public string? id { get; set; }
 	}
 #pragma warning restore CS0649, CS0169, IDE1006
 }

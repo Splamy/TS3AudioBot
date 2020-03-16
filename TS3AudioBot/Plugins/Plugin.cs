@@ -201,41 +201,38 @@ namespace TS3AudioBot.Plugins
 				.AddReferences(param)
 				.AddSyntaxTrees(sourceTree);
 
-				using (var ms_assembly = new MemoryStream())
-				using (var ms_pdb = new MemoryStream())
-				{
-					var result = compilation.Emit(ms_assembly, ms_pdb,
-						options: new EmitOptions()
-							.WithDebugInformationFormat(DebugInformationFormat.PortablePdb)
-						);
+			using var ms_assembly = new MemoryStream();
+			using var ms_pdb = new MemoryStream();
+			var result = compilation.Emit(ms_assembly, ms_pdb,
+				options: new EmitOptions()
+					.WithDebugInformationFormat(DebugInformationFormat.PortablePdb)
+				);
 
-					if (result.Success)
-					{
-						ms_assembly.Seek(0, SeekOrigin.Begin);
-						ms_pdb.Seek(0, SeekOrigin.Begin);
-						var assembly = Assembly.Load(ms_assembly.ToArray(), ms_pdb.ToArray());
-						return InitializeAssembly(assembly);
-					}
-					else
-					{
-						bool containsErrors = false;
-						var strb = new StringBuilder();
-						strb.AppendFormat("Plugin \"{0}\" [{1}] compiler notifications:\n", File.Name, Id);
-						foreach (var error in result.Diagnostics)
-						{
-							var position = error.Location.GetLineSpan();
-							containsErrors |= error.WarningLevel == 0;
-							strb.AppendFormat("{0} L{1}/C{2}: {3}\n",
-								error.WarningLevel == 0 ? "Error" : ((DiagnosticSeverity)(error.WarningLevel - 1)).ToString(),
-								position.StartLinePosition.Line + 1,
-								position.StartLinePosition.Character,
-								error.GetMessage());
-						}
-						strb.Length--; // remove last linebreak
-						Log.Warn(strb.ToString());
-						return PluginResponse.CompileError;
-					}
+			if (result.Success)
+			{
+				ms_assembly.Seek(0, SeekOrigin.Begin);
+				ms_pdb.Seek(0, SeekOrigin.Begin);
+				var assembly = Assembly.Load(ms_assembly.ToArray(), ms_pdb.ToArray());
+				return InitializeAssembly(assembly);
+			}
+			else
+			{
+				bool containsErrors = false;
+				var strb = new StringBuilder();
+				strb.AppendFormat("Plugin \"{0}\" [{1}] compiler notifications:\n", File.Name, Id);
+				foreach (var error in result.Diagnostics)
+				{
+					var position = error.Location.GetLineSpan();
+					containsErrors |= error.WarningLevel == 0;
+					strb.AppendFormat("{0} L{1}/C{2}: {3}\n",
+						error.WarningLevel == 0 ? "Error" : ((DiagnosticSeverity)(error.WarningLevel - 1)).ToString(),
+						position.StartLinePosition.Line + 1,
+						position.StartLinePosition.Character,
+						error.GetMessage());
 				}
+				strb.Length--; // remove last linebreak
+				Log.Warn(strb.ToString());
+				return PluginResponse.CompileError;
 			}
 		}
 

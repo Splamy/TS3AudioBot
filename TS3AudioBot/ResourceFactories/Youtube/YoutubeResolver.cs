@@ -328,11 +328,12 @@ namespace TS3AudioBot.ResourceFactories.Youtube
 				return result.Error;
 
 			var plistData = result.Value;
-			var plist = new Playlist().SetTitle(plistData.title);
-			plist.AddRange(plistData.entries.Select(entry =>
-				new PlaylistItem(
+			var plist = new Playlist().SetTitle(plistData.title ?? $"youtube-{id}");
+			plist.AddRange(plistData.entries
+				.Where(entry => entry.id != null)
+				.Select(entry => new PlaylistItem(
 					new AudioResource(
-						entry.id,
+						entry.id!,
 						entry.title,
 						ResolverFor
 					)
@@ -350,9 +351,9 @@ namespace TS3AudioBot.ResourceFactories.Youtube
 				return result.Error;
 
 			var response = result.Value;
-			resource.ResourceTitle = response.track ?? response.title ?? $"Youtube-{resource.ResourceId}";
+			resource.ResourceTitle = response.AutoTitle ?? $"Youtube-{resource.ResourceId}";
 			var format = YoutubeDlHelper.FilterBest(response.formats);
-			string url = format?.url;
+			var url = format?.url;
 
 			if (string.IsNullOrEmpty(url))
 				return new LocalStr(strings.error_ytdl_empty_response);
@@ -425,9 +426,10 @@ namespace TS3AudioBot.ResourceFactories.Youtube
 				return result.Error;
 			var search = result.Value;
 
-			return search.entries.Select(entry =>
-				new AudioResource(
-					entry.id,
+			return search.entries
+				.Where(entry => entry.id != null)
+				.Select(entry => new AudioResource(
+					entry.id!,
 					entry.title,
 					ResolverFor
 				)).ToArray();

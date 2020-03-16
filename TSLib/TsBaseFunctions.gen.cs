@@ -190,6 +190,7 @@ namespace TSLib
 			=> await SendHybridAsync<T>(new TsCommand(command, parameter), type).ConfigureAwait(false);
 
 
+#pragma warning disable CS0067
 
 		public virtual event NotifyEventHandler<ChannelChanged>? OnChannelChanged;
 		public virtual event EventHandler<ChannelChanged>? OnEachChannelChanged;
@@ -216,5 +217,6 @@ namespace TSLib
 		public virtual event NotifyEventHandler<TokenUsed>? OnTokenUsed;
 		public virtual event EventHandler<TokenUsed>? OnEachTokenUsed;
 
+#pragma warning restore CS0067
 	}
 }

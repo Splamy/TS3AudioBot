@@ -233,8 +233,10 @@ namespace TS3AudioBot.Audio
 					url,
 					new PreciseAudioTimer(this),
 					stream,
-					metaint);
-				newInstance.OnMetaUpdated = e => OnSongUpdated?.Invoke(this, e);
+					metaint)
+				{
+					OnMetaUpdated = e => OnSongUpdated?.Invoke(this, e)
+				};
 
 				new Thread(() => newInstance.ReadStreamLoop(id))
 				{

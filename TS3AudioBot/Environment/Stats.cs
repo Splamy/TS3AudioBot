@@ -36,14 +36,14 @@ namespace TS3AudioBot.Environment
 		private readonly ConfRoot conf;
 		private readonly DbStore database;
 		private readonly BotManager botManager;
-		private TickWorker ticker;
+		private TickWorker? ticker;
 		private bool uploadParamEnabled;
 		private bool UploadEnabled => uploadParamEnabled && conf.Configs.SendStats;
 
-		private DbMetaData meta;
-		private StatsData overallStats;
-		private StatsMeta statsPoints;
-		private LiteCollection<StatsData> trackEntries;
+		private readonly DbMetaData meta;
+		private readonly StatsData overallStats;
+		private readonly StatsMeta statsPoints;
+		private readonly LiteCollection<StatsData> trackEntries;
 		private readonly StatsData CurrentStatsData = new StatsData()
 		{
 			SongStats = new ConcurrentDictionary<string, StatsFactory>()
@@ -60,16 +60,11 @@ namespace TS3AudioBot.Environment
 			uploadParamEnabled = true;
 			runtimeLastTrack = Tools.Now;
 
-			ReadAndUpgradeStats();
-		}
-
-		private void ReadAndUpgradeStats()
-		{
 			meta = database.GetMetaData(StatsTable);
 			trackEntries = database.GetCollection<StatsData>(StatsTable);
 			trackEntries.EnsureIndex(x => x.Time);
 
-			if (meta.Version != StatsVersion)
+			if (meta.Version != StatsVersion || meta.CustomData is null)
 			{
 				statsPoints = new StatsMeta
 				{
@@ -80,7 +75,7 @@ namespace TS3AudioBot.Environment
 			}
 			else
 			{
-				statsPoints = JsonConvert.DeserializeObject<StatsMeta>(meta.CustomData, JsonSettings);
+				statsPoints = JsonConvert.DeserializeObject<StatsMeta>(meta.CustomData, JsonSettings) ?? new StatsMeta();
 				// Upgrade steps here
 			}
 
@@ -177,7 +172,7 @@ namespace TS3AudioBot.Environment
 
 		// Track operations
 
-		public void TrackSongLoad(string factory, bool successful, bool fromUser)
+		public void TrackSongLoad(string? factory, bool successful, bool fromUser)
 		{
 			var statsFactory = CurrentStatsData.SongStats.GetOrNew(factory ?? "");
 			statsFactory.PlayRequests++;
@@ -199,7 +194,7 @@ namespace TS3AudioBot.Environment
 
 		public void TrackSongStart(Id bot, string factory)
 		{
-			factory = factory ?? "";
+			factory ??= "";
 			runningSongsPerFactory[bot] = factory;
 			var statsFactory = CurrentStatsData.SongStats.GetOrNew(factory);
 			statsFactory.Playtime -= (Tools.Now - runtimeLastTrack);
@@ -249,9 +244,9 @@ namespace TS3AudioBot.Environment
 	internal class StatsPing : StatsData
 	{
 		// Meta
-		public string BotVersion { get; set; }
-		public string Platform { get; set; }
-		public string Runtime { get; set; }
+		public string? BotVersion { get; set; }
+		public string? Platform { get; set; }
+		public string? Runtime { get; set; }
 	}
 
 	internal class StatsMeta

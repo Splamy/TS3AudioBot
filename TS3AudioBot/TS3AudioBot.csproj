@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <RootNamespace>TS3AudioBot</RootNamespace>
@@ -6,10 +6,10 @@
     <OutputType>Exe</OutputType>
     <LangVersion>8.0</LangVersion>
     <TargetFramework>netcoreapp3.1</TargetFramework>
-	<!--<RuntimeIdentifiers>win-x64;linux-x64</RuntimeIdentifiers>-->
+    <!--<RuntimeIdentifiers>win-x64;linux-x64</RuntimeIdentifiers>-->
     <!--<PublishTrimmed>true</PublishTrimmed>-->
-	<!--<PublishSingleFile>true</PublishSingleFile>-->
-	<!-- IncludeSymbolsInSingleFile -->
+    <!--<PublishSingleFile>true</PublishSingleFile>-->
+    <!-- IncludeSymbolsInSingleFile -->
     <TargetLatestRuntimePatch>true</TargetLatestRuntimePatch>
     <RollForward>Major</RollForward>
 
@@ -42,7 +42,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="GitVersionTask" Version="5.2.1">
+    <PackageReference Include="GitVersionTask" Version="5.2.3">
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>build</IncludeAssets>
     </PackageReference>
@@ -73,11 +73,11 @@
   <ItemGroup>
     <Content Include="lib\x64\libopus.dll">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-	  <Pack>true</Pack>
+      <Pack>true</Pack>
     </Content>
     <Content Include="lib\x86\libopus.dll">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-	  <Pack>true</Pack>
+      <Pack>true</Pack>
     </Content>
   </ItemGroup>
 

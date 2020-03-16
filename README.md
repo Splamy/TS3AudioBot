@@ -65,12 +65,12 @@ Run
     1. Make sure you have a C compiler installed
     1. Make the Opus script runnable with `chmod u+x InstallOpus.sh` and run it with `./InstallOpus.sh`
     1. Get the ffmpeg [32bit](https://johnvansickle.com/ffmpeg/builds/ffmpeg-git-i686-static.tar.xz) or [64bit](https://johnvansickle.com/ffmpeg/builds/ffmpeg-git-amd64-static.tar.xz) binary.
-    1. Extract the ffmpeg archive with `tar -vxf ffmpeg-git-XXbit-static.tar.xz`
-    1. Get the ffmpeg binary from `ffmpeg-git-*DATE*-amd64-static/ffmpeg` and copy it to `TS3AudioBot/bin/Release/netcoreapp2.2`
+    1. Extract the ffmpeg archive with `tar -vxf ffmpeg-git-*XXbit*-static.tar.xz`
+    1. Get the ffmpeg binary from `ffmpeg-git-*DATE*-amd64-static/ffmpeg` and copy it to `TS3AudioBot/bin/Release/netcoreapp3.1`
 
 #### Windows
 1. Get the ffmpeg [32bit](https://ffmpeg.zeranoe.com/builds/win32/static/ffmpeg-latest-win32-static.zip) or [64bit](https://ffmpeg.zeranoe.com/builds/win64/static/ffmpeg-latest-win64-static.zip) binary.
-1. Open the archive and copy the ffmpeg binary from `ffmpeg-latest-winXX-static/bin/ffmpeg.exe` to `TS3AudioBot/bin/Release/netcoreapp2.2`
+1. Open the archive and copy the ffmpeg binary from `ffmpeg-latest-winXX-static/bin/ffmpeg.exe` to `TS3AudioBot/bin/Release/netcoreapp3.1`
 
 ### Optional Dependencies
 If the bot can't play some youtube videos it might be due to some embedding restrictions which are blocking this.  
@@ -98,13 +98,13 @@ For further reading check out the [CommandSystem](https://github.com/Splamy/TS3A
 Download the git repository with `git clone --recurse-submodules https://github.com/Splamy/TS3AudioBot.git`.
 
 #### Linux
-1. Get the latest `dotnet core 3.0` version by following [this tutorial](https://docs.microsoft.com/dotnet/core/install/linux-package-managers) and choose your platform
+1. Get the latest `dotnet core 3.1` version by following [this tutorial](https://docs.microsoft.com/dotnet/core/install/linux-package-managers) and choose your platform
 1. Go into the directory of the repository with `cd TS3AudioBot`
-1. Execute `dotnet build --framework netcoreapp3.0 --configuration Release TS3AudioBot` to build the AudioBot
-1. The binary will be in `./TS3AudioBot/bin/Release/netcoreapp3.0` and can be run with `dotnet TS3AudioBot.dll`
+1. Execute `dotnet build --framework netcoreapp3.1 --configuration Release TS3AudioBot` to build the AudioBot
+1. The binary will be in `./TS3AudioBot/bin/Release/netcoreapp3.1` and can be run with `dotnet TS3AudioBot.dll`
 
 #### Windows
-1. Make sure you have `Visual Studio` with the `dotnet core 3.0` development toolchain installed
+1. Make sure you have `Visual Studio` with the `dotnet core 3.1` development toolchain installed
 1. Build the AudioBot with Visual Studio.
 
 ## Community

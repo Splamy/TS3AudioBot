@@ -95,9 +95,11 @@ namespace TSLib.Full
 				var ctx = new ConnectionContext { WasExit = false };
 				context = ctx;
 
-				packetHandler = new PacketHandler<S2C, C2S>(tsCrypt, conData.LogId);
-				packetHandler.PacketEvent = (ref Packet<S2C> packet) => { PacketEvent(ctx, ref packet); };
-				packetHandler.StopEvent = (closeReason) => { ctx.ExitReason = ctx.ExitReason ?? closeReason; DisconnectInternal(ctx, setStatus: TsClientStatus.Disconnected); };
+				packetHandler = new PacketHandler<S2C, C2S>(tsCrypt, conData.LogId)
+				{
+					PacketEvent = (ref Packet<S2C> packet) => { PacketEvent(ctx, ref packet); },
+					StopEvent = (closeReason) => { ctx.ExitReason ??= closeReason; DisconnectInternal(ctx, setStatus: TsClientStatus.Disconnected); }
+				};
 				packetHandler.Connect(remoteAddress);
 				dispatcher = new ExtraThreadEventDispatcher();
 				dispatcher.Init(InvokeEvent, conData.LogId);

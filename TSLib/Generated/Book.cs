@@ -223,7 +223,7 @@ namespace TSLib.Full.Book
 	
 		public ClientId Id { get; internal set; }
 		public ChannelId Channel { get; set; }
-		public Uid Uid { get; internal set; }
+		public Uid? Uid { get; internal set; }
 		public str Name { get; set; }
 		public bool InputMuted { get; set; }
 		public bool OutputMuted { get; set; }

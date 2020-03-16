@@ -89,11 +89,13 @@ namespace TSLib
 			=> <#= fwdPrefix #><#= fwdTitle #><#= fwdModInfix #>(<#= fwdParam #>)<#= fwdSuffix #>;
 <# }} #>
 
+#pragma warning disable CS0067
 <#
 	// NOTIFICATIONS
 
 	var genmsg = Messages.Parse(Host.ResolvePath("Declarations/Messages.toml"));
 	GenNtfyDecls(OnlyS2C(genmsg.NotifiesSorted).Where(ntfy => sharedNotifications.Contains(ntfy.name)), true);
 #>
+#pragma warning restore CS0067
 	}
 }

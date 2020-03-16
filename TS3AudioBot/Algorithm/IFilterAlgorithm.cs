@@ -46,14 +46,14 @@ namespace TS3AudioBot.Algorithm
 		IEnumerable<KeyValuePair<string, T>> IFilter.Filter<T>(IEnumerable<KeyValuePair<string, T>> list, string filter)
 		{
 			// Convert result to list because it can be enumerated multiple times
-			var possibilities = list.Select(t => (Name: t.Key, Value: t.Value, Index: 0)).ToList();
+			var possibilities = list.Select(t => (Name: t.Key, t.Value, Index: 0)).ToList();
 			// Filter matching commands
 			foreach (var c in filter.ToLowerInvariant())
 			{
 				var newPossibilities = (from p in possibilities
 										let pos = p.Name.ToLowerInvariant().IndexOf(c, p.Index)
 										where pos != -1
-										select (p.Name, p.Value, pos + 1)).ToList();
+										select (p.Name, p.Value, Index: pos + 1)).ToList();
 				if (newPossibilities.Count > 0)
 					possibilities = newPossibilities;
 			}

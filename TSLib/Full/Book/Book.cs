@@ -142,14 +142,12 @@ namespace TSLib.Full.Book
 
 		private static string? AwayCevFun(ClientEnterView msg) => AwayFun(msg.IsAway, msg.AwayMessage);
 		private static string? AwayCuFun(ClientUpdated msg) => AwayFun(msg.IsAway, msg.AwayMessage);
-		private static string? AwayFun(bool? away, string msg)
-		{
-			if (away == true)
-				return msg ?? "";
-			if (away == false)
-				return "";
-			return null;
-		}
+		private static string? AwayFun(bool? away, string? msg)
+			=> away switch
+			{
+				true => msg ?? "",
+				_ => null,
+			};
 
 		private static TalkPowerRequest? TalkPowerCevFun(ClientEnterView msg)
 		{

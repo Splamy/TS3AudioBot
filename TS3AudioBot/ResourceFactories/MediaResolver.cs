@@ -155,9 +155,10 @@ namespace TS3AudioBot.ResourceFactories
 			{
 				Log.Trace("Finding media path: '{0}'", uri);
 
-				var file =
-					TryInPath(Path.Combine(conf.LocalConfigDir, BotPaths.Music), uri)
-					?? TryInPath(conf.GetParent().Factories.Media.Path.Value, uri);
+				Uri? file = null;
+				if (conf.LocalConfigDir != null)
+					file ??= TryInPath(Path.Combine(conf.LocalConfigDir, BotPaths.Music), uri);
+				file ??= TryInPath(conf.GetParent().Factories.Media.Path.Value, uri);
 
 				if (file is null)
 					return new LocalStr(strings.error_media_file_not_found);
@@ -165,7 +166,7 @@ namespace TS3AudioBot.ResourceFactories
 			}
 		}
 
-		private static Uri TryInPath(string pathPrefix, string file)
+		private static Uri? TryInPath(string pathPrefix, string file)
 		{
 			try
 			{
@@ -215,8 +216,8 @@ namespace TS3AudioBot.ResourceFactories
 					{
 						if (File.Exists(url))
 						{
-							using (var stream = File.OpenRead(uri.AbsolutePath))
-								return GetPlaylistContent(stream, url);
+							using var stream = File.OpenRead(uri.AbsolutePath);
+							return GetPlaylistContent(stream, url);
 						}
 					}
 					else if (uri.IsWeb())
@@ -227,8 +228,8 @@ namespace TS3AudioBot.ResourceFactories
 							int index = url.LastIndexOf('.');
 							string anyId = index >= 0 ? url.Substring(index) : url;
 
-							using (var stream = response.GetResponseStream())
-								return GetPlaylistContent(stream, url, contentType);
+							using var stream = response.GetResponseStream();
+							return GetPlaylistContent(stream, url, contentType);
 						}).Flat();
 					}
 				}
