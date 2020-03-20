@@ -71,6 +71,11 @@ namespace TS3AudioBot.ResourceFactories
 				if (File.Exists(defaultYtDlPath))
 					return (defaultYtDlPath, "");
 
+				// Default path most package managers install to
+				const string defaultPkgManPath = "/usr/bin/youtube-dl";
+				if (File.Exists(defaultPkgManPath))
+					return (defaultPkgManPath, "");
+
 				youtubeDlPath = Directory.GetCurrentDirectory();
 			}
 

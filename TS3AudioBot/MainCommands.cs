@@ -411,7 +411,7 @@ namespace TS3AudioBot
 			=> new JsonValue<ClientCall>(invoker, $"Client: Id:{invoker.ClientId} DbId:{invoker.DatabaseId} ChanId:{invoker.ChannelId} Uid:{invoker.ClientUid}"); // LOC: TODO
 
 		[Command("getuser uid byid")]
-		public static string CommandGetUidById(Ts3Client ts3Client, ushort id) => ts3Client.GetFallbackedClientById((ClientId)id).UnwrapThrow().Uid!.Value.Value;
+		public static string CommandGetUidById(Ts3Client ts3Client, ushort id) => ts3Client.GetFallbackedClientById((ClientId)id).UnwrapThrow().Uid?.Value ?? "";
 		[Command("getuser name byid")]
 		public static string CommandGetNameById(Ts3Client ts3Client, ushort id) => ts3Client.GetFallbackedClientById((ClientId)id).UnwrapThrow().Name;
 		[Command("getuser dbid byid")]
@@ -435,7 +435,7 @@ namespace TS3AudioBot
 		[Command("getuser name bydbid")]
 		public static string CommandGetNameByDbId(Ts3Client ts3Client, ulong dbId) => ts3Client.GetDbClientByDbId((ClientDbId)dbId).UnwrapThrow().Name;
 		[Command("getuser uid bydbid")]
-		public static string CommandGetUidByDbId(Ts3Client ts3Client, ulong dbId) => ts3Client.GetDbClientByDbId((ClientDbId)dbId).UnwrapThrow().Uid.Value;
+		public static string? CommandGetUidByDbId(Ts3Client ts3Client, ulong dbId) => ts3Client.GetDbClientByDbId((ClientDbId)dbId).UnwrapThrow().Uid.Value;
 
 		private static readonly TextMod HelpCommand = new TextMod(TextModFlag.Bold);
 		private static readonly TextMod HelpCommandParam = new TextMod(TextModFlag.Italic);
@@ -1763,17 +1763,6 @@ namespace TS3AudioBot
 				arg.Execute(info, Array.Empty<ICommand>(), ReturnAnyPreferNothing);
 		}
 		// ReSharper enable UnusedMember.Global
-
-		//private static string GetEditPlaylist(this UserSession session)
-		//{
-		//	if (session is null)
-		//		throw new MissingContextCommandException(strings.error_no_session_in_context, typeof(UserSession));
-		//	var result = session.Get<string>(SessionConst.Playlist);
-		//	if (result)
-		//		return result.Value;
-
-		//	throw new CommandException("You are currently not editing any playlist.", CommandExceptionReason.CommandError); // TODO: Loc
-		//}
 
 		public static bool HasRights(this ExecutionInformation info, params string[] rights)
 		{

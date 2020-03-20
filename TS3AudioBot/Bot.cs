@@ -119,7 +119,8 @@ namespace TS3AudioBot
 			ts3FullClient = Injector.GetModule<TsFullClient>()!;
 			ts3client = Injector.GetModule<Ts3Client>()!;
 			player = Injector.GetModule<Player>()!;
-			player.SetTarget(Injector.GetModule<CustomTargetPipe>()!);
+			var customTarget = Injector.GetModule<CustomTargetPipe>()!;
+			player.SetTarget(customTarget);
 			Injector.AddModule(ts3FullClient.Book);
 
 			playManager = Injector.GetModule<PlayManager>()!;
@@ -155,6 +156,7 @@ namespace TS3AudioBot
 			ts3client.OnBotDisconnect += OnBotDisconnect;
 			// Alone mode
 			ts3client.OnAloneChanged += OnAloneChanged;
+			ts3client.OnAloneChanged += (s, e) => customTarget.Alone = e.Alone;
 			// Whisper stall
 			ts3client.OnWhisperNoTarget += (s, e) => player.SetStall();
 
@@ -606,7 +608,7 @@ namespace TS3AudioBot
 		public string? Server { get; set; }
 		public BotStatus Status { get; set; }
 
-		public override string ToString() => $"Id: {Id} Name: {Name} Server: {Server} Status: {Status.ToString()}"; // LOC: TODO
+		public override string ToString() => $"Id: {Id} Name: {Name} Server: {Server} Status: {Status}"; // LOC: TODO
 	}
 
 	public enum BotStatus

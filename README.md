@@ -110,7 +110,7 @@ Download the git repository with `git clone --recurse-submodules https://github.
 ### Building the WebInterface
 1. Go with the console of your choice into the `./WebInterface` folder
 1. Run `npm install` to restore or update all dependencies for this project
-1. Run `npm run publish` to build the project.  
+1. Run `npm run build` to build the project.  
   The built project will be in `./WebInterface/dist`.  
   Make sure to the set the webinterface path in the ts3audiobot.toml to this folder.
 1. You can alternatively use `npm run start` for development.  

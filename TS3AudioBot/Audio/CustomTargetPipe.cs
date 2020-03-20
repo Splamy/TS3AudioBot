@@ -18,10 +18,11 @@ namespace TS3AudioBot.Audio
 {
 	internal class CustomTargetPipe : IVoiceTarget, IAudioPassiveConsumer
 	{
-		public TargetSendMode SendMode { get; set; } = TargetSendMode.None;
+		public TargetSendMode SendMode { get; set; } = TargetSendMode.Voice;
 		public ulong GroupWhisperTargetId { get; private set; }
 		public GroupWhisperType GroupWhisperType { get; private set; }
 		public GroupWhisperTarget GroupWhisperTarget { get; private set; }
+		public bool Alone { get; set; }
 
 		public IReadOnlyCollection<ClientId> WhisperClients
 		{
@@ -40,6 +41,8 @@ namespace TS3AudioBot.Audio
 				{
 				case TargetSendMode.None:
 					return false;
+				case TargetSendMode.Voice:
+					return !Alone;
 				case TargetSendMode.Whisper:
 					UpdatedSubscriptionCache();
 					return channelSubscriptionsCache.Length > 0 || clientSubscriptionsCache.Length > 0;

@@ -15,6 +15,7 @@
 
 
 
+#nullable enable
 using Newtonsoft.Json;
 using System;
 using System.Diagnostics;
@@ -28,7 +29,7 @@ namespace TSLib
 	[JsonConverter(typeof(Uid.Converter))]
 	public readonly partial struct Uid : IEquatable<Uid>
 	{
-		public static readonly Uid Null = default;
+		public static readonly Uid Null = new Uid(string.Empty);
 		public static Uid To(string v) => new Uid(v);
 
 		public string Value { get; }
@@ -37,7 +38,7 @@ namespace TSLib
 		public static bool operator ==(Uid a, Uid b) => a.Value == b.Value;
 		public static bool operator !=(Uid a, Uid b) => a.Value != b.Value;
 		public override int GetHashCode() => Value.GetHashCode();
-		public override bool Equals(object obj) => obj is Uid c && Value.Equals(c.Value);
+		public override bool Equals(object? obj) => obj is Uid c && Value.Equals(c.Value);
 		public override string ToString() => Value.ToString();
 		
 		public bool Equals(Uid other) => Value.Equals(other.Value, StringComparison.Ordinal);
@@ -47,7 +48,7 @@ namespace TSLib
 			public override void WriteJson(JsonWriter writer, Uid value, JsonSerializer serializer)
 				=> writer.WriteValue(value.Value);
 			public override Uid ReadJson(JsonReader reader, Type objectType, Uid existingValue, bool hasExistingValue, JsonSerializer serializer)
-				=> new Uid(reader.ReadAsString());
+				=> new Uid((reader.ReadAsString() ?? throw new FormatException()));
 		}
 	}
 	
@@ -56,7 +57,7 @@ namespace TSLib
 	[JsonConverter(typeof(ClientDbId.Converter))]
 	public readonly partial struct ClientDbId : IFormattable, IEquatable<ClientDbId>
 	{
-		public static readonly ClientDbId Null = default;
+		public static readonly ClientDbId Null = new ClientDbId(default);
 		public static ClientDbId To(ulong v) => new ClientDbId(v);
 
 		public ulong Value { get; }
@@ -65,18 +66,18 @@ namespace TSLib
 		public static bool operator ==(ClientDbId a, ClientDbId b) => a.Value == b.Value;
 		public static bool operator !=(ClientDbId a, ClientDbId b) => a.Value != b.Value;
 		public override int GetHashCode() => Value.GetHashCode();
-		public override bool Equals(object obj) => obj is ClientDbId c && Value.Equals(c.Value);
+		public override bool Equals(object? obj) => obj is ClientDbId c && Value.Equals(c.Value);
 		public override string ToString() => Value.ToString();
 		
 		public bool Equals(ClientDbId other) => Value.Equals(other.Value);
-		public string ToString(string format, IFormatProvider formatProvider) => Value.ToString(format, formatProvider);
+		public string ToString(string? format, IFormatProvider? formatProvider) => Value.ToString(format, formatProvider);
 		
 		private class Converter : JsonConverter<ClientDbId>
 		{
 			public override void WriteJson(JsonWriter writer, ClientDbId value, JsonSerializer serializer)
 				=> writer.WriteValue(value.Value);
 			public override ClientDbId ReadJson(JsonReader reader, Type objectType, ClientDbId existingValue, bool hasExistingValue, JsonSerializer serializer)
-				=> new ClientDbId(ulong.Parse(reader.ReadAsString()));
+				=> new ClientDbId(ulong.Parse(reader.ReadAsString() ?? throw new FormatException()));
 		}
 	}
 	
@@ -85,7 +86,7 @@ namespace TSLib
 	[JsonConverter(typeof(ClientId.Converter))]
 	public readonly partial struct ClientId : IFormattable, IEquatable<ClientId>
 	{
-		public static readonly ClientId Null = default;
+		public static readonly ClientId Null = new ClientId(default);
 		public static ClientId To(ushort v) => new ClientId(v);
 
 		public ushort Value { get; }
@@ -94,18 +95,18 @@ namespace TSLib
 		public static bool operator ==(ClientId a, ClientId b) => a.Value == b.Value;
 		public static bool operator !=(ClientId a, ClientId b) => a.Value != b.Value;
 		public override int GetHashCode() => Value.GetHashCode();
-		public override bool Equals(object obj) => obj is ClientId c && Value.Equals(c.Value);
+		public override bool Equals(object? obj) => obj is ClientId c && Value.Equals(c.Value);
 		public override string ToString() => Value.ToString();
 		
 		public bool Equals(ClientId other) => Value.Equals(other.Value);
-		public string ToString(string format, IFormatProvider formatProvider) => Value.ToString(format, formatProvider);
+		public string ToString(string? format, IFormatProvider? formatProvider) => Value.ToString(format, formatProvider);
 		
 		private class Converter : JsonConverter<ClientId>
 		{
 			public override void WriteJson(JsonWriter writer, ClientId value, JsonSerializer serializer)
 				=> writer.WriteValue(value.Value);
 			public override ClientId ReadJson(JsonReader reader, Type objectType, ClientId existingValue, bool hasExistingValue, JsonSerializer serializer)
-				=> new ClientId(ushort.Parse(reader.ReadAsString()));
+				=> new ClientId(ushort.Parse(reader.ReadAsString() ?? throw new FormatException()));
 		}
 	}
 	
@@ -114,7 +115,7 @@ namespace TSLib
 	[JsonConverter(typeof(ChannelId.Converter))]
 	public readonly partial struct ChannelId : IFormattable, IEquatable<ChannelId>
 	{
-		public static readonly ChannelId Null = default;
+		public static readonly ChannelId Null = new ChannelId(default);
 		public static ChannelId To(ulong v) => new ChannelId(v);
 
 		public ulong Value { get; }
@@ -123,18 +124,18 @@ namespace TSLib
 		public static bool operator ==(ChannelId a, ChannelId b) => a.Value == b.Value;
 		public static bool operator !=(ChannelId a, ChannelId b) => a.Value != b.Value;
 		public override int GetHashCode() => Value.GetHashCode();
-		public override bool Equals(object obj) => obj is ChannelId c && Value.Equals(c.Value);
+		public override bool Equals(object? obj) => obj is ChannelId c && Value.Equals(c.Value);
 		public override string ToString() => Value.ToString();
 		
 		public bool Equals(ChannelId other) => Value.Equals(other.Value);
-		public string ToString(string format, IFormatProvider formatProvider) => Value.ToString(format, formatProvider);
+		public string ToString(string? format, IFormatProvider? formatProvider) => Value.ToString(format, formatProvider);
 		
 		private class Converter : JsonConverter<ChannelId>
 		{
 			public override void WriteJson(JsonWriter writer, ChannelId value, JsonSerializer serializer)
 				=> writer.WriteValue(value.Value);
 			public override ChannelId ReadJson(JsonReader reader, Type objectType, ChannelId existingValue, bool hasExistingValue, JsonSerializer serializer)
-				=> new ChannelId(ulong.Parse(reader.ReadAsString()));
+				=> new ChannelId(ulong.Parse(reader.ReadAsString() ?? throw new FormatException()));
 		}
 	}
 	
@@ -143,7 +144,7 @@ namespace TSLib
 	[JsonConverter(typeof(ServerGroupId.Converter))]
 	public readonly partial struct ServerGroupId : IFormattable, IEquatable<ServerGroupId>
 	{
-		public static readonly ServerGroupId Null = default;
+		public static readonly ServerGroupId Null = new ServerGroupId(default);
 		public static ServerGroupId To(ulong v) => new ServerGroupId(v);
 
 		public ulong Value { get; }
@@ -152,18 +153,18 @@ namespace TSLib
 		public static bool operator ==(ServerGroupId a, ServerGroupId b) => a.Value == b.Value;
 		public static bool operator !=(ServerGroupId a, ServerGroupId b) => a.Value != b.Value;
 		public override int GetHashCode() => Value.GetHashCode();
-		public override bool Equals(object obj) => obj is ServerGroupId c && Value.Equals(c.Value);
+		public override bool Equals(object? obj) => obj is ServerGroupId c && Value.Equals(c.Value);
 		public override string ToString() => Value.ToString();
 		
 		public bool Equals(ServerGroupId other) => Value.Equals(other.Value);
-		public string ToString(string format, IFormatProvider formatProvider) => Value.ToString(format, formatProvider);
+		public string ToString(string? format, IFormatProvider? formatProvider) => Value.ToString(format, formatProvider);
 		
 		private class Converter : JsonConverter<ServerGroupId>
 		{
 			public override void WriteJson(JsonWriter writer, ServerGroupId value, JsonSerializer serializer)
 				=> writer.WriteValue(value.Value);
 			public override ServerGroupId ReadJson(JsonReader reader, Type objectType, ServerGroupId existingValue, bool hasExistingValue, JsonSerializer serializer)
-				=> new ServerGroupId(ulong.Parse(reader.ReadAsString()));
+				=> new ServerGroupId(ulong.Parse(reader.ReadAsString() ?? throw new FormatException()));
 		}
 	}
 	
@@ -172,7 +173,7 @@ namespace TSLib
 	[JsonConverter(typeof(ChannelGroupId.Converter))]
 	public readonly partial struct ChannelGroupId : IFormattable, IEquatable<ChannelGroupId>
 	{
-		public static readonly ChannelGroupId Null = default;
+		public static readonly ChannelGroupId Null = new ChannelGroupId(default);
 		public static ChannelGroupId To(ulong v) => new ChannelGroupId(v);
 
 		public ulong Value { get; }
@@ -181,18 +182,18 @@ namespace TSLib
 		public static bool operator ==(ChannelGroupId a, ChannelGroupId b) => a.Value == b.Value;
 		public static bool operator !=(ChannelGroupId a, ChannelGroupId b) => a.Value != b.Value;
 		public override int GetHashCode() => Value.GetHashCode();
-		public override bool Equals(object obj) => obj is ChannelGroupId c && Value.Equals(c.Value);
+		public override bool Equals(object? obj) => obj is ChannelGroupId c && Value.Equals(c.Value);
 		public override string ToString() => Value.ToString();
 		
 		public bool Equals(ChannelGroupId other) => Value.Equals(other.Value);
-		public string ToString(string format, IFormatProvider formatProvider) => Value.ToString(format, formatProvider);
+		public string ToString(string? format, IFormatProvider? formatProvider) => Value.ToString(format, formatProvider);
 		
 		private class Converter : JsonConverter<ChannelGroupId>
 		{
 			public override void WriteJson(JsonWriter writer, ChannelGroupId value, JsonSerializer serializer)
 				=> writer.WriteValue(value.Value);
 			public override ChannelGroupId ReadJson(JsonReader reader, Type objectType, ChannelGroupId existingValue, bool hasExistingValue, JsonSerializer serializer)
-				=> new ChannelGroupId(ulong.Parse(reader.ReadAsString()));
+				=> new ChannelGroupId(ulong.Parse(reader.ReadAsString() ?? throw new FormatException()));
 		}
 	}
 	
