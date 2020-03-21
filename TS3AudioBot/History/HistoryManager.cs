@@ -163,7 +163,8 @@ namespace TS3AudioBot.History
 				nextHid = 0;
 			}
 
-			var ale = new AudioLogEntry(nextHid, saveData.Resource, saveData.InvokerUid.Value)
+			var userUid = (saveData.InvokerUid ?? Uid.Anonymous).Value ?? Uid.Anonymous.Value!;
+			var ale = new AudioLogEntry(nextHid, saveData.Resource, userUid)
 			{
 				Timestamp = Tools.Now,
 				PlayCount = 1,

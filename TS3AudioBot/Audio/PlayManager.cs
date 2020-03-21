@@ -58,7 +58,7 @@ namespace TS3AudioBot.Audio
 				stats.TrackSongLoad(audioType, false, true);
 				return result.Error;
 			}
-			return Enqueue(invoker, new PlaylistItem(result.Value.BaseData, meta));
+			return Enqueue(invoker, PlaylistItem.From(result.Value).MergeMeta(meta));
 		}
 		public E<LocalStr> Enqueue(InvokerData invoker, IEnumerable<PlaylistItem> items)
 		{
@@ -104,7 +104,7 @@ namespace TS3AudioBot.Audio
 				stats.TrackSongLoad(ar.AudioType, false, true);
 				return result.Error;
 			}
-			return Play(invoker, result.Value, meta);
+			return Play(invoker, result.Value.MergeMeta(meta));
 		}
 
 		/// <summary>Tries to play the passed link.</summary>
@@ -121,7 +121,7 @@ namespace TS3AudioBot.Audio
 				stats.TrackSongLoad(audioType, false, true);
 				return result.Error;
 			}
-			return Play(invoker, result.Value, meta);
+			return Play(invoker, result.Value.MergeMeta(meta));
 		}
 
 		public E<LocalStr> Play(InvokerData invoker, IEnumerable<PlaylistItem> items, int index = 0)
@@ -152,14 +152,13 @@ namespace TS3AudioBot.Audio
 		/// <param name="play">The associated resource type string to a factory.</param>
 		/// <param name="meta">Allows overriding certain settings for the resource.</param>
 		/// <returns>Ok if successful, or an error message otherwise.</returns>
-		public E<LocalStr> Play(InvokerData invoker, PlayResource play, MetaData? meta = null)
+		public E<LocalStr> Play(InvokerData invoker, PlayResource play)
 		{
-			meta ??= new MetaData();
 			playlistManager.Clear();
-			playlistManager.Queue(new PlaylistItem(play.BaseData, meta));
+			playlistManager.Queue(PlaylistItem.From(play));
 			playlistManager.Index = 0;
-			stats.TrackSongLoad(play.BaseData.AudioType, true, true);
-			return StartResource(invoker, play, meta);
+			stats.TrackSongLoad(play.AudioResource.AudioType, true, true);
+			return StartResource(invoker, play);
 		}
 
 		private E<LocalStr> StartResource(InvokerData invoker, PlaylistItem item)
@@ -168,13 +167,12 @@ namespace TS3AudioBot.Audio
 			stats.TrackSongLoad(item.AudioResource.AudioType, result.Ok, false);
 			if (!result)
 				return result.Error;
-			return StartResource(invoker, result.Value, item.Meta);
+			return StartResource(invoker, result.Value.MergeMeta(item.Meta));
 		}
 
-		private E<LocalStr> StartResource(InvokerData invoker, PlayResource play, MetaData? meta = null)
+		private E<LocalStr> StartResource(InvokerData invoker, PlayResource play)
 		{
-			play.Meta = meta ?? play.Meta ?? new MetaData();
-			var sourceLink = resourceResolver.RestoreLink(play.BaseData).OkOr(null);
+			var sourceLink = resourceResolver.RestoreLink(play.AudioResource).OkOr(null);
 			var playInfo = new PlayInfoEventArgs(invoker, play, sourceLink);
 			BeforeResourceStarted?.Invoke(this, playInfo);
 

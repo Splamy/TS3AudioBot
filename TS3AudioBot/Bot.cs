@@ -141,7 +141,11 @@ namespace TS3AudioBot
 			playManager.OnResourceUpdated += LoggedUpdateBotStatus;
 			// Log our resource in the history
 			if (Injector.TryGet<HistoryManager>(out var historyManager))
-				playManager.AfterResourceStarted += (s, e) => { if (e.MetaData != null) historyManager.LogAudioResource(new HistorySaveData(e.PlayResource.BaseData, e.MetaData.ResourceOwnerUid)); };
+				playManager.AfterResourceStarted += (s, e) =>
+				{
+					if (e.MetaData != null)
+						historyManager.LogAudioResource(new HistorySaveData(e.PlayResource.AudioResource, e.MetaData.ResourceOwnerUid));
+				};
 			// Update our thumbnail
 			playManager.AfterResourceStarted += GenerateStatusImage;
 			playManager.PlaybackStopped += GenerateStatusImage;
@@ -261,7 +265,7 @@ namespace TS3AudioBot
 					cachedClientError.Str, infoClientError.Str);
 			}
 
-			var invoker = new ClientCall(textMessage.InvokerUid ?? InvokerData.AnonymousUid, textMessage.Message,
+			var invoker = new ClientCall(textMessage.InvokerUid ?? Uid.Anonymous, textMessage.Message,
 				clientId: textMessage.InvokerId,
 				visibiliy: textMessage.Target,
 				nickName: textMessage.InvokerName,

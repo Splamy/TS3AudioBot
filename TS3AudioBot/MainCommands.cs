@@ -106,7 +106,7 @@ namespace TS3AudioBot
 		{
 			if (invoker.Visibiliy != null && invoker.Visibiliy != TextMessageTargetMode.Private)
 				throw new CommandException(strings.error_use_private, CommandExceptionReason.CommandError);
-			if (invoker.IsAnonymous)
+			if (invoker.IsAnonymous || invoker.ClientUid == Uid.Null)
 				throw new MissingContextCommandException(strings.error_no_uid_found, typeof(ClientCall));
 
 			TimeSpan? validSpan = null;
@@ -119,7 +119,7 @@ namespace TS3AudioBot
 			{
 				throw new CommandException(strings.error_invalid_token_duration, oex, CommandExceptionReason.CommandError);
 			}
-			return tokenManager.GenerateToken(invoker.ClientUid.Value, validSpan);
+			return tokenManager.GenerateToken(invoker.ClientUid.Value!, validSpan);
 		}
 
 		[Command("bot avatar set")]
@@ -395,7 +395,7 @@ namespace TS3AudioBot
 		public static ushort CommandGetId(ClientCall invoker)
 			=> invoker.ClientId?.Value ?? throw new CommandException(strings.error_not_found, CommandExceptionReason.CommandError);
 		[Command("getmy uid")]
-		public static string CommandGetUid(ClientCall invoker)
+		public static string? CommandGetUid(ClientCall invoker)
 			=> invoker.ClientUid.Value;
 		[Command("getmy name")]
 		public static string CommandGetName(ClientCall invoker)
@@ -878,7 +878,7 @@ namespace TS3AudioBot
 			playlistManager.ModifyPlaylist(listId, plist =>
 			{
 				var playResource = resourceFactory.Load(link).UnwrapThrow();
-				var item = new PlaylistItem(playResource.BaseData);
+				var item = PlaylistItem.From(playResource);
 				plist.Add(item).UnwrapThrow();
 				getData = resourceFactory.ToApiFormat(item);
 				//getData.Index = plist.Items.Count - 1;
@@ -947,7 +947,7 @@ namespace TS3AudioBot
 					throw new CommandException(strings.error_playlist_item_index_out_of_range, CommandExceptionReason.CommandError);
 
 				var playResource = resourceFactory.Load(link).UnwrapThrow();
-				var item = new PlaylistItem(playResource.BaseData);
+				var item = PlaylistItem.From(playResource);
 				plist.Insert(index, item).UnwrapThrow();
 				getData = resourceFactory.ToApiFormat(item);
 				//getData.Index = plist.Items.Count - 1;

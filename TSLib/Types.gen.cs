@@ -30,18 +30,18 @@ namespace TSLib
 	public readonly partial struct Uid : IEquatable<Uid>
 	{
 		public static readonly Uid Null = new Uid(string.Empty);
-		public static Uid To(string v) => new Uid(v);
+		public static Uid To(string? v) => new Uid(v);
 
-		public string Value { get; }
-		public Uid(string value) { if (value == null) throw new ArgumentNullException(nameof(value)); Value = value; }
-		public static explicit operator Uid(string v) => new Uid(v);
+		public string? Value { get; }
+		public Uid(string? value) { if (value == null) throw new ArgumentNullException(nameof(value)); Value = value; }
+		public static explicit operator Uid(string? v) => new Uid(v);
 		public static bool operator ==(Uid a, Uid b) => a.Value == b.Value;
 		public static bool operator !=(Uid a, Uid b) => a.Value != b.Value;
-		public override int GetHashCode() => Value.GetHashCode();
-		public override bool Equals(object? obj) => obj is Uid c && Value.Equals(c.Value);
-		public override string ToString() => Value.ToString();
+		public override int GetHashCode() => Value?.GetHashCode() ?? 0 ;
+		public override bool Equals(object? obj) => obj is Uid c && this.Equals(c);
+		public override string ToString() => Value ?? "";
 		
-		public bool Equals(Uid other) => Value.Equals(other.Value, StringComparison.Ordinal);
+		public bool Equals(Uid other) => string.Equals(Value, other.Value, StringComparison.Ordinal);
 		
 		private class Converter : JsonConverter<Uid>
 		{
@@ -65,9 +65,9 @@ namespace TSLib
 		public static explicit operator ClientDbId(ulong v) => new ClientDbId(v);
 		public static bool operator ==(ClientDbId a, ClientDbId b) => a.Value == b.Value;
 		public static bool operator !=(ClientDbId a, ClientDbId b) => a.Value != b.Value;
-		public override int GetHashCode() => Value.GetHashCode();
-		public override bool Equals(object? obj) => obj is ClientDbId c && Value.Equals(c.Value);
-		public override string ToString() => Value.ToString();
+		public override int GetHashCode() => Value.GetHashCode() ;
+		public override bool Equals(object? obj) => obj is ClientDbId c && this.Equals(c);
+		public override string ToString() => Value .ToString();
 		
 		public bool Equals(ClientDbId other) => Value.Equals(other.Value);
 		public string ToString(string? format, IFormatProvider? formatProvider) => Value.ToString(format, formatProvider);
@@ -94,9 +94,9 @@ namespace TSLib
 		public static explicit operator ClientId(ushort v) => new ClientId(v);
 		public static bool operator ==(ClientId a, ClientId b) => a.Value == b.Value;
 		public static bool operator !=(ClientId a, ClientId b) => a.Value != b.Value;
-		public override int GetHashCode() => Value.GetHashCode();
-		public override bool Equals(object? obj) => obj is ClientId c && Value.Equals(c.Value);
-		public override string ToString() => Value.ToString();
+		public override int GetHashCode() => Value.GetHashCode() ;
+		public override bool Equals(object? obj) => obj is ClientId c && this.Equals(c);
+		public override string ToString() => Value .ToString();
 		
 		public bool Equals(ClientId other) => Value.Equals(other.Value);
 		public string ToString(string? format, IFormatProvider? formatProvider) => Value.ToString(format, formatProvider);
@@ -123,9 +123,9 @@ namespace TSLib
 		public static explicit operator ChannelId(ulong v) => new ChannelId(v);
 		public static bool operator ==(ChannelId a, ChannelId b) => a.Value == b.Value;
 		public static bool operator !=(ChannelId a, ChannelId b) => a.Value != b.Value;
-		public override int GetHashCode() => Value.GetHashCode();
-		public override bool Equals(object? obj) => obj is ChannelId c && Value.Equals(c.Value);
-		public override string ToString() => Value.ToString();
+		public override int GetHashCode() => Value.GetHashCode() ;
+		public override bool Equals(object? obj) => obj is ChannelId c && this.Equals(c);
+		public override string ToString() => Value .ToString();
 		
 		public bool Equals(ChannelId other) => Value.Equals(other.Value);
 		public string ToString(string? format, IFormatProvider? formatProvider) => Value.ToString(format, formatProvider);
@@ -152,9 +152,9 @@ namespace TSLib
 		public static explicit operator ServerGroupId(ulong v) => new ServerGroupId(v);
 		public static bool operator ==(ServerGroupId a, ServerGroupId b) => a.Value == b.Value;
 		public static bool operator !=(ServerGroupId a, ServerGroupId b) => a.Value != b.Value;
-		public override int GetHashCode() => Value.GetHashCode();
-		public override bool Equals(object? obj) => obj is ServerGroupId c && Value.Equals(c.Value);
-		public override string ToString() => Value.ToString();
+		public override int GetHashCode() => Value.GetHashCode() ;
+		public override bool Equals(object? obj) => obj is ServerGroupId c && this.Equals(c);
+		public override string ToString() => Value .ToString();
 		
 		public bool Equals(ServerGroupId other) => Value.Equals(other.Value);
 		public string ToString(string? format, IFormatProvider? formatProvider) => Value.ToString(format, formatProvider);
@@ -181,9 +181,9 @@ namespace TSLib
 		public static explicit operator ChannelGroupId(ulong v) => new ChannelGroupId(v);
 		public static bool operator ==(ChannelGroupId a, ChannelGroupId b) => a.Value == b.Value;
 		public static bool operator !=(ChannelGroupId a, ChannelGroupId b) => a.Value != b.Value;
-		public override int GetHashCode() => Value.GetHashCode();
-		public override bool Equals(object? obj) => obj is ChannelGroupId c && Value.Equals(c.Value);
-		public override string ToString() => Value.ToString();
+		public override int GetHashCode() => Value.GetHashCode() ;
+		public override bool Equals(object? obj) => obj is ChannelGroupId c && this.Equals(c);
+		public override string ToString() => Value .ToString();
 		
 		public bool Equals(ChannelGroupId other) => Value.Equals(other.Value);
 		public string ToString(string? format, IFormatProvider? formatProvider) => Value.ToString(format, formatProvider);

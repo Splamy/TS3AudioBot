@@ -191,9 +191,9 @@ namespace TS3AudioBot.ResourceFactories
 
 		public R<Stream, LocalStr> GetThumbnail(ResolveContext ctx, PlayResource playResource)
 		{
-			var resolver = GetResolverByType<IThumbnailResolver>(playResource.BaseData.AudioType);
+			var resolver = GetResolverByType<IThumbnailResolver>(playResource.AudioResource.AudioType);
 			if (resolver is null)
-				return new LocalStr(string.Format(strings.error_resfac_no_registered_factory, playResource.BaseData.AudioType));
+				return new LocalStr(string.Format(strings.error_resfac_no_registered_factory, playResource.AudioResource.AudioType));
 
 			var sw = Stopwatch.StartNew();
 			var result = resolver.GetThumbnail(ctx, playResource);

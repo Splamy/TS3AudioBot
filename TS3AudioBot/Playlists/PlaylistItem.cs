@@ -14,7 +14,7 @@ using TS3AudioBot.ResourceFactories;
 
 namespace TS3AudioBot.Playlists
 {
-	public class PlaylistItem : IAudioResourceResult
+	public class PlaylistItem : IAudioResourceResult, IMetaContainer
 	{
 		public MetaData? Meta { get; set; }
 		public AudioResource AudioResource { get; }
@@ -23,6 +23,11 @@ namespace TS3AudioBot.Playlists
 		{
 			AudioResource = resource ?? throw new ArgumentNullException(nameof(resource));
 			Meta = meta;
+		}
+
+		public static PlaylistItem From(PlayResource playResource)
+		{
+			return new PlaylistItem(playResource.AudioResource, playResource.Meta);
 		}
 
 		public override string ToString() => AudioResource.ResourceTitle ?? $"{AudioResource.AudioType}: {AudioResource.ResourceId}";

@@ -115,7 +115,7 @@ namespace TS3AudioBot.ResourceFactories
 			}
 			if (artId is null)
 			{
-				var result = DownloadEmbeddedSite(playResource.BaseData.ResourceId);
+				var result = DownloadEmbeddedSite(playResource.AudioResource.ResourceId);
 				if (!result.Ok) return result.Error;
 				var webSite = result.Value;
 

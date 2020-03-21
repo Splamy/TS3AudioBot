@@ -92,6 +92,9 @@ namespace System
 		public E<TError> OnlyError() => new E<TError>(isError, Error);
 		public static implicit operator E<TError>(R<TSuccess, TError> result) => result.OnlyError();
 
+		public R<T, TError> Map<T>(Func<TSuccess, T> map) where T : notnull => Ok
+			? new R<T, TError>(isError, map(Value), default!)
+			: new R<T, TError>(isError, default!, Error);
 		public R<TSuccess, T> MapError<T>(Func<TError, T> mapE) where T : notnull => Ok
 			? new R<TSuccess, T>(isError, Value, default!)
 			: new R<TSuccess, T>(isError, default!, mapE(Error));

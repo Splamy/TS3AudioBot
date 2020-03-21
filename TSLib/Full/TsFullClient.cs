@@ -326,7 +326,7 @@ namespace TSLib.Full
 			connectionDataFull.DefaultChannelPassword.HashedPassword,
 			connectionDataFull.ServerPassword.HashedPassword,
 			string.Empty, string.Empty, string.Empty,
-			connectionDataFull.Identity.ClientUid.Value, VersionSign);
+			connectionDataFull.Identity.ClientUid.ToString(), VersionSign);
 
 		/// <summary>
 		/// Sends a command to the server. Commands look exactly like query commands and mostly also behave identically.

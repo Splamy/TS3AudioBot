@@ -19,13 +19,15 @@ using TS3AudioBot.Localization;
 using TS3AudioBot.Playlists;
 using TSLib.Helper;
 using TS3AudioBot.ResourceFactories.AudioTags;
+using TS3AudioBot.Audio;
 
 namespace TS3AudioBot.ResourceFactories.Youtube
 {
 	public sealed class YoutubeResolver : IResourceResolver, IPlaylistResolver, IThumbnailResolver, ISearchResolver
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
-		private static readonly Regex IdMatch = new Regex(@"((&|\?)v=|youtu\.be\/)([\w\-_]{11})", Util.DefaultRegexConfig);
+		private static readonly Regex IdMatch = new Regex(@"(?:(?:&|\?)v=|youtu\.be\/)([\w\-_]{11})", Util.DefaultRegexConfig);
+		private static readonly Regex YtTimestampMatch = new Regex(@"(?:&|\?)t=(\d+)", Util.DefaultRegexConfig);
 		private static readonly Regex LinkMatch = new Regex(@"^(https?\:\/\/)?(www\.|m\.)?(youtube\.|youtu\.be)", Util.DefaultRegexConfig);
 		private static readonly Regex ListMatch = new Regex(@"(&|\?)list=([\w\-_]+)", Util.DefaultRegexConfig);
 		private static readonly Regex StreamCodecMatch = new Regex(@"CODECS=""([^""]*)""", Util.DefaultRegexConfig);
@@ -52,7 +54,18 @@ namespace TS3AudioBot.ResourceFactories.Youtube
 			Match matchYtId = IdMatch.Match(uri);
 			if (!matchYtId.Success)
 				return new LocalStr(strings.error_media_failed_to_parse_id);
-			return GetResourceById(null, new AudioResource(matchYtId.Groups[3].Value, null, ResolverFor));
+
+			var result = GetResourceById(null, new AudioResource(matchYtId.Groups[1].Value, null, ResolverFor));
+			return result.Map(play =>
+			{
+				Match matchTimestamp = YtTimestampMatch.Match(uri);
+				if (matchYtId.Success && int.TryParse(matchTimestamp.Groups[1].Value, out var secs))
+				{
+					play.Meta ??= new MetaData();
+					play.Meta.StartOffset = TimeSpan.FromSeconds(secs);
+				}
+				return play;
+			});
 		}
 
 		public R<PlayResource, LocalStr> GetResourceById(ResolveContext? _, AudioResource resource)
@@ -386,7 +399,7 @@ namespace TS3AudioBot.ResourceFactories.Youtube
 			// high     :  480px/360px /hqdefault.jpg
 			// standard :  640px/480px /sddefault.jpg
 			// maxres   : 1280px/720px /maxresdefault.jpg
-			var imgurl = new Uri($"https://i.ytimg.com/vi/{playResource.BaseData.ResourceId}/mqdefault.jpg");
+			var imgurl = new Uri($"https://i.ytimg.com/vi/{playResource.AudioResource.ResourceId}/mqdefault.jpg");
 			return WebWrapper.GetResponseUnsafe(imgurl);
 		}
 

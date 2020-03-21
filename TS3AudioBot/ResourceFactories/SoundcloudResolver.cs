@@ -155,7 +155,7 @@ namespace TS3AudioBot.ResourceFactories
 
 		public R<Stream, LocalStr> GetThumbnail(ResolveContext _, PlayResource playResource)
 		{
-			if (!WebWrapper.DownloadString($"https://api.soundcloud.com/tracks/{playResource.BaseData.ResourceId}?client_id={SoundcloudClientId}")
+			if (!WebWrapper.DownloadString($"https://api.soundcloud.com/tracks/{playResource.AudioResource.ResourceId}?client_id={SoundcloudClientId}")
 				.Get(out var jsonResponse, out var error))
 				return error;
 

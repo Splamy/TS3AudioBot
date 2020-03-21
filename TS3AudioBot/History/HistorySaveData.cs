@@ -16,9 +16,9 @@ namespace TS3AudioBot.History
 	public class HistorySaveData
 	{
 		public AudioResource Resource { get; }
-		public Uid InvokerUid { get; }
+		public Uid? InvokerUid { get; }
 
-		public HistorySaveData(AudioResource resource, Uid invokerUid)
+		public HistorySaveData(AudioResource resource, Uid? invokerUid)
 		{
 			Resource = resource ?? throw new ArgumentNullException(nameof(resource));
 			InvokerUid = invokerUid;
