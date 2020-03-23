@@ -10,8 +10,8 @@
 using NLog;
 using System;
 using System.Runtime;
-using TS3AudioBot.Helper;
 using TS3AudioBot.Environment;
+using TS3AudioBot.Helper;
 
 namespace TS3AudioBot
 {

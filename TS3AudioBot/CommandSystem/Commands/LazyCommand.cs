@@ -7,9 +7,7 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
-using System;
 using System.Collections.Generic;
-using TS3AudioBot.CommandSystem.CommandResults;
 
 namespace TS3AudioBot.CommandSystem.Commands
 {
@@ -27,16 +25,14 @@ namespace TS3AudioBot.CommandSystem.Commands
 			innerCommand = innerCommandArg;
 		}
 
-		public virtual object? Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<Type?> returnTypes)
+		public virtual object? Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments)
 		{
 			if (!executed)
 			{
-				result = innerCommand.Execute(info, arguments, returnTypes);
+				result = innerCommand.Execute(info, arguments);
 				executed = true;
 				return result;
 			}
-			if (!ResultHelper.IsValidResult(result, returnTypes))
-				throw new CommandException("The cached result can't be returned", CommandExceptionReason.NoReturnMatch);
 			return result;
 		}
 

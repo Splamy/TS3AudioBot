@@ -9,18 +9,8 @@
 
 namespace TS3AudioBot.CommandSystem.CommandResults
 {
-	/// <summary>
-	/// A result which can safely used as a primitive like a string.
-	/// 
-	/// The complete list of primitive types is <see cref="XCommandSystem.BasicTypes"/>.
-	/// </summary>
-	public interface IPrimitiveResult<T> : IPrimitiveResult
+	public interface IWrappedResult
 	{
-		new T Get();
-	}
-
-	public interface IPrimitiveResult
-	{
-		object Get();
+		object? Content { get; }
 	}
 }

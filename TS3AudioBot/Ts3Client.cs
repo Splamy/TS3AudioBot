@@ -204,26 +204,9 @@ namespace TS3AudioBot
 
 		#region TSLib functions wrapper
 
-		public E<LocalStr> SendMessage(string message, ClientId clientId)
-		{
-			if (TsString.TokenLength(message) > TsConst.MaxSizeTextMessage)
-				return new LocalStr(strings.error_ts_msg_too_long);
-			return ts3FullClient.SendPrivateMessage(message, clientId).FormatLocal();
-		}
-
-		public E<LocalStr> SendChannelMessage(string message)
-		{
-			if (TsString.TokenLength(message) > TsConst.MaxSizeTextMessage)
-				return new LocalStr(strings.error_ts_msg_too_long);
-			return ts3FullClient.SendChannelMessage(message).FormatLocal();
-		}
-
-		public E<LocalStr> SendServerMessage(string message)
-		{
-			if (TsString.TokenLength(message) > TsConst.MaxSizeTextMessage)
-				return new LocalStr(strings.error_ts_msg_too_long);
-			return ts3FullClient.SendServerMessage(message, 1).FormatLocal();
-		}
+		public E<LocalStr> SendMessage(string message, ClientId clientId) => ts3FullClient.SendPrivateMessage(message, clientId).FormatLocal();
+		public E<LocalStr> SendChannelMessage(string message) => ts3FullClient.SendChannelMessage(message).FormatLocal();
+		public E<LocalStr> SendServerMessage(string message) => ts3FullClient.SendServerMessage(message, 1).FormatLocal();
 
 		public E<LocalStr> KickClientFromServer(params ClientId[] clientId) => ts3FullClient.KickClientFromServer(clientId).FormatLocal();
 		public E<LocalStr> KickClientFromChannel(params ClientId[] clientId) => ts3FullClient.KickClientFromChannel(clientId).FormatLocal();

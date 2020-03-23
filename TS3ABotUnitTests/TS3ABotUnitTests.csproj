@@ -5,6 +5,7 @@
     <TargetFrameworks>netcoreapp3.1</TargetFrameworks>
 
     <LangVersion>8.0</LangVersion>
+    <Nullable>disable</Nullable>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <Prefer32Bit>false</Prefer32Bit>
   </PropertyGroup>

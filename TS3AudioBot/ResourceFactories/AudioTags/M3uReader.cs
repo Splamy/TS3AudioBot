@@ -10,7 +10,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Text;
 using TSLib.Helper;
 
 namespace TS3AudioBot.ResourceFactories.AudioTags
@@ -20,9 +19,9 @@ namespace TS3AudioBot.ResourceFactories.AudioTags
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private const int MaxLineLength = 4096;
 		private const int MaxListLength = 1000;
-		private static readonly byte[] ExtM3uLine = Encoding.UTF8.GetBytes("#EXTM3U");
-		private static readonly byte[] ExtInfLine = Encoding.UTF8.GetBytes("#EXTINF");
-		private static readonly byte[] ExtXStreamInfLine = Encoding.UTF8.GetBytes("#EXT-X-STREAM-INF");
+		private static readonly byte[] ExtM3uLine = Tools.Utf8Encoder.GetBytes("#EXTM3U");
+		private static readonly byte[] ExtInfLine = Tools.Utf8Encoder.GetBytes("#EXTINF");
+		private static readonly byte[] ExtXStreamInfLine = Tools.Utf8Encoder.GetBytes("#EXT-X-STREAM-INF");
 
 		public static R<List<M3uEntry>, string> TryGetData(Stream stream)
 		{

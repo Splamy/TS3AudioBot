@@ -102,7 +102,6 @@ namespace TS3AudioBot.Web.Api
 				case ParamKind.Unknown:
 					break;
 				case ParamKind.SpecialArguments:
-				case ParamKind.SpecialReturns:
 					break;
 				case ParamKind.Dependency:
 					break;

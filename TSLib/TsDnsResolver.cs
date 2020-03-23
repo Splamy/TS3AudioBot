@@ -17,6 +17,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Text.RegularExpressions;
+using TSLib.Helper;
 
 namespace TSLib
 {
@@ -265,7 +266,7 @@ namespace TSLib
 				var request = WebRequest.Create(NicknameLookup + Uri.EscapeDataString(nickname));
 				using var respose = request.GetResponse();
 				using var stream = respose.GetResponseStream();
-				using var reader = new StreamReader(stream, Encoding.UTF8, false, (int)respose.ContentLength);
+				using var reader = new StreamReader(stream, Tools.Utf8Encoder, false, (int)respose.ContentLength);
 				result = reader.ReadToEnd();
 			}
 			catch (Exception ex)

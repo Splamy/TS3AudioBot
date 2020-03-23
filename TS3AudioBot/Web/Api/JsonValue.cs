@@ -26,11 +26,6 @@ namespace TS3AudioBot.Web.Api
 			AsString = asString;
 		}
 
-		public override object GetSerializeObject()
-		{
-			return Value;
-		}
-
 		public override string ToString()
 		{
 			if (AsStringResult is null)

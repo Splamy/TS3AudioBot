@@ -32,19 +32,13 @@ namespace TS3AudioBot.CommandSystem.Commands
 		public bool IsEmpty => commands.Count == 0;
 		public IEnumerable<KeyValuePair<string, ICommand>> Commands => commands;
 
-		public virtual object? Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<Type?> returnTypes)
+		public virtual object? Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments)
 		{
 			string result;
 			if (arguments.Count == 0)
-			{
-				if (returnTypes.Contains(typeof(ICommand)))
-					return this;
 				result = string.Empty;
-			}
 			else
-			{
 				result = arguments[0].ExecuteToString(info, Array.Empty<ICommand>());
-			}
 
 			var filter = info.GetFilter();
 			var commandResults = filter.Filter(commands, result).ToArray();
@@ -65,7 +59,7 @@ namespace TS3AudioBot.CommandSystem.Commands
 				throw new CommandException(string.Format(strings.cmd_help_info_contains_subfunctions, SuggestionsJoinTrim(commands.Keys)), CommandExceptionReason.AmbiguousCall);
 
 			var argSubList = arguments.TrySegment(1);
-			return commandResults[0].Value.Execute(info, argSubList, returnTypes);
+			return commandResults[0].Value.Execute(info, argSubList);
 		}
 
 		private static string SuggestionsJoinTrim(IEnumerable<string> commands)

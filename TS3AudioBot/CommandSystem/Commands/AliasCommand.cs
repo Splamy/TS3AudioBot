@@ -26,7 +26,7 @@ namespace TS3AudioBot.CommandSystem.Commands
 			AliasString = command;
 		}
 
-		public object? Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<Type?> returnTypes)
+		public object? Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments)
 		{
 			info.UseComplexityTokens(1);
 
@@ -42,7 +42,7 @@ namespace TS3AudioBot.CommandSystem.Commands
 			}
 
 			aliasContext.Arguments = arguments.Select(c => new LazyCommand(c)).ToArray();
-			var ret = aliasCommand.Execute(info, Array.Empty<ICommand>(), returnTypes);
+			var ret = aliasCommand.Execute(info, Array.Empty<ICommand>());
 			aliasContext.Arguments = backupArguments;
 			return ret;
 		}

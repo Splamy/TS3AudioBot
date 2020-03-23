@@ -12,7 +12,6 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
-using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using TS3AudioBot.Config;
@@ -443,7 +442,7 @@ namespace TS3AudioBot.Audio
 							}
 							readCount = 0;
 
-							var metaString = Encoding.UTF8.GetString(buffer, 0, metaByte).TrimEnd('\0');
+							var metaString = Tools.Utf8Encoder.GetString(buffer, 0, metaByte).TrimEnd('\0');
 							Log.Debug("Meta: {0}", metaString);
 							OnMetaUpdated?.Invoke(ParseIcyMeta(metaString));
 						}

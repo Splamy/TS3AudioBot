@@ -8,11 +8,12 @@
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
 using Newtonsoft.Json;
+using TS3AudioBot.CommandSystem.CommandResults;
 using TS3AudioBot.Helper;
 
 namespace TS3AudioBot.Web.Api
 {
-	public abstract class JsonObject
+	public abstract class JsonObject : IWrappedResult
 	{
 		private static readonly JsonSerializerSettings DefaultSettigs = new JsonSerializerSettings();
 
@@ -24,6 +25,7 @@ namespace TS3AudioBot.Web.Api
 
 		protected JsonObject() { }
 
+		object? IWrappedResult.Content => GetSerializeObject();
 		public virtual object GetSerializeObject() => this;
 		public virtual string Serialize() => JsonConvert.SerializeObject(GetSerializeObject(), DefaultSettigs);
 		public abstract override string ToString();

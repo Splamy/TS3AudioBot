@@ -13,7 +13,6 @@ using System;
 using System.Globalization;
 using System.IO;
 using System.Net;
-using System.Text;
 using System.Threading;
 using TS3AudioBot.Algorithm;
 using TS3AudioBot.Audio;
@@ -112,18 +111,11 @@ namespace TS3AudioBot.Web.Api
 			{
 				stats.TrackCommandApiCall();
 				Thread.CurrentThread.CurrentUICulture = CultureInfo.InvariantCulture;
-				var res = command.Execute(execInfo, Array.Empty<ICommand>(), CommandSystemTypes.ReturnJsonOrDataOrNothing);
+				var res = command.Execute(execInfo, Array.Empty<ICommand>());
 
 				if (res == null)
 				{
 					response.StatusCode = (int)HttpStatusCode.NoContent;
-				}
-				else if (res is JsonObject json)
-				{
-					var returnString = json.Serialize();
-					response.StatusCode = returnString.Length == 0 ? (int)HttpStatusCode.NoContent : (int)HttpStatusCode.OK;
-					using var responseStream = new StreamWriter(response.Body);
-					responseStream.Write(returnString);
 				}
 				else if (res is DataStream data)
 				{
@@ -133,6 +125,16 @@ namespace TS3AudioBot.Web.Api
 						if (!data.WriteOut(response))
 							response.StatusCode = (int)HttpStatusCode.NotFound;
 					}
+				}
+				else
+				{
+					if (!(res is JsonObject json))
+						json = JsonValue.Create(res);
+
+					var returnString = json.Serialize();
+					response.StatusCode = returnString.Length == 0 ? (int)HttpStatusCode.NoContent : (int)HttpStatusCode.OK;
+					using var responseStream = new StreamWriter(response.Body);
+					responseStream.Write(returnString);
 				}
 			}
 			catch (CommandException ex)
@@ -330,8 +332,8 @@ namespace TS3AudioBot.Web.Api
 
 				if (index < 0)
 					return ErrorAuthFailure;
-				userUid = Encoding.UTF8.GetString(data, 0, index);
-				token = Encoding.UTF8.GetString(data, index + 1, data.Length - (index + 1));
+				userUid = Tools.Utf8Encoder.GetString(data, 0, index);
+				token = Tools.Utf8Encoder.GetString(data, index + 1, data.Length - (index + 1));
 			}
 			catch (Exception) { return "Malformed base64 string"; }
 

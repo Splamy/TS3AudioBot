@@ -40,7 +40,6 @@ using TSLib.Audio;
 using TSLib.Full.Book;
 using TSLib.Helper;
 using TSLib.Messages;
-using static TS3AudioBot.CommandSystem.CommandSystemTypes;
 
 namespace TS3AudioBot
 {
@@ -277,20 +276,20 @@ namespace TS3AudioBot
 		}
 
 		[Command("bot template", "cmd_bot_use_help")]
-		public static object? CommandBotTemplate(ExecutionInformation info, IReadOnlyList<Type?> returnTypes, BotManager bots, string botName, ICommand cmd)
+		public static object? CommandBotTemplate(ExecutionInformation info, BotManager bots, string botName, ICommand cmd)
 		{
 			using var botLock = bots.GetBotLock(botName);
-			return CommandBotUseInternal(info, returnTypes, botLock, cmd);
+			return CommandBotUseInternal(info, botLock, cmd);
 		}
 
 		[Command("bot use")]
-		public static object? CommandBotUse(ExecutionInformation info, IReadOnlyList<Type?> returnTypes, BotManager bots, int botId, ICommand cmd)
+		public static object? CommandBotUse(ExecutionInformation info, BotManager bots, int botId, ICommand cmd)
 		{
 			using var botLock = bots.GetBotLock(botId);
-			return CommandBotUseInternal(info, returnTypes, botLock, cmd);
+			return CommandBotUseInternal(info, botLock, cmd);
 		}
 
-		private static object? CommandBotUseInternal(ExecutionInformation info, IReadOnlyList<Type?> returnTypes, BotLock? botLock, ICommand cmd)
+		private static object? CommandBotUseInternal(ExecutionInformation info, BotLock? botLock, ICommand cmd)
 		{
 			if (botLock is null)
 				throw new CommandException(strings.error_bot_does_not_exist, CommandExceptionReason.CommandError);
@@ -301,7 +300,7 @@ namespace TS3AudioBot
 			NLog.MappedDiagnosticsContext.Set("BotId", botLock.Bot.Id.ToString());
 			try
 			{
-				return cmd.Execute(info, Array.Empty<ICommand>(), returnTypes);
+				return cmd.Execute(info, Array.Empty<ICommand>());
 			}
 			finally
 			{
@@ -352,23 +351,24 @@ namespace TS3AudioBot
 		[Command("eval")]
 		[Usage("<command> <arguments...>", "Executes the given command on arguments")]
 		[Usage("<strings...>", "Concat the strings and execute them with the command system")]
-		public static object? CommandEval(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<Type> returnTypes)
+		public static object? CommandEval(ExecutionInformation info, IReadOnlyList<ICommand> arguments)
 		{
 			// Evaluate the first argument on the rest of the arguments
 			if (arguments.Count == 0)
 				throw new CommandException(strings.error_cmd_at_least_one_argument, CommandExceptionReason.MissingParameter);
 			var leftArguments = arguments.TrySegment(1);
-			var arg0 = arguments[0].Execute(info, Array.Empty<ICommand>(), ReturnCommandOrString);
+			var arg0 = arguments[0].Execute(info, Array.Empty<ICommand>());
 			switch (arg0)
 			{
 			case ICommand command:
-				return command.Execute(info, leftArguments, returnTypes);
-			case IPrimitiveResult<string> args:
-				// We got a string back so parse and evaluate it
-				var cmd = CommandManager.AstToCommandResult(CommandParser.ParseCommandRequest(args.Get()));
-				return cmd.Execute(info, leftArguments, returnTypes);
+				return command.Execute(info, leftArguments);
+			case null:
+				return null;
 			default:
-				throw new CommandException("Expected a string or command as result", CommandExceptionReason.NoReturnMatch);
+				var cmdStr = arg0.ToString()!;
+				// We got a string back so parse and evaluate it
+				var cmd = CommandManager.AstToCommandResult(CommandParser.ParseCommandRequest(cmdStr));
+				return cmd.Execute(info, leftArguments);
 			}
 		}
 
@@ -710,7 +710,7 @@ namespace TS3AudioBot
 		[Command("if")]
 		[Usage("<argument0> <comparator> <argument1> <then>", "Compares the two arguments and returns or executes the then-argument")]
 		[Usage("<argument0> <comparator> <argument1> <then> <else>", "Same as before and return the else-arguments if the condition is false")]
-		public static object? CommandIf(ExecutionInformation info, IReadOnlyList<Type?> returnTypes, string arg0, string cmp, string arg1, ICommand then, ICommand? other = null)
+		public static object? CommandIf(ExecutionInformation info, string arg0, string cmp, string arg1, ICommand then, ICommand? other = null)
 		{
 			Func<double, double, bool> comparer = cmp switch
 			{
@@ -736,15 +736,12 @@ namespace TS3AudioBot
 
 			// If branch
 			if (cmpResult)
-				return then.Execute(info, Array.Empty<ICommand>(), returnTypes);
+				return then.Execute(info, Array.Empty<ICommand>());
 			// Else branch
 			if (other != null)
-				return other.Execute(info, Array.Empty<ICommand>(), returnTypes);
+				return other.Execute(info, Array.Empty<ICommand>());
 
-			// Try to return nothing
-			if (returnTypes.Contains(null))
-				return null;
-			throw new CommandException(strings.error_nothing_to_return, CommandExceptionReason.NoReturnMatch);
+			return null;
 		}
 
 		private static readonly TextMod SongDone = new TextMod(TextModFlag.Color, Color.Gray);
@@ -831,12 +828,12 @@ namespace TS3AudioBot
 				.Select(arg =>
 				{
 					object? res;
-					try { res = arg.Execute(info, Array.Empty<ICommand>(), ReturnJson); }
+					try { res = arg.Execute(info, Array.Empty<ICommand>()); }
 					catch (CommandException) { return null; }
 					if (res is JsonObject o)
 						return o.GetSerializeObject();
 					else
-						throw new CommandException(strings.error_nothing_to_return, CommandExceptionReason.NoReturnMatch);
+						return res;
 				})
 				.ToArray();
 
@@ -921,7 +918,7 @@ namespace TS3AudioBot
 		public static JsonValue<PlaylistInfo> CommandListImport(PlaylistManager playlistManager, ResolveContext resolver, string listId, string link)
 		{
 			var getList = resolver.LoadPlaylistFrom(link).UnwrapThrow();
-			return ImportMerge(playlistManager, resolver, getList, listId); ;
+			return ImportMerge(playlistManager, resolver, getList, listId);
 		}
 
 		private static JsonValue<PlaylistInfo> ImportMerge(PlaylistManager playlistManager, ResolveContext resolver, Playlist addList, string listId)
@@ -1090,17 +1087,17 @@ namespace TS3AudioBot
 			=> playManager.Next(invoker).UnwrapThrow();
 
 		[Command("param", "_undocumented")] // TODO add documentation, when name decided
-		public static object? CommandParam(ExecutionInformation info, IReadOnlyList<Type?> resultTypes, int index)
+		public static object? CommandParam(ExecutionInformation info, int index)
 		{
 			if (!info.TryGet<AliasContext>(out var ctx) || ctx.Arguments == null)
 				throw new CommandException("No parameter available", CommandExceptionReason.CommandError);
 
 			if (index < 0 || index >= ctx.Arguments.Count)
-				return CommandManager.GetEmpty(resultTypes);
+				return null;
 
 			var backup = ctx.Arguments;
 			ctx.Arguments = null;
-			var result = backup[index].Execute(info, Array.Empty<ICommand>(), resultTypes);
+			var result = backup[index].Execute(info, Array.Empty<ICommand>());
 			ctx.Arguments = backup;
 			return result;
 		}
@@ -1573,7 +1570,7 @@ namespace TS3AudioBot
 		[Usage("<count> <text>", "Take only <count> parts of the text")]
 		[Usage("<count> <start> <text>", "Take <count> parts, starting with the part at <start>")]
 		[Usage("<count> <start> <delimiter> <text>", "Specify another delimiter for the parts than spaces")]
-		public static object? CommandTake(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<Type?> returnTypes)
+		public static string CommandTake(ExecutionInformation info, IReadOnlyList<ICommand> arguments)
 		{
 			if (arguments.Count < 2)
 				throw new CommandException(strings.error_cmd_at_least_two_argument, CommandExceptionReason.MissingParameter);
@@ -1607,13 +1604,7 @@ namespace TS3AudioBot
 				throw new CommandException(strings.cmd_take_not_enough_arguements, CommandExceptionReason.CommandError);
 			var splittedarr = splitted.Skip(start).Take(count).ToArray();
 
-			foreach (var returnType in returnTypes)
-			{
-				if (returnType == typeof(string))
-					return new PrimitiveResult<string>(string.Join(delimiter ?? " ", splittedarr));
-			}
-
-			throw new CommandException(strings.error_nothing_to_return, CommandExceptionReason.NoReturnMatch);
+			return string.Join(delimiter ?? " ", splittedarr);
 		}
 
 		[Command("unsubscribe")]
@@ -1760,7 +1751,7 @@ namespace TS3AudioBot
 		public static void CommandXecute(ExecutionInformation info, IReadOnlyList<ICommand> arguments)
 		{
 			foreach (var arg in arguments)
-				arg.Execute(info, Array.Empty<ICommand>(), ReturnAnyPreferNothing);
+				arg.Execute(info, Array.Empty<ICommand>());
 		}
 		// ReSharper enable UnusedMember.Global
 

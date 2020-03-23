@@ -21,7 +21,6 @@ using TS3AudioBot.Helper;
 using TS3AudioBot.Localization;
 using TS3AudioBot.Rights;
 using TSLib.Helper;
-using static TS3AudioBot.CommandSystem.CommandSystemTypes;
 
 namespace TS3AudioBot.CommandSystem
 {
@@ -37,7 +36,7 @@ namespace TS3AudioBot.CommandSystem
 		private readonly HashSet<ICommandBag> baggedCommands = new HashSet<ICommandBag>();
 		private readonly RightsManager rightsManager;
 
-		public RootGroup RootGroup { get; } = new RootGroup();
+		public CommandGroup RootGroup { get; } = new CommandGroup();
 
 		public CommandManager(RightsManager rightsManager)
 		{
@@ -380,7 +379,7 @@ namespace TS3AudioBot.CommandSystem
 					if (!(para is AstValue astVal) || astVal.StringType != StringType.FreeString)
 						break;
 
-					arguments[i] = new TailStringAutoConvertCommand(new TailString(astVal.Value, astVal.TailString));
+					arguments[i] = new ResultCommand(new TailString(astVal.Value, astVal.TailString));
 					tailCandidates++;
 				}
 				for (int i = 0; i < cmd.Parameter.Count - tailCandidates; i++)
@@ -388,52 +387,21 @@ namespace TS3AudioBot.CommandSystem
 				return new RootCommand(arguments);
 			case AstType.Value:
 				var astNode = (AstValue)node;
-				// Quoted strings are always strings, the rest gets automatically converted
-				if (astNode.StringType == StringType.FreeString)
-					return new AutoConvertResultCommand(astNode.Value);
-				else
-					return new ResultCommand(new PrimitiveResult<string>(astNode.Value));
+				return new ResultCommand(astNode.Value);
 			default:
 				throw Tools.UnhandledDefault(node.Type);
 			}
 		}
 
-		public static object? Execute(ExecutionInformation info, string command, IReadOnlyList<Type?> returnTypes)
+		public static ICmdResult Execute(ExecutionInformation info, string command)
 		{
 			var ast = CommandParser.ParseCommandRequest(command);
 			var cmd = AstToCommandResult(ast);
-			return cmd.Execute(info, Array.Empty<ICommand>(), returnTypes);
+			return new ICmdResult(cmd.Execute(info, Array.Empty<ICommand>()));
 		}
 
-		public static object? Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<Type?> returnTypes)
-			=> info.GetModule<CommandManager>()!.RootGroup.Execute(info, arguments, returnTypes);
-
-		public static string? ExecuteCommand(ExecutionInformation info, string command)
-			=> CastResult(Execute(info, command, ReturnStringOrNothing));
-
-		public static string? ExecuteCommand(ExecutionInformation info, IReadOnlyList<ICommand> arguments)
-			=> CastResult(Execute(info, arguments, ReturnStringOrNothing));
-
-		private static string? CastResult(object? result)
-		{
-			if (result is null)
-				return null;
-			if (result is IPrimitiveResult<string> s)
-				return s.Get();
-			throw new CommandException("Expected a string or nothing as result", CommandExceptionReason.NoReturnMatch);
-		}
-
-		public static object? GetEmpty(IReadOnlyList<Type?> resultTypes)
-		{
-			foreach (var item in resultTypes)
-			{
-				if (item is null)
-					return null;
-				else if (item == typeof(string))
-					return string.Empty;
-			}
-			throw new CommandException(strings.error_nothing_to_return, CommandExceptionReason.NoReturnMatch);
-		}
+		public static ICmdResult Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments)
+			=> new ICmdResult(info.GetModule<CommandManager>()!.RootGroup.Execute(info, arguments));
 
 		public static string GetTree(ICommand com)
 		{
@@ -474,5 +442,19 @@ namespace TS3AudioBot.CommandSystem
 		}
 
 		#endregion
+	}
+
+	public readonly struct ICmdResult
+	{
+		private readonly object? result;
+
+		public ICmdResult(object? result)
+		{
+			this.result = result;
+		}
+
+		public object? AsRaw() => result;
+
+		public string? AsString() => result?.ToString();
 	}
 }

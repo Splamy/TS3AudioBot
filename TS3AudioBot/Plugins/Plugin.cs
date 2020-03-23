@@ -9,6 +9,7 @@
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.Emit;
 using Microsoft.CodeAnalysis.Text;
 using System;
 using System.Collections.Generic;
@@ -20,7 +21,6 @@ using System.Text;
 using TS3AudioBot.CommandSystem;
 using TS3AudioBot.Dependency;
 using TS3AudioBot.ResourceFactories;
-using Microsoft.CodeAnalysis.Emit;
 using TSLib.Helper;
 
 namespace TS3AudioBot.Plugins

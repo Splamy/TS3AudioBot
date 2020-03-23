@@ -479,12 +479,13 @@ namespace TS3AudioBot
 			TryCatchCommand(info, answer, () =>
 			{
 				// parse and execute the command
-				var s = CommandManager.ExecuteCommand(info, command);
+				var res = CommandManager.Execute(info, command);
 
 				if (!answer)
 					return;
 
 				// Write result to user
+				var s = res.AsString();
 				if (!string.IsNullOrEmpty(s))
 					info.Write(s).UnwrapToLog(Log);
 			});

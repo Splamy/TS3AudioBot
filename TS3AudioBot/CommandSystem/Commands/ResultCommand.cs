@@ -7,10 +7,7 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
-using System;
 using System.Collections.Generic;
-using TS3AudioBot.CommandSystem.CommandResults;
-using TS3AudioBot.Localization;
 
 namespace TS3AudioBot.CommandSystem.Commands
 {
@@ -19,22 +16,15 @@ namespace TS3AudioBot.CommandSystem.Commands
 	/// </summary>
 	public class ResultCommand : ICommand
 	{
-		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
+		public object? Content { get; }
 
-		public object Content { get; }
-
-		public ResultCommand(object contentArg)
+		public ResultCommand(object? contentArg)
 		{
 			Content = contentArg;
 		}
 
-		public virtual object? Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<Type?> returnTypes)
+		public virtual object? Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments)
 		{
-			if (!ResultHelper.IsValidResult(Content, returnTypes))
-			{
-				Log.Debug("Failed to return {0} ({1})", Content.GetType(), Content);
-				throw new CommandException(strings.error_cmd_no_matching_overload, CommandExceptionReason.NoReturnMatch);
-			}
 			return Content;
 		}
 

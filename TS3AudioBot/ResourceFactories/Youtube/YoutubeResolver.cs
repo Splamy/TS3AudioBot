@@ -13,13 +13,13 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using TS3AudioBot.Audio;
 using TS3AudioBot.Config;
 using TS3AudioBot.Helper;
 using TS3AudioBot.Localization;
 using TS3AudioBot.Playlists;
-using TSLib.Helper;
 using TS3AudioBot.ResourceFactories.AudioTags;
-using TS3AudioBot.Audio;
+using TSLib.Helper;
 
 namespace TS3AudioBot.ResourceFactories.Youtube
 {
@@ -35,9 +35,9 @@ namespace TS3AudioBot.ResourceFactories.Youtube
 		private string YoutubeProjectId => conf.ApiKey.Value;
 		private readonly ConfResolverYoutube conf;
 
-		public YoutubeResolver(ConfFactories conf)
+		public YoutubeResolver(ConfResolverYoutube conf)
 		{
-			this.conf = conf.Youtube;
+			this.conf = conf;
 		}
 
 		public string ResolverFor => "youtube";
