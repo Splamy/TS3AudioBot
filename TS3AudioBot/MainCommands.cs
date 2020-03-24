@@ -227,8 +227,8 @@ namespace TS3AudioBot
 		public static BotInfo CommandBotInfo(Bot bot) => bot.GetInfo();
 
 		[Command("bot info client", "_undocumented")]
-		public static JsonValue<ClientInfo> CommandBotInfoClient(Ts3Client ts3Client, ApiCall _)
-			=> new JsonValue<ClientInfo>(ts3Client.GetSelf().UnwrapThrow(), string.Empty);
+		public static JsonValue<Client> CommandBotInfoClient(Ts3Client ts3Client, ApiCall _)
+			=> new JsonValue<Client>(ts3Client.GetSelf().UnwrapThrow(), string.Empty);
 
 		[Command("bot list")]
 		public static JsonArray<BotInfo> CommandBotList(BotManager bots, ConfRoot config)

@@ -23,20 +23,7 @@ namespace TS3AudioBot.Environment
 		private static readonly Regex PlatformRegex = new Regex(@"(\w+)=(.*)", RegexOptions.IgnoreCase | RegexOptions.ECMAScript | RegexOptions.Multiline);
 		private static readonly Regex SemVerRegex = new Regex(@"(\d+)(?:\.(\d+)){1,3}", RegexOptions.IgnoreCase | RegexOptions.ECMAScript | RegexOptions.Multiline);
 
-		public static BuildData AssemblyData { get; } = GenAssemblyData();
-		private static BuildData GenAssemblyData()
-		{
-			var gitInfoType = Assembly.GetExecutingAssembly().GetType("GitVersionInformation");
-			if (gitInfoType is null)
-				return new BuildData();
-
-			return new BuildData
-			{
-				Version = (string)gitInfoType.GetField("FullSemVer", BindingFlags.Static | BindingFlags.Public)?.GetValue(null)!,
-				Branch = (string)gitInfoType.GetField("BranchName", BindingFlags.Static | BindingFlags.Public)?.GetValue(null)!,
-				CommitSha = (string)gitInfoType.GetField("Sha", BindingFlags.Static | BindingFlags.Public)?.GetValue(null)!,
-			};
-		}
+		public static BuildData AssemblyData { get; } = new BuildData();
 
 		public static string PlatformData { get; } = GenPlatformDat();
 		private static string GenPlatformDat()
@@ -203,14 +190,21 @@ namespace TS3AudioBot.Environment
 		Mono,
 	}
 
-	public class BuildData
+	public partial class BuildData
 	{
 		public string Version = "<?>";
 		public string Branch = "<?>";
 		public string CommitSha = "<?>";
 
+		public BuildData()
+		{
+			GetDataInternal();
+		}
+
 		public string ToLongString() => $"\nVersion: {Version}\nBranch: {Branch}\nCommitHash: {CommitSha}";
 		public override string ToString() => $"{Version}/{Branch}/{(CommitSha.Length > 8 ? CommitSha.Substring(0, 8) : CommitSha)}";
+
+		partial void GetDataInternal();
 	}
 
 	public class PlatformVersion

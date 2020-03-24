@@ -32,20 +32,14 @@
     <RepositoryType>git</RepositoryType>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
 
-    <UpdateAssemblyInfo>true</UpdateAssemblyInfo>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
     <GenerateAssemblyFileVersionAttribute>false</GenerateAssemblyFileVersionAttribute>
     <GenerateAssemblyInformationalVersionAttribute>false</GenerateAssemblyInformationalVersionAttribute>
     <GenerateAssemblyVersionAttribute>false</GenerateAssemblyVersionAttribute>
-    <WriteVersionInfoToBuildLog>false</WriteVersionInfoToBuildLog>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="GitVersionTask" Version="5.2.4">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>build</IncludeAssets>
-    </PackageReference>
     <PackageReference Include="NLog" Version="4.7.0" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
     <PackageReference Include="LiteDB" Version="4.1.4" />
@@ -66,7 +60,6 @@
       <SubType>Designer</SubType>
     </None>
     <EmbeddedResource Include="Rights\DefaultRights.toml" />
-    <None Include="Media\SleepingKitty.svg" />
     <EmbeddedResource Include="Media\SleepingKitty.png" />
   </ItemGroup>
 
@@ -99,4 +92,22 @@
       <LastGenOutput>strings.Designer.cs</LastGenOutput>
     </EmbeddedResource>
   </ItemGroup>
+
+  <Target Name="GenerateGitVersion" BeforeTargets="BeforeCompile">
+    <ItemGroup>
+      <VersionBuildScript Include="build.csx" />
+      <VersionBuildOutputFile Include="$(IntermediateOutputPath)Version.g.cs" />
+    </ItemGroup>
+    <Exec Command="dotnet tool install --global dotnet-script" IgnoreExitCode="true" />
+    <Exec Command="dotnet tool install --global GitVersion.Tool" IgnoreExitCode="true" />
+    <Exec Command="dotnet script @(VersionBuildScript) -- @(VersionBuildOutputFile)" IgnoreExitCode="true">
+      <Output TaskParameter="ExitCode" PropertyName="GitverExit"/>
+    </Exec>
+    <ItemGroup Condition="$(GitverExit) == '0'">
+      <FileWrites Include="@(VersionBuildOutputFile)"/>
+      <Compile Include="@(VersionBuildOutputFile)">
+        <AutoGen>True</AutoGen>
+      </Compile>
+    </ItemGroup>
+  </Target>
 </Project>

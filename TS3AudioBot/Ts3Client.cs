@@ -18,6 +18,7 @@ using TS3AudioBot.Localization;
 using TSLib;
 using TSLib.Commands;
 using TSLib.Full;
+using TSLib.Full.Book;
 using TSLib.Helper;
 using TSLib.Messages;
 
@@ -485,7 +486,13 @@ namespace TS3AudioBot
 			return getInfoResult.Value.IsChannelCommander;
 		}
 
-		public R<ClientInfo, LocalStr> GetSelf() => ts3FullClient.ClientInfo(ts3FullClient.ClientId).FormatLocal();
+		public R<Client, LocalStr> GetSelf()
+		{
+			var self = ts3FullClient.Book.Self();
+			if (self is null)
+				return new LocalStr(strings.error_ts_no_client_found);
+			return self;
+		}
 
 		public void InvalidateClientBuffer() => clientbufferOutdated = true;
 
