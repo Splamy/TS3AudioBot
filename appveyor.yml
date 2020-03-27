@@ -62,7 +62,7 @@ deploy_script:
       
       # Publish linux-x64
       cd([io.path]::combine(${rel}, "netcoreapp3.1", "linux-x64", "publish"))
-      Compress-Archive -Path TS3AudioBot.exe,../../../WebInterface -DestinationPath TS3AudioBot.zip
+      Compress-Archive -Path TS3AudioBot,../../../WebInterface -DestinationPath TS3AudioBot.zip
       Invoke-RestMethod -Uri "https://splamy.de/api/nightly/ts3ab/${env:APPVEYOR_REPO_BRANCH}_linux_x64?filename=TS3AudioBot.zip&commit=${env:APPVEYOR_REPO_COMMIT}&version=${ver}" -Headers @{ "Content-Type" = "application/zip"; "Authorization" = "${env:UPLOAD_TOKEN}" } -Method Put -InFile .\TS3AudioBot.zip
     }
 on_success:

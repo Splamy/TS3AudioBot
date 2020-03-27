@@ -83,13 +83,13 @@ namespace TS3AudioBot.Web
 					var checkDir = Path.Combine(up, "WebInterface");
 					if (Directory.Exists(checkDir))
 					{
-						return checkDir;
+						return Path.GetFullPath(checkDir);
 					}
 				}
 			}
 			else if (Directory.Exists(webData.Path))
 			{
-				return webData.Path;
+				return Path.GetFullPath(webData.Path);
 			}
 
 			return null;
