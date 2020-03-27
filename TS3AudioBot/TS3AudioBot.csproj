@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <RootNamespace>TS3AudioBot</RootNamespace>
@@ -6,10 +6,6 @@
     <OutputType>Exe</OutputType>
     <LangVersion>8.0</LangVersion>
     <TargetFramework>netcoreapp3.1</TargetFramework>
-    <!--<RuntimeIdentifiers>win-x64;linux-x64</RuntimeIdentifiers>-->
-    <!--<PublishTrimmed>true</PublishTrimmed>-->
-    <!--<PublishSingleFile>true</PublishSingleFile>-->
-    <!-- IncludeSymbolsInSingleFile -->
     <TargetLatestRuntimePatch>true</TargetLatestRuntimePatch>
     <RollForward>Major</RollForward>
 
@@ -23,7 +19,7 @@
 
     <NeutralLanguage>en</NeutralLanguage>
 
-    <StartupObject>TS3AudioBot.Core</StartupObject>
+    <StartupObject>TS3AudioBot.Setup</StartupObject>
 
     <ServerGarbageCollection>true</ServerGarbageCollection>
     <ConcurrentGarbageCollection>true</ConcurrentGarbageCollection>
@@ -40,6 +36,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="CommandLineParser" Version="2.7.82" />
     <PackageReference Include="NLog" Version="4.7.0" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
     <PackageReference Include="LiteDB" Version="4.1.4" />
@@ -55,21 +52,22 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="NLog.config">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <SubType>Designer</SubType>
-    </None>
-    <EmbeddedResource Include="Rights\DefaultRights.toml" />
+    <EmbeddedResource Include="Resources\DefaultRights.toml" />
     <EmbeddedResource Include="Media\SleepingKitty.png" />
+    <EmbeddedResource Include="Resources\NLog.config">
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
   </ItemGroup>
 
   <ItemGroup>
     <Content Include="lib\x64\libopus.dll">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <PackagePath>.</PackagePath>
       <Pack>true</Pack>
     </Content>
     <Content Include="lib\x86\libopus.dll">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <PackagePath>.</PackagePath>
       <Pack>true</Pack>
     </Content>
   </ItemGroup>
@@ -100,11 +98,11 @@
     </ItemGroup>
     <Exec Command="dotnet tool install --global dotnet-script" IgnoreExitCode="true" />
     <Exec Command="dotnet tool install --global GitVersion.Tool" IgnoreExitCode="true" />
-    <Exec Command="dotnet script @(VersionBuildScript) -- @(VersionBuildOutputFile)" IgnoreExitCode="true">
-      <Output TaskParameter="ExitCode" PropertyName="GitverExit"/>
+    <Exec Command="dotnet script @(VersionBuildScript) -- @(VersionBuildOutputFile) $(Configuration)" IgnoreExitCode="true">
+      <Output TaskParameter="ExitCode" PropertyName="GitverExit" />
     </Exec>
     <ItemGroup Condition="$(GitverExit) == '0'">
-      <FileWrites Include="@(VersionBuildOutputFile)"/>
+      <FileWrites Include="@(VersionBuildOutputFile)" />
       <Compile Include="@(VersionBuildOutputFile)">
         <AutoGen>True</AutoGen>
       </Compile>

@@ -9,7 +9,6 @@
 
 using NLog;
 using System;
-using System.Threading;
 using System.Threading.Tasks;
 using TS3AudioBot.CommandSystem;
 using TS3AudioBot.Config;
@@ -31,38 +30,6 @@ namespace TS3AudioBot
 		private bool forceNextExit;
 		private readonly CoreInjector injector;
 
-		internal static void Main(string[] args)
-		{
-			Thread.CurrentThread.Name = "TAB Main";
-
-			var setup = Setup.ReadParameter(args);
-
-			if (setup.Exit == ExitType.Immediately)
-				return;
-
-			if (!setup.SkipVerifications && !Setup.VerifyAll())
-				return;
-
-			if (setup.Llgc)
-				Setup.EnableLlgc();
-
-			if (!setup.HideBanner)
-				Setup.LogHeader();
-
-			// Initialize the actual core
-			var core = new Core(setup.ConfigFile);
-			AppDomain.CurrentDomain.UnhandledException += core.ExceptionHandler;
-			TaskScheduler.UnobservedTaskException += UnobservedTaskExceptionHandler;
-			Console.CancelKeyPress += core.ConsoleInterruptHandler;
-
-			var initResult = core.Run(setup);
-			if (!initResult)
-			{
-				Log.Error("Core initialization failed: {0}", initResult.Error);
-				core.Dispose();
-			}
-		}
-
 		public Core(string? configFilePath = null)
 		{
 			// setting defaults
@@ -71,8 +38,12 @@ namespace TS3AudioBot
 			injector = new CoreInjector();
 		}
 
-		private E<string> Run(ParameterData setup)
+		public E<string> Run(ParameterData setup)
 		{
+			AppDomain.CurrentDomain.UnhandledException += ExceptionHandler;
+			TaskScheduler.UnobservedTaskException += UnobservedTaskExceptionHandler;
+			Console.CancelKeyPress += ConsoleInterruptHandler;
+
 			var config = ConfRoot.OpenOrCreate(configFilePath);
 			if (config is null)
 				return "Could not create config";

@@ -196,6 +196,8 @@ namespace TS3AudioBot.Environment
 		public string Branch = "<?>";
 		public string CommitSha = "<?>";
 
+		public string BuildConfiguration = "<?>";
+
 		public BuildData()
 		{
 			GetDataInternal();

@@ -1274,10 +1274,17 @@ namespace TS3AudioBot
 			playerConnection.Position = position;
 		}
 
-		private static AudioResource GetSearchResult(this UserSession session, int index)
+		private static IList<AudioResource> GetSearchResult(this UserSession session)
 		{
 			if (!session.Get<IList<AudioResource>>(SessionConst.SearchResult, out var sessionList))
 				throw new CommandException(strings.error_select_empty, CommandExceptionReason.CommandError);
+
+			return sessionList;
+		}
+
+		private static AudioResource GetSingleSearchResult(this UserSession session, int index)
+		{
+			var sessionList = session.GetSearchResult();
 
 			if (index < 0 || index >= sessionList.Count)
 				throw new CommandException(string.Format(strings.error_value_not_in_range, 0, sessionList.Count), CommandExceptionReason.CommandError);
@@ -1285,18 +1292,8 @@ namespace TS3AudioBot
 			return sessionList[index];
 		}
 
-		[Command("search add", "_undocumented")] // TODO Doc
-		public static void CommandSearchAdd(PlayManager playManager, InvokerData invoker, UserSession session, int index)
-			=> playManager.Enqueue(invoker, session.GetSearchResult(index)).UnwrapThrow();
-
-		[Command("search from", "_undocumented")] // TODO Doc
-		public static JsonArray<AudioResource> PropagiateSearch(UserSession session, CallerInfo callerInfo, ResolveContext resolver, string resolverName, string query)
-		{
-			var result = resolver.Search(resolverName, query);
-			var list = result.UnwrapThrow();
-			session.Set(SessionConst.SearchResult, list);
-
-			return new JsonArray<AudioResource>(list, searchResults =>
+		private static JsonArray<AudioResource> FormatSearchResult(IList<AudioResource> list, CallerInfo callerInfo)
+			=> new JsonArray<AudioResource>(list, searchResults =>
 			{
 				if (searchResults.Count == 0)
 					return strings.cmd_search_no_result;
@@ -1313,15 +1310,31 @@ namespace TS3AudioBot
 
 				return tmb.ToString();
 			});
+
+		[Command("search add", "_undocumented")] // TODO Doc
+		public static void CommandSearchAdd(PlayManager playManager, InvokerData invoker, UserSession session, int index)
+			=> playManager.Enqueue(invoker, session.GetSingleSearchResult(index)).UnwrapThrow();
+
+		[Command("search from", "_undocumented")] // TODO Doc
+		public static JsonArray<AudioResource> PropagiateSearch(UserSession session, CallerInfo callerInfo, ResolveContext resolver, string resolverName, string query)
+		{
+			var result = resolver.Search(resolverName, query);
+			var list = result.UnwrapThrow();
+			session.Set(SessionConst.SearchResult, list);
+			return FormatSearchResult(list, callerInfo);
 		}
 
 		[Command("search get", "_undocumented")] // TODO Doc
-		public static void CommandSearchGet(UserSession session, int index)
-			=> session.GetSearchResult(index);
+		public static AudioResource CommandSearchGet(UserSession session, int index)
+			=> session.GetSingleSearchResult(index);
 
 		[Command("search play", "_undocumented")] // TODO Doc
 		public static void CommandSeachPlay(PlayManager playManager, ClientCall clientCall, UserSession session, int index)
-			=> playManager.Play(clientCall, session.GetSearchResult(index)).UnwrapThrow();
+			=> playManager.Play(clientCall, session.GetSingleSearchResult(index)).UnwrapThrow();
+
+		[Command("search show", "_undocumented")] // TODO Doc
+		public static JsonArray<AudioResource> CommandSearchShow(UserSession session, CallerInfo callerInfo)
+			=> FormatSearchResult(session.GetSearchResult(), callerInfo);
 
 		[Command("server tree", "_undocumented")]
 		public static JsonValue<Connection> CommandServerTree(Connection book, ApiCall _)

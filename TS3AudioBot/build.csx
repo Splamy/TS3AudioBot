@@ -9,6 +9,9 @@ if (Args.Count == 0) {
 	return 1;
 }
 
+string outFile = Args[0];
+string buildConfig = Args[1];
+
 string json = Read("dotnet", "gitversion");
 
 var version = JsonConvert.DeserializeAnonymousType(json, new {
@@ -33,12 +36,14 @@ namespace TS3AudioBot.Environment
 			this.Version = ""{version.FullSemVer}"";
 			this.Branch = ""{version.BranchName}"";
 			this.CommitSha = ""{version.Sha}"";
+
+			this.BuildConfiguration = ""{buildConfig}"";
 		}}
 	}}
 }}
 ";
 
 Console.WriteLine("Generated Version {0}", version.FullSemVer);
-var writeFull = Path.GetFullPath(Args[0]);
-WriteLine("Writing to {0}", writeFull);
+var writeFull = Path.GetFullPath(outFile);
+//WriteLine("Writing to {0}", writeFull);
 File.WriteAllText(writeFull, genFile);

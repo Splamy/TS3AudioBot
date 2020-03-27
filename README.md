@@ -42,13 +42,13 @@ For an in-depth command tutorial see [here in the wiki](https://github.com/Splam
 
 ### Download
 Download either one of the latest builds from our [nightly server](https://splamy.de/Nightly#ts3ab):  
-- [![Download](https://img.shields.io/badge/Download-master-green.svg)](https://splamy.de/api/nightly/ts3ab/master_dotnet_core/download)
+- [![Download](https://img.shields.io/badge/Download-master-green.svg)](https://splamy.de/api/nightly/ts3ab/master_dotnet_core_3_1_preview/download)
   Versions are mostly considered stable but won't get bigger features as fast.
-- [![Download](https://img.shields.io/badge/Download-develop-green.svg)](https://splamy.de/api/nightly/ts3ab/develop_dotnet_core/download)
+- [![Download](https://img.shields.io/badge/Download-develop-green.svg)](https://splamy.de/api/nightly/ts3ab/develop/download)
   Will always have the latest and greatest but might not be fully stable or have broken features.
 
 #### Linux
-1. dotnet core: Get the latest `dotnet core` version by following [this tutorial](https://dotnet.microsoft.com/download/linux-package-manager/ubuntu16-04/sdk-current) and follow the steps after choosing your platform
+1. dotnet core: Get the latest `dotnet core 3.1` version by following [this tutorial](https://dotnet.microsoft.com/download/linux-package-manager/ubuntu16-04/sdk-current) and follow the steps after choosing your platform
 1. Other dependencies:
 * on **Ubuntu**:  
 Run `sudo apt-get install libopus-dev ffmpeg`

@@ -273,7 +273,7 @@ namespace TS3AudioBot.Rights
 			Log.Info("Creating new permission file ({@settings})", settings);
 
 			string? toml = null;
-			using (var fs = Util.GetEmbeddedFile("TS3AudioBot.Rights.DefaultRights.toml")!)
+			using (var fs = Util.GetEmbeddedFile("TS3AudioBot.Resources.DefaultRights.toml")!)
 			using (var reader = new StreamReader(fs, Tools.Utf8Encoder))
 			{
 				toml = reader.ReadToEnd();

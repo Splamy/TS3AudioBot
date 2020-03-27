@@ -74,6 +74,3 @@
 		"cmd.history.till",
 		"cmd.history.title",
 	]
-
-	# Remove this if you want to allow users to save playlist locally
-	"-" = [ "cmd.list.save" ]
