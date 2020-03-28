@@ -42,18 +42,6 @@ namespace TS3AudioBot.Web
 		{
 			var startWebServer = false;
 
-			if (config.Interface.Enabled)
-			{
-				var baseDir = FindWebFolder();
-				if (baseDir is null)
-				{
-					Log.Error("Can't find a WebInterface path to host. Try specifying the path to host in the config");
-				}
-				else
-				{
-					startWebServer = true;
-				}
-			}
 			if (config.Api.Enabled || config.Interface.Enabled)
 			{
 				if (!config.Api.Enabled)
@@ -82,10 +70,13 @@ namespace TS3AudioBot.Web
 					var up = Path.Combine(Enumerable.Repeat("..", i).ToArray());
 					var checkDir = Path.Combine(up, "WebInterface");
 					if (Directory.Exists(checkDir))
-					{
 						return Path.GetFullPath(checkDir);
-					}
 				}
+
+				var asmPath = Path.GetDirectoryName(typeof(Core).Assembly.Location)!;
+				var asmWebPath = Path.GetFullPath(Path.Combine(asmPath, "WebInterface"));
+				if (Directory.Exists(asmWebPath))
+					return asmWebPath;
 			}
 			else if (Directory.Exists(webData.Path))
 			{
