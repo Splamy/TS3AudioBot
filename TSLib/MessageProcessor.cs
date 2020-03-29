@@ -22,7 +22,7 @@ namespace TSLib
 		private readonly Func<string, NotificationType> findTypeOfNotification;
 		public Deserializer Deserializer { get; } = new Deserializer();
 
-		protected ReadOnlyMemory<byte> cmdLineBuffer;
+		protected ReadOnlyMemory<byte>? cmdLineBuffer;
 		protected readonly object waitBlockLock = new object();
 		private const byte AsciiSpace = (byte)' ';
 
@@ -123,7 +123,7 @@ namespace TSLib
 			{
 				if (requestDict.TryRemove(errorStatus.ReturnCode, out var waitBlock))
 				{
-					waitBlock.SetAnswer(errorStatus, cmdLineBuffer);
+					waitBlock.SetAnswerAuto(errorStatus, cmdLineBuffer);
 					cmdLineBuffer = null;
 				}
 				else { /* ??? */ }
@@ -157,12 +157,12 @@ namespace TSLib
 			lock (waitBlockLock)
 			{
 				foreach (var wb in requestDict.Values)
-					wb.SetAnswer(CommandError.TimeOut);
+					wb.SetError(CommandError.TimeOut);
 				requestDict.Clear();
 
 				foreach (var block in dependingBlocks)
 				{
-					block?.ForEach(wb => wb.SetAnswer(CommandError.TimeOut));
+					block?.ForEach(wb => wb.SetError(CommandError.TimeOut));
 					block?.Clear();
 				}
 			}
@@ -182,7 +182,7 @@ namespace TSLib
 		{
 			if (!requestQueue.IsEmpty && requestQueue.TryDequeue(out var waitBlock))
 			{
-				waitBlock.SetAnswer(errorStatus, cmdLineBuffer);
+				waitBlock.SetAnswerAuto(errorStatus, cmdLineBuffer);
 				cmdLineBuffer = null;
 			}
 			else { /* ??? */ }
@@ -198,7 +198,7 @@ namespace TSLib
 		public override void DropQueue()
 		{
 			while (!requestQueue.IsEmpty && requestQueue.TryDequeue(out var waitBlock))
-				waitBlock.SetAnswer(CommandError.TimeOut);
+				waitBlock.SetError(CommandError.TimeOut);
 		}
 	}
 }

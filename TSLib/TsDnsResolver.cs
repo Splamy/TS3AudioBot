@@ -17,6 +17,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using TSLib.Helper;
 
 namespace TSLib
@@ -55,7 +56,7 @@ namespace TSLib
 		/// <returns>Whether the resolve was succesful.</returns>
 		public static bool TryResolve(string address, [NotNullWhen(true)] out IPEndPoint? endPoint, ushort defaultPort = TsVoiceDefaultPort)
 		{
-			endPoint = TryResolve(address, defaultPort);
+			endPoint = TryResolve(address, defaultPort).GetAwaiter().GetResult();
 			return endPoint != null;
 		}
 
@@ -63,7 +64,7 @@ namespace TSLib
 		/// <param name="address">The address, nickname, etc. to resolve.</param>
 		/// <param name="defaultPort">The default port when no port is specified with the address or the resolved address.</param>
 		/// <returns>The ip address if successfully resolved.</returns>
-		public static IPEndPoint? TryResolve(string address, ushort defaultPort = TsVoiceDefaultPort)
+		public static async Task<IPEndPoint?> TryResolve(string address, ushort defaultPort = TsVoiceDefaultPort)
 		{
 			if (string.IsNullOrEmpty(address)) throw new ArgumentNullException(nameof(address));
 			IPEndPoint? endPoint;
@@ -74,7 +75,7 @@ namespace TSLib
 			if (!address.Contains(".") && !address.Contains(":") && address != "localhost")
 			{
 				Log.Debug("Resolving '{0}' as nickname", address);
-				var resolvedNickname = ResolveNickname(address);
+				var resolvedNickname = await ResolveNickname(address).ConfigureAwait(false);
 				if (resolvedNickname != null)
 				{
 					Log.Debug("Resolved nickname '{0}' as '{1}'", address, resolvedNickname);
@@ -100,7 +101,7 @@ namespace TSLib
 
 			// Try resolve udp prefix
 			// At this address we'll get ts voice server
-			endPoint = ResolveSrv(Resolver, DnsPrefixUdp + uri.Host);
+			endPoint = await ResolveSrv(Resolver, DnsPrefixUdp + uri.Host).ConfigureAwait(false);
 			if (endPoint != null)
 			{
 				if (hasUriPort)
@@ -125,11 +126,11 @@ namespace TSLib
 			// Under this address we'll get the tsdns server
 			foreach (var domain in domainList)
 			{
-				var srvEndPoint = ResolveSrv(Resolver, DnsPrefixTcp + domain);
+				var srvEndPoint = await ResolveSrv(Resolver, DnsPrefixTcp + domain).ConfigureAwait(false);
 				if (srvEndPoint is null)
 					continue;
 
-				endPoint = ResolveTsDns(srvEndPoint, uri.Host, defaultPort);
+				endPoint = await ResolveTsDns(srvEndPoint, uri.Host, defaultPort).ConfigureAwait(false);
 				if (endPoint != null)
 				{
 					if (hasUriPort)
@@ -142,13 +143,13 @@ namespace TSLib
 			// Try resolve to the tsdns service directly
 			foreach (var domain in domainList)
 			{
-				endPoint = ResolveTsDns(domain, TsDnsDefaultPort, uri.Host, defaultPort);
+				endPoint = await ResolveTsDns(domain, TsDnsDefaultPort, uri.Host, defaultPort).ConfigureAwait(false);
 				if (endPoint != null)
 					return endPoint;
 			}
 
 			// Try to normally resolve server address
-			var hostAddress = ResolveDns(uri.Host);
+			var hostAddress = await ResolveDns(uri.Host).ConfigureAwait(false);
 			if (hostAddress is null)
 				return null;
 
@@ -156,13 +157,13 @@ namespace TSLib
 			return new IPEndPoint(hostAddress, port);
 		}
 
-		private static IPEndPoint? ResolveSrv(Resolver resolver, string domain)
+		private static async Task<IPEndPoint?> ResolveSrv(Resolver resolver, string domain)
 		{
 			Log.Trace("Resolving srv record '{0}'", domain);
 			Response response;
 			try
 			{
-				response = resolver.Query(domain, QType.SRV, QClass.IN).ConfigureAwait(false).GetAwaiter().GetResult();
+				response = await resolver.Query(domain, QType.SRV, QClass.IN).ConfigureAwait(false);
 			}
 			catch (Exception ex)
 			{
@@ -174,32 +175,35 @@ namespace TSLib
 			{
 				var srvRecord = response.RecordsSRV[0];
 
-				var hostAddress = ResolveDns(srvRecord.TARGET);
+				var hostAddress = await ResolveDns(srvRecord.TARGET).ConfigureAwait(false);
 				if (hostAddress != null)
 					return new IPEndPoint(hostAddress, srvRecord.PORT);
 			}
 			return null;
 		}
 
-		private static IPEndPoint? ResolveTsDns(string tsDnsAddress, ushort port, string resolveAddress, ushort defaultPort)
+		private static async Task<IPEndPoint?> ResolveTsDns(string tsDnsAddress, ushort port, string resolveAddress, ushort defaultPort)
 		{
 			Log.Trace("Looking for the tsdns under '{0}'", tsDnsAddress);
-			var hostAddress = ResolveDns(tsDnsAddress);
+			var hostAddress = await ResolveDns(tsDnsAddress).ConfigureAwait(false);
 			if (hostAddress is null)
 				return null;
 
-			return ResolveTsDns(new IPEndPoint(hostAddress, port), resolveAddress, defaultPort);
+			return await ResolveTsDns(new IPEndPoint(hostAddress, port), resolveAddress, defaultPort).ConfigureAwait(false);
 		}
 
-		private static IPEndPoint? ResolveTsDns(IPEndPoint tsDnsAddress, string resolveAddress, ushort defaultPort)
+		private static async Task<IPEndPoint?> ResolveTsDns(IPEndPoint tsDnsAddress, string resolveAddress, ushort defaultPort)
 		{
 			Log.Trace("Looking up tsdns address '{0}'", resolveAddress);
 			try
 			{
 				using var client = new TcpClient();
-				if (!client.ConnectAsync(tsDnsAddress.Address, tsDnsAddress.Port).Wait(LookupTimeout))
+				var cancelTask = Task.Delay(LookupTimeout);
+				var connectTask = client.ConnectAsync(tsDnsAddress.Address, tsDnsAddress.Port);
+				await Task.WhenAny(connectTask, cancelTask);
+				if (cancelTask.IsCompleted)
 				{
-					client.Close();
+					Log.Debug("Request to '{0}' timed out", tsDnsAddress);
 					return null;
 				}
 
@@ -222,12 +226,12 @@ namespace TSLib
 			}
 		}
 
-		private static IPAddress? ResolveDns(string hostOrNameAddress)
+		private static async Task<IPAddress?> ResolveDns(string hostOrNameAddress)
 		{
 			try
 			{
 				Log.Trace("Lookup dns: '{0}'", hostOrNameAddress);
-				IPHostEntry hostEntry = Dns.GetHostEntry(hostOrNameAddress);
+				IPHostEntry hostEntry = await Dns.GetHostEntryAsync(hostOrNameAddress).ConfigureAwait(false);
 				if (hostEntry.AddressList.Length == 0)
 					return null;
 				return hostEntry.AddressList[0];
@@ -258,16 +262,16 @@ namespace TSLib
 			return new IPEndPoint(ipAddr, port);
 		}
 
-		private static string? ResolveNickname(string nickname)
+		private static async Task<string?> ResolveNickname(string nickname)
 		{
 			string result;
 			try
 			{
 				var request = WebRequest.Create(NicknameLookup + Uri.EscapeDataString(nickname));
-				using var respose = request.GetResponse();
+				using var respose = await request.GetResponseAsync().ConfigureAwait(false);
 				using var stream = respose.GetResponseStream();
 				using var reader = new StreamReader(stream, Tools.Utf8Encoder, false, (int)respose.ContentLength);
-				result = reader.ReadToEnd();
+				result = await reader.ReadToEndAsync().ConfigureAwait(false);
 			}
 			catch (Exception ex)
 			{

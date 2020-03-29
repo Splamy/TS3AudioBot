@@ -16,10 +16,10 @@ namespace TSLib
 {
 	internal abstract class WaitBlock : IDisposable
 	{
+		protected static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		protected readonly ManualResetEvent? notificationWaiter;
 		protected readonly Deserializer deserializer;
-		protected CommandError? commandError;
-		protected ReadOnlyMemory<byte>? commandLine;
+		protected R<ReadOnlyMemory<byte>, CommandError> result;
 		public NotificationType[]? DependsOn { get; }
 		protected LazyNotification notification;
 		protected bool isDisposed;
@@ -38,12 +38,32 @@ namespace TSLib
 			}
 		}
 
-		public void SetAnswer(CommandError commandError, ReadOnlyMemory<byte>? commandLine = null)
+		public void SetError(CommandError commandError)
+		{
+			if (commandError.Id == TsErrorCode.ok)
+				throw new ArgumentException("Passed explicit error without error code", nameof(commandError));
+			SetAnswerAuto(commandError, null);
+		}
+
+		public void SetAnswer(ReadOnlyMemory<byte> commandLine) => SetAnswerAuto(null, commandLine);
+
+		public void SetAnswerAuto(CommandError? commandError, ReadOnlyMemory<byte>? commandLine)
 		{
 			if (isDisposed)
 				return;
-			this.commandError = commandError ?? throw new ArgumentNullException(nameof(commandError));
-			this.commandLine = commandLine;
+			if (commandError != null && commandError.Id != TsErrorCode.ok)
+			{
+				result = commandError;
+			}
+			else if (commandLine != null)
+			{
+				result = commandLine.Value;
+			}
+			else
+			{
+				Log.Debug("Maybe missing line data:{@data} line:null", commandLine);
+				result = ReadOnlyMemory<byte>.Empty;
+			}
 			Trigger();
 		}
 
@@ -88,16 +108,14 @@ namespace TSLib
 				throw new ObjectDisposedException(nameof(WaitBlock));
 			if (!answerWaiter.WaitOne(CommandTimeout))
 				return CommandError.TimeOut;
-			if (commandError is null || commandLine is null)
-				throw new InvalidOperationException("Data was not set after trigger");
-			if (commandError.Id != TsErrorCode.ok)
-				return commandError;
+			if (!result.Ok)
+				return result.Error;
 
-			var result = deserializer.GenerateResponse<T>(commandLine.Value.Span);
-			if (result is null)
+			var response = deserializer.GenerateResponse<T>(this.result.Value.Span);
+			if (response is null)
 				return CommandError.Parser;
 			else
-				return result;
+				return response;
 		}
 
 		public R<LazyNotification, CommandError> WaitForNotification()
@@ -108,10 +126,8 @@ namespace TSLib
 				throw new InvalidOperationException("This waitblock has no dependent Notification");
 			if (!answerWaiter.WaitOne(CommandTimeout))
 				return CommandError.TimeOut;
-			if (commandError is null || commandLine is null)
-				throw new InvalidOperationException("Data was not set after trigger");
-			if (commandError.Id != TsErrorCode.ok)
-				return commandError;
+			if (!result.Ok)
+				return result.Error;
 			if (!notificationWaiter!.WaitOne(CommandTimeout))
 				return CommandError.TimeOut;
 
@@ -149,16 +165,14 @@ namespace TSLib
 			var res = await Task.WhenAny(answerWaiterAsync.Task, timeOut).ConfigureAwait(false);
 			if (res == timeOut)
 				return CommandError.TimeOut;
-			if (commandError is null || commandLine is null)
-				throw new InvalidOperationException("Data was not set after trigger");
-			if (commandError.Id != TsErrorCode.ok)
-				return commandError;
+			if (!result.Ok)
+				return result.Error;
 
-			var result = deserializer.GenerateResponse<T>(commandLine.Value.Span);
-			if (result is null)
+			var response = deserializer.GenerateResponse<T>(result.Value.Span);
+			if (response is null)
 				return CommandError.Parser;
 			else
-				return result;
+				return response;
 		}
 
 		public async Task<R<LazyNotification, CommandError>> WaitForNotificationAsync() // TODO improve non-blocking
@@ -171,10 +185,8 @@ namespace TSLib
 			var res = await Task.WhenAny(answerWaiterAsync.Task, timeOut).ConfigureAwait(false);
 			if (res == timeOut)
 				return CommandError.TimeOut;
-			if (commandError is null || commandLine is null)
-				throw new InvalidOperationException("Data was not set after trigger");
-			if (commandError.Id != TsErrorCode.ok)
-				return commandError;
+			if (!result.Ok)
+				return result.Error;
 			if (!notificationWaiter!.WaitOne(CommandTimeout))
 				return CommandError.TimeOut;
 
