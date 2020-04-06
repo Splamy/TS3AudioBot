@@ -364,7 +364,7 @@ namespace TSLib
 			case TransferStatus.Done:
 			case TransferStatus.Cancelled:
 			case TransferStatus.Failed:
-				CompletionSource.SetResult(status);
+				CompletionSource.TrySetResult(status);
 				break;
 			default:
 				break;

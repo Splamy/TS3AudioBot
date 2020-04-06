@@ -52,7 +52,7 @@ namespace TSLib.Full
 		// ====
 		private readonly object sendLoopLock = new object();
 		private readonly TsCrypt tsCrypt;
-		private Socket socket;
+		private Socket? socket;
 		private Timer? resendTimer;
 		private DateTime pingCheck;
 		private int pingCheckRunning; // bool
@@ -67,9 +67,7 @@ namespace TSLib.Full
 		public PacketEvent<TIn>? PacketEvent;
 		public Action<Reason?>? StopEvent;
 
-#pragma warning disable CS8618 // !NRT 'socket'
 		public PacketHandler(TsCrypt ts3Crypt, Id id)
-#pragma warning restore CS8618
 		{
 			receiveQueueCommand = new RingQueue<Packet<TIn>>(ReceivePacketWindowSize, ushort.MaxValue + 1);
 			receiveQueueCommandLow = new RingQueue<Packet<TIn>>(ReceivePacketWindowSize, ushort.MaxValue + 1);
@@ -113,6 +111,8 @@ namespace TSLib.Full
 
 		private void Initialize(IPEndPoint address, bool connect)
 		{
+			if (address is null) throw new ArgumentNullException(nameof(address));
+
 			lock (sendLoopLock)
 			{
 				ClientId = default;
@@ -357,6 +357,7 @@ namespace TSLib.Full
 						if (self.closed != 0)
 							return;
 
+						if (self.socket is null) throw new ArgumentNullException(nameof(socket));
 						try { isAsync = self.socket.ReceiveFromAsync(args); }
 						catch (Exception ex) { Log.Debug(ex, "Error starting socket receive"); return; }
 					}
@@ -742,6 +743,10 @@ namespace TSLib.Full
 
 		private E<string> SendRaw(ref Packet<TOut> packet)
 		{
+			if (socket is null) throw new ArgumentNullException(nameof(socket));
+			if (packet.Raw is null) throw new ArgumentNullException(nameof(packet.Raw));
+			if (remoteAddress is null) throw new ArgumentNullException(nameof(remoteAddress));
+
 			NetworkStats.LogOutPacket(ref packet);
 
 			// DebugToHex is costly and allocates, precheck before logging
