@@ -11,6 +11,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using TS3AudioBot.Algorithm;
 using TS3AudioBot.Config;
 using TS3AudioBot.Helper;
@@ -469,6 +470,14 @@ namespace TS3AudioBot
 		public E<LocalStr> UploadAvatar(System.IO.Stream stream) => ts3FullClient.UploadAvatar(stream).FormatLocal(e =>
 			(e == TsErrorCode.permission_invalid_size ? strings.error_ts_file_too_big : null, false)
 		);
+
+		public async Task<E<LocalStr>> UploadAvatarAsync(System.IO.Stream stream)
+		{
+			var res = await ts3FullClient.UploadAvatarAsync(stream);
+			return res.FormatLocal(e =>
+				(e == TsErrorCode.permission_invalid_size ? strings.error_ts_file_too_big : null, false)
+			);
+		}
 
 		public E<LocalStr> DeleteAvatar() => ts3FullClient.DeleteAvatar().FormatLocal();
 

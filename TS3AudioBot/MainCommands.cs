@@ -1175,18 +1175,22 @@ namespace TS3AudioBot
 		[Command("quiz")]
 		public static JsonValue<bool> CommandQuiz(Bot bot) => new JsonValue<bool>(bot.QuizMode, string.Format(strings.info_status_quizmode, bot.QuizMode ? strings.info_on : strings.info_off));
 		[Command("quiz on")]
-		public static void CommandQuizOn(Bot bot)
+		public static void CommandQuizOn(Bot bot, PlayManager playManager)
 		{
 			bot.QuizMode = true;
 			bot.UpdateBotStatus().UnwrapThrow();
+			if (playManager.IsPlaying)
+				bot.GenerateStatusImage(true, playManager.CurrentPlayData);
 		}
 		[Command("quiz off")]
-		public static void CommandQuizOff(Bot bot, ClientCall? invoker = null)
+		public static void CommandQuizOff(Bot bot, PlayManager playManager, ClientCall? invoker = null)
 		{
 			if (invoker != null && invoker.Visibiliy == TextMessageTargetMode.Private)
 				throw new CommandException(strings.cmd_quiz_off_no_cheating, CommandExceptionReason.CommandError);
 			bot.QuizMode = false;
 			bot.UpdateBotStatus().UnwrapThrow();
+			if (playManager.IsPlaying)
+				bot.GenerateStatusImage(true, playManager.CurrentPlayData);
 		}
 
 		[Command("random")]

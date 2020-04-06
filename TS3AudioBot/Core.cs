@@ -98,7 +98,7 @@ namespace TS3AudioBot
 
 		public static void UnobservedTaskExceptionHandler(object? sender, UnobservedTaskExceptionEventArgs e)
 		{
-			Log.Error(e.Exception, "Unhandled program error!");
+			Log.Error(e.Exception, "Unobserved Task error!");
 		}
 
 		public void ConsoleInterruptHandler(object sender, ConsoleCancelEventArgs e)

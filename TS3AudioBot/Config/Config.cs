@@ -216,12 +216,13 @@ namespace TS3AudioBot.Config
 
 			try
 			{
+				fileTo.Value.Directory.Create();
 				File.Copy(fileFrom.Value.FullName, fileTo.Value.FullName, false);
 				return R.Ok;
 			}
 			catch (Exception ex)
 			{
-				Log.Debug(ex, "Config file could not be copied");
+				Log.Error(ex, "Config file could not be copied");
 				return new LocalStr("Could not copy config."); // LOC: TODO
 			}
 		}

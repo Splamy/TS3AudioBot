@@ -18,6 +18,7 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using TS3AudioBot.CommandSystem;
 using TS3AudioBot.Localization;
 
@@ -172,6 +173,14 @@ namespace TS3AudioBot.Helper
 				dict[key] = val;
 			}
 			return val;
+		}
+
+		public static void ErrorToLog(this Task t, NLog.Logger logger)
+		{
+			t.ContinueWith(a =>
+			{
+				logger.Warn(a.Exception, "Task failed");
+			}, TaskContinuationOptions.OnlyOnFaulted);
 		}
 	}
 }

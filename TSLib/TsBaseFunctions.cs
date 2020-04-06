@@ -343,6 +343,18 @@ namespace TSLib
 			return SendVoid(new TsCommand("clientupdate") { { "client_flag_avatar", md5 } });
 		}
 
+		public async Task<CmdR> UploadAvatarAsync(System.IO.Stream image)
+		{
+			var token = FileTransferManager.UploadFile(image, ChannelId.Null, "/avatar", overwrite: true, createMd5: true);
+			if (!token.Ok)
+				return token.Error;
+			await token.Value.WaitAsync();
+			if (token.Value.Status != TransferStatus.Done)
+				return CommandError.Custom("Avatar upload failed");
+			var md5 = string.Concat(token.Value.Md5Sum.Select(x => x.ToString("x2")));
+			return SendVoid(new TsCommand("clientupdate") { { "client_flag_avatar", md5 } });
+		}
+
 		/// <summary>Deletes the avatar of a user.
 		/// Can be called without uid to delete own avatar.</summary>
 		/// <param name="clientUid">The client uid where the avatar should be deleted.</param>

@@ -155,7 +155,8 @@ namespace TSLib
 					token.Port = request.Port;
 					token.TransferKey = request.FileTransferKey;
 				}
-				token.Status = TransferStatus.Waiting;
+				token.ResetTask();
+				token.SetStatus(TransferStatus.Waiting);
 			}
 			StartWorker(token);
 			return E<CommandError>.OkR;
@@ -172,7 +173,7 @@ namespace TSLib
 				if (token.Status != TransferStatus.Transfering && token.Status != TransferStatus.Waiting)
 					return;
 				parent.FileTransferStop(token.ServerTransferId, delete);
-				token.Status = TransferStatus.Cancelled;
+				token.SetStatus(TransferStatus.Cancelled);
 				if (delete && token.CloseStreamWhenDone)
 				{
 					token.LocalStream.Close();
@@ -217,21 +218,22 @@ namespace TSLib
 					{
 						if (parent.remoteAddress is null)
 						{
-							token.Status = TransferStatus.Failed;
+							token.SetStatus(TransferStatus.Failed);
 							Log.Trace("Client is not connected. Transfer failed {@token}", token);
 							continue;
 						}
 						if (token.Status != TransferStatus.Waiting)
 							continue;
-						token.Status = TransferStatus.Transfering;
+						token.SetStatus(TransferStatus.Transfering);
 					}
 
 					Log.Trace("Creating new file transfer connection to {0}", parent.remoteAddress);
 					using var client = new TcpClient(parent.remoteAddress.AddressFamily);
 					try { client.Connect(parent.remoteAddress.Address, token.Port); }
-					catch (SocketException)
+					catch (SocketException ex)
 					{
-						token.Status = TransferStatus.Failed;
+						Log.Debug(ex, "SocketException trying to connect to filetransfer port");
+						token.SetStatus(TransferStatus.Failed);
 						continue;
 					}
 					using var md5Dig = token.CreateMd5 ? MD5.Create() : null;
@@ -269,19 +271,22 @@ namespace TSLib
 					{
 						if (token.Status == TransferStatus.Transfering && token.LocalStream.Position == token.Size)
 						{
-							token.Status = TransferStatus.Done;
+							token.SetStatus(TransferStatus.Done);
 							if (token.CloseStreamWhenDone)
 								token.LocalStream.Close();
 						}
 					}
 				}
-				catch (IOException) { }
+				catch (IOException ex)
+				{
+					Log.Debug(ex, "IOException during filetransfer");
+				}
 				finally
 				{
 					lock (token)
 					{
 						if (token.Status != TransferStatus.Done && token.Status != TransferStatus.Cancelled)
-							token.Status = TransferStatus.Failed;
+							token.SetStatus(TransferStatus.Failed);
 					}
 				}
 			}
@@ -306,8 +311,9 @@ namespace TSLib
 		public bool CloseStreamWhenDone { get; set; }
 		public bool CreateMd5 { get; }
 		public byte[]? Md5Sum { get; internal set; }
+		public TaskCompletionSource<TransferStatus> CompletionSource { get; private set; }
 
-		public TransferStatus Status { get; internal set; }
+		public TransferStatus Status { get; private set; }
 
 		public FileTransferToken(Stream localStream, FileUpload upload, ChannelId channelId,
 			string path, string channelPassword, long size, bool createMd5)
@@ -339,6 +345,30 @@ namespace TSLib
 			TransferKey = transferKey;
 			Size = size;
 			CreateMd5 = createMd5;
+			CompletionSource = new TaskCompletionSource<TransferStatus>();
+		}
+
+		internal void ResetTask()
+		{
+			CompletionSource = new TaskCompletionSource<TransferStatus>();
+		}
+
+		internal void SetStatus(TransferStatus status)
+		{
+			Status = status;
+			switch (status)
+			{
+			case TransferStatus.Waiting:
+			case TransferStatus.Transfering:
+				break;
+			case TransferStatus.Done:
+			case TransferStatus.Cancelled:
+			case TransferStatus.Failed:
+				CompletionSource.SetResult(status);
+				break;
+			default:
+				break;
+			}
 		}
 
 		public void Wait()
@@ -347,14 +377,9 @@ namespace TSLib
 				Thread.Sleep(10);
 		}
 
-		public async Task WaitAsync(CancellationToken token)
+		public async Task WaitAsync()
 		{
-			while (Status == TransferStatus.Waiting || Status == TransferStatus.Transfering)
-			{
-				if (token.IsCancellationRequested)
-					return;
-				await Task.Delay(10).ConfigureAwait(false);
-			}
+			await CompletionSource.Task;
 		}
 	}
 

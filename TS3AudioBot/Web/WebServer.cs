@@ -161,6 +161,7 @@ namespace TS3AudioBot.Web
 				host.UseUrls(addrs.Select(uri => new UriBuilder(uri) { Port = config.Port }.Uri.AbsoluteUri).ToArray());
 			}
 
+			Log.Info("Starting Webserver on port {0}", config.Port.Value);
 			new Func<Task>(async () =>
 			{
 				try
@@ -173,7 +174,6 @@ namespace TS3AudioBot.Web
 					return;
 				}
 			})();
-			Log.Info("Started Webserver on port {0}", config.Port.Value);
 		}
 
 		public void OnShutdown()

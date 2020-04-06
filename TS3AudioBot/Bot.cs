@@ -147,8 +147,8 @@ namespace TS3AudioBot
 						historyManager.LogAudioResource(new HistorySaveData(e.PlayResource.AudioResource, e.MetaData.ResourceOwnerUid));
 				};
 			// Update our thumbnail
-			playManager.AfterResourceStarted += GenerateStatusImage;
-			playManager.PlaybackStopped += GenerateStatusImage;
+			playManager.AfterResourceStarted += (s, e) => GenerateStatusImage(true, e);
+			playManager.PlaybackStopped += (s, e) => GenerateStatusImage(false, null);
 			// Stats
 			playManager.AfterResourceStarted += (s, e) => stats.TrackSongStart(Id, e.ResourceData.AudioType);
 			playManager.ResourceStopped += (s, e) => stats.TrackSongStop(Id);
@@ -377,7 +377,7 @@ namespace TS3AudioBot
 			return ts3client.ChangeDescription(setString ?? "");
 		}
 
-		private void GenerateStatusImage(object? sender, EventArgs e)
+		public void GenerateStatusImage(bool playing, PlayInfoEventArgs? startEvent)
 		{
 			if (!config.GenerateStatusAvatar || IsDisposed)
 				return;
@@ -404,41 +404,46 @@ namespace TS3AudioBot
 				}
 			}
 
-			void Upload(Stream? setStream)
+			async Task Upload(Stream setStream)
 			{
-				if (setStream != null)
+				try
 				{
 					using (setStream)
 					{
-						var result = ts3client.UploadAvatar(setStream);
+						var result = await ts3client.UploadAvatarAsync(setStream);
 						if (!result.Ok)
 							Log.Warn("Could not save avatar: {0}", result.Error);
 					}
 				}
+				catch (Exception ex)
+				{
+					Log.Warn(ex, "Could not save avatar");
+				}
 			}
 
-			Task.Run(() =>
+			async Task Do()
 			{
+				await Task.Yield();
 				Stream? setStream = null;
-				if (e is PlayInfoEventArgs startEvent)
+				if (playing)
 				{
-					setStream = ImageUtil.ResizeImageSave(resourceResolver.GetThumbnail(startEvent.PlayResource).OkOr(null), out _).OkOr(null);
+					if (startEvent != null && !QuizMode)
+						setStream ??= ImageUtil.ResizeImageSave(resourceResolver.GetThumbnail(startEvent.PlayResource).OkOr(null), out _).OkOr(null);
 					setStream ??= GetRandomFile("play*");
-					Upload(setStream);
 				}
 				else
 				{
-					setStream = GetRandomFile("sleep*");
+					setStream ??= GetRandomFile("sleep*");
 					setStream ??= Util.GetEmbeddedFile("TS3AudioBot.Media.SleepingKitty.png");
-					Upload(setStream);
 				}
 
-				if (setStream is null)
-				{
-					ts3client.DeleteAvatar();
-					return;
-				}
-			});
+				if (setStream != null)
+					await Upload(setStream);
+				else
+					ts3client.DeleteAvatar().UnwrapToLog(Log);
+			}
+
+			Do().ErrorToLog(Log);
 		}
 
 		private void BeforeResourceStarted(object? sender, PlayInfoEventArgs e)
