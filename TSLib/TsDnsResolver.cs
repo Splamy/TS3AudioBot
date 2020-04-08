@@ -199,7 +199,11 @@ namespace TSLib
 			{
 				using var client = new TcpClient();
 				var cancelTask = Task.Delay(LookupTimeout);
-				var connectTask = client.ConnectAsync(tsDnsAddress.Address, tsDnsAddress.Port);
+				var connectTask = client.ConnectAsync(tsDnsAddress.Address, tsDnsAddress.Port).ContinueWith(async t =>
+				{
+					// Swallow error on connect error
+					try { await t; } catch { }
+				}, TaskContinuationOptions.OnlyOnFaulted);
 				await Task.WhenAny(connectTask, cancelTask);
 				if (cancelTask.IsCompleted)
 				{
@@ -207,21 +211,21 @@ namespace TSLib
 					return null;
 				}
 
-				var stream = client.GetStream();
+				using var stream = client.GetStream();
 				var addBuf = Encoding.ASCII.GetBytes(resolveAddress);
-				stream.Write(addBuf, 0, addBuf.Length);
-				stream.Flush();
+				await stream.WriteAsync(addBuf, 0, addBuf.Length);
+				await stream.FlushAsync();
 
 				stream.ReadTimeout = (int)LookupTimeout.TotalMilliseconds;
 				var readBuffer = new byte[128];
-				int readLen = stream.Read(readBuffer, 0, readBuffer.Length);
+				int readLen = await stream.ReadAsync(readBuffer, 0, readBuffer.Length);
 				string returnString = Encoding.ASCII.GetString(readBuffer, 0, readLen);
 
 				return ParseIpEndPoint(returnString, defaultPort);
 			}
 			catch (Exception ex)
 			{
-				Log.Warn(ex, "Socket forcibly closed when checking '{0}', reason {1}", resolveAddress, ex.Message);
+				Log.Debug(ex, "Socket error checking '{0}', reason {1}", resolveAddress, ex.Message);
 				return null;
 			}
 		}
