@@ -23,7 +23,7 @@ using TS3AudioBot.Web;
 
 namespace TS3AudioBot
 {
-	public sealed class Core : IDisposable
+	public sealed class Core
 	{
 		private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 		private readonly string configFilePath;
@@ -38,7 +38,7 @@ namespace TS3AudioBot
 			injector = new CoreInjector();
 		}
 
-		public E<string> Run(ParameterData setup)
+		public async Task<E<string>> Run(ParameterData setup)
 		{
 			AppDomain.CurrentDomain.UnhandledException += ExceptionHandler;
 			TaskScheduler.UnobservedTaskException += UnobservedTaskExceptionHandler;
@@ -79,12 +79,12 @@ namespace TS3AudioBot
 
 			YoutubeDlHelper.DataObj = config.Tools.YoutubeDl;
 
-			builder.GetModule<SystemMonitor>()!.StartTimedSnapshots();
-			builder.GetModule<CommandManager>()!.RegisterCollection(MainCommands.Bag);
-			builder.GetModule<RightsManager>()!.CreateConfigIfNotExists(setup.Interactive);
-			builder.GetModule<BotManager>()!.RunBots(setup.Interactive);
-			builder.GetModule<WebServer>()!.StartWebServer();
-			builder.GetModule<Stats>()!.StartTimer(setup.SendStats);
+			builder.GetModuleOrThrow<SystemMonitor>().StartTimedSnapshots();
+			builder.GetModuleOrThrow<CommandManager>().RegisterCollection(MainCommands.Bag);
+			builder.GetModuleOrThrow<RightsManager>().CreateConfigIfNotExists(setup.Interactive);
+			builder.GetModuleOrThrow<WebServer>().StartWebServer();
+			builder.GetModuleOrThrow<Stats>().StartTimer(setup.SendStats);
+			await builder.GetModuleOrThrow<BotManager>().RunBots(setup.Interactive);
 
 			return R.Ok;
 		}
@@ -92,7 +92,7 @@ namespace TS3AudioBot
 		public void ExceptionHandler(object sender, UnhandledExceptionEventArgs e)
 		{
 			Log.Fatal(e.ExceptionObject as Exception, "Critical program failure!");
-			Dispose();
+			Stop().Wait();
 			System.Environment.Exit(-1);
 		}
 
@@ -110,7 +110,7 @@ namespace TS3AudioBot
 					Log.Info("Got interrupt signal, trying to soft-exit.");
 					e.Cancel = true;
 					forceNextExit = true;
-					Dispose();
+					Stop().Wait();
 				}
 				else
 				{
@@ -120,11 +120,13 @@ namespace TS3AudioBot
 			}
 		}
 
-		public void Dispose()
+		public async Task Stop()
 		{
 			Log.Info("TS3AudioBot shutting down.");
 
-			injector.GetModule<BotManager>()?.Dispose();
+			var botManager = injector.GetModule<BotManager>();
+			if (botManager != null)
+				await botManager.StopBots();
 			injector.GetModule<PluginManager>()?.Dispose();
 			injector.GetModule<WebServer>()?.Dispose();
 			injector.GetModule<DbStore>()?.Dispose();

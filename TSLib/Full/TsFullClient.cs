@@ -28,13 +28,14 @@ namespace TSLib.Full
 		private TsCrypt tsCrypt;
 		private PacketHandler<S2C, C2S> packetHandler;
 		private readonly AsyncMessageProcessor msgProc;
+		private readonly TaskScheduler dispatcher;
+		private readonly bool ownDispatcher;
 
 		private readonly object statusLock = new object();
 
-		private int returnCode;
+		private uint returnCode;
 		private ConnectionContext context;
 
-		private IEventDispatcher dispatcher;
 		public override ClientType ClientType => ClientType.Full;
 		/// <summary>The client id given to this connection by the server.</summary>
 		public ClientId ClientId => packetHandler.ClientId;
@@ -51,7 +52,6 @@ namespace TSLib.Full
 		private ConnectionDataFull connectionDataFull;
 		public Connection Book { get; set; } = new Connection();
 
-		public override event EventHandler<EventArgs>? OnConnected;
 		public override event EventHandler<DisconnectEventArgs>? OnDisconnected;
 		public event EventHandler<CommandError>? OnErrorEvent;
 
@@ -59,12 +59,15 @@ namespace TSLib.Full
 		/// <param name="dispatcherType">The message processing method for incomming notifications.
 		/// See <see cref="EventDispatchType"/> for further information about each type.</param>
 #pragma warning disable CS8618 // !NRT on Connect
-		public TsFullClient()
+		public TsFullClient(TaskScheduler? dispatcher = null)
 #pragma warning restore CS8618
 		{
 			status = TsClientStatus.Disconnected;
 			msgProc = new AsyncMessageProcessor(MessageHelper.GetToClientNotificationType);
 			context = new ConnectionContext { WasExit = true };
+			context.DisconnectEvent.SetResult(null);
+			this.dispatcher = dispatcher ?? new DedicatedTaskScheduler(Id.Null);
+			this.ownDispatcher = dispatcher is null;
 		}
 
 		/// <summary>Tries to connect to a server.</summary>
@@ -72,7 +75,7 @@ namespace TSLib.Full
 		/// For further details about each setting see the respective property documentation in <see cref="ConnectionData"/></param>
 		/// <exception cref="ArgumentException">When some required values are not set or invalid.</exception>
 		/// <exception cref="TsException">When the connection could not be established.</exception>
-		public override void Connect(ConnectionData conData)
+		public override async Task Connect(ConnectionData conData)
 		{
 			if (!(conData is ConnectionDataFull conDataFull)) throw new ArgumentException($"Use the {nameof(ConnectionDataFull)} derivative to connect with the full client.", nameof(conData));
 			if (conDataFull.Identity is null) throw new ArgumentNullException(nameof(conDataFull.Identity));
@@ -80,11 +83,13 @@ namespace TSLib.Full
 			connectionDataFull = conDataFull;
 			ConnectionData = conData;
 
-			Disconnect();
+			await Disconnect();
 
-			if (!TsDnsResolver.TryResolve(conData.Address, out remoteAddress))
+			remoteAddress = await TsDnsResolver.TryResolve(conData.Address);
+			if (remoteAddress is null)
 				throw new TsException("Could not read or resolve address.");
 
+			var ctx = new ConnectionContext { WasExit = false };
 			lock (statusLock)
 			{
 				returnCode = 0;
@@ -92,7 +97,6 @@ namespace TSLib.Full
 
 				tsCrypt = new TsCrypt(conDataFull.Identity);
 
-				var ctx = new ConnectionContext { WasExit = false };
 				context = ctx;
 
 				packetHandler = new PacketHandler<S2C, C2S>(tsCrypt, conData.LogId)
@@ -101,26 +105,19 @@ namespace TSLib.Full
 					StopEvent = (closeReason) => { ctx.ExitReason ??= closeReason; DisconnectInternal(ctx, setStatus: TsClientStatus.Disconnected); }
 				};
 				packetHandler.Connect(remoteAddress);
-				dispatcher = new ExtraThreadEventDispatcher();
-				dispatcher.Init(InvokeEvent, conData.LogId);
 			}
+
+			await ctx.ConnectEvent.Task; // TODO check error state
 		}
 
 		/// <summary>
 		/// Disconnects from the current server and closes the connection.
 		/// Does nothing if the client is not connected.
 		/// </summary>
-		public override void Disconnect()
+		public override async Task Disconnect()
 		{
 			DisconnectInternal(context);
-			while (true)
-			{
-				if (context.WasExit)
-					break;
-				dispatcher.DoWork();
-				if (!context.WasExit)
-					Thread.Sleep(1);
-			}
+			await context.DisconnectEvent.Task;
 		}
 
 		private void DisconnectInternal(ConnectionContext ctx, CommandError? error = null, TsClientStatus? setStatus = null)
@@ -144,7 +141,6 @@ namespace TSLib.Full
 					ctx.WasExit = true;
 					packetHandler.Stop();
 					msgProc.DropQueue();
-					dispatcher.Dispose();
 					triggerEventSafe = true;
 					break;
 				case TsClientStatus.Disconnecting:
@@ -159,7 +155,10 @@ namespace TSLib.Full
 			}
 
 			if (triggerEventSafe)
+			{
+				ctx.DisconnectEvent.TrySetResult(null);
 				OnDisconnected?.Invoke(this, new DisconnectEventArgs(ctx.ExitReason ?? Reason.LeftServer, error));
+			}
 		}
 
 		private void PacketEvent(ConnectionContext ctx, ref Packet<S2C> packet)
@@ -175,8 +174,8 @@ namespace TSLib.Full
 				case PacketType.CommandLow:
 					Log.ConditionalDebug("[I] {0}", Tools.Utf8Encoder.GetString(packet.Data));
 					var result = msgProc.PushMessage(packet.Data);
-					if (result.HasValue)
-						dispatcher.Invoke(result.Value);
+					if (result != null)
+						Task.Factory.StartNew(() => InvokeEvent(result.Value), CancellationToken.None, TaskCreationOptions.None, dispatcher);
 					break;
 
 				case PacketType.Voice:
@@ -253,7 +252,7 @@ namespace TSLib.Full
 
 			lock (statusLock)
 				status = TsClientStatus.Connected;
-			OnConnected?.Invoke(this, EventArgs.Empty);
+			context.ConnectEvent.TrySetResult(null);
 		}
 
 		partial void ProcessEachPluginCommand(PluginCommand cmd)
@@ -373,7 +372,7 @@ namespace TSLib.Full
 			return wb.WaitForNotification();
 		}
 
-		private E<CommandError> SendCommandBase(WaitBlock wb, TsCommand com)
+		private CmdR SendCommandBase(WaitBlock wb, TsCommand com)
 		{
 			lock (statusLock)
 			{
@@ -382,7 +381,7 @@ namespace TSLib.Full
 
 				if (com.ExpectResponse)
 				{
-					var responseNumber = ++returnCode;
+					var responseNumber = unchecked(++returnCode);
 					var retCodeParameter = new CommandParameter("return_code", responseNumber);
 					com.Add(retCodeParameter);
 					msgProc.EnqueueRequest(retCodeParameter.Value, wb);
@@ -396,24 +395,31 @@ namespace TSLib.Full
 			return R.Ok;
 		}
 
-		public async Task<R<T[], CommandError>> SendCommandAsync<T>(TsCommand com) where T : IResponse, new()
+		public override async Task<R<T[], CommandError>> SendAsync<T>(TsCommand com)
 		{
 			using var wb = new WaitBlockAsync(msgProc.Deserializer);
 			var result = SendCommandBase(wb, com);
 			if (!result.Ok)
 				return result.Error;
 			if (com.ExpectResponse)
-				return await wb.WaitForMessageAsync<T>().ConfigureAwait(false);
+				return await wb.WaitForMessageAsync<T>();
 			else
 				// This might not be the nicest way to return in this case
 				// but we don't know what the response is, so this acceptable.
 				return CommandError.NoResult;
 		}
 
+		public override Task<R<T[], CommandError>> SendHybridAsync<T>(TsCommand com, NotificationType type)
+		{
+			throw new NotImplementedException();
+		}
+
 		/// <summary>Release all resources. Will try to disconnect before disposing.</summary>
 		public override void Dispose()
 		{
-			Disconnect();
+			DisconnectInternal(context);
+			if (ownDispatcher && dispatcher is IDisposable disp)
+				disp.Dispose();
 		}
 
 		#region Audio
@@ -693,5 +699,14 @@ namespace TSLib.Full
 	{
 		public bool WasExit { get; set; }
 		public Reason? ExitReason { get; set; }
+
+		public TaskCompletionSource<object?> ConnectEvent { get; }
+		public TaskCompletionSource<object?> DisconnectEvent { get; }
+
+		public ConnectionContext()
+		{
+			ConnectEvent = new TaskCompletionSource<object?>();
+			DisconnectEvent = new TaskCompletionSource<object?>();
+		}
 	}
 }

@@ -14,6 +14,7 @@ using System.Globalization;
 using System.IO;
 using System.Net;
 using System.Threading;
+using System.Threading.Tasks;
 using TS3AudioBot.Algorithm;
 using TS3AudioBot.Audio;
 using TS3AudioBot.CommandSystem;
@@ -55,7 +56,7 @@ namespace TS3AudioBot.Web.Api
 			this.stats = stats;
 		}
 
-		public void ProcessApiV1Call(HttpContext context)
+		public async Task ProcessApiV1Call(HttpContext context)
 		{
 			var request = context.Request;
 			var response = context.Response;
@@ -68,13 +69,13 @@ namespace TS3AudioBot.Web.Api
 			if (!authResult.Ok)
 			{
 				Log.Debug("Authorization failed!");
-				ReturnError(new CommandException(authResult.Error, CommandExceptionReason.Unauthorized), response);
+				await ReturnError(new CommandException(authResult.Error, CommandExceptionReason.Unauthorized), response);
 				return;
 			}
 			if (!AllowAnonymousRequest && authResult.Value.ClientUid == Uid.Null)
 			{
 				Log.Debug("Unauthorized request!");
-				ReturnError(new CommandException(ErrorAnonymousDisabled, CommandExceptionReason.Unauthorized), response);
+				await ReturnError(new CommandException(ErrorAnonymousDisabled, CommandExceptionReason.Unauthorized), response);
 				return;
 			}
 
@@ -99,9 +100,9 @@ namespace TS3AudioBot.Web.Api
 
 			var command = BuildCommand(apiCallData.RequestUrl);
 
-			if (!ProcessBodyData(request, apiCallData).GetOk(out var err))
+			if (!(await ProcessBodyData(request, apiCallData)).GetOk(out var err))
 			{
-				ReturnError(err, response);
+				await ReturnError(err, response);
 				return;
 			}
 
@@ -111,7 +112,7 @@ namespace TS3AudioBot.Web.Api
 			{
 				stats.TrackCommandApiCall();
 				Thread.CurrentThread.CurrentUICulture = CultureInfo.InvariantCulture;
-				var res = command.Execute(execInfo, Array.Empty<ICommand>());
+				var res = await command.Execute(execInfo, Array.Empty<ICommand>());
 
 				if (res == null)
 				{
@@ -134,17 +135,17 @@ namespace TS3AudioBot.Web.Api
 					var returnString = json.Serialize();
 					response.StatusCode = returnString.Length == 0 ? (int)HttpStatusCode.NoContent : (int)HttpStatusCode.OK;
 					using var responseStream = new StreamWriter(response.Body);
-					responseStream.Write(returnString);
+					await responseStream.WriteAsync(returnString);
 				}
 			}
 			catch (CommandException ex)
 			{
-				ReturnError(ex, response);
+				await ReturnError(ex, response);
 			}
 			catch (Exception ex)
 			{
 				Log.Error(ex, "Unexpected command error");
-				ReturnError(ex, response);
+				await ReturnError(ex, response);
 			}
 		}
 
@@ -172,7 +173,7 @@ namespace TS3AudioBot.Web.Api
 			return execInfo;
 		}
 
-		private E<Exception> ProcessBodyData(HttpRequest request, ApiCall apiCallData)
+		private async Task<E<Exception>> ProcessBodyData(HttpRequest request, ApiCall apiCallData)
 		{
 			if (request.ContentType != "application/json")
 				return R.Ok;
@@ -180,7 +181,7 @@ namespace TS3AudioBot.Web.Api
 			try
 			{
 				using (var sr = new StreamReader(request.Body, Tools.Utf8Encoder))
-					apiCallData.Body = sr.ReadToEnd();
+					apiCallData.Body = await sr.ReadToEndAsync();
 				return R.Ok;
 			}
 			catch (Exception ex)
@@ -190,7 +191,7 @@ namespace TS3AudioBot.Web.Api
 			}
 		}
 
-		private static void ReturnError(Exception ex, HttpResponse response)
+		private static async Task ReturnError(Exception ex, HttpResponse response)
 		{
 			Log.Debug(ex, "Api Exception");
 
@@ -220,7 +221,7 @@ namespace TS3AudioBot.Web.Api
 
 				jsonError ??= new JsonError(ex.Message, CommandExceptionReason.Unknown);
 				using var responseStream = new StreamWriter(response.Body);
-				responseStream.Write(jsonError.Serialize());
+				await responseStream.WriteAsync(jsonError.Serialize());
 			}
 			catch (Exception htex) { Log.Warn(htex, "Failed to respond to HTTP request."); }
 		}

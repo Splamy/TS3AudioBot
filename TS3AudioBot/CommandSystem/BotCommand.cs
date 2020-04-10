@@ -14,6 +14,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Threading.Tasks;
 using TS3AudioBot.CommandSystem.Commands;
 using TS3AudioBot.Localization;
 
@@ -118,7 +119,7 @@ namespace TS3AudioBot.CommandSystem
 			return strb.ToString();
 		}
 
-		public override object? Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments)
+		public override async ValueTask<object?> Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments)
 		{
 			// Check call complexity
 			info.UseComplexityTokens(1);
@@ -127,7 +128,7 @@ namespace TS3AudioBot.CommandSystem
 			if (!info.HasRights(requiredRights))
 				throw new CommandException(string.Format(strings.error_missing_right, InvokeName, RequiredRight), CommandExceptionReason.MissingRights);
 
-			return base.Execute(info, arguments);
+			return await base.Execute(info, arguments);
 		}
 	}
 

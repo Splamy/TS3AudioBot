@@ -163,7 +163,7 @@ namespace TSLib.Full
 				pingCheckRunning = 0;
 				pingCheck = Tools.Now;
 				if (resendTimer == null)
-					resendTimer = new Timer((_) => { using (MappedDiagnosticsContext.SetScoped("BotId", id)) ResendLoop(); }, null, ClockResolution, ClockResolution);
+					resendTimer = new Timer((_) => { using (MappedDiagnosticsLogicalContext.SetScoped("BotId", id)) ResendLoop(); }, null, ClockResolution, ClockResolution);
 			}
 		}
 
@@ -332,7 +332,7 @@ namespace TSLib.Full
 			var self = (PacketHandler<TIn, TOut>)args.UserToken;
 
 			bool isAsync;
-			using (MappedDiagnosticsContext.SetScoped("BotId", self.id))
+			using (MappedDiagnosticsLogicalContext.SetScoped("BotId", self.id))
 			{
 				do
 				{

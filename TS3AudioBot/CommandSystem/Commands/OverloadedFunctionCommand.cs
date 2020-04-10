@@ -10,6 +10,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using TS3AudioBot.Localization;
 
 namespace TS3AudioBot.CommandSystem.Commands
@@ -71,18 +72,17 @@ namespace TS3AudioBot.CommandSystem.Commands
 			});
 		}
 
-		public virtual object? Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments)
+		public virtual async ValueTask<object?> Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments)
 		{
 			// Make arguments lazy, we only want to execute them once
 			arguments = arguments.Select(c => new LazyCommand(c)).ToArray();
-
 			CommandException? contextException = null;
 			foreach (var f in Functions)
 			{
 				// Try to call each overload
 				try
 				{
-					return f.Execute(info, arguments);
+					return await f.Execute(info, arguments);
 				}
 				catch (CommandException cmdEx)
 					when (cmdEx.Reason == CommandExceptionReason.MissingParameter

@@ -111,7 +111,7 @@ namespace TSLib
 			if (!result.Ok)
 				return result.Error;
 
-			var response = deserializer.GenerateResponse<T>(this.result.Value.Span);
+			var response = deserializer.GenerateResponse<T>(result.Value.Span);
 			if (response is null)
 				return CommandError.Parser;
 			else
@@ -162,7 +162,7 @@ namespace TSLib
 			if (isDisposed)
 				throw new ObjectDisposedException(nameof(WaitBlock));
 			var timeOut = Task.Delay(CommandTimeout);
-			var res = await Task.WhenAny(answerWaiterAsync.Task, timeOut).ConfigureAwait(false);
+			var res = await Task.WhenAny(answerWaiterAsync.Task, timeOut);
 			if (res == timeOut)
 				return CommandError.TimeOut;
 			if (!result.Ok)
@@ -182,7 +182,7 @@ namespace TSLib
 			if (DependsOn is null)
 				throw new InvalidOperationException("This waitblock has no dependent Notification");
 			var timeOut = Task.Delay(CommandTimeout);
-			var res = await Task.WhenAny(answerWaiterAsync.Task, timeOut).ConfigureAwait(false);
+			var res = await Task.WhenAny(answerWaiterAsync.Task, timeOut);
 			if (res == timeOut)
 				return CommandError.TimeOut;
 			if (!result.Ok)

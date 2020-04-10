@@ -14,6 +14,7 @@ using System.IO;
 using System.Reflection;
 using System.Resources;
 using System.Threading;
+using System.Threading.Tasks;
 using TS3AudioBot.Helper;
 
 namespace TS3AudioBot.Localization
@@ -39,7 +40,7 @@ namespace TS3AudioBot.Localization
 			resManField.SetValue(null, dynResMan);
 		}
 
-		public static E<string> LoadLanguage(string lang, bool forceDownload)
+		public static async ValueTask<E<string>> LoadLanguage(string lang, bool forceDownload)
 		{
 			CultureInfo culture;
 			try { culture = CultureInfo.GetCultureInfo(lang); }
@@ -49,7 +50,7 @@ namespace TS3AudioBot.Localization
 
 			if (!languageDataInfo.LoadedSuccessfully)
 			{
-				var result = LoadLanguageAssembly(languageDataInfo, culture, forceDownload);
+				var result = await LoadLanguageAssembly(languageDataInfo, culture, forceDownload);
 				if (!result.Ok)
 				{
 					Thread.CurrentThread.CurrentUICulture = CultureInfo.InvariantCulture;
@@ -62,13 +63,9 @@ namespace TS3AudioBot.Localization
 			return R.Ok;
 		}
 
-		private static E<string> LoadLanguageAssembly(LanguageData languageDataInfo, CultureInfo culture, bool forceDownload)
+		private static async Task<E<string>> LoadLanguageAssembly(LanguageData languageDataInfo, CultureInfo culture, bool forceDownload)
 		{
-			var avaliableToDownload = new Lazy<HashSet<string>?>(() =>
-			{
-				var arr = DownloadAvaliableLanguages();
-				return arr != null ? new HashSet<string>(arr) : null;
-			});
+			Task<HashSet<string>?>? avaliableToDownload = null;
 			var triedDownloading = languageDataInfo.TriedDownloading;
 
 			foreach (var currentResolveCulture in GetWithFallbackCultures(culture))
@@ -86,7 +83,11 @@ namespace TS3AudioBot.Localization
 				// Check if we need to download the resource
 				if (forceDownload || (!tryFile.Exists && !triedDownloading))
 				{
-					var list = avaliableToDownload.Value;
+					if (avaliableToDownload is null)
+					{
+						avaliableToDownload = DownloadAvaliableLanguages();
+					}
+					var list = await avaliableToDownload;
 					if (list is null || !list.Contains(currentResolveCulture.Name))
 					{
 						if (list != null)
@@ -99,12 +100,12 @@ namespace TS3AudioBot.Localization
 						languageDataInfo.TriedDownloading = true;
 						Directory.CreateDirectory(tryFile.DirectoryName);
 						Log.Info("Downloading the resource pack for the language '{0}'", currentResolveCulture.Name);
-						WebWrapper.GetResponse($"https://splamy.de/api/language/project/ts3ab/language/{currentResolveCulture.Name}/dll", response =>
+						(await WebWrapper.GetResponseAsync($"https://splamy.de/api/language/project/ts3ab/language/{currentResolveCulture.Name}/dll", async response =>
 						{
 							using var dataStream = response.GetResponseStream();
 							using var fs = File.Open(tryFile.FullName, FileMode.Create, FileAccess.Write, FileShare.None);
-							dataStream.CopyTo(fs);
-						}).UnwrapToLog(Log);
+							await dataStream.CopyToAsync(fs);
+						})).UnwrapToLog(Log);
 					}
 					catch (Exception ex)
 					{
@@ -148,13 +149,16 @@ namespace TS3AudioBot.Localization
 		private static FileInfo GetCultureFileInfo(CultureInfo culture)
 			=> new FileInfo(Path.Combine(Directory.GetCurrentDirectory(), culture.Name, "TS3AudioBot.resources.dll"));
 
-		private static string[]? DownloadAvaliableLanguages()
+		private static async Task<HashSet<string>?> DownloadAvaliableLanguages()
 		{
 			try
 			{
 				Log.Info("Checking for requested language online");
-				if (WebWrapper.DownloadString("https://splamy.de/api/language/project/ts3ab/languages").GetOk(out var data))
-					return Newtonsoft.Json.JsonConvert.DeserializeObject<string[]>(data);
+				if ((await WebWrapper.DownloadStringAsync("https://splamy.de/api/language/project/ts3ab/languages")).GetOk(out var data))
+				{
+					var arr = Newtonsoft.Json.JsonConvert.DeserializeObject<string[]>(data);
+					return new HashSet<string>(arr);
+				}
 			}
 			catch (Exception ex)
 			{

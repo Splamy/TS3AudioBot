@@ -12,6 +12,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using TS3AudioBot.CommandSystem.Ast;
 using TS3AudioBot.CommandSystem.CommandResults;
 using TS3AudioBot.CommandSystem.Commands;
@@ -393,15 +394,15 @@ namespace TS3AudioBot.CommandSystem
 			}
 		}
 
-		public static ICmdResult Execute(ExecutionInformation info, string command)
+		public static async Task<ICmdResult> Execute(ExecutionInformation info, string command)
 		{
 			var ast = CommandParser.ParseCommandRequest(command);
 			var cmd = AstToCommandResult(ast);
-			return new ICmdResult(cmd.Execute(info, Array.Empty<ICommand>()));
+			return new ICmdResult(await cmd.Execute(info, Array.Empty<ICommand>()));
 		}
 
-		public static ICmdResult Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments)
-			=> new ICmdResult(info.GetModule<CommandManager>()!.RootGroup.Execute(info, arguments));
+		public static async Task<ICmdResult> Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments)
+			=> new ICmdResult(await info.GetModuleOrThrow<CommandManager>().RootGroup.Execute(info, arguments));
 
 		public static string GetTree(ICommand com)
 		{

@@ -9,6 +9,7 @@
 
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using TS3AudioBot.Dependency;
 
 namespace TS3AudioBot.CommandSystem.Commands
@@ -25,7 +26,7 @@ namespace TS3AudioBot.CommandSystem.Commands
 			internArguments = arguments;
 		}
 
-		public virtual object? Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments)
+		public virtual async ValueTask<object?> Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments)
 		{
 			if (!info.TryGet<CommandManager>(out var cmdSys))
 				throw new CommandException("Could not find local commandsystem tree", CommandExceptionReason.MissingContext);
@@ -37,7 +38,7 @@ namespace TS3AudioBot.CommandSystem.Commands
 				merged = arguments;
 			else
 				merged = internArguments.Concat(arguments).ToArray();
-			return cmdSys.RootGroup.Execute(info, merged);
+			return await cmdSys.RootGroup.Execute(info, merged);
 		}
 
 		public override string ToString() => $"RootCmd({string.Join(", ", internArguments)})";

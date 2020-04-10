@@ -21,6 +21,13 @@ namespace TS3AudioBot.Dependency
 			return (T?)injector.GetModule(typeof(T));
 		}
 
+		public static T GetModuleOrThrow<T>(this IInjector injector) where T : class
+		{
+			var t = (T?)injector.GetModule(typeof(T));
+			if (t is null) throw new Exception($"{typeof(T).Name} was not found");
+			return t;
+		}
+
 		public static bool TryGet<T>(this IInjector injector, [NotNullWhen(true)] out T? obj) where T : class
 		{
 			obj = injector.GetModule<T>();

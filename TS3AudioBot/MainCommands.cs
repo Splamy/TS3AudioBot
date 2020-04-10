@@ -14,6 +14,7 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using TS3AudioBot.Algorithm;
 using TS3AudioBot.Audio;
 using TS3AudioBot.CommandSystem;
@@ -122,17 +123,17 @@ namespace TS3AudioBot
 		}
 
 		[Command("bot avatar set")]
-		public static void CommandBotAvatarSet(Ts3Client ts3Client, string url)
+		public static async Task CommandBotAvatarSet(Ts3Client ts3Client, string url)
 		{
 			url = TextUtil.ExtractUrlFromBb(url);
-			WebWrapper.GetResponse(url, x =>
+			(await WebWrapper.GetResponseAsync(url, async x =>
 			{
 				using var stream = x.GetResponseStream();
 				var imageResult = ImageUtil.ResizeImageSave(stream, out _);
 				if (!imageResult.Ok)
 					return (E<LocalStr>)imageResult.Error;
-				return ts3Client.UploadAvatar(imageResult.Value);
-			}).Flat().UnwrapThrow();
+				return await ts3Client.UploadAvatar(imageResult.Value);
+			})).Flat().UnwrapThrow();
 		}
 
 		[Command("bot avatar clear")]
@@ -179,7 +180,7 @@ namespace TS3AudioBot
 		}
 
 		[Command("bot disconnect")]
-		public static void CommandBotDisconnect(BotManager bots, Bot bot) => bots.StopBot(bot);
+		public static async Task CommandBotDisconnect(Bot bot) => await bot.Stop();
 
 		[Command("bot commander")]
 		public static JsonValue<bool> CommandBotCommander(Ts3Client ts3Client)
@@ -202,22 +203,22 @@ namespace TS3AudioBot
 		}
 
 		[Command("bot connect template")]
-		public static BotInfo CommandBotConnectTo(BotManager bots, string name)
+		public static async Task<BotInfo> CommandBotConnectTo(BotManager bots, string name)
 		{
-			var botInfo = bots.RunBotTemplate(name);
+			var botInfo = await bots.RunBotTemplate(name);
 			if (!botInfo.Ok)
 				throw new CommandException(strings.error_could_not_create_bot + $" ({botInfo.Error})", CommandExceptionReason.CommandError);
 			return botInfo.Value;
 		}
 
 		[Command("bot connect to")]
-		public static BotInfo CommandBotConnectNew(BotManager bots, string address, string? password = null)
+		public static async Task<BotInfo> CommandBotConnectNew(BotManager bots, string address, string? password = null)
 		{
 			var botConf = bots.CreateNewBot();
 			botConf.Connect.Address.Value = address;
 			if (!string.IsNullOrEmpty(password))
 				botConf.Connect.ServerPassword.Password.Value = password;
-			var botInfo = bots.RunBot(botConf);
+			var botInfo = await bots.RunBot(botConf);
 			if (!botInfo.Ok)
 				throw new CommandException(strings.error_could_not_create_bot + $" ({botInfo.Error})", CommandExceptionReason.CommandError);
 			return botInfo.Value;
@@ -276,35 +277,32 @@ namespace TS3AudioBot
 		}
 
 		[Command("bot template", "cmd_bot_use_help")]
-		public static object? CommandBotTemplate(ExecutionInformation info, BotManager bots, string botName, ICommand cmd)
+		public static async Task<object?> CommandBotTemplate(ExecutionInformation info, BotManager bots, string botName, ICommand cmd)
 		{
-			using var botLock = bots.GetBotLock(botName);
-			return CommandBotUseInternal(info, botLock, cmd);
+			var bot = bots.GetBotLock(botName);
+			return await CommandBotUseInternal(info, bot, cmd);
 		}
 
 		[Command("bot use")]
-		public static object? CommandBotUse(ExecutionInformation info, BotManager bots, int botId, ICommand cmd)
+		public static async Task<object?> CommandBotUse(ExecutionInformation info, BotManager bots, int botId, ICommand cmd)
 		{
-			using var botLock = bots.GetBotLock(botId);
-			return CommandBotUseInternal(info, botLock, cmd);
+			var bot = bots.GetBotLock(botId);
+			return await CommandBotUseInternal(info, bot, cmd);
 		}
 
-		private static object? CommandBotUseInternal(ExecutionInformation info, BotLock? botLock, ICommand cmd)
+		private static async Task<object?> CommandBotUseInternal(ExecutionInformation info, Bot? bot, ICommand cmd)
 		{
-			if (botLock is null)
+			if (bot is null)
 				throw new CommandException(strings.error_bot_does_not_exist, CommandExceptionReason.CommandError);
 
 			var backParent = info.ParentInjector;
-			info.ParentInjector = botLock.Bot.Injector;
-			string backUpId = NLog.MappedDiagnosticsContext.Get("BotId");
-			NLog.MappedDiagnosticsContext.Set("BotId", botLock.Bot.Id.ToString());
+			info.ParentInjector = bot.Injector;
 			try
 			{
-				return cmd.Execute(info, Array.Empty<ICommand>());
+				return await bot.Scheduler.InvokeAsync(async () => await cmd.Execute(info, Array.Empty<ICommand>()));
 			}
 			finally
 			{
-				NLog.MappedDiagnosticsContext.Set("BotId", backUpId);
 				info.ParentInjector = backParent;
 			}
 		}
@@ -351,24 +349,24 @@ namespace TS3AudioBot
 		[Command("eval")]
 		[Usage("<command> <arguments...>", "Executes the given command on arguments")]
 		[Usage("<strings...>", "Concat the strings and execute them with the command system")]
-		public static object? CommandEval(ExecutionInformation info, IReadOnlyList<ICommand> arguments)
+		public static async Task<object?> CommandEval(ExecutionInformation info, IReadOnlyList<ICommand> arguments)
 		{
 			// Evaluate the first argument on the rest of the arguments
 			if (arguments.Count == 0)
 				throw new CommandException(strings.error_cmd_at_least_one_argument, CommandExceptionReason.MissingParameter);
 			var leftArguments = arguments.TrySegment(1);
-			var arg0 = arguments[0].Execute(info, Array.Empty<ICommand>());
+			var arg0 = await arguments[0].Execute(info, Array.Empty<ICommand>());
 			switch (arg0)
 			{
 			case ICommand command:
-				return command.Execute(info, leftArguments);
+				return await command.Execute(info, leftArguments);
 			case null:
 				return null;
 			default:
 				var cmdStr = arg0.ToString()!;
 				// We got a string back so parse and evaluate it
 				var cmd = CommandManager.AstToCommandResult(CommandParser.ParseCommandRequest(cmdStr));
-				return cmd.Execute(info, leftArguments);
+				return await cmd.Execute(info, leftArguments);
 			}
 		}
 
@@ -710,7 +708,7 @@ namespace TS3AudioBot
 		[Command("if")]
 		[Usage("<argument0> <comparator> <argument1> <then>", "Compares the two arguments and returns or executes the then-argument")]
 		[Usage("<argument0> <comparator> <argument1> <then> <else>", "Same as before and return the else-arguments if the condition is false")]
-		public static object? CommandIf(ExecutionInformation info, string arg0, string cmp, string arg1, ICommand then, ICommand? other = null)
+		public static async Task<object?> CommandIf(ExecutionInformation info, string arg0, string cmp, string arg1, ICommand then, ICommand? other = null)
 		{
 			Func<double, double, bool> comparer = cmp switch
 			{
@@ -736,10 +734,10 @@ namespace TS3AudioBot
 
 			// If branch
 			if (cmpResult)
-				return then.Execute(info, Array.Empty<ICommand>());
+				return await then.Execute(info, Array.Empty<ICommand>());
 			// Else branch
 			if (other != null)
-				return other.Execute(info, Array.Empty<ICommand>());
+				return await other.Execute(info, Array.Empty<ICommand>());
 
 			return null;
 		}
@@ -819,23 +817,22 @@ namespace TS3AudioBot
 		}
 
 		[Command("json merge")]
-		public static JsonArray<object?> CommandJsonMerge(ExecutionInformation info, ApiCall _, IReadOnlyList<ICommand> arguments)
+		public static async Task<JsonArray<object?>> CommandJsonMerge(ExecutionInformation info, ApiCall _, IReadOnlyList<ICommand> arguments)
 		{
 			if (arguments.Count == 0)
 				return new JsonArray<object?>(Array.Empty<object>(), string.Empty);
 
-			var jsonArr = arguments
-				.Select(arg =>
-				{
-					object? res;
-					try { res = arg.Execute(info, Array.Empty<ICommand>()); }
-					catch (CommandException) { return null; }
-					if (res is JsonObject o)
-						return o.GetSerializeObject();
-					else
-						return res;
-				})
-				.ToArray();
+			var jsonArr = new object?[arguments.Count];
+			for (int i = 0; i < arguments.Count; i++)
+			{
+				object? res;
+				try { res = await arguments[i].Execute(info, Array.Empty<ICommand>()); }
+				catch (CommandException) { continue; }
+				if (res is JsonObject o)
+					jsonArr[i] = o.GetSerializeObject();
+				else
+					jsonArr[i] = res;
+			}
 
 			return new JsonArray<object?>(jsonArr, string.Empty);
 		}
@@ -1087,7 +1084,7 @@ namespace TS3AudioBot
 			=> playManager.Next(invoker).UnwrapThrow();
 
 		[Command("param", "_undocumented")] // TODO add documentation, when name decided
-		public static object? CommandParam(ExecutionInformation info, int index)
+		public static async Task<object?> CommandParam(ExecutionInformation info, int index)
 		{
 			if (!info.TryGet<AliasContext>(out var ctx) || ctx.Arguments == null)
 				throw new CommandException("No parameter available", CommandExceptionReason.CommandError);
@@ -1097,7 +1094,7 @@ namespace TS3AudioBot
 
 			var backup = ctx.Arguments;
 			ctx.Arguments = null;
-			var result = backup[index].Execute(info, Array.Empty<ICommand>());
+			var result = await backup[index].Execute(info, Array.Empty<ICommand>());
 			ctx.Arguments = backup;
 			return result;
 		}
@@ -1178,9 +1175,9 @@ namespace TS3AudioBot
 		public static void CommandQuizOn(Bot bot, PlayManager playManager)
 		{
 			bot.QuizMode = true;
-			bot.UpdateBotStatus().UnwrapThrow();
 			if (playManager.IsPlaying)
 				bot.GenerateStatusImage(true, playManager.CurrentPlayData);
+			bot.UpdateBotStatus();
 		}
 		[Command("quiz off")]
 		public static void CommandQuizOff(Bot bot, PlayManager playManager, ClientCall? invoker = null)
@@ -1188,9 +1185,9 @@ namespace TS3AudioBot
 			if (invoker != null && invoker.Visibiliy == TextMessageTargetMode.Private)
 				throw new CommandException(strings.cmd_quiz_off_no_cheating, CommandExceptionReason.CommandError);
 			bot.QuizMode = false;
-			bot.UpdateBotStatus().UnwrapThrow();
 			if (playManager.IsPlaying)
 				bot.GenerateStatusImage(true, playManager.CurrentPlayData);
+			bot.UpdateBotStatus();
 		}
 
 		[Command("random")]
@@ -1375,18 +1372,20 @@ namespace TS3AudioBot
 		}
 
 		[Command("settings bot get", "cmd_settings_get_help")]
-		public static ConfigPart CommandSettingsBotGet(BotManager bots, ConfRoot config, string bot, string? path = null)
+		public static ConfigPart CommandSettingsBotGet(BotManager bots, ConfRoot config, string botName, string? path = null)
 		{
-			using var botlock = bots.GetBotLock(bot);
-			var confBot = GetConf(botlock?.Bot, config, bot);
+			// TODO: Async !!
+			var bot = bots.GetBotLock(botName);
+			var confBot = GetConf(bot, config, botName);
 			return CommandSettingsGet(confBot, path);
 		}
 
 		[Command("settings bot set", "cmd_settings_set_help")]
-		public static void CommandSettingsBotSet(BotManager bots, ConfRoot config, string bot, string path, string? value = null)
+		public static void CommandSettingsBotSet(BotManager bots, ConfRoot config, string botName, string path, string? value = null)
 		{
-			using var botlock = bots.GetBotLock(bot);
-			var confBot = GetConf(botlock?.Bot, config, bot);
+			// TODO: Async !!
+			var bot = bots.GetBotLock(botName);
+			var confBot = GetConf(bot, config, botName);
 			CommandSettingsSet(confBot, path, value);
 		}
 
@@ -1560,13 +1559,13 @@ namespace TS3AudioBot
 		}
 
 		[Command("system quit", "cmd_quit_help")]
-		public static JsonEmpty CommandSystemQuit(Core core, CallerInfo caller, UserSession? session = null, string? param = null)
+		public static async Task<JsonEmpty> CommandSystemQuit(Core core, CallerInfo caller, UserSession? session = null, string? param = null)
 		{
 			const string force = "force";
 
 			if (caller.ApiCall || param == force)
 			{
-				core.Dispose();
+				await core.Stop();
 				return new JsonEmpty(string.Empty);
 			}
 
@@ -1574,7 +1573,7 @@ namespace TS3AudioBot
 			{
 				if (TextUtil.GetAnswer(message) == Answer.Yes)
 				{
-					CommandSystemQuit(core, caller, session, force);
+					CommandSystemQuit(core, caller, session, force); // TODO: Async
 				}
 				return null;
 			}
@@ -1587,7 +1586,7 @@ namespace TS3AudioBot
 		[Usage("<count> <text>", "Take only <count> parts of the text")]
 		[Usage("<count> <start> <text>", "Take <count> parts, starting with the part at <start>")]
 		[Usage("<count> <start> <delimiter> <text>", "Specify another delimiter for the parts than spaces")]
-		public static string CommandTake(ExecutionInformation info, IReadOnlyList<ICommand> arguments)
+		public static async Task<string> CommandTake(ExecutionInformation info, IReadOnlyList<ICommand> arguments)
 		{
 			if (arguments.Count < 2)
 				throw new CommandException(strings.error_cmd_at_least_two_argument, CommandExceptionReason.MissingParameter);
@@ -1596,23 +1595,23 @@ namespace TS3AudioBot
 			string? delimiter = null;
 
 			// Get count
-			var res = arguments[0].ExecuteToString(info, Array.Empty<ICommand>());
+			var res = await arguments[0].ExecuteToString(info, Array.Empty<ICommand>());
 			if (!int.TryParse(res, out int count) || count < 0)
 				throw new CommandException("Count must be an integer >= 0", CommandExceptionReason.CommandError); // LOC: TODO
 
 			if (arguments.Count > 2)
 			{
 				// Get start
-				res = arguments[1].ExecuteToString(info, Array.Empty<ICommand>());
+				res = await arguments[1].ExecuteToString(info, Array.Empty<ICommand>());
 				if (!int.TryParse(res, out start) || start < 0)
 					throw new CommandException("Start must be an integer >= 0", CommandExceptionReason.CommandError); // LOC: TODO
 			}
 
 			// Get delimiter if exists
 			if (arguments.Count > 3)
-				delimiter = arguments[2].ExecuteToString(info, Array.Empty<ICommand>());
+				delimiter = await arguments[2].ExecuteToString(info, Array.Empty<ICommand>());
 
-			string text = arguments[Math.Min(arguments.Count - 1, 3)].ExecuteToString(info, Array.Empty<ICommand>());
+			string text = await arguments[Math.Min(arguments.Count - 1, 3)].ExecuteToString(info, Array.Empty<ICommand>());
 
 			var splitted = delimiter is null
 				? text.Split()
@@ -1765,10 +1764,10 @@ namespace TS3AudioBot
 		public static void CommandWhisperSubsription(IVoiceTarget targetManager) => targetManager.SendMode = TargetSendMode.Whisper;
 
 		[Command("xecute")]
-		public static void CommandXecute(ExecutionInformation info, IReadOnlyList<ICommand> arguments)
+		public static async Task CommandXecute(ExecutionInformation info, IReadOnlyList<ICommand> arguments)
 		{
 			foreach (var arg in arguments)
-				arg.Execute(info, Array.Empty<ICommand>());
+				await arg.Execute(info, Array.Empty<ICommand>());
 		}
 		// ReSharper enable UnusedMember.Global
 

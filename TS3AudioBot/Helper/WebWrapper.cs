@@ -10,6 +10,7 @@
 using System;
 using System.IO;
 using System.Net;
+using System.Threading.Tasks;
 using TS3AudioBot.Localization;
 
 namespace TS3AudioBot.Helper
@@ -52,6 +53,34 @@ namespace TS3AudioBot.Helper
 			}
 		}
 
+		public static Task<R<string, LocalStr>> DownloadStringAsync(string? link, params (string name, string value)[] headers)
+		{
+			if (!Uri.TryCreate(link, UriKind.RelativeOrAbsolute, out var uri))
+				return Task.FromResult(R<string, LocalStr>.Err(new LocalStr(strings.error_media_invalid_uri)));
+			return DownloadStringAsync(uri, headers);
+		}
+		public static async Task<R<string, LocalStr>> DownloadStringAsync(Uri uri, params (string name, string value)[] headers)
+		{
+			if (!CreateRequest(uri).Get(out var request, out var error))
+				return error;
+
+			foreach (var (name, value) in headers)
+				request.Headers.Add(name, value);
+
+			try
+			{
+				using var response = await request.GetResponseAsync();
+				using var stream = response.GetResponseStream();
+				using var reader = new StreamReader(stream);
+				var site = await reader.ReadToEndAsync();
+				return site;
+			}
+			catch (Exception ex)
+			{
+				return ToLoggedError(ex);
+			}
+		}
+
 		public static E<LocalStr> GetResponse(string? link, Action<WebResponse>? body = null, TimeSpan? timeout = null)
 		{
 			if (!Uri.TryCreate(link, UriKind.RelativeOrAbsolute, out var uri))
@@ -60,9 +89,8 @@ namespace TS3AudioBot.Helper
 		}
 		public static E<LocalStr> GetResponse(Uri uri, Action<WebResponse>? body = null, TimeSpan? timeout = null)
 		{
-			var requestRes = CreateRequest(uri, timeout);
-			if (!requestRes.Ok) return requestRes.Error;
-			var request = requestRes.Value;
+			if (!CreateRequest(uri, timeout).Get(out var request, out var error))
+				return error;
 
 			try
 			{
@@ -70,6 +98,30 @@ namespace TS3AudioBot.Helper
 				{
 					body?.Invoke(response);
 				}
+				return R.Ok;
+			}
+			catch (Exception ex)
+			{
+				return ToLoggedError(ex);
+			}
+		}
+
+		public static Task<E<LocalStr>> GetResponseAsync(string? link, Func<WebResponse, Task>? body = null, TimeSpan? timeout = null)
+		{
+			if (!Uri.TryCreate(link, UriKind.RelativeOrAbsolute, out var uri))
+				return Task.FromResult(E<LocalStr>.Err(new LocalStr(strings.error_media_invalid_uri)));
+			return GetResponseAsync(uri, body, timeout);
+		}
+		public static async Task<E<LocalStr>> GetResponseAsync(Uri uri, Func<WebResponse, Task>? body = null, TimeSpan? timeout = null)
+		{
+			if (!CreateRequest(uri, timeout).Get(out var request, out var error))
+				return error;
+
+			try
+			{
+				using var response = await request.GetResponseAsync();
+				if (body != null)
+					await body.Invoke(response);
 				return R.Ok;
 			}
 			catch (Exception ex)
@@ -86,14 +138,38 @@ namespace TS3AudioBot.Helper
 		}
 		public static R<T, LocalStr> GetResponse<T>(Uri uri, Func<WebResponse, T> body, TimeSpan? timeout = null) where T : notnull
 		{
-			var requestRes = CreateRequest(uri, timeout);
-			if (!requestRes.Ok) return requestRes.Error;
-			var request = requestRes.Value;
+			if (!CreateRequest(uri, timeout).Get(out var request, out var error))
+				return error;
 
 			try
 			{
 				using var response = request.GetResponse();
 				var result = body.Invoke(response);
+				if (result is null)
+					return new LocalStr(strings.error_net_unknown);
+				return result;
+			}
+			catch (Exception ex)
+			{
+				return ToLoggedError(ex);
+			}
+		}
+
+		public static Task<R<T, LocalStr>> GetResponseAsync<T>(string? link, Func<WebResponse, Task<T>> body, TimeSpan? timeout = null) where T : notnull
+		{
+			if (!Uri.TryCreate(link, UriKind.RelativeOrAbsolute, out var uri))
+				return Task.FromResult(R<T, LocalStr>.Err(new LocalStr(strings.error_media_invalid_uri)));
+			return GetResponseAsync(uri, body, timeout);
+		}
+		public static async Task<R<T, LocalStr>> GetResponseAsync<T>(Uri uri, Func<WebResponse, Task<T>> body, TimeSpan? timeout = null) where T : notnull
+		{
+			if (!CreateRequest(uri, timeout).Get(out var request, out var error))
+				return error;
+
+			try
+			{
+				using var response = await request.GetResponseAsync();
+				var result = await body.Invoke(response);
 				if (result is null)
 					return new LocalStr(strings.error_net_unknown);
 				return result;
@@ -113,9 +189,8 @@ namespace TS3AudioBot.Helper
 		}
 		public static R<Stream, LocalStr> GetResponseUnsafe(Uri uri, TimeSpan? timeout = null)
 		{
-			var requestRes = CreateRequest(uri, timeout);
-			if (!requestRes.Ok) return requestRes.Error;
-			var request = requestRes.Value;
+			if (!CreateRequest(uri, timeout).Get(out var request, out var error))
+				return error;
 
 			try
 			{

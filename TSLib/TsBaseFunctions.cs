@@ -25,8 +25,6 @@ namespace TSLib
 	public abstract partial class TsBaseFunctions : IDisposable
 	{
 		protected readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
-		/// <summary>After the client connected.</summary>
-		public abstract event EventHandler<EventArgs> OnConnected;
 		/// <summary>After the client disconnected.</summary>
 		public abstract event EventHandler<DisconnectEventArgs> OnDisconnected;
 
@@ -44,8 +42,8 @@ namespace TSLib
 		public FileTransferManager FileTransferManager => ftm ??= new FileTransferManager(this);
 		protected abstract Deserializer Deserializer { get; }
 
-		public abstract void Connect(ConnectionData conData);
-		public abstract void Disconnect();
+		public abstract Task Connect(ConnectionData conData);
+		public abstract Task Disconnect();
 		public abstract void Dispose();
 
 		#region NETWORK SEND
@@ -63,12 +61,8 @@ namespace TSLib
 		/// <param name="type">The notification type to wait for and serialize to.</param>
 		public abstract R<T[], CommandError> SendHybrid<T>(TsCommand com, NotificationType type) where T : class, IResponse, new();
 
-#pragma warning disable CS1998
-		public virtual async Task<R<T[], CommandError>> SendAsync<T>(TsCommand com) where T : IResponse, new()
-			=> throw new NotImplementedException();
-		public virtual async Task<R<T[], CommandError>> SendHybridAsync<T>(TsCommand com, NotificationType type) where T : class, IResponse, new()
-			=> throw new NotImplementedException();
-#pragma warning restore CS1998
+		public abstract Task<R<T[], CommandError>> SendAsync<T>(TsCommand com) where T : IResponse, new();
+		public abstract Task<R<T[], CommandError>> SendHybridAsync<T>(TsCommand com, NotificationType type) where T : class, IResponse, new();
 		#endregion
 
 		private string? GenPassword(string? password)
@@ -331,19 +325,7 @@ namespace TSLib
 				{ "tcpw", targetChannel.HasValue ? targetChannelPassword : null },
 			});
 
-		public CmdR UploadAvatar(System.IO.Stream image)
-		{
-			var token = FileTransferManager.UploadFile(image, ChannelId.Null, "/avatar", overwrite: true, createMd5: true);
-			if (!token.Ok)
-				return token.Error;
-			token.Value.Wait();
-			if (token.Value.Status != TransferStatus.Done)
-				return CommandError.Custom("Avatar upload failed");
-			var md5 = string.Concat(token.Value.Md5Sum.Select(x => x.ToString("x2")));
-			return SendVoid(new TsCommand("clientupdate") { { "client_flag_avatar", md5 } });
-		}
-
-		public async Task<CmdR> UploadAvatarAsync(System.IO.Stream image)
+		public async Task<CmdR> UploadAvatar(System.IO.Stream image)
 		{
 			var token = FileTransferManager.UploadFile(image, ChannelId.Null, "/avatar", overwrite: true, createMd5: true);
 			if (!token.Ok)
@@ -352,7 +334,7 @@ namespace TSLib
 			if (token.Value.Status != TransferStatus.Done)
 				return CommandError.Custom("Avatar upload failed");
 			var md5 = string.Concat(token.Value.Md5Sum.Select(x => x.ToString("x2")));
-			return SendVoid(new TsCommand("clientupdate") { { "client_flag_avatar", md5 } });
+			return await SendVoidAsync(new TsCommand("clientupdate") { { "client_flag_avatar", md5 } });
 		}
 
 		/// <summary>Deletes the avatar of a user.

@@ -8,6 +8,7 @@
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace TS3AudioBot.CommandSystem.Commands
 {
@@ -25,11 +26,11 @@ namespace TS3AudioBot.CommandSystem.Commands
 			innerCommand = innerCommandArg;
 		}
 
-		public virtual object? Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments)
+		public virtual async ValueTask<object?> Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments)
 		{
 			if (!executed)
 			{
-				result = innerCommand.Execute(info, arguments);
+				result = await innerCommand.Execute(info, arguments);
 				executed = true;
 				return result;
 			}

@@ -10,8 +10,8 @@
 using Heijden.Dns.Portable;
 using Heijden.DNS;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
@@ -49,22 +49,28 @@ namespace TSLib
 			new IPEndPoint(new IPAddress(new byte[] { 80,80,81,81 }), 53),
 		});
 
-		/// <summary>Tries to resolve an address string to an ip.</summary>
-		/// <param name="address">The address, nickname, etc. to resolve.</param>
-		/// <param name="endPoint">The ip address if successfully resolved.</param>
-		/// <param name="defaultPort">The default port when no port is specified with the address or the resolved address.</param>
-		/// <returns>Whether the resolve was succesful.</returns>
-		public static bool TryResolve(string address, [NotNullWhen(true)] out IPEndPoint? endPoint, ushort defaultPort = TsVoiceDefaultPort)
-		{
-			endPoint = TryResolve(address, defaultPort).GetAwaiter().GetResult();
-			return endPoint != null;
-		}
+		// TODO maybe change to proper TLRU
+		private static readonly ConcurrentDictionary<string, CacheEntry> addressCache
+			= new ConcurrentDictionary<string, CacheEntry>();
+		private static readonly TimeSpan CacheTimeout = TimeSpan.FromMinutes(10);
 
 		/// <summary>Tries to resolve an address string to an ip.</summary>
 		/// <param name="address">The address, nickname, etc. to resolve.</param>
 		/// <param name="defaultPort">The default port when no port is specified with the address or the resolved address.</param>
 		/// <returns>The ip address if successfully resolved.</returns>
 		public static async Task<IPEndPoint?> TryResolve(string address, ushort defaultPort = TsVoiceDefaultPort)
+		{
+			if (string.IsNullOrEmpty(address)) throw new ArgumentNullException(nameof(address));
+
+			if (addressCache.TryGetValue(address, out var cache) && Tools.Now - cache.Created < CacheTimeout)
+				return cache.Ip;
+
+			var endPoint = await TryResolveUncached(address, defaultPort);
+			addressCache.TryAdd(address, new CacheEntry(endPoint, Tools.Now));
+			return endPoint;
+		}
+
+		public static async Task<IPEndPoint?> TryResolveUncached(string address, ushort defaultPort = TsVoiceDefaultPort)
 		{
 			if (string.IsNullOrEmpty(address)) throw new ArgumentNullException(nameof(address));
 			IPEndPoint? endPoint;
@@ -290,6 +296,18 @@ namespace TSLib
 			}
 
 			return splits[0];
+		}
+
+		private readonly struct CacheEntry
+		{
+			public IPEndPoint? Ip { get; }
+			public DateTime Created { get; }
+
+			public CacheEntry(IPEndPoint? ip, DateTime created)
+			{
+				Ip = ip;
+				Created = created;
+			}
 		}
 	}
 }

@@ -10,6 +10,7 @@
 using System;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Threading.Tasks;
 using TS3AudioBot.Web.Api;
 
 namespace TS3AudioBot.CommandSystem.Commands
@@ -23,13 +24,13 @@ namespace TS3AudioBot.CommandSystem.Commands
 			Obj = obj;
 		}
 
-		public object? Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments)
+		public async ValueTask<object?> Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments)
 		{
 			if (Obj == null)
 				return null; // TODO maybe error ?
 			if (arguments.Count == 0)
 				return JsonValue.Create(Obj);
-			var paramName = arguments[0].ExecuteToString(info, Array.Empty<ICommand>());
+			var paramName = await arguments[0].ExecuteToString(info, Array.Empty<ICommand>());
 			var type = Obj.GetType();
 			var prop = type.GetProperty(paramName, BindingFlags.Public | BindingFlags.Instance);
 			if (prop is null)

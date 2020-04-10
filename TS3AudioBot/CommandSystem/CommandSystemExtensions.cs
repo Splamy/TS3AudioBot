@@ -9,6 +9,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using TS3AudioBot.Algorithm;
 using TS3AudioBot.CommandSystem.Commands;
 using TS3AudioBot.Dependency;
@@ -27,9 +28,9 @@ namespace TS3AudioBot.CommandSystem
 		public static Lazy<IFilter> GetFilterLazy(this IInjector injector)
 			=> new Lazy<IFilter>(() => injector.GetFilter(), false);
 
-		public static string ExecuteToString(this ICommand com, ExecutionInformation info, IReadOnlyList<ICommand> arguments)
+		public static async ValueTask<string> ExecuteToString(this ICommand com, ExecutionInformation info, IReadOnlyList<ICommand> arguments)
 		{
-			var res = com.Execute(info, arguments);
+			var res = await com.Execute(info, arguments);
 			return res?.ToString() ?? "";
 		}
 	}

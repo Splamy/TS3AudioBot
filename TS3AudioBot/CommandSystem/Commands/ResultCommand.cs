@@ -8,6 +8,7 @@
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace TS3AudioBot.CommandSystem.Commands
 {
@@ -23,7 +24,9 @@ namespace TS3AudioBot.CommandSystem.Commands
 			Content = contentArg;
 		}
 
-		public virtual object? Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments)
+#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
+		public virtual async ValueTask<object?> Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments)
+#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
 		{
 			return Content;
 		}

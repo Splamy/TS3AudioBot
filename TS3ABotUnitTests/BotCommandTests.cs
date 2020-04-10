@@ -24,7 +24,7 @@ namespace TS3ABotUnitTests
 		public void BotCommandTest()
 		{
 			var execInfo = Utils.GetExecInfo("ic3");
-			string? CallCommand(string command) => CommandManager.Execute(execInfo, command).AsString();
+			string? CallCommand(string command) => CommandManager.Execute(execInfo, command).Result.AsString();
 
 			var output = CallCommand("!help");
 			Assert.AreEqual(output, CallCommand("!h"));
@@ -75,7 +75,7 @@ namespace TS3ABotUnitTests
 		public void TailStringTest()
 		{
 			var execInfo = Utils.GetExecInfo("ic3");
-			string? CallCommand(string command) => CommandManager.Execute(execInfo, command).AsString();
+			string? CallCommand(string command) => CommandManager.Execute(execInfo, command).Result.AsString();
 			var group = execInfo.GetModule<CommandManager>()!.RootGroup;
 			group.AddCommand("cmd", new FunctionCommand(s => s));
 
@@ -138,7 +138,7 @@ namespace TS3ABotUnitTests
 		public void XCommandSystemTest()
 		{
 			var execInfo = Utils.GetExecInfo("ic3", false);
-			string? CallCommand(string command) => CommandManager.Execute(execInfo, command).AsString();
+			string? CallCommand(string command) => CommandManager.Execute(execInfo, command).Result.AsString();
 
 			var group = execInfo.GetModule<CommandManager>()!.RootGroup;
 			group.AddCommand("one", new FunctionCommand(() => "ONE"));
@@ -147,7 +147,7 @@ namespace TS3ABotUnitTests
 			group.AddCommand("optional", new FunctionCommand(GetType().GetMethod(nameof(OptionalFunc), BindingFlags.NonPublic | BindingFlags.Static)!));
 
 			// Basic tests
-			Assert.AreEqual("ONE", CommandManager.Execute(execInfo, new ICommand[] { new ResultCommand("one") }).AsString());
+			Assert.AreEqual("ONE", CommandManager.Execute(execInfo, new ICommand[] { new ResultCommand("one") }).Result.AsString());
 			Assert.AreEqual("ONE", CallCommand("!one"));
 			Assert.AreEqual("TWO", CallCommand("!t"));
 			Assert.AreEqual("TEST", CallCommand("!e TEST"));
@@ -179,7 +179,7 @@ namespace TS3ABotUnitTests
 			// Return unwrap
 			var json = JsonValue.Create("WRAP");
 			group.AddCommand("wrapjson", new FunctionCommand(new Func<JsonValue>(() => json)));
-			Assert.AreEqual(json, CommandManager.Execute(execInfo, "!wrapjson").AsRaw());
+			Assert.AreEqual(json, CommandManager.Execute(execInfo, "!wrapjson").Result.AsRaw());
 			Assert.AreEqual("WRAP", CallCommand("!wrapjson")); // AsString()
 			Assert.AreEqual("WRAP", CallCommand("!echo (!wrapjson)"));
 		}
@@ -188,7 +188,7 @@ namespace TS3ABotUnitTests
 		public void XCommandSystemTest2()
 		{
 			var execInfo = Utils.GetExecInfo("exact");
-			string? CallCommand(string command) => CommandManager.Execute(execInfo, command).AsString();
+			string? CallCommand(string command) => CommandManager.Execute(execInfo, command).Result.AsString();
 			var group = execInfo.GetModule<CommandManager>()!.RootGroup;
 
 			var o1 = new OverloadedFunctionCommand();

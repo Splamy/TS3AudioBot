@@ -25,12 +25,11 @@ using TSLib.Messages;
 
 namespace TS3AudioBot
 {
-	public sealed class Ts3Client : IDisposable
+	public sealed class Ts3Client
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private readonly Id id;
 
-		public event EventHandler? OnBotConnected;
 		public event EventHandler<DisconnectEventArgs>? OnBotDisconnect;
 		public event EventHandler<TextMessage>? OnMessageReceived;
 		public event EventHandler<AloneChanged>? OnAloneChanged;
@@ -58,7 +57,7 @@ namespace TS3AudioBot
 		private List<ClientList> clientbuffer = new List<ClientList>();
 		private bool clientbufferOutdated = true;
 		private readonly TimedCache<ClientDbId, ClientDbInfo> clientDbNames = new TimedCache<ClientDbId, ClientDbInfo>();
-		private readonly LruCache<Uid, ClientDbId> dbIdCache = new LruCache<Uid, ClientDbId>(1024);
+		private readonly LruCache<Uid, ClientDbId> dbIdCache = new LruCache<Uid, ClientDbId>(128);
 		private bool alone = true;
 		private ChannelId? reconnectChannel = null;
 		private ClientId[] ownChannelClients = Array.Empty<ClientId>();
@@ -72,20 +71,19 @@ namespace TS3AudioBot
 			this.ts3FullClient = ts3FullClient;
 			ts3FullClient.OnEachTextMessage += ExtendedTextMessage;
 			ts3FullClient.OnErrorEvent += TsFullClient_OnErrorEvent;
-			ts3FullClient.OnConnected += TsFullClient_OnConnected;
 			ts3FullClient.OnDisconnected += TsFullClient_OnDisconnected;
-			ts3FullClient.OnEachClientMoved += (s, e) =>
+			ts3FullClient.OnEachClientMoved += (_, e) =>
 			{
 				UpdateReconnectChannel(e.ClientId, e.TargetChannelId);
 				if (AloneRecheckRequired(e.ClientId, e.TargetChannelId)) IsAloneRecheck();
 			};
-			ts3FullClient.OnEachClientEnterView += (s, e) =>
+			ts3FullClient.OnEachClientEnterView += (_, e) =>
 			{
 				UpdateReconnectChannel(e.ClientId, e.TargetChannelId);
 				if (AloneRecheckRequired(e.ClientId, e.TargetChannelId)) IsAloneRecheck();
 				else if (AloneRecheckRequired(e.ClientId, e.SourceChannelId)) IsAloneRecheck();
 			};
-			ts3FullClient.OnEachClientLeftView += (s, e) =>
+			ts3FullClient.OnEachClientLeftView += (_, e) =>
 			{
 				UpdateReconnectChannel(e.ClientId, e.TargetChannelId);
 				if (AloneRecheckRequired(e.ClientId, e.TargetChannelId)) IsAloneRecheck();
@@ -96,7 +94,7 @@ namespace TS3AudioBot
 			identity = null;
 		}
 
-		public E<string> Connect()
+		public async Task<E<string>> Connect()
 		{
 			// get or compute identity
 			var identityConf = config.Connect.Identity;
@@ -131,10 +129,10 @@ namespace TS3AudioBot
 			reconnectChannel = null;
 			ts3FullClient.QuitMessage = Tools.PickRandom(QuitMessages);
 			ClearAllCaches();
-			return ConnectClient();
+			return await ConnectClient();
 		}
 
-		private E<string> ConnectClient()
+		private async Task<E<string>> ConnectClient()
 		{
 			if (identity is null) throw new InvalidOperationException();
 
@@ -175,7 +173,11 @@ namespace TS3AudioBot
 
 				config.SaveWhenExists();
 
-				ts3FullClient.Connect(connectionConfig);
+				await ts3FullClient.Connect(connectionConfig);
+
+				StopReconnectTickWorker();
+				reconnectCounter = 0;
+				lastReconnect = null;
 				return R.Ok;
 			}
 			catch (TsException qcex)
@@ -183,6 +185,14 @@ namespace TS3AudioBot
 				Log.Error(qcex, "There is either a problem with your connection configuration, or the bot has not all permissions it needs.");
 				return "Connect error";
 			}
+		}
+
+		public async Task Disconnect()
+		{
+			closed = true;
+			StopReconnectTickWorker();
+			await ts3FullClient.Disconnect();
+			ts3FullClient.Dispose();
 		}
 
 		private void UpdateIndentityToSecurityLevel(int targetLevel)
@@ -467,13 +477,9 @@ namespace TS3AudioBot
 			return true;
 		}
 
-		public E<LocalStr> UploadAvatar(System.IO.Stream stream) => ts3FullClient.UploadAvatar(stream).FormatLocal(e =>
-			(e == TsErrorCode.permission_invalid_size ? strings.error_ts_file_too_big : null, false)
-		);
-
-		public async Task<E<LocalStr>> UploadAvatarAsync(System.IO.Stream stream)
+		public async Task<E<LocalStr>> UploadAvatar(System.IO.Stream stream)
 		{
-			var res = await ts3FullClient.UploadAvatarAsync(stream);
+			var res = await ts3FullClient.UploadAvatar(stream);
 			return res.FormatLocal(e =>
 				(e == TsErrorCode.permission_invalid_size ? strings.error_ts_file_too_big : null, false)
 			);
@@ -532,7 +538,7 @@ namespace TS3AudioBot
 			}
 		}
 
-		private void TsFullClient_OnDisconnected(object? sender, DisconnectEventArgs e)
+		private async void TsFullClient_OnDisconnected(object? sender, DisconnectEventArgs e)
 		{
 			if (e.Error != null)
 			{
@@ -544,7 +550,7 @@ namespace TS3AudioBot
 					{
 						int targetSecLevel = int.Parse(error.ExtraMessage);
 						UpdateIndentityToSecurityLevel(targetSecLevel);
-						ConnectClient();
+						await ConnectClient();
 						return; // skip triggering event, we want to reconnect
 					}
 					else
@@ -556,19 +562,19 @@ namespace TS3AudioBot
 
 				case TsErrorCode.client_too_many_clones_connected:
 					Log.Warn("Seems like another client with the same identity is already connected.");
-					if (TryReconnect(ReconnectType.Error))
+					if (await TryReconnect(ReconnectType.Error))
 						return;
 					break;
 
 				case TsErrorCode.connect_failed_banned:
 					Log.Warn("This bot is banned.");
-					if (TryReconnect(ReconnectType.Ban))
+					if (await TryReconnect(ReconnectType.Ban))
 						return;
 					break;
 
 				default:
 					Log.Warn("Could not connect: {0}", error.ErrorFormat());
-					if (TryReconnect(ReconnectType.Error))
+					if (await TryReconnect(ReconnectType.Error))
 						return;
 					break;
 				}
@@ -577,7 +583,7 @@ namespace TS3AudioBot
 			{
 				Log.Debug("Bot disconnected. Reason: {0}", e.ExitReason);
 
-				if (TryReconnect(e.ExitReason switch
+				if (await TryReconnect(e.ExitReason switch
 				{
 					Reason.Timeout => ReconnectType.Timeout,
 					Reason.SocketError => ReconnectType.Timeout,
@@ -592,7 +598,7 @@ namespace TS3AudioBot
 			OnBotDisconnect?.Invoke(this, e);
 		}
 
-		private bool TryReconnect(ReconnectType type)
+		private async Task<bool> TryReconnect(ReconnectType type)
 		{
 			if (closed)
 				return false;
@@ -630,16 +636,9 @@ namespace TS3AudioBot
 			}
 
 			Log.Info("Trying to reconnect because of {0}. Delaying reconnect for {1:0} seconds", type, delay.Value.TotalSeconds);
-			reconnectTick = TickPool.RegisterTickOnce(() => ConnectClient(), delay);
+			await Task.Delay(delay.Value);
+			await ConnectClient();
 			return true;
-		}
-
-		private void TsFullClient_OnConnected(object? sender, EventArgs e)
-		{
-			StopReconnectTickWorker();
-			reconnectCounter = 0;
-			lastReconnect = null;
-			OnBotConnected?.Invoke(this, EventArgs.Empty);
 		}
 
 		private void ExtendedTextMessage(object? sender, TextMessage textMessage)
@@ -675,13 +674,6 @@ namespace TS3AudioBot
 		}
 
 		#endregion
-
-		public void Dispose()
-		{
-			closed = true;
-			StopReconnectTickWorker();
-			ts3FullClient.Dispose();
-		}
 
 		private enum ReconnectType
 		{

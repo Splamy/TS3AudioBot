@@ -40,7 +40,6 @@ namespace TSLib.Query
 		public override bool Connecting => connecting && !Connected;
 		protected override Deserializer Deserializer => msgProc.Deserializer;
 
-		public override event EventHandler<EventArgs>? OnConnected;
 		public override event EventHandler<DisconnectEventArgs>? OnDisconnected;
 
 		public TsQueryClient()
@@ -51,9 +50,10 @@ namespace TSLib.Query
 			dispatcher = new ExtraThreadEventDispatcher();
 		}
 
-		public override void Connect(ConnectionData conData)
+		public override async Task Connect(ConnectionData conData)
 		{
-			if (!TsDnsResolver.TryResolve(conData.Address, out remoteAddress, TsDnsResolver.TsQueryDefaultPort))
+			remoteAddress = await TsDnsResolver.TryResolve(conData.Address, TsDnsResolver.TsQueryDefaultPort);
+			if (remoteAddress is null)
 				throw new TsException("Could not read or resolve address.");
 
 			NetworkStream tcpStream;
@@ -79,11 +79,10 @@ namespace TSLib.Query
 
 			cts = new CancellationTokenSource();
 			dispatcher.Init(InvokeEvent, conData.LogId);
-			NetworkLoop(tcpStream, cts.Token).ConfigureAwait(false);
-			OnConnected?.Invoke(this, EventArgs.Empty);
+			_ = NetworkLoop(tcpStream, cts.Token);
 		}
 
-		public override void Disconnect()
+		public override Task Disconnect()
 		{
 			lock (sendQueueLock)
 			{
@@ -93,6 +92,7 @@ namespace TSLib.Query
 				if (tcpClient.Connected)
 					tcpClient.Dispose();
 			}
+			return Task.CompletedTask;
 		}
 
 		private async Task NetworkLoop(NetworkStream tcpStream, CancellationToken cancellationToken)
@@ -166,7 +166,7 @@ namespace TSLib.Query
 			reader.Complete();
 		}
 
-		public override R<T[], CommandError> Send<T>(TsCommand com) // Synchronous
+		public override R<T[], CommandError> Send<T>(TsCommand com)
 		{
 			using var wb = new WaitBlockSync(msgProc.Deserializer);
 			lock (sendQueueLock)
@@ -180,6 +180,21 @@ namespace TSLib.Query
 
 		public override R<T[], CommandError> SendHybrid<T>(TsCommand com, NotificationType type)
 			=> Send<T>(com);
+
+		public override async Task<R<T[], CommandError>> SendAsync<T>(TsCommand com)
+		{
+			using var wb = new WaitBlockAsync(msgProc.Deserializer);
+			lock (sendQueueLock)
+			{
+				msgProc.EnqueueRequest(wb);
+				SendRaw(com.ToString());
+			}
+
+			return await wb.WaitForMessageAsync<T>();
+		}
+
+		public override Task<R<T[], CommandError>> SendHybridAsync<T>(TsCommand com, NotificationType type)
+			=> SendAsync<T>(com);
 
 		private void SendRaw(string data)
 		{

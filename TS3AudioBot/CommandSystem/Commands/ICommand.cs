@@ -8,6 +8,7 @@
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace TS3AudioBot.CommandSystem.Commands
 {
@@ -33,6 +34,6 @@ namespace TS3AudioBot.CommandSystem.Commands
 		/// Primitive types are a special case, it should always implement <see cref="CommandResults.IPrimitiveResult{T}"/>, e.g. through the <see cref="CommandResults.PrimitiveResult{T}"/> class.
 		/// The complete list of primitive types is <see cref="XCommandSystem.BasicTypes"/>.
 		/// </returns>
-		object? Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments);
+		ValueTask<object?> Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments);
 	}
 }

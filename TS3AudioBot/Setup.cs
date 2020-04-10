@@ -15,8 +15,10 @@ using System.Globalization;
 using System.IO;
 using System.Runtime;
 using System.Threading;
+using System.Threading.Tasks;
 using TS3AudioBot.Environment;
 using TS3AudioBot.Helper;
+using TSLib.Helper;
 
 namespace TS3AudioBot
 {
@@ -24,9 +26,11 @@ namespace TS3AudioBot
 	{
 		private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
-		public static void Main(string[] args)
+		public static async Task Main(string[] args)
 		{
 			Thread.CurrentThread.Name = "TAB Main";
+			Tools.SetLogId("Core");
+
 			var parsedArgs = new Parser(with =>
 			{
 				with.AutoHelp = true;
@@ -73,11 +77,11 @@ namespace TS3AudioBot
 			// Initialize the actual core
 			var core = new Core(setup.ConfigFile);
 
-			var initResult = core.Run(setup);
+			var initResult = await core.Run(setup);
 			if (!initResult)
 			{
 				Log.Error("Core initialization failed: {0}", initResult.Error);
-				core.Dispose();
+				await core.Stop();
 			}
 		}
 

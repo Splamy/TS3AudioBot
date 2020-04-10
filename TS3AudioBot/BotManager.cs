@@ -10,15 +10,16 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
+using System.Threading.Tasks;
 using TS3AudioBot.Config;
 using TS3AudioBot.Dependency;
 using TS3AudioBot.Helper;
+using TSLib;
 using TSLib.Helper;
 
 namespace TS3AudioBot
 {
-	public class BotManager : IDisposable
+	public class BotManager
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 
@@ -34,7 +35,7 @@ namespace TS3AudioBot
 			this.coreInjector = coreInjector;
 		}
 
-		public void RunBots(bool interactive)
+		public async Task RunBots(bool interactive)
 		{
 			var botConfigList = confRoot.GetAllBots();
 			if (botConfigList is null)
@@ -54,9 +55,9 @@ namespace TS3AudioBot
 				var newBot = CreateNewBot();
 				newBot.Run.Value = true;
 
-				var address = Interactive.LoopAction("Please enter the ip, domain or nickname (with port; default: 9987) where to connect to:", addr =>
+				var address = await Interactive.LoopActionAsync("Please enter the ip, domain or nickname (with port; default: 9987) where to connect to:", async addr =>
 				{
-					if (TSLib.TsDnsResolver.TryResolve(addr, out _))
+					if (await TsDnsResolver.TryResolve(addr) != null)
 						return true;
 					Console.WriteLine("The address seems invalid or could not be resolved, continue anyway? [y/N]");
 					return Interactive.UserAgree(defaultTo: false);
@@ -76,76 +77,93 @@ namespace TS3AudioBot
 				if (!confRoot.Save())
 					Log.Error("Could not save root config. The bot won't start by default.");
 
-				var runResult = RunBot(newBot);
+				var runResult = await RunBot(newBot);
 				if (!runResult.Ok)
 					Log.Error("Could not run bot ({0})", runResult.Error);
 				return;
 			}
 
+			var launchBotTasks = new List<Task<R<BotInfo, string>>>(botConfigList.Length);
 			foreach (var instance in botConfigList)
 			{
 				if (!instance.Run)
 					continue;
-				var result = RunBot(instance);
-				if (!result.Ok)
+				launchBotTasks.Add(RunBot(instance).ContinueWith(t =>
 				{
-					Log.Error("Could not instantiate bot: {0}", result.Error);
-				}
+					var result = t.Result;
+					if (!result.Ok)
+					{
+						Log.Error("Could not instantiate bot: {0}", result.Error);
+					}
+					return result;
+				}));
 			}
+			await Task.WhenAll(launchBotTasks);
 		}
 
 		public ConfBot CreateNewBot() => confRoot.CreateBot();
 
-		public R<BotInfo, string> CreateAndRunNewBot()
+		public async Task<R<BotInfo, string>> CreateAndRunNewBot()
 		{
 			var botConf = CreateNewBot();
-			return RunBot(botConf);
+			return await RunBot(botConf);
 		}
 
-		public R<BotInfo, string> RunBotTemplate(string name)
+		public async Task<R<BotInfo, string>> RunBotTemplate(string name)
 		{
 			var config = confRoot.GetBotConfig(name);
 			if (!config.Ok)
 				return config.Error.Message;
-			return RunBot(config.Value);
+			return await RunBot(config.Value);
 		}
 
-		public R<BotInfo, string> RunBot(ConfBot config)
+		public async Task<R<BotInfo, string>> RunBot(ConfBot config)
 		{
-			Bot bot;
+			var (bot, info) = InstantiateNewBot(config);
+			if (info != null)
+				return info;
 
+			if (bot is null)
+				return "Failed to create new Bot";
+
+			return await bot.Scheduler.InvokeAsync<R<BotInfo, string>>(async () =>
+			{
+				Console.WriteLine("Run: {0}", TaskScheduler.Current.Id);
+				var initializeResult = await bot.Run();
+				Console.WriteLine("Start: {0}", TaskScheduler.Current.Id);
+				if (!initializeResult.Ok)
+				{
+					await StopBot(bot);
+					return $"Bot failed to connect ({initializeResult.Error})";
+				}
+				return bot.GetInfo();
+			});
+		}
+
+		private (Bot? bot, BotInfo? info) InstantiateNewBot(ConfBot config)
+		{
 			lock (lockObj)
 			{
 				if (!string.IsNullOrEmpty(config.Name))
 				{
 					var maybeBot = GetBotSave(config.Name);
 					if (maybeBot != null)
-						return maybeBot.GetInfo();
+						return (null, maybeBot.GetInfo());
 				}
 
 				var id = GetFreeId();
 				if (id == null)
-					return "BotManager is shutting down";
+					return (null, null); // "BotManager is shutting down"
 
 				var botInjector = new BotInjector(coreInjector);
 				botInjector.AddModule(botInjector);
 				botInjector.AddModule(new Id(id.Value));
 				botInjector.AddModule(config);
-				if (!botInjector.TryCreate(out bot!))
-					return "Failed to create new Bot";
+				if (!botInjector.TryCreate<Bot>(out var bot))
+					return (null, null); // "Failed to create new Bot"
 				InsertBot(bot);
+				return (bot, null);
 			}
-
-			lock (bot.SyncRoot)
-			{
-				var initializeResult = bot.InitializeBot();
-				if (!initializeResult.Ok)
-				{
-					StopBot(bot);
-					return $"Bot failed to connect ({initializeResult.Error})";
-				}
-			}
-			return bot.GetInfo();
 		}
 
 		// !! This method must be called with a lock on lockObj
@@ -194,7 +212,7 @@ namespace TS3AudioBot
 			return activeBots.Find(x => x?.Name == name);
 		}
 
-		public BotLock? GetBotLock(int id)
+		public Bot? GetBotLock(int id)
 		{
 			Bot? bot;
 			lock (lockObj)
@@ -205,10 +223,10 @@ namespace TS3AudioBot
 				if (bot.Id != id)
 					throw new Exception("Got not matching bot id");
 			}
-			return bot.GetBotLock();
+			return bot;
 		}
 
-		public BotLock? GetBotLock(string name)
+		public Bot? GetBotLock(string name)
 		{
 			Bot? bot;
 			lock (lockObj)
@@ -219,7 +237,7 @@ namespace TS3AudioBot
 				if (bot.Name != name)
 					throw new Exception("Got not matching bot name");
 			}
-			return bot.GetBotLock();
+			return bot;
 		}
 
 		internal void IterateAll(Action<Bot> body)
@@ -236,10 +254,10 @@ namespace TS3AudioBot
 			}
 		}
 
-		public void StopBot(Bot bot)
+		public async Task StopBot(Bot bot)
 		{
 			RemoveBot(bot);
-			bot.Dispose();
+			await bot.Scheduler.InvokeAsync(async () => await bot.Stop());
 		}
 
 		internal void RemoveBot(Bot bot)
@@ -276,7 +294,7 @@ namespace TS3AudioBot
 			}
 		}
 
-		public void Dispose()
+		public async Task StopBots()
 		{
 			List<Bot?> disposeBots;
 			lock (lockObj)
@@ -288,26 +306,7 @@ namespace TS3AudioBot
 				activeBots = null;
 			}
 
-			foreach (var bot in disposeBots.Where(x => x != null))
-			{
-				if (bot is null) continue;
-				StopBot(bot);
-			}
-		}
-	}
-
-	public class BotLock : IDisposable
-	{
-		public Bot Bot { get; }
-
-		internal BotLock(Bot bot)
-		{
-			Bot = bot;
-		}
-
-		public void Dispose()
-		{
-			Monitor.Exit(Bot.SyncRoot);
+			await Task.WhenAll(disposeBots.Where(x => x != null).Select(x => StopBot(x!)));
 		}
 	}
 }

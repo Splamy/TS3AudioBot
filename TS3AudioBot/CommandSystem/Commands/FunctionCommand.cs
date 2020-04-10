@@ -13,6 +13,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 using TS3AudioBot.CommandSystem.CommandResults;
 using TS3AudioBot.Dependency;
 using TS3AudioBot.Helper;
@@ -31,6 +32,8 @@ namespace TS3AudioBot.CommandSystem.Commands
 		private readonly object? callee;
 		/// <summary>The method that will be called internally by this command.</summary>
 		private readonly MethodInfo internCommand;
+		private readonly bool isPlainTask;
+		private readonly PropertyInfo? taskValueProp;
 
 		/// <summary>All parameter types, including special types.</summary>
 		public ParamInfo[] CommandParameter { get; }
@@ -50,6 +53,9 @@ namespace TS3AudioBot.CommandSystem.Commands
 			CommandParameter = command.GetParameters().Select(p => new ParamInfo(p, ParamKind.Unknown, p.IsOptional || p.GetCustomAttribute<ParamArrayAttribute>() != null)).ToArray();
 			PrecomputeTypes();
 			CommandReturn = command.ReturnType;
+			if (CommandReturn.IsConstructedGenericType && CommandReturn.GetGenericTypeDefinition() == typeof(Task<>))
+				taskValueProp = CommandReturn.GetProperty(nameof(Task<object>.Result));
+			isPlainTask = CommandReturn == typeof(Task);
 
 			callee = obj;
 
@@ -64,11 +70,36 @@ namespace TS3AudioBot.CommandSystem.Commands
 		public FunctionCommand(Action<string> command) : this(command.Method, command.Target) { }
 		public FunctionCommand(Func<string, string> command) : this(command.Method, command.Target) { }
 
-		protected virtual object? ExecuteFunction(object?[] parameters)
+		protected virtual async ValueTask<object?> ExecuteFunction(object?[] parameters)
 		{
 			try
 			{
-				return internCommand.Invoke(callee, parameters);
+				var ret = internCommand.Invoke(callee, parameters);
+				if (ret is Task task)
+				{
+					await task;
+					if (isPlainTask)
+						return null;
+
+					var taskProp = taskValueProp;
+					if (taskValueProp is null)
+					{
+						Log.Warn("Performing really slow Task get, declare your command better to prevent this");
+						var taskType = task.GetType();
+						if (taskType.IsConstructedGenericType && taskType.GetGenericTypeDefinition() == typeof(Task<>))
+						{
+							taskProp = taskType.GetProperty(nameof(Task<object>.Result)) ?? throw new Exception("Result not found on Task");
+						}
+					}
+					if (taskProp is null)
+						return null;
+
+					return taskProp.GetValue(task);
+				}
+				else
+				{
+					return ret;
+				}
 			}
 			catch (TargetInvocationException ex)
 			{
@@ -88,14 +119,14 @@ namespace TS3AudioBot.CommandSystem.Commands
 		/// <param name="arguments">The arguments that are applied to this function.</param>
 		/// <param name="returnTypes">The possible return types.</param>
 		/// <param name="takenArguments">How many arguments could be set.</param>
-		private object?[] FitArguments(ExecutionInformation info, IReadOnlyList<ICommand> arguments, out int takenArguments)
+		private async ValueTask<(object?[] paramObjs, int takenArguments)> FitArguments(ExecutionInformation info, IReadOnlyList<ICommand> arguments)
 		{
 			var parameters = new object?[CommandParameter.Length];
 			var filterLazy = info.GetFilterLazy();
 
 			// takenArguments: Index through arguments which have been moved into a parameter
 			// p: Iterate through parameters
-			takenArguments = 0;
+			var takenArguments = 0;
 			for (int p = 0; p < parameters.Length; p++)
 			{
 				var arg = CommandParameter[p];
@@ -125,7 +156,7 @@ namespace TS3AudioBot.CommandSystem.Commands
 				case ParamKind.NormalTailString:
 					if (takenArguments >= arguments.Count) { parameters[p] = GetDefault(argType); break; }
 
-					var argResultP = arguments[takenArguments].Execute(info, Array.Empty<ICommand>());
+					var argResultP = await arguments[takenArguments].Execute(info, Array.Empty<ICommand>());
 					if (arg.Kind == ParamKind.NormalTailString && argResultP is TailString tailString)
 						parameters[p] = tailString.Tail;
 					else
@@ -141,7 +172,7 @@ namespace TS3AudioBot.CommandSystem.Commands
 					var args = Array.CreateInstance(typeArr, arguments.Count - takenArguments);
 					for (int i = 0; i < args.Length; i++, takenArguments++)
 					{
-						var argResultA = arguments[takenArguments].Execute(info, Array.Empty<ICommand>());
+						var argResultA = await arguments[takenArguments].Execute(info, Array.Empty<ICommand>());
 						var convResult = ConvertParam(argResultA, typeArr, filterLazy);
 						args.SetValue(convResult, i);
 					}
@@ -159,19 +190,19 @@ namespace TS3AudioBot.CommandSystem.Commands
 			if (takenArguments < wantArgumentCount)
 				throw ThrowAtLeastNArguments(wantArgumentCount);
 
-			return parameters;
+			return (parameters, takenArguments);
 		}
 
-		public virtual object? Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments)
+		public virtual async ValueTask<object?> Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments)
 		{
-			var parameters = FitArguments(info, arguments, out int availableArguments);
+			var (parameters, availableArguments) = await FitArguments(info, arguments);
 
 			// Check if we were able to set enough arguments
 			int wantArgumentCount = Math.Min(parameters.Length, RequiredParameters);
 			if (availableArguments < wantArgumentCount)
 				throw ThrowAtLeastNArguments(wantArgumentCount);
 
-			return ExecuteFunction(parameters);
+			return await ExecuteFunction(parameters);
 		}
 
 		private void PrecomputeTypes()
