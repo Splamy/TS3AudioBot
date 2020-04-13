@@ -28,6 +28,6 @@ namespace TS3AudioBot.Web.Api
 		object? IWrappedResult.Content => GetSerializeObject();
 		public virtual object GetSerializeObject() => this;
 		public virtual string Serialize() => JsonConvert.SerializeObject(GetSerializeObject(), DefaultSettigs);
-		public abstract override string ToString();
+		public override abstract string ToString();
 	}
 }

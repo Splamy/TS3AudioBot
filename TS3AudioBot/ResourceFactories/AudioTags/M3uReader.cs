@@ -10,6 +10,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading.Tasks;
 using TSLib.Helper;
 
 namespace TS3AudioBot.ResourceFactories.AudioTags
@@ -23,7 +24,7 @@ namespace TS3AudioBot.ResourceFactories.AudioTags
 		private static readonly byte[] ExtInfLine = Tools.Utf8Encoder.GetBytes("#EXTINF");
 		private static readonly byte[] ExtXStreamInfLine = Tools.Utf8Encoder.GetBytes("#EXT-X-STREAM-INF");
 
-		public static R<List<M3uEntry>, string> TryGetData(Stream stream)
+		public static async Task<List<M3uEntry>> TryGetData(Stream stream)
 		{
 			int read = 1;
 			int bufferLen = 0;
@@ -39,7 +40,7 @@ namespace TS3AudioBot.ResourceFactories.AudioTags
 				{
 					if (read > 0)
 					{
-						read = stream.Read(buffer, bufferLen, MaxLineLength - bufferLen);
+						read = await stream.ReadAsync(buffer, bufferLen, MaxLineLength - bufferLen);
 						bufferLen += read;
 					}
 
@@ -54,44 +55,44 @@ namespace TS3AudioBot.ResourceFactories.AudioTags
 						lb = 2;
 					}
 
-					ReadOnlySpan<byte> line;
+					ReadOnlyMemory<byte> line;
 					bool atEnd = index == -1;
 					if (atEnd)
 					{
 						if (bufferLen == MaxLineLength)
-							return "Max read buffer exceeded";
-						line = buffer.AsSpan(0, bufferLen);
+							throw Error.Str("Max read buffer exceeded");
+						line = buffer.AsMemory(0, bufferLen);
 						bufferLen = 0;
 					}
 					else
 					{
-						line = buffer.AsSpan(0, index);
+						line = buffer.AsMemory(0, index);
 					}
 
 					if (!line.IsEmpty)
 					{
-						if (line[0] == (byte)'#')
+						if (line.Span[0] == (byte)'#')
 						{
-							if (line.StartsWith(ExtInfLine))
+							if (line.Span.StartsWith(ExtInfLine))
 							{
 								var dataSlice = line.Slice(ExtInfLine.Length + 1);
-								var trackInfo = dataSlice.IndexOf((byte)',');
+								var trackInfo = dataSlice.Span.IndexOf((byte)',');
 								if (trackInfo >= 0)
-									trackTitle = dataSlice.Slice(trackInfo + 1).NewUtf8String();
+									trackTitle = dataSlice.Span.Slice(trackInfo + 1).NewUtf8String();
 							}
-							else if (line.StartsWith(ExtM3uLine))
+							else if (line.Span.StartsWith(ExtM3uLine))
 							{
 								//extm3u = true; ???
 							}
-							else if (line.StartsWith(ExtXStreamInfLine))
+							else if (line.Span.StartsWith(ExtXStreamInfLine))
 							{
-								trackStreamMeta = line.Slice(ExtXStreamInfLine.Length + 1).NewUtf8String();
+								trackStreamMeta = line.Span.Slice(ExtXStreamInfLine.Length + 1).NewUtf8String();
 							}
 							// else: unsupported m3u tag
 						}
 						else
 						{
-							var lineStr = line.NewUtf8String();
+							var lineStr = line.Span.NewUtf8String();
 							if (Uri.TryCreate(lineStr, UriKind.RelativeOrAbsolute, out _))
 							{
 								data.Add(new M3uEntry(
@@ -119,13 +120,13 @@ namespace TS3AudioBot.ResourceFactories.AudioTags
 					if (atEnd || bufferLen <= 0)
 					{
 						if (bufferLen < 0)
-							return "Unexpected buffer underfill";
+							throw Error.Str("Unexpected buffer underfill");
 						return data;
 					}
 				}
-				return "List too long";
+				throw Error.Str("List too long");
 			}
-			catch { return "Unexpected m3u parsing error"; }
+			catch (Exception ex) { throw Error.Str("List too long").Exception(ex); }
 		}
 	}
 

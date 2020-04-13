@@ -23,6 +23,6 @@ namespace TS3AudioBot.Localization
 			Str = str;
 		}
 
-		public readonly override string ToString() => Str;
+		public override readonly string ToString() => Str;
 	}
 }

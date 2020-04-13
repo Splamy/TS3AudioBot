@@ -8,6 +8,7 @@
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
 using System;
+using System.Threading.Tasks;
 using TS3AudioBot.Config;
 using TS3AudioBot.Helper;
 using TS3AudioBot.ResourceFactories;
@@ -20,6 +21,7 @@ namespace TS3AudioBot.Audio
 	public class Player : IDisposable
 	{
 		private const Codec SendCodec = Codec.OpusMusic;
+		private readonly DedicatedTaskScheduler scheduler;
 
 		public IPlayerSource? CurrentPlayerSource { get; private set; }
 		public StallCheckPipe StallCheckPipe { get; }
@@ -30,9 +32,11 @@ namespace TS3AudioBot.Audio
 		public EncoderPipe EncoderPipe { get; }
 		public IAudioPassiveConsumer? PlayerSink { get; private set; }
 
-		public Player(ConfRoot confRoot, ConfBot config, Id id)
+		public Player(ConfRoot confRoot, ConfBot config, DedicatedTaskScheduler scheduler, Id id)
 		{
-			FfmpegProducer = new FfmpegProducer(confRoot.Tools.Ffmpeg, id);
+			this.scheduler = scheduler;
+
+			FfmpegProducer = new FfmpegProducer(confRoot.Tools.Ffmpeg, scheduler, id);
 			StallCheckPipe = new StallCheckPipe();
 			VolumePipe = new VolumePipe();
 			Volume = config.Audio.Volume.Default;
@@ -56,19 +60,16 @@ namespace TS3AudioBot.Audio
 		public event EventHandler? OnSongEnd;
 		public event EventHandler<SongInfoChanged>? OnSongUpdated;
 
-		private void TriggerSongEnd(object? o, EventArgs e) => OnSongEnd?.Invoke(this, EventArgs.Empty);
-		private void TriggerSongUpdated(object? o, SongInfoChanged e) => OnSongUpdated?.Invoke(this, e);
+		private void TriggerSongEnd(object? o, EventArgs e) => scheduler.Invoke(() => OnSongEnd?.Invoke(this, EventArgs.Empty));
+		private void TriggerSongUpdated(object? o, SongInfoChanged e) => scheduler.Invoke(() => OnSongUpdated?.Invoke(this, e));
 
-		public E<string> Play(PlayResource res)
+		public async Task Play(PlayResource res)
 		{
-			E<string> result;
 			if (res is MediaPlayResource mres && mres.IsIcyStream)
-				result = FfmpegProducer.AudioStartIcy(res.PlayUri);
+				await FfmpegProducer.AudioStartIcy(res.PlayUri);
 			else
-				result = FfmpegProducer.AudioStart(res.PlayUri, res.Meta?.StartOffset);
-			if (result)
-				Play(FfmpegProducer);
-			return result;
+				await FfmpegProducer.AudioStart(res.PlayUri, res.Meta?.StartOffset);
+			Play(FfmpegProducer);
 		}
 
 		public void Play(IPlayerSource source)
@@ -116,15 +117,9 @@ namespace TS3AudioBot.Audio
 
 		public TimeSpan Length => CurrentPlayerSource?.Length ?? TimeSpan.Zero;
 
-		public TimeSpan Position
-		{
-			get => CurrentPlayerSource?.Position ?? TimeSpan.Zero;
-			set
-			{
-				if (CurrentPlayerSource != null)
-					CurrentPlayerSource.Position = value;
-			}
-		}
+		public TimeSpan Position => CurrentPlayerSource?.Position ?? TimeSpan.Zero;
+
+		public Task Seek(TimeSpan position) => CurrentPlayerSource?.Seek(position) ?? Task.CompletedTask;
 
 		public float Volume
 		{

@@ -14,7 +14,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
-using System.Threading;
+using System.Threading.Tasks;
 using TS3AudioBot.Config;
 using TS3AudioBot.Helper;
 using TS3AudioBot.Localization;
@@ -27,38 +27,38 @@ namespace TS3AudioBot.ResourceFactories
 		public static ConfPath? DataObj { private get; set; }
 		private static string? YoutubeDlPath => DataObj?.Path.Value;
 
-		const string ParamGetSingleVideo = " --no-warnings --dump-json --id --";
-		const string ParamGetPlaylist = "--no-warnings --yes-playlist --flat-playlist --dump-single-json --id --";
-		const string ParamGetSearch = "--no-warnings --flat-playlist --dump-single-json -- ytsearch10:";
+		private const string ParamGetSingleVideo = " --no-warnings --dump-json --id --";
+		private const string ParamGetPlaylist = "--no-warnings --yes-playlist --flat-playlist --dump-single-json --id --";
+		private const string ParamGetSearch = "--no-warnings --flat-playlist --dump-single-json -- ytsearch10:";
 
-		public static R<JsonYtdlDump, LocalStr> GetSingleVideo(string id)
+		public static async Task<JsonYtdlDump> GetSingleVideo(string id)
 		{
 			var ytdlPath = FindYoutubeDl();
 			if (ytdlPath is null)
-				return new LocalStr(strings.error_ytdl_not_found);
+				throw Error.LocalStr(strings.error_ytdl_not_found);
 
 			var param = $"{ytdlPath.Value.param}{ParamGetSingleVideo} {id}";
-			return RunYoutubeDl<JsonYtdlDump>(ytdlPath.Value.ytdlpath, param);
+			return await RunYoutubeDl<JsonYtdlDump>(ytdlPath.Value.ytdlpath, param);
 		}
 
-		public static R<JsonYtdlPlaylistDump, LocalStr> GetPlaylist(string id)
+		public static async Task<JsonYtdlPlaylistDump> GetPlaylistAsync(string id)
 		{
 			var ytdlPath = FindYoutubeDl();
 			if (ytdlPath is null)
-				return new LocalStr(strings.error_ytdl_not_found);
+				throw Error.LocalStr(strings.error_ytdl_not_found);
 
 			var param = $"{ytdlPath.Value.param}{ParamGetPlaylist} {id}";
-			return RunYoutubeDl<JsonYtdlPlaylistDump>(ytdlPath.Value.ytdlpath, param);
+			return await RunYoutubeDl<JsonYtdlPlaylistDump>(ytdlPath.Value.ytdlpath, param);
 		}
 
-		public static R<JsonYtdlPlaylistDump, LocalStr> GetSearch(string text)
+		public static async Task<JsonYtdlPlaylistDump> GetSearchAsync(string text)
 		{
 			var ytdlPath = FindYoutubeDl();
 			if (ytdlPath is null)
-				return new LocalStr(strings.error_ytdl_not_found);
+				throw Error.LocalStr(strings.error_ytdl_not_found);
 
 			var param = $"{ytdlPath.Value.param}{ParamGetSearch}\"{text}\"";
-			return RunYoutubeDl<JsonYtdlPlaylistDump>(ytdlPath.Value.ytdlpath, param);
+			return await RunYoutubeDl<JsonYtdlPlaylistDump>(ytdlPath.Value.ytdlpath, param);
 		}
 
 		public static (string ytdlpath, string param)? FindYoutubeDl()
@@ -104,7 +104,7 @@ namespace TS3AudioBot.ResourceFactories
 			return null;
 		}
 
-		public static R<T, LocalStr> RunYoutubeDl<T>(string path, string args) where T : notnull
+		public static async Task<T> RunYoutubeDl<T>(string path, string args) where T : notnull
 		{
 			try
 			{
@@ -147,13 +147,13 @@ namespace TS3AudioBot.ResourceFactories
 						stdErr.Append(strings.error_ytdl_empty_response).Append(" (timeout)");
 						break;
 					}
-					Thread.Sleep(50);
+					await Task.Delay(50);
 				}
 
 				if (stdErr.Length > 0)
 				{
 					Log.Debug("youtube-dl failed to load the resource:\n{0}", stdErr);
-					return new LocalStr(strings.error_ytdl_song_failed_to_load);
+					throw Error.LocalStr(strings.error_ytdl_song_failed_to_load);
 				}
 
 				return ParseResponse<T>(stdOut.ToString());
@@ -161,23 +161,23 @@ namespace TS3AudioBot.ResourceFactories
 			catch (Win32Exception ex)
 			{
 				Log.Error(ex, "Failed to run youtube-dl: {0}", ex.Message);
-				return new LocalStr(strings.error_ytdl_failed_to_run);
+				throw Error.LocalStr(strings.error_ytdl_failed_to_run).Exception(ex);
 			}
 		}
 
-		public static R<T, LocalStr> ParseResponse<T>(string json) where T : notnull
+		public static T ParseResponse<T>(string json) where T : notnull
 		{
 			try
 			{
 				if (string.IsNullOrEmpty(json))
-					return new LocalStr(strings.error_ytdl_empty_response);
+					throw Error.LocalStr(strings.error_ytdl_empty_response);
 
 				return JsonConvert.DeserializeObject<T>(json);
 			}
 			catch (Exception ex)
 			{
 				Log.Debug(ex, "Failed to read youtube-dl json data");
-				return new LocalStr(strings.error_media_internal_invalid);
+				throw Error.LocalStr(strings.error_media_internal_invalid).Exception(ex);
 			}
 		}
 

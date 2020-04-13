@@ -9,6 +9,7 @@
 
 using System;
 using System.Collections.Generic;
+using TSLib.Helper;
 
 namespace TSLib.Audio
 {
@@ -76,7 +77,7 @@ namespace TSLib.Audio
 				meta.Out.GroupWhisperType = setMeta.GroupWhisperType;
 				meta.Out.TargetId = setMeta.TargetId;
 				break;
-			default: throw new ArgumentOutOfRangeException(nameof(SendMode), SendMode, "SendMode not handled");
+			default: throw Tools.UnhandledDefault(SendMode);
 			}
 			OutStream?.Write(data, meta);
 		}

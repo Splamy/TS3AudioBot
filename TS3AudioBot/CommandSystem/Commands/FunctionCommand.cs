@@ -101,10 +101,8 @@ namespace TS3AudioBot.CommandSystem.Commands
 					return ret;
 				}
 			}
-			catch (TargetInvocationException ex)
+			catch (TargetInvocationException ex) when (!(ex.InnerException is null))
 			{
-				if (ex.InnerException is null)
-					throw;
 				System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(ex.InnerException).Throw();
 				throw ex.InnerException;
 			}

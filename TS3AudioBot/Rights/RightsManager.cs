@@ -12,6 +12,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using TS3AudioBot.CommandSystem;
 using TS3AudioBot.Config;
 using TS3AudioBot.Dependency;
@@ -61,21 +62,21 @@ namespace TS3AudioBot.Rights
 			}
 		}
 
-		public bool HasAllRights(ExecutionInformation info, params string[] requestedRights)
+		public async ValueTask<bool> HasAllRights(ExecutionInformation info, params string[] requestedRights)
 		{
-			var ctx = GetRightsContext(info);
+			var ctx = await GetRightsContext(info);
 			var normalizedRequest = ExpandRights(requestedRights, registeredRights);
 			return ctx.DeclAdd.IsSupersetOf(normalizedRequest);
 		}
 
-		public string[] GetRightsSubset(ExecutionInformation info, params string[] requestedRights)
+		public async ValueTask<string[]> GetRightsSubset(ExecutionInformation info, params string[] requestedRights)
 		{
-			var ctx = GetRightsContext(info);
+			var ctx = await GetRightsContext(info);
 			var normalizedRequest = ExpandRights(requestedRights, registeredRights);
 			return ctx.DeclAdd.Intersect(normalizedRequest).ToArray();
 		}
 
-		private ExecuteContext GetRightsContext(ExecutionInformation info)
+		private async ValueTask<ExecuteContext> GetRightsContext(ExecutionInformation info)
 		{
 			var localRootRule = TryGetRootSafe();
 
@@ -111,32 +112,35 @@ namespace TS3AudioBot.Rights
 						)
 					)
 					{
-						var result = ts.GetClientInfoById(clientCall.ClientId.Value);
-						if (result.Ok)
+						try
 						{
-							serverGroups = result.Value.ServerGroups;
-							channelGroup = result.Value.ChannelGroup;
-							databaseId = result.Value.DatabaseId;
-							channelId = result.Value.ChannelId;
+							var clientInfo = await ts.GetClientInfoById(clientCall.ClientId.Value);
+							serverGroups = clientInfo.ServerGroups;
+							channelGroup = clientInfo.ChannelGroup;
+							databaseId = clientInfo.DatabaseId;
+							channelId = clientInfo.ChannelId;
 						}
+						catch (AudioBotException) { }
 					}
 
 					if (needsAvailableGroups && serverGroups is null)
 					{
 						if (databaseId == null)
 						{
-							var resultDbId = ts.GetClientDbIdByUid(clientCall.ClientUid);
-							if (resultDbId.Ok)
+							try
 							{
-								databaseId = resultDbId.Value;
+								databaseId = await ts.GetClientDbIdByUid(clientCall.ClientUid);
 							}
+							catch (AudioBotException) { }
 						}
 
 						if (databaseId != null)
 						{
-							var result = ts.GetClientServerGroups(databaseId.Value);
-							if (result.Ok)
-								serverGroups = result.Value;
+							try
+							{
+								serverGroups = await ts.GetClientServerGroups(databaseId.Value);
+							}
+							catch (AudioBotException) { }
 						}
 					}
 
@@ -146,7 +150,7 @@ namespace TS3AudioBot.Rights
 					if (needsPermOverview.Length > 0 && databaseId != null && channelId != null)
 					{
 						// TODO check if there is any better way to only get the permissions needed.
-						var result = tsClient.PermOverview(databaseId.Value, channelId.Value, 0);
+						var result = await tsClient.PermOverview(databaseId.Value, channelId.Value, 0);
 						if (result.Ok)
 						{
 							execCtx.Permissions = new PermOverview[Enum.GetValues(typeof(TsPermission)).Length];

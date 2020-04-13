@@ -113,7 +113,7 @@ namespace TSLib.Audio
 
 		IEnumerator IEnumerable.GetEnumerator() => safeProducerList.GetEnumerator();
 
-		public bool Contains(IAudioPassiveProducer item) => Enumerable.Contains(safeProducerList, item);
+		public bool Contains(IAudioPassiveProducer item) => safeProducerList.Contains(item);
 
 		public void CopyTo(IAudioPassiveProducer[] array, int arrayIndex) => Array.Copy(safeProducerList, 0, array, arrayIndex, array.Length);
 

@@ -21,6 +21,7 @@ using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using TS3AudioBot.CommandSystem;
 using TS3AudioBot.Localization;
+using TSLib.Messages;
 
 namespace TS3AudioBot.Helper
 {
@@ -36,7 +37,7 @@ namespace TS3AudioBot.Helper
 		{
 			if (bytes == 0)
 				return "0B";
-			int order = (int)Math.Log(Math.Abs(bytes), 1024);
+			var order = (int)Math.Log(Math.Abs(bytes), 1024);
 			return (bytes >> (10 * order)) + byteSuffix[order];
 		}
 
@@ -86,27 +87,6 @@ namespace TS3AudioBot.Helper
 				pow >>= 1;
 			}
 			return ret;
-		}
-
-		public static void UnwrapThrow(this E<LocalStr> r)
-		{
-			if (!r.Ok)
-				throw new CommandException(r.Error.Str, CommandExceptionReason.CommandError);
-		}
-
-		public static T UnwrapThrow<T>(this R<T, LocalStr> r) where T : notnull
-		{
-			if (r.Ok)
-				return r.Value;
-			else
-				throw new CommandException(r.Error.Str, CommandExceptionReason.CommandError);
-		}
-
-		public static bool UnwrapToLog(this E<LocalStr> r, NLog.Logger logger, NLog.LogLevel? level = null)
-		{
-			if (!r.Ok)
-				logger.Log(level ?? NLog.LogLevel.Warn, r.Error.Str);
-			return r.Ok;
 		}
 
 		public static string UnrollException(this Exception? ex)
@@ -175,12 +155,56 @@ namespace TS3AudioBot.Helper
 			return val;
 		}
 
-		public static void ErrorToLog(this Task t, NLog.Logger logger)
+		public static async Task CatchToLog(this Task t, NLog.Logger logger, NLog.LogLevel? level = null)
 		{
-			t.ContinueWith(a =>
+			try
 			{
-				logger.Warn(a.Exception, "Task failed");
-			}, TaskContinuationOptions.OnlyOnFaulted);
+				await t;
+			}
+			catch (AudioBotException ex)
+			{
+				logger.Log(level ?? NLog.LogLevel.Warn, ex, ex.Message);
+			}
+		}
+
+		public static async Task<T?> Try<T>(this Task<T> t) where T : class
+		{
+			try { return await t; }
+			catch { return null; }
+		}
+
+		public static T? Try<T>(Func<T> t) where T : class
+		{
+			try { return t(); }
+			catch { return null; }
+		}
+
+		public static void UnwrapThrow(this E<LocalStr> r)
+		{
+			if (!r.Ok)
+				throw new CommandException(r.Error.Str, CommandExceptionReason.CommandError);
+		}
+
+		public static T UnwrapThrow<T>(this R<T, LocalStr> r) where T : notnull
+		{
+			if (r.Ok)
+				return r.Value;
+			else
+				throw new CommandException(r.Error.Str, CommandExceptionReason.CommandError);
+		}
+
+		public static bool UnwrapToLog(this E<LocalStr> r, NLog.Logger logger, NLog.LogLevel? level = null)
+		{
+			if (!r.Ok)
+				logger.Log(level ?? NLog.LogLevel.Warn, r.Error.Str);
+			return r.Ok;
+		}
+
+		public static bool UnwrapToLog(this E<CommandError> r, NLog.Logger logger, NLog.LogLevel? level = null)
+		{
+			if (!r.Ok)
+				logger.Log(level ?? NLog.LogLevel.Warn, r.Error.ErrorFormat());
+			return r.Ok;
 		}
 	}
 }

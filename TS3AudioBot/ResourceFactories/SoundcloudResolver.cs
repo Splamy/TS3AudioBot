@@ -14,6 +14,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using TS3AudioBot.Helper;
 using TS3AudioBot.Localization;
 using TS3AudioBot.Playlists;
@@ -35,35 +36,35 @@ namespace TS3AudioBot.ResourceFactories
 
 		public MatchCertainty MatchPlaylist(ResolveContext? _, string uri) => MatchResource(null, uri);
 
-		public R<PlayResource, LocalStr> GetResource(ResolveContext? _, string uri)
+		public async Task<PlayResource> GetResource(ResolveContext? _, string uri)
 		{
-			if (!WebWrapper.DownloadString($"https://api.soundcloud.com/resolve.json?url={Uri.EscapeUriString(uri)}&client_id={SoundcloudClientId}")
-				.Get(out var jsonResponse, out var _))
+			var jsonResponse = await WebWrapper.DownloadStringAsync($"https://api.soundcloud.com/resolve.json?url={Uri.EscapeUriString(uri)}&client_id={SoundcloudClientId}").Try();
+			if (jsonResponse is null)
 			{
 				if (!SoundcloudLink.IsMatch(uri))
-					return new LocalStr(strings.error_media_invalid_uri);
-				return YoutubeDlWrapped(uri);
+					throw Error.LocalStr(strings.error_media_invalid_uri);
+				return await YoutubeDlWrappedAsync(uri);
 			}
 			var track = JsonConvert.DeserializeObject<JsonTrackInfo>(jsonResponse);
 			var resource = CheckAndGet(track);
 			if (resource is null)
-				return new LocalStr(strings.error_media_internal_missing + " (parsedDict)");
-			return GetResourceById(resource, false);
+				throw Error.LocalStr(strings.error_media_internal_missing + " (parsedDict)");
+			return await GetResourceById(resource, false);
 		}
 
-		public R<PlayResource, LocalStr> GetResourceById(ResolveContext _, AudioResource resource) => GetResourceById(resource, true);
+		public Task<PlayResource> GetResourceById(ResolveContext _, AudioResource resource) => GetResourceById(resource, true);
 
-		private R<PlayResource, LocalStr> GetResourceById(AudioResource resource, bool allowNullName)
+		private async Task<PlayResource> GetResourceById(AudioResource resource, bool allowNullName)
 		{
 			if (SoundcloudLink.IsMatch(resource.ResourceId))
-				return GetResource(null, resource.ResourceId);
+				return await GetResource(null, resource.ResourceId);
 
 			if (resource.ResourceTitle is null)
 			{
-				if (!allowNullName) return new LocalStr(strings.error_media_internal_missing + " (title)");
+				if (!allowNullName) throw Error.LocalStr(strings.error_media_internal_missing + " (title)");
 				string link = RestoreLink(null, resource);
-				if (link is null) return new LocalStr(strings.error_media_internal_missing + " (link)");
-				return GetResource(null, link);
+				if (link is null) throw Error.LocalStr(strings.error_media_internal_missing + " (link)");
+				return await GetResource(null, link);
 			}
 
 			string finalRequest = $"https://api.soundcloud.com/tracks/{resource.ResourceId}/stream?client_id={SoundcloudClientId}";
@@ -104,38 +105,32 @@ namespace TS3AudioBot.ResourceFactories
 				.Add(AddTrack, track.permalink);
 		}
 
-		private R<PlayResource, LocalStr> YoutubeDlWrapped(string link)
+		private async Task<PlayResource> YoutubeDlWrappedAsync(string link)
 		{
 			Log.Debug("Falling back to youtube-dl!");
 
-			var result = YoutubeDlHelper.GetSingleVideo(link);
-			if (!result.Ok)
-				return result.Error;
-
-			var response = result.Value;
+			var response = await YoutubeDlHelper.GetSingleVideo(link);
 			var title = response.title ?? $"Soundcloud-{link}";
 			var format = YoutubeDlHelper.FilterBest(response.formats);
 			var url = format?.url;
 
 			if (string.IsNullOrEmpty(url))
-				return new LocalStr(strings.error_ytdl_empty_response);
+				throw Error.LocalStr(strings.error_ytdl_empty_response);
 
 			Log.Debug("youtube-dl succeeded!");
 
 			return new PlayResource(url, new AudioResource(link, title, ResolverFor));
 		}
 
-		public R<Playlist, LocalStr> GetPlaylist(ResolveContext _, string url)
+		public async Task<Playlist> GetPlaylist(ResolveContext _, string url)
 		{
-			if (!WebWrapper.DownloadString($"https://api.soundcloud.com/resolve.json?url={Uri.EscapeUriString(url)}&client_id={SoundcloudClientId}")
-				.Get(out var jsonResponse, out var error))
-				return error;
+			var jsonResponse = await WebWrapper.DownloadStringAsync($"https://api.soundcloud.com/resolve.json?url={Uri.EscapeUriString(url)}&client_id={SoundcloudClientId}");
 
 			var playlist = JsonConvert.DeserializeObject<JsonPlaylist>(jsonResponse);
 			if (playlist is null || playlist.title is null || playlist.tracks is null)
 			{
 				Log.Debug("Parts of playlist response are empty: {@json}", playlist);
-				return new LocalStr(strings.error_media_internal_missing + " (playlist)");
+				throw Error.LocalStr(strings.error_media_internal_missing + " (playlist)");
 			}
 
 			var plist = new Playlist().SetTitle(playlist.title);
@@ -153,25 +148,22 @@ namespace TS3AudioBot.ResourceFactories
 			return plist;
 		}
 
-		public R<Stream, LocalStr> GetThumbnail(ResolveContext _, PlayResource playResource)
+		public async Task<Stream> GetThumbnail(ResolveContext _, PlayResource playResource)
 		{
-			if (!WebWrapper.DownloadString($"https://api.soundcloud.com/tracks/{playResource.AudioResource.ResourceId}?client_id={SoundcloudClientId}")
-				.Get(out var jsonResponse, out var error))
-				return error;
-
+			var jsonResponse = await WebWrapper.DownloadStringAsync($"https://api.soundcloud.com/tracks/{playResource.AudioResource.ResourceId}?client_id={SoundcloudClientId}");
 			var parsedDict = ParseJson(jsonResponse);
 			if (parsedDict is null)
-				return new LocalStr(strings.error_media_internal_missing + " (parsedDict)");
+				throw Error.LocalStr(strings.error_media_internal_missing + " (parsedDict)");
 
 			if (!parsedDict.TryCast<string>("artwork_url", out var imgUrl))
-				return new LocalStr(strings.error_media_internal_missing + " (artwork_url)");
+				throw Error.LocalStr(strings.error_media_internal_missing + " (artwork_url)");
 
 			// t500x500: 500px×500px
 			// crop    : 400px×400px
 			// t300x300: 300px×300px
 			// large   : 100px×100px 
 			imgUrl = imgUrl.Replace("-large", "-t300x300");
-			return WebWrapper.GetResponseUnsafe(imgUrl);
+			return await WebWrapper.GetResponseUnsafeAsync(imgUrl);
 		}
 
 		public void Dispose() { }

@@ -7,44 +7,30 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
-using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.Threading;
 using TS3AudioBot.CommandSystem;
-using Response = System.Func<string, string?>;
+using Response = System.Func<string, System.Threading.Tasks.Task<string?>>;
 
 namespace TS3AudioBot.Sessions
 {
 	public class UserSession
 	{
+		private const string ResponseKey = "response";
+
 		private Dictionary<string, object>? assocMap;
 		protected bool lockToken;
 
-		public Response? ResponseProcessor { get; private set; }
+		public Response? ResponseProcessor => Get<Response>(ResponseKey, out var val) ? val : null;
 
-		public UserSession()
-		{
-			ResponseProcessor = null;
-		}
+		public UserSession() { }
 
-		public void SetResponseInstance(Response responseProcessor)
-		{
-			VerifyLock();
+		public void SetResponseInstance(Response responseProcessor) => Set(ResponseKey, responseProcessor);
 
-			ResponseProcessor = responseProcessor;
-		}
-
-		public void ClearResponse()
-		{
-			VerifyLock();
-
-			ResponseProcessor = null;
-		}
+		public void ClearResponse() => Set<Response?>(ResponseKey, null);
 
 		public bool Get<TData>(string key, [MaybeNullWhen(false)] out TData value) where TData : notnull
 		{
-			VerifyLock();
 			value = default!;
 
 			if (assocMap is null)
@@ -60,37 +46,15 @@ namespace TS3AudioBot.Sessions
 			return true;
 		}
 
-		public void Set<TData>(string key, TData data) where TData : notnull
+		public void Set<TData>(string key, TData data)
 		{
-			VerifyLock();
-
 			if (assocMap is null)
 				assocMap = new Dictionary<string, object>();
 
-			assocMap[key] = data;
-		}
-
-		public virtual IDisposable GetLock()
-		{
-			var sessionToken = new SessionLock(this);
-			sessionToken.Take();
-			return sessionToken;
-		}
-
-		protected void VerifyLock()
-		{
-			if (!lockToken)
-				throw new InvalidOperationException("No access lock is currently active");
-		}
-
-		private class SessionLock : IDisposable
-		{
-			private readonly UserSession session;
-			public SessionLock(UserSession session) { this.session = session; }
-
-			public void Take() { Monitor.Enter(session); session.lockToken = true; }
-			public void Free() { Monitor.Exit(session); session.lockToken = false; }
-			public void Dispose() => Free();
+			if (data is null)
+				assocMap.Remove(key);
+			else
+				assocMap[key] = data;
 		}
 	}
 

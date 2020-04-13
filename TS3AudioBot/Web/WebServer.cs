@@ -111,7 +111,6 @@ namespace TS3AudioBot.Web
 							builder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader();
 						});
 					});
-
 				})
 				.Configure(app =>
 				{

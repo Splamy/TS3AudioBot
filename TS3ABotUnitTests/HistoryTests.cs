@@ -84,7 +84,6 @@ namespace TS3ABotUnitTests
 			hf.RenameEntry(ale1, "sc_ar1X");
 			hf.LogAudioResourceDelayed(new HistorySaveData(ale1.AudioResource, (Uid)"Uid4"));
 
-
 			db.Dispose();
 
 			// check entry renaming
@@ -143,7 +142,7 @@ namespace TS3ABotUnitTests
 			Assert.AreEqual(ar3, lastXEntriesArray[0].AudioResource);
 			db.Dispose();
 
-
+			// Cleanup
 			File.Delete(testFile);
 		}
 	}

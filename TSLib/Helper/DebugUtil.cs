@@ -18,10 +18,10 @@ namespace TSLib.Helper
 
 		public static string DebugToHex(ReadOnlySpan<byte> bytes)
 		{
-			char[] c = new char[bytes.Length * 3];
+			var c = new char[bytes.Length * 3];
 			for (int bx = 0, cx = 0; bx < bytes.Length; ++bx, ++cx)
 			{
-				byte b = (byte)(bytes[bx] >> 4);
+				var b = (byte)(bytes[bx] >> 4);
 				c[cx] = (char)(b > 9 ? b - 10 + 'A' : b + '0');
 
 				b = (byte)(bytes[bx] & 0x0F);

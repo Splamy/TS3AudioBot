@@ -48,8 +48,7 @@ namespace TS3AudioBot.ResourceFactories
 
 		public AudioResource Add(string key, string value)
 		{
-			if (AdditionalData == null)
-				AdditionalData = new Dictionary<string, string>();
+			AdditionalData ??= new Dictionary<string, string>();
 			AdditionalData.Add(key, value);
 			return this;
 		}

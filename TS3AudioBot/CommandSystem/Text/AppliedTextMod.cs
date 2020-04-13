@@ -34,6 +34,6 @@ namespace TS3AudioBot.CommandSystem.Text
 
 		public static implicit operator AppliedTextMod(string? text) => new AppliedTextMod(text);
 
-		public readonly override string? ToString() => Text;
+		public override readonly string? ToString() => Text;
 	}
 }

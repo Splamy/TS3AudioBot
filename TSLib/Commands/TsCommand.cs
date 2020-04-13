@@ -76,12 +76,7 @@ namespace TSLib.Commands
 
 		/// <summary>Builds this command to the query-like command.</summary>
 		/// <returns>The formatted query-like command.</returns>
-		public override string ToString()
-		{
-			if (raw is null)
-				raw = BuildToString(Command, GetParameter());
-			return raw;
-		}
+		public override string ToString() => raw ?? (raw = BuildToString(Command, GetParameter()));
 
 		/// <summary>Builds the command from its parameters and returns the query-like command.</summary>
 		/// <param name="command">The command name.</param>
@@ -109,13 +104,11 @@ namespace TSLib.Commands
 					strb.Append(' ').Append(singleParam.Key).Append('=').Append(singleParam.Value);
 					break;
 				case CommandPartType.MultiParameter:
-					if (multiParamList is null)
-						multiParamList = new List<CommandMultiParameter>();
+					multiParamList ??= new List<CommandMultiParameter>();
 					multiParamList.Add((CommandMultiParameter)param);
 					break;
 				case CommandPartType.Option:
-					if (optionList is null)
-						optionList = new List<CommandOption>();
+					optionList ??= new List<CommandOption>();
 					optionList.Add((CommandOption)param);
 					break;
 				default:

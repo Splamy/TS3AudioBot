@@ -20,7 +20,7 @@ namespace TSLib.Helper
 		{
 			get
 			{
-				int p = (int)Environment.OSVersion.Platform;
+				var p = (int)Environment.OSVersion.Platform;
 				return p == 4 || p == 6 || p == 128;
 			}
 		}
@@ -55,8 +55,11 @@ namespace TSLib.Helper
 
 		// Math
 
-		public static TimeSpan Min(TimeSpan a, TimeSpan b) => a < b ? a : b;
-		public static TimeSpan Max(TimeSpan a, TimeSpan b) => a > b ? a : b;
+		public static TimeSpan Min(this TimeSpan a, TimeSpan b) => a < b ? a : b;
+		public static TimeSpan Max(this TimeSpan a, TimeSpan b) => a > b ? a : b;
+#if NETSTANDARD2_0
+		public static TimeSpan Divide(this TimeSpan timeSpan, double divisor) => TimeSpan.FromTicks((long)(timeSpan.Ticks / divisor));
+#endif
 
 		public static int MathMod(int x, int mod) => (x % mod + mod) % mod;
 

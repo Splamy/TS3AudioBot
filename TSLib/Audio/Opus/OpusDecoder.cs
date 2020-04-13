@@ -66,13 +66,12 @@ namespace TSLib.Audio.Opus
 		/// Produces PCM samples from Opus encoded data.
 		/// </summary>
 		/// <param name="inputOpusData">Opus encoded data to decode, null for dropped packet.</param>
-		/// <param name="dataLength">Length of data to decode.</param>
 		/// <param name="outputDecodedBuffer">PCM audio samples buffer.</param>
 		/// <returns>PCM audio samples.</returns>
 		public Span<byte> Decode(Span<byte> inputOpusData, Span<byte> outputDecodedBuffer)
 		{
 			if (disposed)
-				throw new ObjectDisposedException("OpusDecoder");
+				throw new ObjectDisposedException(nameof(OpusDecoder));
 
 			if (inputOpusData.Length == 0)
 				return Span<byte>.Empty;
@@ -110,12 +109,12 @@ namespace TSLib.Audio.Opus
 		/// <summary>
 		/// Gets the output sampling rate of the decoder.
 		/// </summary>
-		public int OutputSamplingRate { get; private set; }
+		public int OutputSamplingRate { get; }
 
 		/// <summary>
 		/// Gets the number of channels of the decoder.
 		/// </summary>
-		public int OutputChannels { get; private set; }
+		public int OutputChannels { get; }
 
 		/// <summary>
 		/// Gets or sets whether forward error correction is enabled or not.

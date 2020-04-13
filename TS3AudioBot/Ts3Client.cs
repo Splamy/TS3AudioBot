@@ -13,6 +13,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using TS3AudioBot.Algorithm;
+using TS3AudioBot.CommandSystem;
 using TS3AudioBot.Config;
 using TS3AudioBot.Helper;
 using TS3AudioBot.Localization;
@@ -22,6 +23,7 @@ using TSLib.Full;
 using TSLib.Full.Book;
 using TSLib.Helper;
 using TSLib.Messages;
+using CmdE = System.Threading.Tasks.Task<System.E<TS3AudioBot.Localization.LocalStr>>;
 
 namespace TS3AudioBot
 {
@@ -216,171 +218,156 @@ namespace TS3AudioBot
 
 		#region TSLib functions wrapper
 
-		public E<LocalStr> SendMessage(string message, ClientId clientId) => ts3FullClient.SendPrivateMessage(message, clientId).FormatLocal();
-		public E<LocalStr> SendChannelMessage(string message) => ts3FullClient.SendChannelMessage(message).FormatLocal();
-		public E<LocalStr> SendServerMessage(string message) => ts3FullClient.SendServerMessage(message, 1).FormatLocal();
+		public Task SendMessage(string message, ClientId clientId) => ts3FullClient.SendPrivateMessage(message, clientId).UnwrapThrow();
+		public Task SendChannelMessage(string message) => ts3FullClient.SendChannelMessage(message).UnwrapThrow();
+		public Task SendServerMessage(string message) => ts3FullClient.SendServerMessage(message, 1).UnwrapThrow();
 
-		public E<LocalStr> KickClientFromServer(params ClientId[] clientId) => ts3FullClient.KickClientFromServer(clientId).FormatLocal();
-		public E<LocalStr> KickClientFromChannel(params ClientId[] clientId) => ts3FullClient.KickClientFromChannel(clientId).FormatLocal();
+		public Task KickClientFromServer(params ClientId[] clientId) => ts3FullClient.KickClientFromServer(clientId).UnwrapThrow();
+		public Task KickClientFromChannel(params ClientId[] clientId) => ts3FullClient.KickClientFromChannel(clientId).UnwrapThrow();
 
-		public E<LocalStr> ChangeDescription(string description)
-			=> ts3FullClient.ChangeDescription(description, ts3FullClient.ClientId).FormatLocal();
+		public Task ChangeDescription(string description)
+			=> ts3FullClient.ChangeDescription(description, ts3FullClient.ClientId).UnwrapThrow();
 
-		public E<LocalStr> ChangeBadges(string badgesString)
+		public Task ChangeBadges(string badgesString)
 		{
 			if (!badgesString.StartsWith("overwolf=") && !badgesString.StartsWith("badges="))
 				badgesString = "overwolf=0:badges=" + badgesString;
-			return ts3FullClient.ChangeBadges(badgesString).FormatLocal();
+			return ts3FullClient.ChangeBadges(badgesString).UnwrapThrow();
 		}
 
-		public E<LocalStr> ChangeName(string name)
+		public Task ChangeName(string name)
+			=> ts3FullClient.ChangeName(name).UnwrapThrow(e =>
+				(e == TsErrorCode.parameter_invalid_size ? strings.error_ts_invalid_name : null, false)
+			);
+
+		public Task<ClientList> GetCachedClientById(ClientId id) => ClientBufferRequest(client => client.ClientId == id);
+
+		public async Task<ClientList> GetFallbackedClientById(ClientId id)
 		{
-			var result = ts3FullClient.ChangeName(name);
-			if (result.Ok)
-				return R.Ok;
-
-			if (result.Error.Id == TsErrorCode.parameter_invalid_size)
-				return new LocalStr(strings.error_ts_invalid_name);
-			else
-				return result.Error.FormatLocal();
-		}
-
-		public R<ClientList, LocalStr> GetCachedClientById(ClientId id) => ClientBufferRequest(client => client.ClientId == id);
-
-		public R<ClientList, LocalStr> GetFallbackedClientById(ClientId id)
-		{
-			var result = ClientBufferRequest(client => client.ClientId == id);
-			if (result.Ok)
-				return result;
+			try { return await ClientBufferRequest(client => client.ClientId == id); }
+			catch (AudioBotException) { }
 			Log.Warn("Slow double request due to missing or wrong permission configuration!");
-			var result2 = ts3FullClient.Send<ClientList>("clientinfo", new CommandParameter("clid", id)).WrapSingle();
-			if (!result2.Ok)
-				return new LocalStr(strings.error_ts_no_client_found);
-			ClientList cd = result2.Value;
-			cd.ClientId = id;
-			clientbuffer.Add(cd);
-			return cd;
+			ClientList clientInfo = await ts3FullClient.Send<ClientList>("clientinfo", new CommandParameter("clid", id))
+				.MapToSingle()
+				.UnwrapThrow(_ => (strings.error_ts_no_client_found, true));
+			clientInfo.ClientId = id;
+			clientbuffer.Add(clientInfo);
+			return clientInfo;
 		}
 
-		public R<ClientList, LocalStr> GetClientByName(string name)
+		public async Task<ClientList> GetClientByName(string name)
 		{
-			var refreshResult = RefreshClientBuffer(false);
-			if (!refreshResult)
-				return refreshResult.Error;
-			var clients = Filter.DefaultFilter.Filter(
-				clientbuffer.Select(cb => new KeyValuePair<string, ClientList>(cb.Name, cb)), name).ToArray();
-			if (clients.Length <= 0)
-				return new LocalStr(strings.error_ts_no_client_found);
-			return clients[0].Value;
+			await RefreshClientBuffer(false);
+			var client = Filter.DefaultFilter.Filter(
+				clientbuffer.Select(cb => new KeyValuePair<string, ClientList>(cb.Name, cb)), name).FirstOrDefault().Value;
+			if (client == null)
+				throw new CommandException(strings.error_ts_no_client_found);
+			return client;
 		}
 
-		private R<ClientList, LocalStr> ClientBufferRequest(Predicate<ClientList> pred)
+		private async Task<ClientList> ClientBufferRequest(Predicate<ClientList> pred)
 		{
-			var refreshResult = RefreshClientBuffer(false);
-			if (!refreshResult)
-				return refreshResult.Error;
+			await RefreshClientBuffer(false);
 			var clientData = clientbuffer.Find(pred);
 			if (clientData is null)
-				return new LocalStr(strings.error_ts_no_client_found);
+				throw new CommandException(strings.error_ts_no_client_found);
 			return clientData;
 		}
 
-		public E<LocalStr> RefreshClientBuffer(bool force)
+		public async ValueTask RefreshClientBuffer(bool force)
 		{
 			if (clientbufferOutdated || force)
 			{
-				var result = ts3FullClient.ClientList(ClientListOptions.uid);
+				var result = await ts3FullClient.ClientList(ClientListOptions.uid);
 				if (!result)
 				{
 					Log.Debug("Clientlist failed ({0})", result.Error.ErrorFormat());
-					return result.Error.FormatLocal();
+					throw new TeamSpeakErrorCommandException(result.Error.FormatLocal().Str, result.Error);
 				}
 				clientbuffer = result.Value.ToList();
 				clientbufferOutdated = false;
 			}
-			return R.Ok;
 		}
 
-		public R<ServerGroupId[], LocalStr> GetClientServerGroups(ClientDbId dbId)
+		public async Task<ServerGroupId[]> GetClientServerGroups(ClientDbId dbId)
 		{
-			var result = ts3FullClient.ServerGroupsByClientDbId(dbId);
-			if (!result.Ok)
-				return new LocalStr(strings.error_ts_no_client_found);
-			return result.Value.Select(csg => csg.ServerGroupId).ToArray();
+			var result = await ts3FullClient.ServerGroupsByClientDbId(dbId).UnwrapThrow(_ => (strings.error_ts_no_client_found, true));
+			return result.Select(csg => csg.ServerGroupId).ToArray();
 		}
 
-		public R<ClientDbInfo, LocalStr> GetDbClientByDbId(ClientDbId clientDbId)
+		public async Task<ClientDbInfo> GetDbClientByDbId(ClientDbId clientDbId)
 		{
 			if (clientDbNames.TryGetValue(clientDbId, out var clientData))
 				return clientData;
 
-			var result = ts3FullClient.ClientDbInfo(clientDbId);
-			if (!result.Ok)
-				return new LocalStr(strings.error_ts_no_client_found);
-			clientData = result.Value;
+			clientData = await ts3FullClient.ClientDbInfo(clientDbId).UnwrapThrow(_ => (strings.error_ts_no_client_found, true));
 			clientDbNames.Set(clientDbId, clientData);
 			return clientData;
 		}
 
-		public R<ClientInfo, LocalStr> GetClientInfoById(ClientId id) => ts3FullClient.ClientInfo(id).FormatLocal(_ => (strings.error_ts_no_client_found, true));
+		public Task<ClientInfo> GetClientInfoById(ClientId id) => ts3FullClient.ClientInfo(id).UnwrapThrow(_ => (strings.error_ts_no_client_found, true));
 
-		public R<ClientDbId, LocalStr> GetClientDbIdByUid(Uid uid)
+		public async Task<ClientDbId> GetClientDbIdByUid(Uid uid)
 		{
 			if (dbIdCache.TryGetValue(uid, out var dbid))
 				return dbid;
 
-			var result = ts3FullClient.GetClientDbIdFromUid(uid);
-			if (!result.Ok)
-				return new LocalStr(strings.error_ts_no_client_found);
+			var client = await ts3FullClient.GetClientDbIdFromUid(uid).UnwrapThrow(_ => (strings.error_ts_no_client_found, true));
 
-			dbIdCache.Set(result.Value.ClientUid, result.Value.ClientDbId);
-			return result.Value.ClientDbId;
+			dbIdCache.Set(client.ClientUid, client.ClientDbId);
+			return client.ClientDbId;
 		}
 
-		public bool SetupRights(string? key)
+		public async Task SetupRights(string? key)
 		{
 			var self = ts3FullClient.Book.Self();
 			if (self is null)
 			{
 				Log.Error("Getting self failed");
-				return false;
+				throw new CommandException(strings.cmd_bot_setup_error);
 			}
 			var myDbId = self.DatabaseId;
 
 			// Check all own server groups
-			var getGroupResult = GetClientServerGroups(myDbId);
-			var groups = getGroupResult.Ok ? getGroupResult.Value : Array.Empty<ServerGroupId>();
+			ServerGroupId[] groups;
+			bool groupsOk;
+			try { groups = await GetClientServerGroups(myDbId); groupsOk = true; }
+			catch { groups = Array.Empty<ServerGroupId>(); groupsOk = false; }
 
 			// Add self to master group (via token)
 			if (!string.IsNullOrEmpty(key))
 			{
-				var privKeyUseResult = ts3FullClient.PrivilegeKeyUse(key);
+				var privKeyUseResult = await ts3FullClient.PrivilegeKeyUse(key);
 				if (!privKeyUseResult.Ok)
 				{
 					Log.Error("Using privilege key failed ({0})", privKeyUseResult.Error.ErrorFormat());
-					return false;
+					throw new CommandException(strings.cmd_bot_setup_error);
 				}
 			}
 
 			// Remember new group (or check if in new group at all)
 			var groupDiff = Array.Empty<ServerGroupId>();
-			if (getGroupResult.Ok)
+			if (groupsOk)
 			{
-				getGroupResult = GetClientServerGroups(myDbId);
-				var groupsNew = getGroupResult.Ok ? getGroupResult.Value : Array.Empty<ServerGroupId>();
-				groupDiff = groupsNew.Except(groups).ToArray();
+				ServerGroupId[] groupsNew;
+				try
+				{
+					groupsNew = await GetClientServerGroups(myDbId);
+					groupDiff = groupsNew.Except(groups).ToArray();
+				}
+				catch { }
 			}
 
 			if (config.BotGroupId == 0)
 			{
 				// Create new Bot group
-				var botGroup = ts3FullClient.ServerGroupAdd("ServerBot");
+				var botGroup = await ts3FullClient.ServerGroupAdd("ServerBot");
 				if (botGroup.Ok)
 				{
 					config.BotGroupId.Value = botGroup.Value.ServerGroupId.Value;
 
 					// Add self to new group
-					var grpresult = ts3FullClient.ServerGroupAddClient(botGroup.Value.ServerGroupId, myDbId);
+					var grpresult = await ts3FullClient.ServerGroupAddClient(botGroup.Value.ServerGroupId, myDbId);
 					if (!grpresult.Ok)
 						Log.Error("Adding group failed ({0})", grpresult.Error.ErrorFormat());
 				}
@@ -390,7 +377,7 @@ namespace TS3AudioBot
 			const int ava = 500000; // max size in bytes for the avatar
 
 			// Add various rights to the bot group
-			var permresult = ts3FullClient.ServerGroupAddPerm((ServerGroupId)config.BotGroupId.Value,
+			var permresult = await ts3FullClient.ServerGroupAddPerm((ServerGroupId)config.BotGroupId.Value,
 				new[] {
 					TsPermission.i_client_whisper_power, // + Required for whisper channel playing
 					TsPermission.i_client_private_textmessage_power, // + Communication
@@ -468,38 +455,28 @@ namespace TS3AudioBot
 			{
 				foreach (var grp in groupDiff)
 				{
-					var grpresult = ts3FullClient.ServerGroupDelClient(grp, myDbId);
+					var grpresult = await ts3FullClient.ServerGroupDelClient(grp, myDbId);
 					if (!grpresult.Ok)
 						Log.Error("Removing group failed ({0})", grpresult.Error.ErrorFormat());
 				}
 			}
-
-			return true;
 		}
 
-		public async Task<E<LocalStr>> UploadAvatar(System.IO.Stream stream)
-		{
-			var res = await ts3FullClient.UploadAvatar(stream);
-			return res.FormatLocal(e =>
+		public Task UploadAvatar(System.IO.Stream stream)
+			=> ts3FullClient.UploadAvatar(stream).UnwrapThrow(e =>
 				(e == TsErrorCode.permission_invalid_size ? strings.error_ts_file_too_big : null, false)
 			);
-		}
 
-		public E<LocalStr> DeleteAvatar() => ts3FullClient.DeleteAvatar().FormatLocal();
+		public Task DeleteAvatar() => ts3FullClient.DeleteAvatar().UnwrapThrow();
 
-		public E<LocalStr> MoveTo(ChannelId channelId, string? password = null)
-			=> ts3FullClient.ClientMove(ts3FullClient.ClientId, channelId, password).FormatLocal(_ => (strings.error_ts_cannot_move, true));
+		public Task MoveTo(ChannelId channelId, string? password = null)
+			=> ts3FullClient.ClientMove(ts3FullClient.ClientId, channelId, password).UnwrapThrow(_ => (strings.error_ts_cannot_move, true));
 
-		public E<LocalStr> SetChannelCommander(bool isCommander)
-			=> ts3FullClient.ChangeIsChannelCommander(isCommander).FormatLocal(_ => (strings.error_ts_cannot_set_commander, true));
+		public Task SetChannelCommander(bool isCommander)
+			=> ts3FullClient.ChangeIsChannelCommander(isCommander).UnwrapThrow(_ => (strings.error_ts_cannot_set_commander, true));
 
-		public R<bool, LocalStr> IsChannelCommander()
-		{
-			var getInfoResult = GetClientInfoById(ts3FullClient.ClientId);
-			if (!getInfoResult.Ok)
-				return getInfoResult.Error;
-			return getInfoResult.Value.IsChannelCommander;
-		}
+		public async Task<bool> IsChannelCommander()
+			=> (await GetClientInfoById(ts3FullClient.ClientId)).IsChannelCommander;
 
 		public R<Client, LocalStr> GetSelf()
 		{
@@ -698,12 +675,34 @@ namespace TS3AudioBot
 
 	internal static class CommandErrorExtentions
 	{
+		public static async Task<T> UnwrapThrow<T>(this Task<R<T, CommandError>> task, Func<TsErrorCode, (string? loc, bool msg)>? prefix = null) where T : notnull
+		{
+			var result = await task;
+			if (result.Ok)
+				return result.Value;
+			else
+				throw new TeamSpeakErrorCommandException(result.Error.FormatLocal(prefix).Str, result.Error);
+		}
+
+		public static async Task UnwrapThrow(this Task<E<CommandError>> task, Func<TsErrorCode, (string? loc, bool msg)>? prefix = null)
+		{
+			var result = await task;
+			if (!result.Ok)
+				throw new TeamSpeakErrorCommandException(result.Error.FormatLocal(prefix).Str, result.Error);
+		}
+
+		public static async Task<R<T, LocalStr>> FormatLocal<T>(this Task<R<T, CommandError>> task, Func<TsErrorCode, (string? loc, bool msg)>? prefix = null) where T : notnull
+			=> (await task).FormatLocal(prefix);
+
 		public static R<T, LocalStr> FormatLocal<T>(this R<T, CommandError> cmdErr, Func<TsErrorCode, (string? loc, bool msg)>? prefix = null) where T : notnull
 		{
 			if (cmdErr.Ok)
 				return cmdErr.Value;
 			return cmdErr.Error.FormatLocal(prefix);
 		}
+
+		public static async CmdE FormatLocal(this Task<E<CommandError>> task, Func<TsErrorCode, (string? loc, bool msg)>? prefix = null)
+			=> (await task).FormatLocal(prefix);
 
 		public static E<LocalStr> FormatLocal(this E<CommandError> cmdErr, Func<TsErrorCode, (string? loc, bool msg)>? prefix = null)
 		{

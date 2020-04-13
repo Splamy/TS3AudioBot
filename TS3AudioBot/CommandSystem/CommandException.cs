@@ -9,17 +9,22 @@
 
 using System;
 using System.Runtime.Serialization;
+using TSLib.Messages;
 
 namespace TS3AudioBot.CommandSystem
 {
 	[Serializable]
-	public class CommandException : Exception
+	public class CommandException : AudioBotException
 	{
 		public CommandExceptionReason Reason { get; }
 
 		protected CommandException()
 			: this(CommandExceptionReason.Unknown)
 		{ }
+
+		public CommandException(string message)
+			: base(message)
+		{ Reason = CommandExceptionReason.CommandError; }
 
 		protected CommandException(CommandExceptionReason reason)
 		{ Reason = reason; }
@@ -53,6 +58,24 @@ namespace TS3AudioBot.CommandSystem
 		public MissingContextCommandException(string message, Exception inner, Type missingType)
 			: base(message, inner, CommandExceptionReason.MissingContext)
 		{ MissingType = missingType; }
+	}
+
+	[Serializable]
+	public class TeamSpeakErrorCommandException : CommandException
+	{
+		public CommandError Error { get; }
+
+		protected TeamSpeakErrorCommandException(CommandError error)
+			: base(CommandExceptionReason.MissingContext)
+		{ Error = error; }
+
+		public TeamSpeakErrorCommandException(string message, CommandError error)
+			: base(message, CommandExceptionReason.MissingContext)
+		{ Error = error; }
+
+		public TeamSpeakErrorCommandException(string message, Exception inner, CommandError error)
+			: base(message, inner, CommandExceptionReason.MissingContext)
+		{ Error = error; }
 	}
 
 	public enum CommandExceptionReason

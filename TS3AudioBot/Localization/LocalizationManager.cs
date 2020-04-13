@@ -100,12 +100,12 @@ namespace TS3AudioBot.Localization
 						languageDataInfo.TriedDownloading = true;
 						Directory.CreateDirectory(tryFile.DirectoryName);
 						Log.Info("Downloading the resource pack for the language '{0}'", currentResolveCulture.Name);
-						(await WebWrapper.GetResponseAsync($"https://splamy.de/api/language/project/ts3ab/language/{currentResolveCulture.Name}/dll", async response =>
+						await WebWrapper.GetResponseAsync($"https://splamy.de/api/language/project/ts3ab/language/{currentResolveCulture.Name}/dll", async response =>
 						{
 							using var dataStream = response.GetResponseStream();
 							using var fs = File.Open(tryFile.FullName, FileMode.Create, FileAccess.Write, FileShare.None);
 							await dataStream.CopyToAsync(fs);
-						})).UnwrapToLog(Log);
+						});
 					}
 					catch (Exception ex)
 					{
@@ -154,11 +154,9 @@ namespace TS3AudioBot.Localization
 			try
 			{
 				Log.Info("Checking for requested language online");
-				if ((await WebWrapper.DownloadStringAsync("https://splamy.de/api/language/project/ts3ab/languages")).GetOk(out var data))
-				{
-					var arr = Newtonsoft.Json.JsonConvert.DeserializeObject<string[]>(data);
-					return new HashSet<string>(arr);
-				}
+				var data = await WebWrapper.DownloadStringAsync("https://splamy.de/api/language/project/ts3ab/languages");
+				var arr = Newtonsoft.Json.JsonConvert.DeserializeObject<string[]>(data);
+				return new HashSet<string>(arr);
 			}
 			catch (Exception ex)
 			{

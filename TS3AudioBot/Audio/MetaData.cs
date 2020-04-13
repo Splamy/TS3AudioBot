@@ -17,7 +17,7 @@ namespace TS3AudioBot.Audio
 	{
 		/// <summary>Defaults to: invoker.Uid - Can be set if the owner of a song differs from the invoker.</summary>
 		public Uid? ResourceOwnerUid { get; set; }
-		/// <summary></summary>
+		/// <summary>Starts the song at the specified time if set.</summary>
 		public TimeSpan? StartOffset { get; set; }
 
 		public MetaData(TimeSpan? startOffset = null)

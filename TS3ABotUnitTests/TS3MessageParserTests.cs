@@ -62,7 +62,7 @@ namespace TS3ABotUnitTests
 				+ "|clid=4 cid=4 client_database_id=7 client_nickname=AudioBud client_type=0 client_unique_identifier=b+P0CqXms5I0C+A66HZ4Sbu\\/PNw="
 			));
 			Assert.NotNull(notif);
-			
+
 			Assert.AreEqual(notif.Length, 4);
 			AssertEx.PropertyValuesAreEquals(notif[0], new ClientList() { ClientId = (ClientId)1, ChannelId = (ChannelId)1, DatabaseId = (ClientDbId)2, Name = "TestBob1", ClientType = ClientType.Full, Uid = (Uid)"u/dFMOFFipxS9fJ8HKv0KH6WVzA=" });
 			AssertEx.PropertyValuesAreEquals(notif[1], new ClientList() { ClientId = (ClientId)2, ChannelId = (ChannelId)4, DatabaseId = (ClientDbId)2, Name = "TestBob", ClientType = ClientType.Full, Uid = (Uid)"u/dFMOFFipxS9fJ8HKv0KH6WVzA=" });

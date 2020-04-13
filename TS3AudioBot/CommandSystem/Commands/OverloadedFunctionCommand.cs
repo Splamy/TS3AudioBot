@@ -15,7 +15,6 @@ using TS3AudioBot.Localization;
 
 namespace TS3AudioBot.CommandSystem.Commands
 {
-
 	public class OverloadedFunctionCommand : ICommand
 	{
 		public List<FunctionCommand> Functions { get; }

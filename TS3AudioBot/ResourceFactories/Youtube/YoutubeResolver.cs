@@ -13,6 +13,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using TS3AudioBot.Audio;
 using TS3AudioBot.Config;
 using TS3AudioBot.Helper;
@@ -49,48 +50,42 @@ namespace TS3AudioBot.ResourceFactories.Youtube
 
 		public MatchCertainty MatchPlaylist(ResolveContext? _, string uri) => ListMatch.IsMatch(uri) ? MatchCertainty.Always : MatchCertainty.Never;
 
-		public R<PlayResource, LocalStr> GetResource(ResolveContext? _, string uri)
+		public async Task<PlayResource> GetResource(ResolveContext? _, string uri)
 		{
 			Match matchYtId = IdMatch.Match(uri);
 			if (!matchYtId.Success)
-				return new LocalStr(strings.error_media_failed_to_parse_id);
+				throw Error.LocalStr(strings.error_media_failed_to_parse_id);
 
-			var result = GetResourceById(null, new AudioResource(matchYtId.Groups[1].Value, null, ResolverFor));
-			return result.Map(play =>
+			var play = await GetResourceById(null, new AudioResource(matchYtId.Groups[1].Value, null, ResolverFor));
+			Match matchTimestamp = YtTimestampMatch.Match(uri);
+			if (matchYtId.Success && int.TryParse(matchTimestamp.Groups[1].Value, out var secs))
 			{
-				Match matchTimestamp = YtTimestampMatch.Match(uri);
-				if (matchYtId.Success && int.TryParse(matchTimestamp.Groups[1].Value, out var secs))
-				{
-					play.Meta ??= new MetaData();
-					play.Meta.StartOffset = TimeSpan.FromSeconds(secs);
-				}
-				return play;
-			});
+				play.Meta ??= new MetaData();
+				play.Meta.StartOffset = TimeSpan.FromSeconds(secs);
+			}
+			return play;
 		}
 
-		public R<PlayResource, LocalStr> GetResourceById(ResolveContext? _, AudioResource resource)
+		public async Task<PlayResource> GetResourceById(ResolveContext? _, AudioResource resource)
 		{
 			var priority = conf.ResolverPriority.Value;
 			switch (priority)
 			{
 			case LoaderPriority.Internal:
-				var result = ResolveResourceInternal(resource);
-				if (result.Ok)
-					return result;
-				goto case LoaderPriority.YoutubeDl;
+				try { return await ResolveResourceInternal(resource); }
+				catch (AudioBotException) { goto case LoaderPriority.YoutubeDl; }
 
 			case LoaderPriority.YoutubeDl:
-				return YoutubeDlWrapped(resource);
+				return await YoutubeDlWrapped(resource);
 
 			default:
 				throw Tools.UnhandledDefault(priority);
 			}
 		}
 
-		private R<PlayResource, LocalStr> ResolveResourceInternal(AudioResource resource)
+		private async Task<PlayResource> ResolveResourceInternal(AudioResource resource)
 		{
-			if (!WebWrapper.DownloadString($"https://www.youtube.com/get_video_info?video_id={resource.ResourceId}").Get(out var resulthtml, out var error))
-				return error;
+			var resulthtml = await WebWrapper.DownloadStringAsync($"https://www.youtube.com/get_video_info?video_id={resource.ResourceId}");
 
 			var videoTypes = new List<VideoData>();
 			var dataParse = ParseQueryString(resulthtml);
@@ -107,7 +102,7 @@ namespace TS3AudioBot.ResourceFactories.Youtube
 					bool isLive = parsed.videoDetails.isLive ?? false;
 					if (isLive && parsed.streamingData?.hlsManifestUrl != null)
 					{
-						return ParseLiveData(resource, parsed.streamingData.hlsManifestUrl);
+						return await ParseLiveData(resource, parsed.streamingData.hlsManifestUrl);
 					}
 					else if (isLive)
 					{
@@ -127,28 +122,29 @@ namespace TS3AudioBot.ResourceFactories.Youtube
 			// Validation Process
 
 			if (videoTypes.Count <= 0)
-				return new LocalStr(strings.error_media_no_stream_extracted);
+				throw Error.LocalStr(strings.error_media_no_stream_extracted);
 
 			int codec = SelectStream(videoTypes);
 			if (codec < 0)
-				return new LocalStr(strings.error_media_no_stream_extracted);
+				throw Error.LocalStr(strings.error_media_no_stream_extracted);
 
-			var result = ValidateMedia(videoTypes[codec]);
-			if (!result.Ok)
-				return result.Error;
+			await ValidateMedia(videoTypes[codec]);
 
 			resource.ResourceTitle ??= $"<YT - no title : {resource.ResourceId}>";
 
 			return new PlayResource(videoTypes[codec].Link, resource);
 		}
 
-		private static R<PlayResource, LocalStr> ParseLiveData(AudioResource resource, string requestUrl)
+		private static async Task<PlayResource> ParseLiveData(AudioResource resource, string requestUrl)
 		{
-			if (WebWrapper.GetResponse(requestUrl,
-				response => M3uReader.TryGetData(response.GetResponseStream())
-				.MapError(_ => new LocalStr(strings.error_media_internal_invalid)))
-				.Flat().Get(out var webList, out var error))
-				return error;
+			List<M3uEntry>? webList = null;
+			try
+			{
+				webList = await WebWrapper.GetResponseAsync(requestUrl, async response =>
+					await M3uReader.TryGetData(response.GetResponseStream())
+				);
+			}
+			catch (AudioBotException ex) { throw Error.LocalStr(strings.error_media_internal_invalid).Exception(ex); }
 
 			const string AacHe = "mp4a.40.5";
 			const string AacLc = "mp4a.40.2";
@@ -163,7 +159,7 @@ namespace TS3AudioBot.ResourceFactories.Youtube
 							 select item;
 			var streamSelect = streamPref.FirstOrDefault();
 			if (streamSelect is null)
-				return new LocalStr(strings.error_media_no_stream_extracted);
+				throw Error.LocalStr(strings.error_media_no_stream_extracted);
 			return new PlayResource(streamSelect.TrackUrl, resource);
 		}
 
@@ -246,7 +242,7 @@ namespace TS3AudioBot.ResourceFactories.Youtube
 			return autoselectIndex;
 		}
 
-		private static E<LocalStr> ValidateMedia(VideoData media) => WebWrapper.GetResponse(media.Link, timeout: TimeSpan.FromSeconds(3));
+		private static Task ValidateMedia(VideoData media) => WebWrapper.GetResponseAsync(media.Link, timeout: TimeSpan.FromSeconds(3));
 
 		private static VideoCodec GetCodec(string type)
 		{
@@ -264,8 +260,8 @@ namespace TS3AudioBot.ResourceFactories.Youtube
 			}
 			else return VideoCodec.Unknown;
 
-			int codecEnd;
-			var extractedCodec = (codecEnd = codecSubStr.IndexOf(';')) >= 0 ? codecSubStr.Substring(0, codecEnd) : codecSubStr;
+			int codecEnd = codecSubStr.IndexOf(';');
+			var extractedCodec = codecEnd >= 0 ? codecSubStr.Substring(0, codecEnd) : codecSubStr;
 
 			switch (extractedCodec)
 			{
@@ -284,36 +280,34 @@ namespace TS3AudioBot.ResourceFactories.Youtube
 			}
 		}
 
-		public R<Playlist, LocalStr> GetPlaylist(ResolveContext _, string url)
+		public async Task<Playlist> GetPlaylist(ResolveContext _, string url)
 		{
 			Match matchYtId = ListMatch.Match(url);
 			if (!matchYtId.Success)
-				return new LocalStr(strings.error_media_failed_to_parse_id);
+				throw Error.LocalStr(strings.error_media_failed_to_parse_id);
 
 			string id = matchYtId.Groups[2].Value;
 			if (string.IsNullOrEmpty(YoutubeProjectId))
-				return GetPlaylistYoutubeDl(id);
+				return await GetPlaylistYoutubeDl(id);
 			else
-				return GetPlaylistYoutubeApi(id);
+				return await GetPlaylistYoutubeApi(id);
 		}
 
-		private R<Playlist, LocalStr> GetPlaylistYoutubeApi(string id)
+		private async Task<Playlist> GetPlaylistYoutubeApi(string id)
 		{
 			var plist = new Playlist().SetTitle(id);
 
 			string? nextToken = null;
 			do
 			{
-				var queryString = "https://www.googleapis.com/youtube/v3/playlistItems"
+				var response = await WebWrapper.DownloadStringAsync("https://www.googleapis.com/youtube/v3/playlistItems"
 						+ "?part=contentDetails,snippet"
 						+ "&fields=" + Uri.EscapeDataString("items(contentDetails/videoId,snippet/title),nextPageToken")
 						+ "&maxResults=50"
 						+ "&playlistId=" + id
 						+ (nextToken != null ? "&pageToken=" + nextToken : string.Empty)
-						+ "&key=" + YoutubeProjectId;
+						+ "&key=" + YoutubeProjectId);
 
-				if (!WebWrapper.DownloadString(queryString).Get(out var response, out var error))
-					return error;
 				var parsed = JsonConvert.DeserializeObject<JsonVideoListResponse>(response);
 				var videoItems = parsed.items;
 				if (!plist.AddRange(
@@ -334,13 +328,9 @@ namespace TS3AudioBot.ResourceFactories.Youtube
 			return plist;
 		}
 
-		private R<Playlist, LocalStr> GetPlaylistYoutubeDl(string id)
+		private async Task<Playlist> GetPlaylistYoutubeDl(string id)
 		{
-			var result = YoutubeDlHelper.GetPlaylist(id);
-			if (!result.Ok)
-				return result.Error;
-
-			var plistData = result.Value;
+			var plistData = await YoutubeDlHelper.GetPlaylistAsync(id);
 			var plist = new Playlist().SetTitle(plistData.title ?? $"youtube-{id}");
 			plist.AddRange(plistData.entries
 				.Where(entry => entry.id != null)
@@ -355,21 +345,17 @@ namespace TS3AudioBot.ResourceFactories.Youtube
 			return plist;
 		}
 
-		private static R<PlayResource, LocalStr> YoutubeDlWrapped(AudioResource resource)
+		private static async Task<PlayResource> YoutubeDlWrapped(AudioResource resource)
 		{
 			Log.Debug("Falling back to youtube-dl!");
 
-			var result = YoutubeDlHelper.GetSingleVideo(resource.ResourceId);
-			if (!result.Ok)
-				return result.Error;
-
-			var response = result.Value;
+			var response = await YoutubeDlHelper.GetSingleVideo(resource.ResourceId);
 			resource.ResourceTitle = response.AutoTitle ?? $"Youtube-{resource.ResourceId}";
 			var format = YoutubeDlHelper.FilterBest(response.formats);
 			var url = format?.url;
 
 			if (string.IsNullOrEmpty(url))
-				return new LocalStr(strings.error_ytdl_empty_response);
+				throw Error.LocalStr(strings.error_ytdl_empty_response);
 
 			Log.Debug("youtube-dl succeeded!");
 			return new PlayResource(url, resource);
@@ -392,7 +378,7 @@ namespace TS3AudioBot.ResourceFactories.Youtube
 			return rc;
 		}
 
-		public R<Stream, LocalStr> GetThumbnail(ResolveContext _, PlayResource playResource)
+		public Task<Stream> GetThumbnail(ResolveContext _, PlayResource playResource)
 		{
 			// default  :  120px/ 90px /default.jpg
 			// medium   :  320px/180px /mqdefault.jpg
@@ -400,21 +386,21 @@ namespace TS3AudioBot.ResourceFactories.Youtube
 			// standard :  640px/480px /sddefault.jpg
 			// maxres   : 1280px/720px /maxresdefault.jpg
 			var imgurl = new Uri($"https://i.ytimg.com/vi/{playResource.AudioResource.ResourceId}/mqdefault.jpg");
-			return WebWrapper.GetResponseUnsafe(imgurl);
+			return WebWrapper.GetResponseUnsafeAsync(imgurl);
 		}
 
-		public R<IList<AudioResource>, LocalStr> Search(ResolveContext _, string keyword)
+		public async Task<IList<AudioResource>> Search(ResolveContext _, string keyword)
 		{
 			if (string.IsNullOrEmpty(YoutubeProjectId))
-				return SearchYoutubeDl(keyword);
+				return await SearchYoutubeDlAsync(keyword);
 			else
-				return SearchYoutubeApi(keyword);
+				return await SearchYoutubeApi(keyword);
 		}
 
-		public R<IList<AudioResource>, LocalStr> SearchYoutubeApi(string keyword)
+		public async Task<IList<AudioResource>> SearchYoutubeApi(string keyword)
 		{
 			const int maxResults = 10;
-			if (!WebWrapper.DownloadString(
+			var response = await WebWrapper.DownloadStringAsync(
 					"https://www.googleapis.com/youtube/v3/search"
 					+ "?part=snippet"
 					+ "&fields=" + Uri.EscapeDataString("items(id/videoId,snippet(channelTitle,title))")
@@ -422,8 +408,7 @@ namespace TS3AudioBot.ResourceFactories.Youtube
 					+ "&safeSearch=none"
 					+ "&q=" + Uri.EscapeDataString(keyword)
 					+ "&maxResults=" + maxResults
-					+ "&key=" + YoutubeProjectId).Get(out var response, out var error))
-				return error;
+					+ "&key=" + YoutubeProjectId);
 
 			var parsed = JsonConvert.DeserializeObject<JsonSearchListResponse>(response);
 			return parsed.items.Select(item => new AudioResource(
@@ -432,12 +417,9 @@ namespace TS3AudioBot.ResourceFactories.Youtube
 				ResolverFor)).ToArray();
 		}
 
-		public R<IList<AudioResource>, LocalStr> SearchYoutubeDl(string keyword)
+		public async Task<IList<AudioResource>> SearchYoutubeDlAsync(string keyword)
 		{
-			var result = YoutubeDlHelper.GetSearch(keyword);
-			if (!result.Ok)
-				return result.Error;
-			var search = result.Value;
+			var search = await YoutubeDlHelper.GetSearchAsync(keyword);
 
 			return search.entries
 				.Where(entry => entry.id != null)

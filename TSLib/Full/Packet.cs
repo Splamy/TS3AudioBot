@@ -9,6 +9,7 @@
 
 using System;
 using System.Buffers.Binary;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using TSLib.Helper;
 
@@ -130,7 +131,7 @@ namespace TSLib.Full
 			}
 			else
 			{
-				throw new NotSupportedException();
+				Trace.Fail("Invalid associated Packet Data");
 			}
 #if DEBUG
 			into.CopyTo(Header.AsSpan());
@@ -156,7 +157,7 @@ namespace TSLib.Full
 			}
 			else
 			{
-				throw new NotSupportedException();
+				Trace.Fail("Invalid associated Packet Data");
 			}
 		}
 	}

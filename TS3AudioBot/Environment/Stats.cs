@@ -108,7 +108,7 @@ namespace TS3AudioBot.Environment
 			try
 			{
 				Log.Debug("Send: {@data}", sendPacket);
-				var request = WebWrapper.CreateRequest(new Uri("https://splamy.de/api/tab/stats")).Unwrap();
+				var request = WebWrapper.CreateRequest(new Uri("https://splamy.de/api/tab/stats"));
 				request.Timeout = 2000; // ms
 				request.Method = "POST";
 				request.ContentType = "application/json";

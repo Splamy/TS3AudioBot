@@ -43,9 +43,9 @@ namespace TS3AudioBot.CommandSystem.Text
 		}
 
 		public readonly bool Equals(TextMod other) => Flags == other.Flags && HasColor == other.HasColor;
-		public readonly override bool Equals(object? obj) => obj is TextMod tm && Equals(tm);
+		public override readonly bool Equals(object? obj) => obj is TextMod tm && Equals(tm);
 		public static bool operator ==(TextMod a, TextMod b) => a.Flags == b.Flags && a.HasColor == b.HasColor;
 		public static bool operator !=(TextMod a, TextMod b) => a.Flags != b.Flags || a.HasColor != b.HasColor;
-		public readonly override int GetHashCode() => ((int)Flags << 28) | HasColor.GetHashCode();
+		public override readonly int GetHashCode() => ((int)Flags << 28) | HasColor.GetHashCode();
 	}
 }

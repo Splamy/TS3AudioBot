@@ -21,12 +21,9 @@ namespace TS3AudioBot.Config
 
 		public override void FromToml(TomlObject? tomlObject)
 		{
-			if (tomlObject != null)
+			if (tomlObject != null && tomlObject.TryGetValueArray<T>(out var array))
 			{
-				if (tomlObject.TryGetValueArray<T>(out var array))
-				{
-					Value = array;
-				}
+				Value = array;
 			}
 		}
 

@@ -29,7 +29,6 @@ namespace TSLib
 <#
 	// SEND UTILITY METHODS
 
-	foreach(var isAsync in new[]{ false, true })
 	foreach(var isHybrid in new[]{ false, true })
 	foreach(var hasReturn in new[]{ "dict", "T", "void" })
 	{
@@ -44,18 +43,16 @@ namespace TSLib
 		};
 
 		var retSuffix = Ret("", "", "Void");
-		var callTitle = "Send" + retSuffix + (isHybrid ? "Hybrid" : "") + (isAsync ? "Async" : "");
+		var callTitle = "Send" + retSuffix + (isHybrid ? "Hybrid" : "");
 		var retType = Ret(
-			"R<ResponseDictionary[], CommandError>",
-			"R<T[], CommandError>",
-			"E<CommandError>");
-		if (isAsync) retType = $"async Task<{retType}>";
+			"Task<R<ResponseDictionary[], CommandError>>",
+			"Task<R<T[], CommandError>>",
+			"Task<E<CommandError>>");
 		var genMod = Ret("", "<T>", "");
 		var genSuffix = Ret("", $" where T : {(isHybrid ? "class, " : "")}IResponse, new()", "");
-		var fwdPrefix = isAsync ? "await " : "";
 		var fwdModInfix = Ret("<ResponseDictionary>", "<T>", "<ResponseVoid>");
-		var fwdTitle = "Send" + (isHybrid ? "Hybrid" : "") + (isAsync ? "Async" : "");
-		var fwdSuffix = isAsync ? ".ConfigureAwait(false)" : "";
+		var fwdTitle = "Send" + (isHybrid ? "Hybrid" : "");
+		var fwdSuffix = Ret("", "", ".ContinueWith(t => t.Result.OnlyError())");
 	foreach(var vparam in new[]{ "cp", "com" })
 	{
 		if(vparam == "com" && callTitle == fwdTitle) continue;
@@ -86,7 +83,7 @@ namespace TSLib
 		/// <# if(isHybrid) { #><param name="type">The notification type to wait for and serialize to when called from the full client.</param><# } #>
 		/// <# if(hasReturn == "T") { #><returns>Returns an enumeration of the deserialized and split up in <see cref="T"/> objects data.</returns><# } #>
 		public <#= retType #> <#= callTitle #><#= genMod #>(<#= callParam #>)<#= genSuffix #>
-			=> <#= fwdPrefix #><#= fwdTitle #><#= fwdModInfix #>(<#= fwdParam #>)<#= fwdSuffix #>;
+			=> <#= fwdTitle #><#= fwdModInfix #>(<#= fwdParam #>)<#= fwdSuffix #>;
 <# }} #>
 
 #pragma warning disable CS0067

@@ -357,8 +357,8 @@ namespace TSLib.Full
 						if (self.closed != 0)
 							return;
 
-						if (self.socket is null) throw new ArgumentNullException(nameof(socket));
-						try { isAsync = self.socket.ReceiveFromAsync(args); }
+						Trace.Assert(self.socket != null, nameof(self.socket) + " is null");
+						try { isAsync = self.socket!.ReceiveFromAsync(args); }
 						catch (Exception ex) { Log.Debug(ex, "Error starting socket receive"); return; }
 					}
 				} while (!isAsync);
@@ -467,7 +467,7 @@ namespace TSLib.Full
 			SendAck(packet.PacketId, ackType);
 
 			// Check if we already have this packet and only need to ack it.
-			if (setStatus == ItemSetStatus.InWindowSet || setStatus == ItemSetStatus.OutOfWindowSet)
+			if (setStatus.HasFlag(ItemSetStatus.Set))
 				return false;
 
 			packetQueue.Set(packet.PacketId, packet);
@@ -511,7 +511,7 @@ namespace TSLib.Full
 
 			// GET
 			if (!packetQueue.TryDequeue(out packet))
-				throw new InvalidOperationException("Packet in queue got missing (?)");
+				Trace.Fail("Packet in queue got missing (?)");
 
 			// MERGE
 			if (take > 1)
@@ -525,7 +525,7 @@ namespace TSLib.Full
 				for (int i = 1; i < take; i++)
 				{
 					if (!packetQueue.TryDequeue(out var nextPacket))
-						throw new InvalidOperationException("Packet in queue got missing (?)");
+						Trace.Fail("Packet in queue got missing (?)");
 
 					nextPacket.Data.CopyTo(preFinalArray.AsSpan(curCopyPos, nextPacket.Size));
 					curCopyPos += nextPacket.Size;
@@ -553,10 +553,8 @@ namespace TSLib.Full
 		{
 			Span<byte> ackData = stackalloc byte[2];
 			BinaryPrimitives.WriteUInt16BigEndian(ackData, ackId);
-			if (ackType == PacketType.Ack || ackType == PacketType.AckLow)
-				AddOutgoingPacket(ackData, ackType);
-			else
-				throw new InvalidOperationException("Packet type is not an Ack-type");
+			Trace.Assert(ackType == PacketType.Ack || ackType == PacketType.AckLow, "Packet type is not an Ack-type");
+			AddOutgoingPacket(ackData, ackType);
 		}
 
 		private bool ReceiveAck(ref Packet<TIn> packet)
@@ -743,9 +741,9 @@ namespace TSLib.Full
 
 		private E<string> SendRaw(ref Packet<TOut> packet)
 		{
-			if (socket is null) throw new ArgumentNullException(nameof(socket));
-			if (packet.Raw is null) throw new ArgumentNullException(nameof(packet.Raw));
-			if (remoteAddress is null) throw new ArgumentNullException(nameof(remoteAddress));
+			Trace.Assert(socket != null, nameof(socket) + " is null");
+			Trace.Assert(packet.Raw != null, nameof(packet.Raw) + " is null");
+			Trace.Assert(remoteAddress != null, nameof(remoteAddress) + " is null");
 
 			NetworkStats.LogOutPacket(ref packet);
 
@@ -755,7 +753,7 @@ namespace TSLib.Full
 
 			try
 			{
-				socket.SendTo(packet.Raw, packet.Raw.Length, SocketFlags.None, remoteAddress);
+				socket!.SendTo(packet.Raw, packet.Raw.Length, SocketFlags.None, remoteAddress);
 				return R.Ok;
 			}
 			catch (SocketException ex)

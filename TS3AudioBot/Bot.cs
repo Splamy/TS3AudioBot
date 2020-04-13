@@ -264,26 +264,30 @@ namespace TS3AudioBot
 				serverGroups = bookClient.ServerGroups.ToArray();
 				channelGroup = bookClient.ChannelGroup;
 			}
-			else if (ts3client.GetClientInfoById(textMessage.InvokerId).Get(out var infoClient, out var infoClientError))
+			else if ((await ts3FullClient.ClientInfo(textMessage.InvokerId)).Get(out var infoClient, out var infoClientError))
 			{
 				channelId = infoClient.ChannelId;
 				databaseId = infoClient.DatabaseId;
 				serverGroups = infoClient.ServerGroups;
 				channelGroup = infoClient.ChannelGroup;
 			}
-			else if (ts3client.GetCachedClientById(textMessage.InvokerId).Get(out var cachedClient, out var cachedClientError))
-			{
-				channelId = cachedClient.ChannelId;
-				databaseId = cachedClient.DatabaseId;
-				channelGroup = cachedClient.ChannelGroup;
-			}
 			else
 			{
-				Log.Warn(
-					"The bot is missing teamspeak permissions to view the communicating client. " +
-					"Some commands or permission checks might not work " +
-					"(clientlist:{0}, clientinfo:{1}).",
-					cachedClientError.Str, infoClientError.Str);
+				try
+				{
+					var cachedClient = await ts3client.GetCachedClientById(textMessage.InvokerId);
+					channelId = cachedClient.ChannelId;
+					databaseId = cachedClient.DatabaseId;
+					channelGroup = cachedClient.ChannelGroup;
+				}
+				catch (AudioBotException cachedClientError)
+				{
+					Log.Warn(
+						"The bot is missing teamspeak permissions to view the communicating client. " +
+						"Some commands or permission checks might not work " +
+						"(clientlist:{0}, clientinfo:{1}).",
+						cachedClientError.Message, infoClientError.ErrorFormat());
+				}
 			}
 
 			var invoker = new ClientCall(textMessage.InvokerUid ?? Uid.Anonymous, textMessage.Message,
@@ -298,24 +302,20 @@ namespace TS3AudioBot
 			var session = sessionManager.GetOrCreateSession(textMessage.InvokerId);
 			var info = CreateExecInfo(invoker, session);
 
-			using (session.GetLock())
+			// check if the user has an open request
+			if (session.ResponseProcessor != null)
 			{
-				// check if the user has an open request
-				if (session.ResponseProcessor != null)
+				await TryCatchCommand(info, answer: true, async () =>
 				{
-					await TryCatchCommand(info, answer: true, () =>
-					{
-						var msg = session.ResponseProcessor(textMessage.Message);
-						if (!string.IsNullOrEmpty(msg))
-							info.Write(msg).UnwrapToLog(Log);
-						return Task.CompletedTask; // TODO: Async !!
-					});
-					session.ClearResponse();
-					return;
-				}
-
-				await CallScript(info, textMessage.Message, answer: true, false);
+					var msg = await session.ResponseProcessor(textMessage.Message);
+					if (!string.IsNullOrEmpty(msg))
+						await info.Write(msg).CatchToLog(Log);
+				});
+				session.ClearResponse();
+				return;
 			}
+
+			await CallScript(info, textMessage.Message, answer: true, false);
 		}
 
 		private void OnClientLeftView(object? sender, ClientLeftView eventArgs)
@@ -326,12 +326,12 @@ namespace TS3AudioBot
 
 		#region Status: Description, Avatar
 
-		public void UpdateBotStatus()
+		public Task UpdateBotStatus()
 		{
-			Scheduler.Invoke(UpdateBotStatusInternal);
+			return Scheduler.InvokeAsync(UpdateBotStatusInternal);
 		}
 
-		public void UpdateBotStatusInternal()
+		public async Task UpdateBotStatusInternal()
 		{
 			ValidateScheduler();
 
@@ -353,28 +353,28 @@ namespace TS3AudioBot
 				setString = strings.info_botstatus_sleeping;
 			}
 
-			ts3client.ChangeDescription(setString ?? "").UnwrapToLog(Log);
+			await ts3client.ChangeDescription(setString ?? "").CatchToLog(Log);
 		}
 
-		public void GenerateStatusImage(bool playing, PlayInfoEventArgs? startEvent)
+		public Task GenerateStatusImage(bool playing, PlayInfoEventArgs? startEvent)
 		{
-			Scheduler.Invoke(() => GenerateStatusImageInternal(playing, startEvent));
+			return Scheduler.InvokeAsync(() => GenerateStatusImageInternal(playing, startEvent));
 		}
 
-		public void GenerateStatusImageInternal(bool playing, PlayInfoEventArgs? startEvent)
+		public async Task GenerateStatusImageInternal(bool playing, PlayInfoEventArgs? startEvent)
 		{
 			ValidateScheduler();
 
 			if (!config.GenerateStatusAvatar || IsDisposed)
 				return;
 
-			Stream? GetRandomFile(string prefix)
+			static Stream? GetRandomFile(string? basePath, string prefix)
 			{
 				try
 				{
-					if (string.IsNullOrEmpty(config.LocalConfigDir))
+					if (string.IsNullOrEmpty(basePath))
 						return null;
-					var avatarPath = new DirectoryInfo(Path.Combine(config.LocalConfigDir, BotPaths.Avatars));
+					var avatarPath = new DirectoryInfo(Path.Combine(basePath, BotPaths.Avatars));
 					if (!avatarPath.Exists)
 						return null;
 					var avatars = avatarPath.EnumerateFiles(prefix).ToArray();
@@ -390,45 +390,44 @@ namespace TS3AudioBot
 				}
 			}
 
-			async Task Do()
+			Stream? setStream = null;
+			if (playing)
 			{
-				ValidateScheduler();
-				Stream? setStream = null;
-				if (playing)
-				{
-					if (startEvent != null && !QuizMode)
-						setStream ??= ImageUtil.ResizeImageSave(resourceResolver.GetThumbnail(startEvent.PlayResource).OkOr(null), out _).OkOr(null);
-					setStream ??= GetRandomFile("play*");
-				}
-				else
-				{
-					setStream ??= GetRandomFile("sleep*");
-					setStream ??= Util.GetEmbeddedFile("TS3AudioBot.Media.SleepingKitty.png");
-				}
-
-				if (setStream != null)
+				if (startEvent != null && !QuizMode)
 				{
 					try
 					{
-						using (setStream)
-						{
-							var result = await ts3client.UploadAvatar(setStream);
-							if (!result.Ok)
-								Log.Warn("Could not save avatar: {0}", result.Error);
-						}
+						using var thumbStream = await resourceResolver.GetThumbnail(startEvent.PlayResource);
+						setStream = (await ImageUtil.ResizeImageSave(thumbStream)).Stream;
 					}
-					catch (Exception ex)
-					{
-						Log.Warn(ex, "Could not save avatar");
-					}
+					catch (AudioBotException ex) { Log.Debug(ex, "Failed to fetch thumbnail image"); }
 				}
-				else
-				{
-					ts3client.DeleteAvatar().UnwrapToLog(Log);
-				}
+				setStream ??= GetRandomFile(config.LocalConfigDir, "play*");
+			}
+			else
+			{
+				setStream ??= GetRandomFile(config.LocalConfigDir, "sleep*");
+				setStream ??= Util.GetEmbeddedFile("TS3AudioBot.Media.SleepingKitty.png");
 			}
 
-			Do().ErrorToLog(Log);
+			if (setStream != null)
+			{
+				try
+				{
+					using (setStream)
+					{
+						await ts3client.UploadAvatar(setStream);
+					}
+				}
+				catch (Exception ex)
+				{
+					Log.Warn(ex, "Could not change avatar");
+				}
+			}
+			else
+			{
+				await ts3FullClient.DeleteAvatar().CatchToLog(Log);
+			}
 		}
 
 		#endregion
@@ -479,7 +478,7 @@ namespace TS3AudioBot
 				// Write result to user
 				var s = res.AsString();
 				if (!string.IsNullOrEmpty(s))
-					info.Write(s).UnwrapToLog(Log);
+					await info.Write(s).CatchToLog(Log);
 			});
 		}
 
@@ -556,15 +555,11 @@ namespace TS3AudioBot
 			if (string.IsNullOrEmpty(script))
 				return;
 
-			async Task RunEvent()
-			{
-				var info = CreateExecInfo();
-				await CallScript(info, script, false, true);
-			};
-
 			if (delay > TimeSpan.Zero) // TODO: Async (Add cancellation token for better consistency)
 				await Task.Delay(delay);
-			await RunEvent();
+
+			var info = CreateExecInfo();
+			await CallScript(info, script, false, true);
 		}
 
 		#endregion
@@ -575,23 +570,23 @@ namespace TS3AudioBot
 			{
 				await action.Invoke();
 			}
-			catch (CommandException ex)
+			catch (AudioBotException ex)
 			{
 				NLog.LogLevel commandErrorLevel = answer ? NLog.LogLevel.Debug : NLog.LogLevel.Warn;
 				Log.Log(commandErrorLevel, ex, "Command Error ({0})", ex.Message);
 				if (answer)
 				{
-					info.Write(TextMod.Format(config.Commands.Color, strings.error_call_error.Mod().Color(Color.Red).Bold(), ex.Message))
-						.UnwrapToLog(Log);
+					await info.Write(TextMod.Format(config.Commands.Color, strings.error_call_error.Mod().Color(Color.Red).Bold(), ex.Message))
+						.CatchToLog(Log);
 				}
 			}
 			catch (Exception ex)
 			{
-				Log.Error(ex, "Unexpected command error: {0}", ex.UnrollException());
+				Log.Error(ex, "Unexpected command error: {0}", ex.Message);
 				if (answer)
 				{
-					info.Write(TextMod.Format(config.Commands.Color, strings.error_call_unexpected_error.Mod().Color(Color.Red).Bold(), ex.Message))
-						.UnwrapToLog(Log);
+					await info.Write(TextMod.Format(config.Commands.Color, strings.error_call_unexpected_error.Mod().Color(Color.Red).Bold(), ex.Message))
+						.CatchToLog(Log);
 				}
 			}
 		}

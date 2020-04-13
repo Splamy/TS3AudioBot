@@ -11,7 +11,6 @@ using System;
 using System.Buffers;
 using System.IO;
 using System.IO.Pipelines;
-using System.Linq;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
@@ -19,7 +18,7 @@ using TSLib.Commands;
 using TSLib.Full.Book;
 using TSLib.Helper;
 using TSLib.Messages;
-using CmdR = System.E<TSLib.Messages.CommandError>;
+using CmdR = System.Threading.Tasks.Task<System.E<TSLib.Messages.CommandError>>;
 
 namespace TSLib.Query
 {
@@ -69,10 +68,10 @@ namespace TSLib.Query
 				tcpReader = new StreamReader(tcpStream, Tools.Utf8Encoder);
 				tcpWriter = new StreamWriter(tcpStream, Tools.Utf8Encoder) { NewLine = "\n" };
 
-				if (tcpReader.ReadLine() != "TS3")
+				if (await tcpReader.ReadLineAsync() != "TS3")
 					throw new TsException("Protocol violation. The stream must start with 'TS3'");
-				if (string.IsNullOrEmpty(tcpReader.ReadLine()))
-					tcpReader.ReadLine();
+				if (string.IsNullOrEmpty(await tcpReader.ReadLineAsync()))
+					await tcpReader.ReadLineAsync();
 			}
 			catch (SocketException ex) { throw new TsException("Could not connect.", ex); }
 			finally { connecting = false; }
@@ -129,7 +128,7 @@ namespace TSLib.Query
 				if (result.IsCompleted || result.IsCanceled)
 					break;
 			}
-			writer.Complete();
+			await writer.CompleteAsync();
 		}
 
 		private async Task PipeProcessorAsync(PipeReader reader, CancellationToken cancelationToken = default)
@@ -163,38 +162,23 @@ namespace TSLib.Query
 					break;
 			}
 
-			reader.Complete();
+			await reader.CompleteAsync();
 		}
 
-		public override R<T[], CommandError> Send<T>(TsCommand com)
+		public override Task<R<T[], CommandError>> Send<T>(TsCommand com)
 		{
-			using var wb = new WaitBlockSync(msgProc.Deserializer);
+			using var wb = new WaitBlock(msgProc.Deserializer);
 			lock (sendQueueLock)
 			{
 				msgProc.EnqueueRequest(wb);
 				SendRaw(com.ToString());
 			}
 
-			return wb.WaitForMessage<T>();
+			return wb.WaitForMessageAsync<T>();
 		}
 
-		public override R<T[], CommandError> SendHybrid<T>(TsCommand com, NotificationType type)
+		public override Task<R<T[], CommandError>> SendHybrid<T>(TsCommand com, NotificationType type)
 			=> Send<T>(com);
-
-		public override async Task<R<T[], CommandError>> SendAsync<T>(TsCommand com)
-		{
-			using var wb = new WaitBlockAsync(msgProc.Deserializer);
-			lock (sendQueueLock)
-			{
-				msgProc.EnqueueRequest(wb);
-				SendRaw(com.ToString());
-			}
-
-			return await wb.WaitForMessageAsync<T>();
-		}
-
-		public override Task<R<T[], CommandError>> SendHybridAsync<T>(TsCommand com, NotificationType type)
-			=> SendAsync<T>(com);
 
 		private void SendRaw(string data)
 		{
@@ -241,26 +225,28 @@ namespace TSLib.Query
 
 		// Splitted base commands
 
-		public override R<IChannelCreateResponse, CommandError> ChannelCreate(string name,
+		public override async Task<R<IChannelCreateResponse, CommandError>> ChannelCreate(string name,
 			string? namePhonetic = null, string? topic = null, string? description = null, string? password = null,
 			Codec? codec = null, int? codecQuality = null, int? codecLatencyFactor = null, bool? codecEncrypted = null,
 			int? maxClients = null, int? maxFamilyClients = null, bool? maxClientsUnlimited = null,
 			bool? maxFamilyClientsUnlimited = null, bool? maxFamilyClientsInherited = null, ChannelId? order = null,
 			ChannelId? parent = null, ChannelType? type = null, TimeSpan? deleteDelay = null, int? neededTalkPower = null)
-			=> Send<ChannelCreateResponse>(ChannelOp("channelcreate", null, name, namePhonetic, topic, description,
+		{
+			var result = await Send<ChannelCreateResponse>(ChannelOp("channelcreate", null, name, namePhonetic, topic, description,
 				password, codec, codecQuality, codecLatencyFactor, codecEncrypted,
 				maxClients, maxFamilyClients, maxClientsUnlimited, maxFamilyClientsUnlimited,
-				maxFamilyClientsInherited, order, parent, type, deleteDelay, neededTalkPower))
-				.WrapSingle()
+				maxFamilyClientsInherited, order, parent, type, deleteDelay, neededTalkPower));
+			return result.MapToSingle()
 				.WrapInterface<ChannelCreateResponse, IChannelCreateResponse>();
+		}
 
-		public override R<ServerGroupAddResponse, CommandError> ServerGroupAdd(string name, GroupType? type = null)
+		public override Task<R<ServerGroupAddResponse, CommandError>> ServerGroupAdd(string name, GroupType? type = null)
 			=> Send<ServerGroupAddResponse>(new TsCommand("servergroupadd") {
 				{ "name", name },
 				{ "type", (int?)type }
-			}).WrapSingle();
+			}).MapToSingle();
 
-		public override R<FileUpload, CommandError> FileTransferInitUpload(ChannelId channelId, string path, string channelPassword,
+		public override Task<R<FileUpload, CommandError>> FileTransferInitUpload(ChannelId channelId, string path, string channelPassword,
 			ushort clientTransferId, long fileSize, bool overwrite, bool resume)
 			=> Send<FileUpload>(new TsCommand("ftinitupload") {
 				{ "cid", channelId },
@@ -270,9 +256,9 @@ namespace TSLib.Query
 				{ "size", fileSize },
 				{ "overwrite", overwrite },
 				{ "resume", resume }
-			}).WrapSingle();
+			}).MapToSingle();
 
-		public override R<FileDownload, CommandError> FileTransferInitDownload(ChannelId channelId, string path, string channelPassword,
+		public override Task<R<FileDownload, CommandError>> FileTransferInitDownload(ChannelId channelId, string path, string channelPassword,
 			ushort clientTransferId, long seek)
 			=> Send<FileDownload>(new TsCommand("ftinitdownload") {
 				{ "cid", channelId },
@@ -280,7 +266,7 @@ namespace TSLib.Query
 				{ "cpw", channelPassword },
 				{ "clientftfid", clientTransferId },
 				{ "seekpos", seek }
-			}).WrapSingle();
+			}).MapToSingle();
 
 		#endregion
 

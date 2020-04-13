@@ -125,7 +125,7 @@ namespace TS3AudioBot.CommandSystem
 			info.UseComplexityTokens(1);
 
 			// Check permissions
-			if (!info.HasRights(requiredRights))
+			if (!await info.HasRights(requiredRights))
 				throw new CommandException(string.Format(strings.error_missing_right, InvokeName, RequiredRight), CommandExceptionReason.MissingRights);
 
 			return await base.Execute(info, arguments);

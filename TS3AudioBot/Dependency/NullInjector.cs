@@ -11,7 +11,7 @@ using System;
 
 namespace TS3AudioBot.Dependency
 {
-	public class NullInjector : IInjector
+	public sealed class NullInjector : IInjector
 	{
 		public static readonly IInjector Instance = new NullInjector();
 		private NullInjector() { }

@@ -21,7 +21,6 @@ namespace TS3AudioBot.Localization
 
 		public DynamicResourceManager(string baseName, Assembly assembly) : base(baseName, assembly)
 		{
-
 		}
 
 		public void SetResourceSet(CultureInfo culture, ResourceSet set)

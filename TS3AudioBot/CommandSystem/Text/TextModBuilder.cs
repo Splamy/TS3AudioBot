@@ -120,7 +120,7 @@ namespace TS3AudioBot.CommandSystem.Text
 			if (flag.HasFlag(TextModFlag.Underline))
 				strb.Append("[/U]");
 			if (flag.HasFlag(TextModFlag.Color))
-				strb.Append($"[/COLOR]");
+				strb.Append("[/COLOR]");
 			return cur & ~mod;
 		}
 

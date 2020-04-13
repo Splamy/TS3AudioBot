@@ -10,6 +10,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using TS3AudioBot.Config;
 using TS3AudioBot.Environment;
 using TS3AudioBot.Helper;
@@ -49,24 +50,25 @@ namespace TS3AudioBot.Audio
 			this.stats = stats;
 		}
 
-		public E<LocalStr> Enqueue(InvokerData invoker, AudioResource ar, MetaData? meta = null) => Enqueue(invoker, new PlaylistItem(ar, meta));
-		public E<LocalStr> Enqueue(InvokerData invoker, string message, string? audioType = null, MetaData? meta = null)
+		public Task Enqueue(InvokerData invoker, AudioResource ar, MetaData? meta = null) => Enqueue(invoker, new PlaylistItem(ar, meta));
+		public async Task Enqueue(InvokerData invoker, string message, string? audioType = null, MetaData? meta = null)
 		{
-			var result = resourceResolver.Load(message, audioType);
-			if (!result)
+			PlayResource playResource;
+			try { playResource = await resourceResolver.Load(message, audioType); }
+			catch
 			{
 				stats.TrackSongLoad(audioType, false, true);
-				return result.Error;
+				throw;
 			}
-			return Enqueue(invoker, PlaylistItem.From(result.Value).MergeMeta(meta));
+			await Enqueue(invoker, PlaylistItem.From(playResource).MergeMeta(meta));
 		}
-		public E<LocalStr> Enqueue(InvokerData invoker, IEnumerable<PlaylistItem> items)
+		public Task Enqueue(InvokerData invoker, IEnumerable<PlaylistItem> items)
 		{
 			var startOff = playlistManager.CurrentList.Items.Count;
 			playlistManager.Queue(items.Select(x => UpdateItem(invoker, x)));
 			return PostEnqueue(invoker, startOff);
 		}
-		public E<LocalStr> Enqueue(InvokerData invoker, PlaylistItem item)
+		public Task Enqueue(InvokerData invoker, PlaylistItem item)
 		{
 			var startOff = playlistManager.CurrentList.Items.Count;
 			playlistManager.Queue(UpdateItem(invoker, item));
@@ -80,12 +82,12 @@ namespace TS3AudioBot.Audio
 			return item;
 		}
 
-		private E<LocalStr> PostEnqueue(InvokerData invoker, int startIndex)
+		private async Task PostEnqueue(InvokerData invoker, int startIndex)
 		{
 			if (IsPlaying)
-				return R.Ok;
+				return;
 			playlistManager.Index = startIndex;
-			return StartCurrent(invoker);
+			await StartCurrent(invoker);
 		}
 
 		/// <summary>Tries to play the passed <see cref="AudioResource"/></summary>
@@ -93,18 +95,19 @@ namespace TS3AudioBot.Audio
 		/// <param name="ar">The resource to load and play.</param>
 		/// <param name="meta">Allows overriding certain settings for the resource. Can be null.</param>
 		/// <returns>Ok if successful, or an error message otherwise.</returns>
-		public E<LocalStr> Play(InvokerData invoker, AudioResource ar, MetaData? meta = null)
+		public async Task Play(InvokerData invoker, AudioResource ar, MetaData? meta = null)
 		{
 			if (ar is null)
 				throw new ArgumentNullException(nameof(ar));
 
-			var result = resourceResolver.Load(ar);
-			if (!result)
+			PlayResource playResource;
+			try { playResource = await resourceResolver.Load(ar); }
+			catch
 			{
 				stats.TrackSongLoad(ar.AudioType, false, true);
-				return result.Error;
+				throw;
 			}
-			return Play(invoker, result.Value.MergeMeta(meta));
+			await Play(invoker, playResource.MergeMeta(meta));
 		}
 
 		/// <summary>Tries to play the passed link.</summary>
@@ -113,18 +116,19 @@ namespace TS3AudioBot.Audio
 		/// <param name="audioType">The associated resource type string to a factory.</param>
 		/// <param name="meta">Allows overriding certain settings for the resource. Can be null.</param>
 		/// <returns>Ok if successful, or an error message otherwise.</returns>
-		public E<LocalStr> Play(InvokerData invoker, string link, string? audioType = null, MetaData? meta = null)
+		public async Task Play(InvokerData invoker, string link, string? audioType = null, MetaData? meta = null)
 		{
-			var result = resourceResolver.Load(link, audioType);
-			if (!result)
+			PlayResource playResource;
+			try { playResource = await resourceResolver.Load(link, audioType); }
+			catch
 			{
 				stats.TrackSongLoad(audioType, false, true);
-				return result.Error;
+				throw;
 			}
-			return Play(invoker, result.Value.MergeMeta(meta));
+			await Play(invoker, playResource.MergeMeta(meta));
 		}
 
-		public E<LocalStr> Play(InvokerData invoker, IEnumerable<PlaylistItem> items, int index = 0)
+		public Task Play(InvokerData invoker, IEnumerable<PlaylistItem> items, int index = 0)
 		{
 			playlistManager.Clear();
 			playlistManager.Queue(items.Select(x => UpdateItem(invoker, x)));
@@ -132,7 +136,7 @@ namespace TS3AudioBot.Audio
 			return StartCurrent(invoker);
 		}
 
-		public E<LocalStr> Play(InvokerData invoker, PlaylistItem item)
+		public Task Play(InvokerData invoker, PlaylistItem item)
 		{
 			if (item is null)
 				throw new ArgumentNullException(nameof(item));
@@ -145,14 +149,14 @@ namespace TS3AudioBot.Audio
 			return StartResource(invoker, item);
 		}
 
-		public E<LocalStr> Play(InvokerData invoker) => StartCurrent(invoker);
+		public Task Play(InvokerData invoker) => StartCurrent(invoker);
 
 		/// <summary>Plays the passed <see cref="PlayResource"/></summary>
 		/// <param name="invoker">The invoker of this resource. Used for responses and association.</param>
 		/// <param name="play">The associated resource type string to a factory.</param>
 		/// <param name="meta">Allows overriding certain settings for the resource.</param>
 		/// <returns>Ok if successful, or an error message otherwise.</returns>
-		public E<LocalStr> Play(InvokerData invoker, PlayResource play)
+		public Task Play(InvokerData invoker, PlayResource play)
 		{
 			playlistManager.Clear();
 			playlistManager.Queue(PlaylistItem.From(play));
@@ -161,102 +165,102 @@ namespace TS3AudioBot.Audio
 			return StartResource(invoker, play);
 		}
 
-		private E<LocalStr> StartResource(InvokerData invoker, PlaylistItem item)
+		private async Task StartResource(InvokerData invoker, PlaylistItem item)
 		{
-			var result = resourceResolver.Load(item.AudioResource);
-			stats.TrackSongLoad(item.AudioResource.AudioType, result.Ok, false);
-			if (!result)
-				return result.Error;
-			return StartResource(invoker, result.Value.MergeMeta(item.Meta));
+			PlayResource playResource;
+			try { playResource = await resourceResolver.Load(item.AudioResource); }
+			catch
+			{
+				stats.TrackSongLoad(item.AudioResource.AudioType, false, false);
+				throw;
+			}
+			stats.TrackSongLoad(item.AudioResource.AudioType, true, false);
+			await StartResource(invoker, playResource.MergeMeta(item.Meta));
 		}
 
-		private E<LocalStr> StartResource(InvokerData invoker, PlayResource play)
+		private async Task StartResource(InvokerData invoker, PlayResource play)
 		{
-			var sourceLink = resourceResolver.RestoreLink(play.AudioResource).OkOr(null);
+			var sourceLink = resourceResolver.RestoreLink(play.AudioResource);
 			var playInfo = new PlayInfoEventArgs(invoker, play, sourceLink);
 			BeforeResourceStarted?.Invoke(this, playInfo);
 
 			if (string.IsNullOrWhiteSpace(play.PlayUri))
 			{
 				Log.Error("Internal resource error: link is empty (resource:{0})", play);
-				return new LocalStr(strings.error_playmgr_internal_error);
+				throw Error.LocalStr(strings.error_playmgr_internal_error);
 			}
 
 			Log.Debug("AudioResource start: {0}", play);
-			var result = playerConnection.Play(play);
-			if (!result)
+			try { await playerConnection.Play(play); }
+			catch (AudioBotException ex)
 			{
-				Log.Error("Error return from player: {0}", result.Error);
-				return new LocalStr(strings.error_playmgr_internal_error);
+				Log.Error("Error return from player: {0}", ex.Message);
+				throw Error.LocalStr(strings.error_playmgr_internal_error).Exception(ex);
 			}
 
 			playerConnection.Volume = Tools.Clamp(playerConnection.Volume, confBot.Audio.Volume.Min, confBot.Audio.Volume.Max);
 			CurrentPlayData = playInfo; // TODO meta as readonly
 			AfterResourceStarted?.Invoke(this, playInfo);
-
-			return R.Ok;
 		}
 
-		private E<LocalStr> StartCurrent(InvokerData invoker, bool manually = true)
+		private async Task StartCurrent(InvokerData invoker, bool manually = true)
 		{
 			var pli = playlistManager.Current;
 			if (pli is null)
-				return new LocalStr(strings.error_playlist_is_empty);
-			var result = StartResource(invoker, pli);
-			if (result.Ok)
-				return result;
-			Log.Warn("Skipping: {0} because {1}", pli, result.Error.Str);
-			return Next(invoker, manually);
+				throw Error.LocalStr(strings.error_playlist_is_empty);
+			try
+			{
+				await StartResource(invoker, pli);
+			}
+			catch (AudioBotException ex)
+			{
+				Log.Warn("Skipping: {0} because {1}", pli, ex.Message);
+				await Next(invoker, manually);
+			}
 		}
 
-		public E<LocalStr> Next(InvokerData invoker, bool manually = true)
+		public async Task Next(InvokerData invoker, bool manually = true)
 		{
 			PlaylistItem? pli = null;
 			for (int i = 0; i < 10; i++)
 			{
 				if ((pli = playlistManager.Next(manually)) is null) break;
-				var result = StartResource(invoker, pli);
-				if (result.Ok)
-					return result;
-				Log.Warn("Skipping: {0} because {1}", pli, result.Error.Str);
+				try { await StartResource(invoker, pli); }
+				catch (AudioBotException ex) { Log.Warn("Skipping: {0} because {1}", pli, ex.Message); }
 			}
 			if (pli is null)
-				return new LocalStr(strings.info_playmgr_no_next_song);
+				throw Error.LocalStr(strings.info_playmgr_no_next_song);
 			else
-				return new LocalStr(string.Format(strings.error_playmgr_many_songs_failed, "!next"));
+				throw Error.LocalStr(string.Format(strings.error_playmgr_many_songs_failed, "!next"));
 		}
 
-		public E<LocalStr> Previous(InvokerData invoker, bool manually = true)
+		public async Task Previous(InvokerData invoker, bool manually = true)
 		{
 			PlaylistItem? pli = null;
 			for (int i = 0; i < 10; i++)
 			{
 				if ((pli = playlistManager.Previous(manually)) is null) break;
-				var result = StartResource(invoker, pli);
-				if (result.Ok)
-					return result;
-				Log.Warn("Skipping: {0} because {1}", pli, result.Error.Str);
+				try { await StartResource(invoker, pli); }
+				catch (AudioBotException ex) { Log.Warn("Skipping: {0} because {1}", pli, ex.Message); }
 			}
 			if (pli is null)
-				return new LocalStr(strings.info_playmgr_no_previous_song);
+				throw Error.LocalStr(strings.info_playmgr_no_previous_song);
 			else
-				return new LocalStr(string.Format(strings.error_playmgr_many_songs_failed, "!previous"));
+				throw Error.LocalStr(string.Format(strings.error_playmgr_many_songs_failed, "!previous"));
 		}
 
 		public void SongStoppedEvent(object? sender, EventArgs e) => StopInternal(true);
 
-		public void Stop() => StopInternal(false);
+		public Task Stop() => StopInternal(false);
 
-		private void StopInternal(bool songEndedByCallback)
+		private async Task StopInternal(bool songEndedByCallback)
 		{
 			ResourceStopped?.Invoke(this, new SongEndEventArgs(songEndedByCallback));
 
 			if (songEndedByCallback)
 			{
-				var result = Next(CurrentPlayData?.Invoker ?? InvokerData.Anonymous, false);
-				if (result.Ok)
-					return;
-				Log.Info("Song queue ended: {0}", result.Error);
+				try { await Next(CurrentPlayData?.Invoker ?? InvokerData.Anonymous, false); }
+				catch (AudioBotException ex) { Log.Info("Song queue ended: {0}", ex.Message); }
 			}
 			else
 			{

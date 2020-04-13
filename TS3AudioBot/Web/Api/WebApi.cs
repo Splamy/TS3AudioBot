@@ -123,8 +123,7 @@ namespace TS3AudioBot.Web.Api
 					response.StatusCode = (int)HttpStatusCode.OK;
 					using (response.Body)
 					{
-						if (!data.WriteOut(response))
-							response.StatusCode = (int)HttpStatusCode.NotFound;
+						await data.WriteOut(response);
 					}
 				}
 				else
@@ -138,7 +137,7 @@ namespace TS3AudioBot.Web.Api
 					await responseStream.WriteAsync(returnString);
 				}
 			}
-			catch (CommandException ex)
+			catch (AudioBotException ex)
 			{
 				await ReturnError(ex, response);
 			}

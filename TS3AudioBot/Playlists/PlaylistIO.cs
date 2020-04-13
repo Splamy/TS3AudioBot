@@ -66,11 +66,8 @@ namespace TS3AudioBot.Playlists
 
 				if (!hasWriteLock)
 				{
-					if (hasReadLock)
-					{
-						rwLock.ExitReadLock();
-						hasReadLock = false;
-					}
+					rwLock.ExitReadLock();
+					hasReadLock = false;
 
 					rwLock.EnterWriteLock();
 					hasWriteLock = true;
@@ -237,7 +234,6 @@ namespace TS3AudioBot.Playlists
 				{
 					Formatting = Formatting.None,
 				};
-
 
 				var meta = playlistInfo.GetOrNew(listId);
 				meta.Title = plist.Title;

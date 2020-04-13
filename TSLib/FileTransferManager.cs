@@ -8,36 +8,19 @@
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
-using TSLib.Helper;
 using TSLib.Messages;
 using IOFileInfo = System.IO.FileInfo;
 
 namespace TSLib
 {
-	/// <summary>Queues and manages up- and downloads.</summary>
-	public sealed class FileTransferManager
+	partial class TsBaseFunctions
 	{
-		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
-		private readonly TsBaseFunctions parent;
-		private readonly Queue<FileTransferToken> transferQueue = new Queue<FileTransferToken>();
-		private Thread? workerThread;
-		private bool threadEnd;
-		private ushort transferIdCnt;
-
-		public FileTransferManager(TsBaseFunctions tsConnection)
-		{
-			parent = tsConnection;
-			//tsconnection.OnFileTransferStatus += FileStatusNotification;
-		}
-
 		/// <summary>Initiate a file upload to the server.</summary>
 		/// <param name="file">Local file to upload.</param>
 		/// <param name="channel">The channel id to upload to.</param>
@@ -46,7 +29,7 @@ namespace TSLib
 		/// False will throw an exception if the file already exists.</param>
 		/// <param name="channelPassword">The password for the channel.</param>
 		/// <returns>A token to track the file transfer.</returns>
-		public R<FileTransferToken, CommandError> UploadFile(IOFileInfo file, ChannelId channel, string path, bool overwrite = false, string channelPassword = "")
+		public Task<R<FileTransferToken, CommandError>> UploadFile(IOFileInfo file, ChannelId channel, string path, bool overwrite = false, string channelPassword = "")
 			=> UploadFile(file.Open(FileMode.Open, FileAccess.Read), channel, path, overwrite, channelPassword);
 
 		/// <summary>Initiate a file upload to the server.</summary>
@@ -59,17 +42,17 @@ namespace TSLib
 		/// <param name="closeStream">True will <see cref="IDisposable.Dispose"/> the stream after the upload is finished.</param>
 		/// <param name="createMd5">Will generate a md5 sum of the uploaded file.</param>
 		/// <returns>A token to track the file transfer.</returns>
-		public R<FileTransferToken, CommandError> UploadFile(Stream stream, ChannelId channel, string path, bool overwrite = false, string channelPassword = "", bool closeStream = true, bool createMd5 = false)
+		public async Task<R<FileTransferToken, CommandError>> UploadFile(Stream stream, ChannelId channel, string path, bool overwrite = false, string channelPassword = "", bool closeStream = true, bool createMd5 = false)
 		{
 			ushort cftid = GetFreeTransferId();
-			var request = parent.FileTransferInitUpload(channel, path, channelPassword, cftid, stream.Length, overwrite, false);
+			var request = await FileTransferInitUpload(channel, path, channelPassword, cftid, stream.Length, overwrite, false);
 			if (!request.Ok)
 			{
 				if (closeStream) stream.Close();
 				return request.Error;
 			}
 			var token = new FileTransferToken(stream, request.Value, channel, path, channelPassword, stream.Length, createMd5) { CloseStreamWhenDone = closeStream };
-			StartWorker(token);
+			await Transfer(token);
 			return token;
 		}
 
@@ -79,7 +62,7 @@ namespace TSLib
 		/// <param name="path">The download path within the channel. Eg: "file.txt", "path/file.png"</param>
 		/// <param name="channelPassword">The password for the channel.</param>
 		/// <returns>A token to track the file transfer.</returns>
-		public R<FileTransferToken, CommandError> DownloadFile(IOFileInfo file, ChannelId channel, string path, string channelPassword = "")
+		public Task<R<FileTransferToken, CommandError>> DownloadFile(IOFileInfo file, ChannelId channel, string path, string channelPassword = "")
 			=> DownloadFile(file.Open(FileMode.Create, FileAccess.Write), channel, path, channelPassword, true);
 
 		/// <summary>Initiate a file download from the server.</summary>
@@ -89,207 +72,161 @@ namespace TSLib
 		/// <param name="channelPassword">The password for the channel.</param>
 		/// <param name="closeStream">True will <see cref="IDisposable.Dispose"/> the stream after the download is finished.</param>
 		/// <returns>A token to track the file transfer.</returns>
-		public R<FileTransferToken, CommandError> DownloadFile(Stream stream, ChannelId channel, string path, string channelPassword = "", bool closeStream = true)
+		public async Task<R<FileTransferToken, CommandError>> DownloadFile(Stream stream, ChannelId channel, string path, string channelPassword = "", bool closeStream = true)
 		{
 			ushort cftid = GetFreeTransferId();
-			var request = parent.FileTransferInitDownload(channel, path, channelPassword, cftid, 0);
+			var request = await FileTransferInitDownload(channel, path, channelPassword, cftid, 0);
 			if (!request.Ok)
 			{
 				if (closeStream) stream.Close();
 				return request.Error;
 			}
 			var token = new FileTransferToken(stream, request.Value, channel, path, channelPassword, 0) { CloseStreamWhenDone = closeStream };
-			StartWorker(token);
-			return token;
+			return await Transfer(token);
 		}
 
-		private void StartWorker(FileTransferToken token)
+		private async Task<R<FileTransferToken, CommandError>> Transfer(FileTransferToken token)
 		{
-			lock (transferQueue)
+			try
 			{
-				transferQueue.Enqueue(token);
-
-				if (threadEnd || workerThread is null || !workerThread.IsAlive)
+				if (remoteAddress is null)
 				{
-					threadEnd = false;
-					var logId = parent.ConnectionData?.LogId ?? Id.Null;
-					workerThread = new Thread(() => { Tools.SetLogId(logId); TransferLoop(); }) { Name = $"FileTransfer[{logId}]" };
-					workerThread.Start();
+					token.Status = TransferStatus.Failed;
+					Log.Trace("Client is not connected. Transfer failed {@token}", token);
+					return CommandError.ConnectionClosed;
 				}
-			}
-		}
+				if (token.Status != TransferStatus.Waiting)
+					return CommandError.Custom("Token is not open");
+				token.Status = TransferStatus.Transfering;
 
-		private ushort GetFreeTransferId()
-		{
-			return unchecked(++transferIdCnt);
-		}
+				Log.Trace("Creating new file transfer connection to {0}", remoteAddress);
+				using var client = new TcpClient(remoteAddress.AddressFamily);
+				try { await client.ConnectAsync(remoteAddress.Address, token.Port); }
+				catch (SocketException ex)
+				{
+					Log.Warn(ex, "SocketException trying to connect to filetransfer port");
+					token.Status = TransferStatus.Failed;
+					return CommandError.ConnectionClosed;
+				}
+				using var md5Dig = token.CreateMd5 ? MD5.Create() : null;
+				using var stream = client.GetStream();
+				byte[] keyBytes = Encoding.ASCII.GetBytes(token.TransferKey);
+				await stream.WriteAsync(keyBytes, 0, keyBytes.Length);
 
-		/// <summary>Resumes a download from a previously stopped position.</summary>
-		/// <param name="token">The aborted token.</param>
-		public E<CommandError> Resume(FileTransferToken token)
-		{
-			lock (token)
-			{
-				if (token.Status != TransferStatus.Cancelled)
-					return CommandError.Custom("Only cancelled transfers can be resumed");
+				if (token.SeekPosition >= 0 && token.LocalStream.Position != token.SeekPosition)
+					token.LocalStream.Seek(token.SeekPosition, SeekOrigin.Begin);
 
 				if (token.Direction == TransferDirection.Upload)
 				{
-					var result = parent.FileTransferInitUpload(token.ChannelId, token.Path, token.ChannelPassword, token.ClientTransferId, token.Size, false, true);
-					if (!result.Ok)
-						return result.Error;
-					var request = result.Value;
-					token.ServerTransferId = request.ServerFileTransferId;
-					token.SeekPosition = (long)request.SeekPosition;
-					token.Port = request.Port;
-					token.TransferKey = request.FileTransferKey;
+					// https://referencesource.microsoft.com/#mscorlib/system/io/stream.cs,2a0f078c2e0c0aa8,references
+					const int bufferSize = 81920;
+					var buffer = new byte[bufferSize];
+					int read;
+					md5Dig?.Initialize();
+					while ((read = await token.LocalStream.ReadAsync(buffer, 0, buffer.Length)) != 0)
+					{
+						await stream.WriteAsync(buffer, 0, read);
+						md5Dig?.TransformBlock(buffer, 0, read, buffer, 0);
+					}
+					md5Dig?.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
+					token.Md5Sum = md5Dig?.Hash;
 				}
 				else // Download
 				{
-					var result = parent.FileTransferInitDownload(token.ChannelId, token.Path, token.ChannelPassword, token.ClientTransferId, token.LocalStream.Position);
-					if (!result.Ok)
-						return result.Error;
-					var request = result.Value;
-					token.ServerTransferId = request.ServerFileTransferId;
-					token.SeekPosition = -1;
-					token.Port = request.Port;
-					token.TransferKey = request.FileTransferKey;
+					// try to preallocate space
+					try { token.LocalStream.SetLength(token.Size); }
+					catch (NotSupportedException) { }
+
+					await stream.CopyToAsync(token.LocalStream);
 				}
-				token.ResetTask();
-				token.SetStatus(TransferStatus.Waiting);
+				if (token.Status == TransferStatus.Transfering && token.LocalStream.Position == token.Size)
+				{
+					token.Status = TransferStatus.Done;
+					if (token.CloseStreamWhenDone)
+						token.LocalStream.Close();
+				}
 			}
-			StartWorker(token);
-			return E<CommandError>.OkR;
+			catch (IOException ex)
+			{
+				Log.Debug(ex, "IOException during filetransfer");
+			}
+			catch (Exception ex)
+			{
+				Log.Error(ex, "Exception during filetransfer");
+			}
+			finally
+			{
+				if (token.Status != TransferStatus.Done && token.Status != TransferStatus.Cancelled)
+					token.Status = TransferStatus.Failed;
+			}
+			return token;
+		}
+
+		private ushort GetFreeTransferId() => unchecked(++transferIdCnt);
+
+		/// <summary>Resumes a download from a previously stopped position.</summary>
+		/// <param name="token">The aborted token.</param>
+		public async Task<E<CommandError>> Resume(FileTransferToken token)
+		{
+			if (token.Status != TransferStatus.Cancelled)
+				return CommandError.Custom("Only cancelled transfers can be resumed");
+
+			if (token.Direction == TransferDirection.Upload)
+			{
+				var result = await FileTransferInitUpload(token.ChannelId, token.Path, token.ChannelPassword, token.ClientTransferId, token.Size, false, true);
+				if (!result.Ok)
+					return result.Error;
+				var request = result.Value;
+				token.ServerTransferId = request.ServerFileTransferId;
+				token.SeekPosition = (long)request.SeekPosition;
+				token.Port = request.Port;
+				token.TransferKey = request.FileTransferKey;
+			}
+			else // Download
+			{
+				var result = await FileTransferInitDownload(token.ChannelId, token.Path, token.ChannelPassword, token.ClientTransferId, token.LocalStream.Position);
+				if (!result.Ok)
+					return result.Error;
+				var request = result.Value;
+				token.ServerTransferId = request.ServerFileTransferId;
+				token.SeekPosition = -1;
+				token.Port = request.Port;
+				token.TransferKey = request.FileTransferKey;
+			}
+
+			token.Status = TransferStatus.Waiting;
+
+			return await Transfer(token);
 		}
 
 		/// <summary>Stops an active transfer.</summary>
 		/// <param name="token">The token to abort.</param>
 		/// <param name="delete">True to delete the file.
 		/// False to only temporarily stop the transfer (can be resumed again with <see cref="Resume"/>).</param>
-		public void Abort(FileTransferToken token, bool delete = false)
+		public async Task Abort(FileTransferToken token, bool delete = false)
 		{
-			lock (token)
+			if (token.Status != TransferStatus.Transfering && token.Status != TransferStatus.Waiting)
+				return;
+			await FileTransferStop(token.ServerTransferId, delete);
+			token.Status = TransferStatus.Cancelled;
+			if (delete && token.CloseStreamWhenDone)
 			{
-				if (token.Status != TransferStatus.Transfering && token.Status != TransferStatus.Waiting)
-					return;
-				parent.FileTransferStop(token.ServerTransferId, delete);
-				token.SetStatus(TransferStatus.Cancelled);
-				if (delete && token.CloseStreamWhenDone)
-				{
-					token.LocalStream.Close();
-				}
+				token.LocalStream.Close();
 			}
 		}
 
 		/// <summary>Gets information about the current transfer status.</summary>
 		/// <param name="token">The transfer to check.</param>
 		/// <returns>Returns an information object or <code>null</code> when not available.</returns>
-		public R<FileTransfer, CommandError> GetStats(FileTransferToken token)
+		public async Task<R<FileTransfer, CommandError>> GetStats(FileTransferToken token)
 		{
-			lock (token)
-			{
-				if (token.Status != TransferStatus.Transfering)
-					return CommandError.Custom("No transfer found");
-			}
-			var result = parent.FileTransferList();
+			if (token.Status != TransferStatus.Transfering)
+				return CommandError.Custom("No transfer found");
+
+			var result = await FileTransferList();
 			if (result.Ok)
 				return result.Value.Where(x => x.ServerFileTransferId == token.ServerTransferId).WrapSingle();
-			return R<FileTransfer, CommandError>.Err(result.Error);
-		}
-
-		private void TransferLoop()
-		{
-			while (true)
-			{
-				FileTransferToken token;
-				lock (transferQueue)
-				{
-					if (transferQueue.Count <= 0)
-					{
-						threadEnd = true;
-						break;
-					}
-					token = transferQueue.Dequeue();
-				}
-
-				try
-				{
-					lock (token)
-					{
-						if (parent.remoteAddress is null)
-						{
-							token.SetStatus(TransferStatus.Failed);
-							Log.Trace("Client is not connected. Transfer failed {@token}", token);
-							continue;
-						}
-						if (token.Status != TransferStatus.Waiting)
-							continue;
-						token.SetStatus(TransferStatus.Transfering);
-					}
-
-					Log.Trace("Creating new file transfer connection to {0}", parent.remoteAddress);
-					using var client = new TcpClient(parent.remoteAddress.AddressFamily);
-					try { client.Connect(parent.remoteAddress.Address, token.Port); }
-					catch (SocketException ex)
-					{
-						Log.Debug(ex, "SocketException trying to connect to filetransfer port");
-						token.SetStatus(TransferStatus.Failed);
-						continue;
-					}
-					using var md5Dig = token.CreateMd5 ? MD5.Create() : null;
-					using var stream = client.GetStream();
-					byte[] keyBytes = Encoding.ASCII.GetBytes(token.TransferKey);
-					stream.Write(keyBytes, 0, keyBytes.Length);
-
-					if (token.SeekPosition >= 0 && token.LocalStream.Position != token.SeekPosition)
-						token.LocalStream.Seek(token.SeekPosition, SeekOrigin.Begin);
-
-					if (token.Direction == TransferDirection.Upload)
-					{
-						// https://referencesource.microsoft.com/#mscorlib/system/io/stream.cs,2a0f078c2e0c0aa8,references
-						const int bufferSize = 81920;
-						var buffer = new byte[bufferSize];
-						int read;
-						md5Dig?.Initialize();
-						while ((read = token.LocalStream.Read(buffer, 0, buffer.Length)) != 0)
-						{
-							stream.Write(buffer, 0, read);
-							md5Dig?.TransformBlock(buffer, 0, read, buffer, 0);
-						}
-						md5Dig?.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
-						token.Md5Sum = md5Dig?.Hash;
-					}
-					else // Download
-					{
-						// try to preallocate space
-						try { token.LocalStream.SetLength(token.Size); }
-						catch (NotSupportedException) { }
-
-						stream.CopyTo(token.LocalStream);
-					}
-					lock (token)
-					{
-						if (token.Status == TransferStatus.Transfering && token.LocalStream.Position == token.Size)
-						{
-							token.SetStatus(TransferStatus.Done);
-							if (token.CloseStreamWhenDone)
-								token.LocalStream.Close();
-						}
-					}
-				}
-				catch (IOException ex)
-				{
-					Log.Debug(ex, "IOException during filetransfer");
-				}
-				finally
-				{
-					lock (token)
-					{
-						if (token.Status != TransferStatus.Done && token.Status != TransferStatus.Cancelled)
-							token.SetStatus(TransferStatus.Failed);
-					}
-				}
-			}
+			return result.Error;
 		}
 	}
 
@@ -311,9 +248,7 @@ namespace TSLib
 		public bool CloseStreamWhenDone { get; set; }
 		public bool CreateMd5 { get; }
 		public byte[]? Md5Sum { get; internal set; }
-		public TaskCompletionSource<TransferStatus> CompletionSource { get; private set; }
-
-		public TransferStatus Status { get; private set; }
+		public TransferStatus Status { get; set; }
 
 		public FileTransferToken(Stream localStream, FileUpload upload, ChannelId channelId,
 			string path, string channelPassword, long size, bool createMd5)
@@ -345,41 +280,6 @@ namespace TSLib
 			TransferKey = transferKey;
 			Size = size;
 			CreateMd5 = createMd5;
-			CompletionSource = new TaskCompletionSource<TransferStatus>();
-		}
-
-		internal void ResetTask()
-		{
-			CompletionSource = new TaskCompletionSource<TransferStatus>();
-		}
-
-		internal void SetStatus(TransferStatus status)
-		{
-			Status = status;
-			switch (status)
-			{
-			case TransferStatus.Waiting:
-			case TransferStatus.Transfering:
-				break;
-			case TransferStatus.Done:
-			case TransferStatus.Cancelled:
-			case TransferStatus.Failed:
-				CompletionSource.TrySetResult(status);
-				break;
-			default:
-				break;
-			}
-		}
-
-		public void Wait()
-		{
-			while (Status == TransferStatus.Waiting || Status == TransferStatus.Transfering)
-				Thread.Sleep(10);
-		}
-
-		public async Task WaitAsync()
-		{
-			await CompletionSource.Task;
 		}
 	}
 

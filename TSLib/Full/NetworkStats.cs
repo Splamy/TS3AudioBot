@@ -86,7 +86,7 @@ namespace TSLib.Full
 			case PacketType.Pong:
 				return PacketKind.Keepalive;
 			default:
-				throw new ArgumentOutOfRangeException(nameof(type));
+				throw Tools.UnhandledDefault(type);
 			}
 		}
 

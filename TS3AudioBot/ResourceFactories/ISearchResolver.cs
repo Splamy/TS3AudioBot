@@ -9,12 +9,11 @@
 
 namespace TS3AudioBot.ResourceFactories
 {
-	using System;
 	using System.Collections.Generic;
-	using TS3AudioBot.Localization;
+	using System.Threading.Tasks;
 
 	public interface ISearchResolver : IResolver
 	{
-		R<IList<AudioResource>, LocalStr> Search(ResolveContext ctx, string keyword);
+		Task<IList<AudioResource>> Search(ResolveContext ctx, string keyword);
 	}
 }

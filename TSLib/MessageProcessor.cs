@@ -157,12 +157,12 @@ namespace TSLib
 			lock (waitBlockLock)
 			{
 				foreach (var wb in requestDict.Values)
-					wb.SetError(CommandError.TimeOut);
+					wb.SetError(CommandError.ConnectionClosed);
 				requestDict.Clear();
 
 				foreach (var block in dependingBlocks)
 				{
-					block?.ForEach(wb => wb.SetError(CommandError.TimeOut));
+					block?.ForEach(wb => wb.SetError(CommandError.ConnectionClosed));
 					block?.Clear();
 				}
 			}
@@ -198,7 +198,7 @@ namespace TSLib
 		public override void DropQueue()
 		{
 			while (!requestQueue.IsEmpty && requestQueue.TryDequeue(out var waitBlock))
-				waitBlock.SetError(CommandError.TimeOut);
+				waitBlock.SetError(CommandError.ConnectionClosed);
 		}
 	}
 }

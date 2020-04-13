@@ -38,7 +38,7 @@ namespace TSLib.Full
 		private static readonly byte[] DummyIv = Encoding.ASCII.GetBytes(DummyKeyAndNonceString.Substring(16, 16));
 		private static readonly (byte[], byte[]) DummyKeyAndNonceTuple = (DummyKey, DummyIv);
 		private static readonly byte[] Ts3InitMac = Encoding.ASCII.GetBytes("TS3INIT1");
-		private static readonly uint InitVersion = 1566914096; // 3.5.0 [Stable]
+		private const uint InitVersion = 1566914096; // 3.5.0 [Stable]
 		private readonly EaxBlockCipher eaxCipher = new EaxBlockCipher(new AesEngine());
 
 		internal const int MacLen = 8;

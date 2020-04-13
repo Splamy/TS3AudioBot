@@ -14,7 +14,7 @@ using SixLabors.ImageSharp.Formats.Jpeg;
 using SixLabors.ImageSharp.Processing;
 using System;
 using System.IO;
-using TS3AudioBot.Localization;
+using System.Threading.Tasks;
 
 namespace TS3AudioBot.Helper
 {
@@ -24,46 +24,42 @@ namespace TS3AudioBot.Helper
 
 		public const int ResizeMaxWidthDefault = 320;
 
-		public static R<Stream, LocalStr> ResizeImageSave(Stream? imgStream, out string? mime, int resizeMaxWidth = ResizeMaxWidthDefault)
+		public static async Task<ImageHolder> ResizeImageSave(Stream imgStream, int resizeMaxWidth = ResizeMaxWidthDefault)
 		{
-			mime = null;
-			if (imgStream is null)
-				return new LocalStr("No image found"); // TODO loc
 			try
 			{
 				using var limitStream = new LimitStream(imgStream, Limits.MaxImageStreamSize);
-				return ResizeImage(limitStream, out mime, resizeMaxWidth);
+				return await Task.Run(() => ResizeImage(limitStream, resizeMaxWidth));
 			}
 			catch (NotSupportedException)
 			{
 				Log.Debug("Dropping image because of unknown format");
-				return new LocalStr("Dropping image because of unknown format"); // TODO
+				throw Error.LocalStr("Dropping image because of unknown format"); // TODO
 			}
 			catch (EntityTooLargeException)
 			{
 				Log.Debug("Dropping image because too large");
-				return new LocalStr("Dropping image because too large"); // TODO
+				throw Error.LocalStr("Dropping image because too large"); // TODO
 			}
 		}
 
-		private static R<Stream, LocalStr> ResizeImage(Stream imgStream, out string? mime, int resizeMaxWidth = ResizeMaxWidthDefault)
+		private static ImageHolder ResizeImage(Stream imgStream, int resizeMaxWidth = ResizeMaxWidthDefault)
 		{
-			mime = null;
 			using var img = Image.Load(imgStream);
 			if (img.Width > Limits.MaxImageDimension || img.Height > Limits.MaxImageDimension
 				|| img.Width == 0 || img.Height == 0)
-				return new LocalStr("Dropping image because too large"); // TODO
+				throw Error.LocalStr("Dropping image because too large"); // TODO
 
 			if (img.Width <= resizeMaxWidth)
-				return SaveAdaptive(img, out mime);
+				return SaveAdaptive(img);
 
 			float ratio = img.Width / (float)img.Height;
 			img.Mutate(x => x.Resize(resizeMaxWidth, (int)(resizeMaxWidth / ratio)));
 
-			return SaveAdaptive(img, out mime);
+			return SaveAdaptive(img);
 		}
 
-		private static Stream SaveAdaptive(Image img, out string mime)
+		private static ImageHolder SaveAdaptive(Image img)
 		{
 			IImageFormat format;
 			if (img.Frames.Count > 1)
@@ -74,11 +70,25 @@ namespace TS3AudioBot.Helper
 			{
 				format = JpegFormat.Instance;
 			}
-			mime = format.DefaultMimeType;
+			var mime = format.DefaultMimeType;
 			var mem = new MemoryStream();
 			img.Save(mem, format);
 			mem.Seek(0, SeekOrigin.Begin);
-			return mem;
+			return new ImageHolder(mem, mime);
 		}
+	}
+
+	class ImageHolder : IDisposable
+	{
+		public Stream Stream { get; }
+		public string Mime { get; }
+
+		public ImageHolder(Stream stream, string mime)
+		{
+			Stream = stream;
+			Mime = mime;
+		}
+
+		public void Dispose() => Stream.Dispose();
 	}
 }

@@ -88,25 +88,25 @@ namespace TS3AudioBot
 			{
 				if (!instance.Run)
 					continue;
-				launchBotTasks.Add(RunBot(instance).ContinueWith(t =>
+				launchBotTasks.Add(RunBot(instance).ContinueWith(async t =>
 				{
-					var result = t.Result;
+					var result = await t;
 					if (!result.Ok)
 					{
 						Log.Error("Could not instantiate bot: {0}", result.Error);
 					}
 					return result;
-				}));
+				}).Unwrap());
 			}
 			await Task.WhenAll(launchBotTasks);
 		}
 
 		public ConfBot CreateNewBot() => confRoot.CreateBot();
 
-		public async Task<R<BotInfo, string>> CreateAndRunNewBot()
+		public Task<R<BotInfo, string>> CreateAndRunNewBot()
 		{
 			var botConf = CreateNewBot();
-			return await RunBot(botConf);
+			return RunBot(botConf);
 		}
 
 		public async Task<R<BotInfo, string>> RunBotTemplate(string name)

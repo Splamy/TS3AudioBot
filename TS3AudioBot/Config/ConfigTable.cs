@@ -60,7 +60,7 @@ namespace TS3AudioBot.Config
 			}
 		}
 
-		public override ConfigPart GetChild(string key) => Properties.FirstOrDefault(x => x.Key == key);
+		public override ConfigPart? GetChild(string key) => Properties.Find(x => x.Key == key);
 
 		public override IEnumerable<ConfigPart> GetAllChildren() => Properties;
 	}

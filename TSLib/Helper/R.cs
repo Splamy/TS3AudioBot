@@ -22,8 +22,10 @@ namespace System
 		public static readonly _Error Err = new _Error();
 	}
 
+#pragma warning disable IDE1006 // Naming Styles
 	public readonly struct _Ok { }
 	public readonly struct _Error { }
+#pragma warning restore IDE1006 // Naming Styles
 
 	/// <summary>
 	/// Provides a safe alternative to Exceptions for error and result wrapping.

@@ -18,7 +18,7 @@ using TSLib.Commands;
 using TSLib.Full.Book;
 using TSLib.Helper;
 using TSLib.Messages;
-using CmdR = System.E<TSLib.Messages.CommandError>;
+using CmdR = System.Threading.Tasks.Task<System.E<TSLib.Messages.CommandError>>;
 
 namespace TSLib.Full
 {
@@ -207,7 +207,7 @@ namespace TSLib.Full
 
 		// Local event processing
 
-		partial void ProcessEachInitIvExpand(InitIvExpand initIvExpand)
+		async partial void ProcessEachInitIvExpand(InitIvExpand initIvExpand)
 		{
 			packetHandler.ReceivedFinalInitAck();
 
@@ -218,10 +218,10 @@ namespace TSLib.Full
 				return;
 			}
 
-			DefaultClientInit();
+			await DefaultClientInit();
 		}
 
-		partial void ProcessEachInitIvExpand2(InitIvExpand2 initIvExpand2)
+		async partial void ProcessEachInitIvExpand2(InitIvExpand2 initIvExpand2)
 		{
 			packetHandler.ReceivedFinalInitAck();
 
@@ -234,7 +234,7 @@ namespace TSLib.Full
 			Array.Copy(beta, 0, toSign, 32, 54);
 			var sign = TsCrypt.Sign(connectionDataFull.Identity.PrivateKey, toSign);
 			var proof = Convert.ToBase64String(sign);
-			ClientEk(ekBase64, proof);
+			await ClientEk(ekBase64, proof);
 
 			var result = tsCrypt.CryptoInit2(initIvExpand2.License, initIvExpand2.Omega, initIvExpand2.Proof, initIvExpand2.Beta, privateKey);
 			if (!result)
@@ -243,7 +243,7 @@ namespace TSLib.Full
 				return;
 			}
 
-			DefaultClientInit();
+			await DefaultClientInit();
 		}
 
 		partial void ProcessEachInitServer(InitServer initServer)
@@ -255,10 +255,10 @@ namespace TSLib.Full
 			context.ConnectEvent.TrySetResult(null);
 		}
 
-		partial void ProcessEachPluginCommand(PluginCommand cmd)
+		async partial void ProcessEachPluginCommand(PluginCommand cmd)
 		{
 			if (cmd.Name == "cliententerview" && cmd.Data == "version")
-				SendPluginCommand("cliententerview", "TAB", PluginTargetMode.Server);
+				await SendPluginCommand("cliententerview", "TAB", PluginTargetMode.Server);
 		}
 
 		partial void ProcessEachCommandError(CommandError error)
@@ -289,10 +289,10 @@ namespace TSLib.Full
 			}
 		}
 
-		partial void ProcessEachChannelListFinished(ChannelListFinished _)
+		async partial void ProcessEachChannelListFinished(ChannelListFinished _)
 		{
-			ChannelSubscribeAll();
-			PermissionList();
+			await ChannelSubscribeAll();
+			await PermissionList();
 		}
 
 		partial void ProcessEachClientConnectionInfoUpdateRequest(ClientConnectionInfoUpdateRequest _)
@@ -316,9 +316,7 @@ namespace TSLib.Full
 			Deserializer.PermissionTransform = new TablePermissionTransform(buildPermissions.ToArray());
 		}
 
-		// ***
-
-		private CmdR DefaultClientInit() => ClientInit(
+		private Task DefaultClientInit() => ClientInit(
 			connectionDataFull.Username,
 			true, true,
 			connectionDataFull.DefaultChannel,
@@ -326,6 +324,18 @@ namespace TSLib.Full
 			connectionDataFull.ServerPassword.HashedPassword,
 			string.Empty, string.Empty, string.Empty,
 			connectionDataFull.Identity.ClientUid.ToString(), VersionSign);
+
+		// ***
+
+		/// <summary>
+		/// Sends a command without expecting a 'error' return code.
+		/// <para>NOTE: Do not use this method unless you are sure the ts3 command fits the criteria.</para>
+		/// </summary>
+		/// <param name="command">The command to send.</param>
+		public Task SendNoResponsed(TsCommand command)
+		{
+			return SendVoid(command.ExpectsResponse(false));
+		}
 
 		/// <summary>
 		/// Sends a command to the server. Commands look exactly like query commands and mostly also behave identically.
@@ -337,47 +347,44 @@ namespace TSLib.Full
 		/// if the client hangs after a special command (<see cref="Send{T}(TsCommand)"/> will return a generic error instead).</para></param>
 		/// <returns>Returns <code>R(OK)</code> with an enumeration of the deserialized and split up in <see cref="T"/> objects data.
 		/// Or <code>R(ERR)</code> with the returned error if no response is expected.</returns>
-		public override R<T[], CommandError> Send<T>(TsCommand com)
+		public override async Task<R<T[], CommandError>> Send<T>(TsCommand com)
 		{
-			using var wb = new WaitBlockSync(msgProc.Deserializer);
+			using var wb = new WaitBlock(msgProc.Deserializer);
 			var result = SendCommandBase(wb, com);
 			if (!result.Ok)
 				return result.Error;
 			if (com.ExpectResponse)
-				return wb.WaitForMessage<T>();
+				return await wb.WaitForMessageAsync<T>();
 			else
-				return Array.Empty<T>();
+				// This might not be the nicest way to return in this case
+				// but we don't know what the response is, so this acceptable.
+				return CommandError.NoResult;
 		}
 
-		/// <summary>
-		/// Sends a command without expecting a 'error' return code.
-		/// <para>NOTE: Do not use this method unless you are sure the ts3 command fits the criteria.</para>
-		/// </summary>
-		/// <param name="command">The command to send.</param>
-		public CmdR SendNoResponsed(TsCommand command)
-			=> SendVoid(command.ExpectsResponse(false));
+		public override async Task<R<T[], CommandError>> SendHybrid<T>(TsCommand com, NotificationType type)
+		{
+			var notification = await SendNotifyCommand(com, type);
+			return notification.UnwrapNotification<T>();
+		}
 
-		public override R<T[], CommandError> SendHybrid<T>(TsCommand com, NotificationType type)
-			=> SendNotifyCommand(com, type).UnwrapNotification<T>();
-
-		public R<LazyNotification, CommandError> SendNotifyCommand(TsCommand com, params NotificationType[] dependsOn)
+		public async Task<R<LazyNotification, CommandError>> SendNotifyCommand(TsCommand com, params NotificationType[] dependsOn)
 		{
 			if (!com.ExpectResponse)
 				throw new ArgumentException("A special command must take a response");
 
-			using var wb = new WaitBlockSync(msgProc.Deserializer, dependsOn);
+			using var wb = new WaitBlock(msgProc.Deserializer, dependsOn);
 			var result = SendCommandBase(wb, com);
 			if (!result.Ok)
 				return result.Error;
-			return wb.WaitForNotification();
+			return await wb.WaitForNotificationAsync();
 		}
 
-		private CmdR SendCommandBase(WaitBlock wb, TsCommand com)
+		private E<CommandError> SendCommandBase(WaitBlock wb, TsCommand com)
 		{
 			lock (statusLock)
 			{
 				if (context.WasExit || (!Connected && com.ExpectResponse))
-					return CommandError.TimeOut;
+					return CommandError.ConnectionClosed;
 
 				if (com.ExpectResponse)
 				{
@@ -393,25 +400,6 @@ namespace TSLib.Full
 				packetHandler.AddOutgoingPacket(data, PacketType.Command);
 			}
 			return R.Ok;
-		}
-
-		public override async Task<R<T[], CommandError>> SendAsync<T>(TsCommand com)
-		{
-			using var wb = new WaitBlockAsync(msgProc.Deserializer);
-			var result = SendCommandBase(wb, com);
-			if (!result.Ok)
-				return result.Error;
-			if (com.ExpectResponse)
-				return await wb.WaitForMessageAsync<T>();
-			else
-				// This might not be the nicest way to return in this case
-				// but we don't know what the response is, so this acceptable.
-				return CommandError.NoResult;
-		}
-
-		public override Task<R<T[], CommandError>> SendHybridAsync<T>(TsCommand com, NotificationType type)
-		{
-			throw new NotImplementedException();
 		}
 
 		/// <summary>Release all resources. Will try to disconnect before disposing.</summary>
@@ -452,7 +440,7 @@ namespace TSLib.Full
 			case TargetSendMode.WhisperGroup:
 				SendAudioGroupWhisper(data, meta.Codec.Value, meta.Out.GroupWhisperType, meta.Out.GroupWhisperTarget, meta.Out.TargetId);
 				break;
-			default: throw new ArgumentOutOfRangeException(nameof(meta.Out.SendMode), meta.Out.SendMode, "SendMode not handled");
+			default: throw Tools.UnhandledDefault(meta.Out.SendMode);
 			}
 		}
 		#endregion
@@ -463,6 +451,9 @@ namespace TSLib.Full
 			=> SendVoid(new TsCommand("clientupdate") {
 				{ "client_is_channel_commander", isChannelCommander },
 			});
+
+		public CmdR ChangeDescription(string newDescription)
+			=> ChangeDescription(newDescription, ClientId);
 
 		public CmdR RequestTalkPower(string? message = null)
 			=> SendVoid(new TsCommand("clientupdate") {
@@ -475,13 +466,13 @@ namespace TSLib.Full
 				{ "client_talk_request", false },
 			});
 
-		public CmdR ClientEk(string ek, string proof)
+		public Task ClientEk(string ek, string proof)
 			=> SendNoResponsed(new TsCommand("clientek") {
 				{ "ek", ek },
 				{ "proof", proof },
 			});
 
-		public CmdR ClientInit(string nickname, bool inputHardware, bool outputHardware,
+		public Task ClientInit(string nickname, bool inputHardware, bool outputHardware,
 				string defaultChannel, string defaultChannelPassword, string serverPassword, string metaData,
 				string nicknamePhonetic, string defaultToken, string hwid, VersionSign versionSign)
 			=> SendNoResponsed(new TsCommand("clientinit") {
@@ -501,7 +492,7 @@ namespace TSLib.Full
 				{ "hwid", hwid },
 			});
 
-		public CmdR ClientDisconnect(Reason reason, string reasonMsg)
+		public Task ClientDisconnect(Reason reason, string reasonMsg)
 			=> SendNoResponsed(new TsCommand("clientdisconnect") {
 				{ "reasonid", (int)reason },
 				{ "reasonmsg", reasonMsg }
@@ -513,7 +504,7 @@ namespace TSLib.Full
 		public CmdR ChannelUnsubscribeAll()
 			=> SendVoid(new TsCommand("channelunsubscribeall"));
 
-		public CmdR PokeClient(string message, ushort clientId)
+		public Task PokeClient(string message, ushort clientId)
 			=> SendNoResponsed(new TsCommand("clientpoke") {
 				{ "clid", clientId },
 				{ "msg", message },
@@ -575,9 +566,9 @@ namespace TSLib.Full
 			packetHandler.AddOutgoingPacket(tmpBuffer, PacketType.VoiceWhisper, PacketFlags.Newprotocol);
 		}
 
-		public R<ClientConnectionInfo, CommandError> GetClientConnectionInfo(ClientId clientId)
+		public async Task<R<ClientConnectionInfo, CommandError>> GetClientConnectionInfo(ClientId clientId)
 		{
-			var result = SendNotifyCommand(new TsCommand("getconnectioninfo") {
+			var result = await SendNotifyCommand(new TsCommand("getconnectioninfo") {
 				{ "clid", clientId }
 			}, NotificationType.ClientConnectionInfo);
 			if (!result.Ok)
@@ -585,17 +576,17 @@ namespace TSLib.Full
 			return result.Value.Notifications
 				.Cast<ClientConnectionInfo>()
 				.Where(x => x.ClientId == clientId)
-				.WrapSingle();
+				.MapToSingle();
 		}
 
-		public R<ClientUpdated, CommandError> GetClientVariables(ushort clientId)
-			=> SendNotifyCommand(new TsCommand("clientgetvariables") {
+		public async Task<R<ClientUpdated, CommandError>> GetClientVariables(ushort clientId)
+			=> await SendNotifyCommand(new TsCommand("clientgetvariables") {
 				{ "clid", clientId }
-			}, NotificationType.ClientUpdated).UnwrapNotification<ClientUpdated>().WrapSingle();
+			}, NotificationType.ClientUpdated).MapToSingle<ClientUpdated>();
 
-		public R<ServerUpdated, CommandError> GetServerVariables()
+		public Task<R<ServerUpdated, CommandError>> GetServerVariables()
 			=> SendNotifyCommand(new TsCommand("servergetvariables"),
-				NotificationType.ServerUpdated).UnwrapNotification<ServerUpdated>().WrapSingle();
+				NotificationType.ServerUpdated).MapToSingle<ServerUpdated>();
 
 		public CmdR SendPluginCommand(string name, string data, PluginTargetMode targetmode)
 			=> SendVoid(new TsCommand("plugincmd") {
@@ -606,24 +597,26 @@ namespace TSLib.Full
 
 		// Splitted base commands
 
-		public override R<IChannelCreateResponse, CommandError> ChannelCreate(string name,
+		public override async Task<R<IChannelCreateResponse, CommandError>> ChannelCreate(string name,
 			string? namePhonetic = null, string? topic = null, string? description = null, string? password = null,
 			Codec? codec = null, int? codecQuality = null, int? codecLatencyFactor = null, bool? codecEncrypted = null,
 			int? maxClients = null, int? maxFamilyClients = null, bool? maxClientsUnlimited = null,
 			bool? maxFamilyClientsUnlimited = null, bool? maxFamilyClientsInherited = null, ChannelId? order = null,
 			ChannelId? parent = null, ChannelType? type = null, TimeSpan? deleteDelay = null, int? neededTalkPower = null)
-			=> SendNotifyCommand(ChannelOp("channelcreate", null, name, namePhonetic, topic, description,
-				password, codec, codecQuality, codecLatencyFactor, codecEncrypted,
-				maxClients, maxFamilyClients, maxClientsUnlimited, maxFamilyClientsUnlimited,
-				maxFamilyClientsInherited, order, parent, type, deleteDelay, neededTalkPower),
-				NotificationType.ChannelCreated)
-				.UnwrapNotification<ChannelCreated>()
-				.WrapSingle()
-				.WrapInterface<ChannelCreated, IChannelCreateResponse>();
-
-		public override R<ServerGroupAddResponse, CommandError> ServerGroupAdd(string name, GroupType? type = null)
 		{
-			var result = SendNotifyCommand(new TsCommand("servergroupadd") {
+			var result = await SendNotifyCommand(ChannelOp("channelcreate", null, name, namePhonetic, topic, description,
+				  password, codec, codecQuality, codecLatencyFactor, codecEncrypted,
+				  maxClients, maxFamilyClients, maxClientsUnlimited, maxFamilyClientsUnlimited,
+				  maxFamilyClientsInherited, order, parent, type, deleteDelay, neededTalkPower),
+				  NotificationType.ChannelCreated);
+			return result.UnwrapNotification<ChannelCreated>()
+				  .MapToSingle()
+				  .WrapInterface<ChannelCreated, IChannelCreateResponse>();
+		}
+
+		public override async Task<R<ServerGroupAddResponse, CommandError>> ServerGroupAdd(string name, GroupType? type = null)
+		{
+			var result = await SendNotifyCommand(new TsCommand("servergroupadd") {
 				{ "name", name },
 				{ "type", (int?)type }
 			}, NotificationType.ServerGroupList);
@@ -634,13 +627,13 @@ namespace TSLib.Full
 				.Where(x => x.Name == name)
 				.Take(1)
 				.Select(x => new ServerGroupAddResponse() { ServerGroupId = x.ServerGroupId })
-				.WrapSingle();
+				.MapToSingle();
 		}
 
-		public override R<FileUpload, CommandError> FileTransferInitUpload(ChannelId channelId, string path, string channelPassword, ushort clientTransferId,
-			long fileSize, bool overwrite, bool resume)
+		public override async Task<R<FileUpload, CommandError>> FileTransferInitUpload(ChannelId channelId, string path,
+			string channelPassword, ushort clientTransferId, long fileSize, bool overwrite, bool resume)
 		{
-			var result = SendNotifyCommand(new TsCommand("ftinitupload") {
+			var result = await SendNotifyCommand(new TsCommand("ftinitupload") {
 				{ "cid", channelId },
 				{ "name", path },
 				{ "cpw", channelPassword },
@@ -652,20 +645,20 @@ namespace TSLib.Full
 			if (!result.Ok)
 				return result.Error;
 			if (result.Value.NotifyType == NotificationType.FileUpload)
-				return result.UnwrapNotification<FileUpload>().WrapSingle();
+				return result.MapToSingle<FileUpload>();
 			else
 			{
-				var ftresult = result.UnwrapNotification<FileTransferStatus>().WrapSingle();
+				var ftresult = result.MapToSingle<FileTransferStatus>();
 				if (!ftresult)
 					return ftresult.Error;
 				return new CommandError() { Id = ftresult.Value.Status, Message = ftresult.Value.Message };
 			}
 		}
 
-		public override R<FileDownload, CommandError> FileTransferInitDownload(ChannelId channelId, string path, string channelPassword, ushort clientTransferId,
-			long seek)
+		public override async Task<R<FileDownload, CommandError>> FileTransferInitDownload(ChannelId channelId,
+			string path, string channelPassword, ushort clientTransferId, long seek)
 		{
-			var result = SendNotifyCommand(new TsCommand("ftinitdownload") {
+			var result = await SendNotifyCommand(new TsCommand("ftinitdownload") {
 				{ "cid", channelId },
 				{ "name", path },
 				{ "cpw", channelPassword },
@@ -674,10 +667,10 @@ namespace TSLib.Full
 			if (!result.Ok)
 				return result.Error;
 			if (result.Value.NotifyType == NotificationType.FileDownload)
-				return result.UnwrapNotification<FileDownload>().WrapSingle();
+				return result.MapToSingle<FileDownload>();
 			else
 			{
-				var ftresult = result.UnwrapNotification<FileTransferStatus>().WrapSingle();
+				var ftresult = result.MapToSingle<FileTransferStatus>();
 				if (!ftresult)
 					return ftresult.Error;
 				return new CommandError() { Id = ftresult.Value.Status, Message = ftresult.Value.Message };

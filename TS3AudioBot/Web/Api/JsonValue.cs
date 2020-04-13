@@ -17,11 +17,11 @@ namespace TS3AudioBot.Web.Api
 	{
 		protected Func<T, string>? AsString { get; }
 
-		public new T Value => (T)base.Value;
+		new public T Value => (T)base.Value;
 
 		public JsonValue(T value) : base(value) { }
 		public JsonValue(T value, string msg) : base(value, msg) { }
-		public JsonValue(T value, Func<T, string>? asString = null) : base(value)
+		public JsonValue(T value, Func<T, string>? asString) : base(value)
 		{
 			AsString = asString;
 		}
@@ -68,6 +68,6 @@ namespace TS3AudioBot.Web.Api
 
 		public static JsonValue<T> Create<T>(T anon) where T : notnull => new JsonValue<T>(anon);
 		public static JsonValue<T> Create<T>(T anon, string msg) where T : notnull => new JsonValue<T>(anon, msg);
-		public static JsonValue<T> Create<T>(T anon, Func<T, string>? asString = null) where T : notnull => new JsonValue<T>(anon, asString);
+		public static JsonValue<T> Create<T>(T anon, Func<T, string>? asString) where T : notnull => new JsonValue<T>(anon, asString);
 	}
 }

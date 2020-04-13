@@ -13,6 +13,7 @@ using System.Linq;
 using TSLib;
 using TSLib.Audio;
 using TSLib.Full;
+using TSLib.Helper;
 
 namespace TS3AudioBot.Audio
 {
@@ -86,7 +87,7 @@ namespace TS3AudioBot.Audio
 				client.SendAudioGroupWhisper(data, codec, GroupWhisperType, GroupWhisperTarget, GroupWhisperTargetId);
 				break;
 			default:
-				throw new ArgumentOutOfRangeException(nameof(SendMode), "Unknown send target");
+				throw Tools.UnhandledDefault(SendMode);
 			}
 		}
 

@@ -48,7 +48,6 @@ namespace TS3AudioBot.Playlists.Parser
 
 		public XspfPlaylist()
 		{
-
 		}
 
 		public List<string> GetTracksPaths() => PlaylistEntries.Select(x => x.Location.FirstOrDefault()).Where(x => x != null).ToList();

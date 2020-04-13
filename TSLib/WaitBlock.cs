@@ -8,33 +8,44 @@
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
 using System;
-using System.Threading;
+using System.Diagnostics;
 using System.Threading.Tasks;
+using TSLib.Full;
+using TSLib.Helper;
 using TSLib.Messages;
 
 namespace TSLib
 {
-	internal abstract class WaitBlock : IDisposable
+	/// <summary>
+	/// Synchronizes data between the receiving packet Thread and the waiting dispatcher Thread.
+	/// </summary>
+	internal sealed class WaitBlock : IDisposable
 	{
-		protected static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
-		protected readonly ManualResetEvent? notificationWaiter;
-		protected readonly Deserializer deserializer;
-		protected R<ReadOnlyMemory<byte>, CommandError> result;
+		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
+		private const string NotANotifyBlock = "This waitblock has no dependent notification";
+		private const string NotifyListEmpty = "Depending notification array must not be empty";
+		private const string NotifyDoesNotMatch = "The notification does not match this waitblock";
+		private static readonly TimeSpan CommandTimeout = PacketHandlerConst.PacketTimeout.Divide(2);
+
+		private bool isDisposed;
+		private readonly Deserializer deserializer;
+		private readonly TaskCompletionSource<R<ReadOnlyMemory<byte>, CommandError>> answerWaiterAsync;
+		private readonly TaskCompletionSource<LazyNotification>? notificationWaiterAsync;
+
 		public NotificationType[]? DependsOn { get; }
-		protected LazyNotification notification;
-		protected bool isDisposed;
-		protected static readonly TimeSpan CommandTimeout = TimeSpan.FromSeconds(15);
 
 		public WaitBlock(Deserializer deserializer, NotificationType[]? dependsOn = null)
 		{
 			this.deserializer = deserializer;
 			isDisposed = false;
 			DependsOn = dependsOn;
-			if (DependsOn != null)
+
+			answerWaiterAsync = new TaskCompletionSource<R<ReadOnlyMemory<byte>, CommandError>>();
+			if (dependsOn != null)
 			{
-				if (DependsOn.Length == 0)
-					throw new InvalidOperationException("Depending notification array must not be empty");
-				notificationWaiter = new ManualResetEvent(false);
+				if (dependsOn.Length == 0)
+					throw new InvalidOperationException(NotifyListEmpty);
+				notificationWaiterAsync = new TaskCompletionSource<LazyNotification>();
 			}
 		}
 
@@ -51,156 +62,81 @@ namespace TSLib
 		{
 			if (isDisposed)
 				return;
+
 			if (commandError != null && commandError.Id != TsErrorCode.ok)
 			{
-				result = commandError;
+				answerWaiterAsync.SetResult(commandError);
 			}
 			else if (commandLine != null)
 			{
-				result = commandLine.Value;
+				answerWaiterAsync.SetResult(commandLine.Value);
 			}
 			else
 			{
-				Log.Debug("Maybe missing line data:{@data} line:null", commandLine);
-				result = ReadOnlyMemory<byte>.Empty;
+				answerWaiterAsync.SetResult(ReadOnlyMemory<byte>.Empty);
 			}
-			Trigger();
 		}
-
-		protected abstract void Trigger();
 
 		public void SetNotification(LazyNotification notification)
 		{
 			if (isDisposed)
 				return;
-			if (DependsOn != null && Array.IndexOf(DependsOn, notification.NotifyType) < 0)
-				throw new ArgumentException("The notification does not match this waitblock");
-			this.notification = notification;
-			notificationWaiter!.Set();
-		}
-
-		public virtual void Dispose()
-		{
-			if (isDisposed)
-				return;
-			isDisposed = true;
-
-			if (notificationWaiter != null)
-			{
-				notificationWaiter.Set();
-				notificationWaiter.Dispose();
-			}
-		}
-	}
-
-	internal sealed class WaitBlockSync : WaitBlock
-	{
-		private readonly ManualResetEvent answerWaiter;
-
-		public WaitBlockSync(Deserializer deserializer, NotificationType[]? dependsOn = null) : base(deserializer, dependsOn)
-		{
-			answerWaiter = new ManualResetEvent(false);
-		}
-
-		public R<T[], CommandError> WaitForMessage<T>() where T : IResponse, new()
-		{
-			if (isDisposed)
-				throw new ObjectDisposedException(nameof(WaitBlock));
-			if (!answerWaiter.WaitOne(CommandTimeout))
-				return CommandError.TimeOut;
-			if (!result.Ok)
-				return result.Error;
-
-			var response = deserializer.GenerateResponse<T>(result.Value.Span);
-			if (response is null)
-				return CommandError.Parser;
-			else
-				return response;
-		}
-
-		public R<LazyNotification, CommandError> WaitForNotification()
-		{
-			if (isDisposed)
-				throw new ObjectDisposedException(nameof(WaitBlock));
-			if (DependsOn is null)
-				throw new InvalidOperationException("This waitblock has no dependent Notification");
-			if (!answerWaiter.WaitOne(CommandTimeout))
-				return CommandError.TimeOut;
-			if (!result.Ok)
-				return result.Error;
-			if (!notificationWaiter!.WaitOne(CommandTimeout))
-				return CommandError.TimeOut;
-
-			return notification;
-		}
-
-		protected override void Trigger() => answerWaiter.Set();
-
-		public override void Dispose()
-		{
-			if (isDisposed)
-				return;
-
-			base.Dispose();
-
-			answerWaiter.Set();
-			answerWaiter.Dispose();
-		}
-	}
-
-	internal sealed class WaitBlockAsync : WaitBlock
-	{
-		private readonly TaskCompletionSource<bool> answerWaiterAsync;
-
-		public WaitBlockAsync(Deserializer deserializer, NotificationType[]? dependsOn = null) : base(deserializer, dependsOn)
-		{
-			answerWaiterAsync = new TaskCompletionSource<bool>();
+			if (notificationWaiterAsync is null || DependsOn is null)
+				throw new InvalidOperationException(NotANotifyBlock);
+			if (Array.IndexOf(DependsOn, notification.NotifyType) < 0)
+				throw new ArgumentException(NotifyDoesNotMatch);
+			notificationWaiterAsync.SetResult(notification);
 		}
 
 		public async Task<R<T[], CommandError>> WaitForMessageAsync<T>() where T : IResponse, new()
 		{
 			if (isDisposed)
 				throw new ObjectDisposedException(nameof(WaitBlock));
+
 			var timeOut = Task.Delay(CommandTimeout);
 			var res = await Task.WhenAny(answerWaiterAsync.Task, timeOut);
 			if (res == timeOut)
-				return CommandError.TimeOut;
-			if (!result.Ok)
-				return result.Error;
+				return CommandError.CommandTimeout;
+			Trace.Assert(answerWaiterAsync.Task.IsCompleted);
 
-			var response = deserializer.GenerateResponse<T>(result.Value.Span);
+			if (!(await answerWaiterAsync.Task).Get(out var value, out var error))
+				return error;
+
+			var response = deserializer.GenerateResponse<T>(value.Span);
 			if (response is null)
 				return CommandError.Parser;
 			else
 				return response;
 		}
 
-		public async Task<R<LazyNotification, CommandError>> WaitForNotificationAsync() // TODO improve non-blocking
+		public async Task<R<LazyNotification, CommandError>> WaitForNotificationAsync()
 		{
 			if (isDisposed)
 				throw new ObjectDisposedException(nameof(WaitBlock));
-			if (DependsOn is null)
-				throw new InvalidOperationException("This waitblock has no dependent Notification");
-			var timeOut = Task.Delay(CommandTimeout);
-			var res = await Task.WhenAny(answerWaiterAsync.Task, timeOut);
-			if (res == timeOut)
-				return CommandError.TimeOut;
-			if (!result.Ok)
-				return result.Error;
-			if (!notificationWaiter!.WaitOne(CommandTimeout))
-				return CommandError.TimeOut;
+			if (notificationWaiterAsync is null)
+				throw new InvalidOperationException(NotANotifyBlock);
 
-			return notification;
+			var timeOut = Task.Delay(CommandTimeout);
+			if (await Task.WhenAny(answerWaiterAsync.Task, timeOut) == timeOut)
+				return CommandError.CommandTimeout;
+			Trace.Assert(answerWaiterAsync.Task.IsCompleted);
+
+			if (!(await answerWaiterAsync.Task).OnlyError().GetOk(out var error))
+				return error;
+
+			if (await Task.WhenAny(notificationWaiterAsync.Task, timeOut) == timeOut)
+				return CommandError.CommandTimeout;
+			Trace.Assert(notificationWaiterAsync.Task.IsCompleted);
+
+			return await notificationWaiterAsync.Task;
 		}
 
-		protected override void Trigger() => answerWaiterAsync.SetResult(true);
-
-		public override void Dispose()
+		public void Dispose()
 		{
 			if (isDisposed)
 				return;
 
-			base.Dispose();
+			isDisposed = true;
 		}
 	}
 }

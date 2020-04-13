@@ -75,7 +75,7 @@ namespace TS3AudioBot.Dependency
 				}
 				call[i] = dep;
 			}
-			obj = Activator.CreateInstance(type, call) ?? throw new ArgumentException("Activator didn't do his job..."); ;
+			obj = Activator.CreateInstance(type, call) ?? throw new ArgumentException("Activator didn't do his job...");
 			return true;
 		}
 

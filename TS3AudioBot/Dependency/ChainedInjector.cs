@@ -24,10 +24,7 @@ namespace TS3AudioBot.Dependency
 
 		public object? GetModule(Type type)
 		{
-			var obj = OwnInjector.GetModule(type);
-			if (obj != null) return obj;
-			obj = ParentInjector.GetModule(type);
-			return obj;
+			return OwnInjector.GetModule(type) ?? ParentInjector.GetModule(type);
 		}
 
 		public virtual void AddModule(Type type, object obj) => OwnInjector.AddModule(type, obj);

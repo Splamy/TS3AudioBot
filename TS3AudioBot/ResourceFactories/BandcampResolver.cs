@@ -12,6 +12,7 @@ using Newtonsoft.Json.Linq;
 using System;
 using System.IO;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using TS3AudioBot.Helper;
 using TS3AudioBot.Localization;
 
@@ -32,28 +33,27 @@ namespace TS3AudioBot.ResourceFactories
 
 		public MatchCertainty MatchResource(ResolveContext _, string uri) => BandcampUrlRegex.IsMatch(uri).ToMatchCertainty();
 
-		public R<PlayResource, LocalStr> GetResource(ResolveContext _, string url)
+		public async Task<PlayResource> GetResource(ResolveContext _, string url)
 		{
 			var match = BandcampUrlRegex.Match(url);
 			if (!match.Success)
-				return new LocalStr(strings.error_media_invalid_uri);
+				throw Error.LocalStr(strings.error_media_invalid_uri);
 
 			var artistName = match.Groups[1].Value;
 			var trackName = match.Groups[2].Value;
 
-			if (!WebWrapper.DownloadString($"https://{artistName}.bandcamp.com/track/{trackName}").Get(out var webSite, out var error))
-				return error;
+			var webSite = await WebWrapper.DownloadStringAsync($"https://{artistName}.bandcamp.com/track/{trackName}");
 
 			match = TrackMainJsonRegex.Match(webSite);
 			if (!match.Success)
-				return new LocalStr(strings.error_media_internal_missing + " (TrackMainJsonRegex)");
+				throw Error.LocalStr(strings.error_media_internal_missing + " (TrackMainJsonRegex)");
 
 			JToken jobj;
 			try { jobj = JToken.Parse(match.Groups[1].Value); }
-			catch (JsonReaderException) { return new LocalStr(strings.error_media_internal_missing + " (TrackMainJsonRegex.JToken)"); }
+			catch (JsonReaderException ex) { throw Error.LocalStr(strings.error_media_internal_missing + " (TrackMainJsonRegex.JToken)").Exception(ex); }
 
 			if (!(jobj is JArray jarr) || jarr.Count == 0)
-				return new LocalStr(strings.error_media_no_stream_extracted);
+				throw Error.LocalStr(strings.error_media_no_stream_extracted);
 
 			var firstTrack = jarr[0];
 			JToken? firstTrackFile;
@@ -61,7 +61,7 @@ namespace TS3AudioBot.ResourceFactories
 				|| !firstTrack.TryCast<string>("title", out var title)
 				|| (firstTrackFile = firstTrack["file"]) == null
 				|| !firstTrackFile.TryCast<string>("mp3-128", out var trackObj))
-				return new LocalStr(strings.error_media_no_stream_extracted);
+				throw Error.LocalStr(strings.error_media_no_stream_extracted);
 
 			return new BandcampPlayResource(trackObj,
 				new AudioResource(id, title, ResolverFor)
@@ -70,11 +70,9 @@ namespace TS3AudioBot.ResourceFactories
 				GetTrackArtId(webSite));
 		}
 
-		public R<PlayResource, LocalStr> GetResourceById(ResolveContext _, AudioResource resource)
+		public async Task<PlayResource> GetResourceById(ResolveContext _, AudioResource resource)
 		{
-			var result = DownloadEmbeddedSite(resource.ResourceId);
-			if (!result.Ok) return result.Error;
-			var webSite = result.Value;
+			var webSite = await DownloadEmbeddedSite(resource.ResourceId);
 
 			if (string.IsNullOrEmpty(resource.ResourceTitle))
 			{
@@ -86,7 +84,7 @@ namespace TS3AudioBot.ResourceFactories
 
 			var match = TrackLinkRegex.Match(webSite);
 			if (!match.Success)
-				return new LocalStr(strings.error_media_internal_missing + " (TrackLinkRegex)");
+				throw Error.LocalStr(strings.error_media_internal_missing + " (TrackLinkRegex)");
 
 			return new BandcampPlayResource(match.Groups[1].Value, resource, GetTrackArtId(webSite));
 		}
@@ -103,10 +101,10 @@ namespace TS3AudioBot.ResourceFactories
 			return $"https://bandcamp.com/EmbeddedPlayer/v=2/track={resource.ResourceId}";
 		}
 
-		private static R<string, LocalStr> DownloadEmbeddedSite(string id)
-			=> WebWrapper.DownloadString($"https://bandcamp.com/EmbeddedPlayer/v=2/track={id}");
+		private static Task<string> DownloadEmbeddedSite(string id)
+			=> WebWrapper.DownloadStringAsync($"https://bandcamp.com/EmbeddedPlayer/v=2/track={id}");
 
-		public R<Stream, LocalStr> GetThumbnail(ResolveContext _, PlayResource playResource)
+		public async Task<Stream> GetThumbnail(ResolveContext _, PlayResource playResource)
 		{
 			string? artId = null;
 			if (playResource is BandcampPlayResource bandcampPlayResource)
@@ -115,15 +113,12 @@ namespace TS3AudioBot.ResourceFactories
 			}
 			if (artId is null)
 			{
-				var result = DownloadEmbeddedSite(playResource.AudioResource.ResourceId);
-				if (!result.Ok) return result.Error;
-				var webSite = result.Value;
-
+				var webSite = await DownloadEmbeddedSite(playResource.AudioResource.ResourceId);
 				artId = GetTrackArtId(webSite);
 			}
 
 			if (string.IsNullOrEmpty(artId))
-				return new LocalStr(strings.error_media_image_not_found);
+				throw Error.LocalStr(strings.error_media_image_not_found);
 
 			//  1 : 1600px/1600px
 			//  2 :  350px/ 350px
@@ -142,7 +137,7 @@ namespace TS3AudioBot.ResourceFactories
 			// 15 :  135px/ 135px
 			// 16 :  700px/ 700px
 			// 42 :   50px/  50px / supporter
-			return WebWrapper.GetResponseUnsafe($"https://f4.bcbits.com/img/a{artId}_4.jpg");
+			return await WebWrapper.GetResponseUnsafeAsync($"https://f4.bcbits.com/img/a{artId}_4.jpg");
 		}
 
 		private static string? GetTrackArtId(string site)

@@ -11,6 +11,7 @@ using LiteDB;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using TS3AudioBot.Config;
 using TS3AudioBot.Localization;
 using TS3AudioBot.ResourceFactories;
@@ -257,7 +258,7 @@ namespace TS3AudioBot.History
 			audioLogEntries.Update(ale);
 		}
 
-		public void RemoveBrokenLinks(ResolveContext resourceFactory)
+		public async Task RemoveBrokenLinks(ResolveContext resourceFactory)
 		{
 			const int iterations = 3;
 			var currentIter = audioLogEntries.FindAll().ToList();
@@ -265,7 +266,7 @@ namespace TS3AudioBot.History
 			for (int i = 0; i < iterations; i++)
 			{
 				Log.Info("Filter iteration {0}", i);
-				currentIter = FilterList(resourceFactory, currentIter);
+				currentIter = await FilterList(resourceFactory, currentIter);
 			}
 
 			foreach (var entry in currentIter)
@@ -283,16 +284,19 @@ namespace TS3AudioBot.History
 		/// </summary>
 		/// <param name="list">The list to iterate.</param>
 		/// <returns>A new list with all working items.</returns>
-		private List<AudioLogEntry> FilterList(ResolveContext resourceFactory, IReadOnlyCollection<AudioLogEntry> list)
+		private async Task<List<AudioLogEntry>> FilterList(ResolveContext resourceFactory, IReadOnlyCollection<AudioLogEntry> list)
 		{
 			int userNotifyCnt = 0;
 			var nextIter = new List<AudioLogEntry>(list.Count);
 			foreach (var entry in list)
 			{
-				var result = resourceFactory.Load(entry.AudioResource);
-				if (!result)
+				try
 				{
-					Log.Debug("Cleaning: ({0}) Reason: {1}", entry.AudioResource.UniqueId, result.Error);
+					await resourceFactory.Load(entry.AudioResource);
+				}
+				catch (AudioBotException ex)
+				{
+					Log.Debug("Cleaning: ({0}) Reason: {1}", entry.AudioResource.UniqueId, ex.Message);
 					nextIter.Add(entry);
 				}
 
@@ -302,7 +306,7 @@ namespace TS3AudioBot.History
 			return nextIter;
 		}
 
-		public void UpdadeDbIdToUid(Ts3Client ts3Client)
+		public async Task UpdadeDbIdToUid(Ts3Client ts3Client)
 		{
 			var upgradedEntries = new List<AudioLogEntry>();
 			var dbIdCache = new Dictionary<uint, (bool valid, Uid uid)>();
@@ -322,11 +326,15 @@ namespace TS3AudioBot.History
 
 				if (!dbIdCache.TryGetValue(audioLogEntry.UserInvokeId.Value, out var data))
 				{
-					var result = ts3Client.GetDbClientByDbId((ClientDbId)audioLogEntry.UserInvokeId.Value);
-					data.uid = (data.valid = result.Ok) ? result.Value.Uid : Uid.Null;
-					if (!data.valid)
+					try
+					{
+						var dbData = await ts3Client.GetDbClientByDbId((ClientDbId)audioLogEntry.UserInvokeId.Value);
+						data = (true, dbData.Uid);
+					}
+					catch (AudioBotException)
 					{
 						Log.Warn("Client DbId {0} could not be found.", audioLogEntry.UserInvokeId.Value);
+						data = (false, Uid.Null);
 					}
 					dbIdCache.Add(audioLogEntry.UserInvokeId.Value, data);
 				}

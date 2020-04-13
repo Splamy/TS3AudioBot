@@ -14,8 +14,10 @@ using System.Globalization;
 using System.IO;
 using System.Text.RegularExpressions;
 using System.Threading;
+using System.Threading.Tasks;
 using TS3AudioBot.Config;
 using TS3AudioBot.Helper;
+using TSLib;
 using TSLib.Audio;
 using TSLib.Helper;
 
@@ -37,40 +39,38 @@ namespace TS3AudioBot.Audio
 		public event EventHandler? OnSongEnd;
 		public event EventHandler<SongInfoChanged>? OnSongUpdated;
 
+		private readonly DedicatedTaskScheduler scheduler;
 		private FfmpegInstance? ffmpegInstance;
 
 		public int SampleRate { get; } = 48000;
 		public int Channels { get; } = 2;
 		public int BitsPerSample { get; } = 16;
 
-		public FfmpegProducer(ConfToolsFfmpeg config, Id id)
+		public FfmpegProducer(ConfToolsFfmpeg config, DedicatedTaskScheduler scheduler, Id id)
 		{
 			this.config = config;
+			this.scheduler = scheduler;
 			this.id = id;
 		}
 
-		public E<string> AudioStart(string url, TimeSpan? startOff = null) => StartFfmpegProcess(url, startOff ?? TimeSpan.Zero);
+		public async Task AudioStart(string url, TimeSpan? startOff = null) => StartFfmpegProcess(url, startOff ?? TimeSpan.Zero);
 
-		public E<string> AudioStartIcy(string url) => StartFfmpegProcessIcy(url);
+		public async Task AudioStartIcy(string url) => await StartFfmpegProcessIcy(url);
 
-		public E<string> AudioStop()
+		public void AudioStop()
 		{
 			StopFfmpegProcess();
-			return R.Ok;
 		}
 
 		public TimeSpan Length => GetCurrentSongLength();
 
-		public TimeSpan Position
-		{
-			get => ffmpegInstance?.AudioTimer.SongPosition ?? TimeSpan.Zero;
-			set => SetPosition(value);
-		}
+		public TimeSpan Position => ffmpegInstance?.AudioTimer.SongPosition ?? TimeSpan.Zero;
+
+		public async Task Seek(TimeSpan position) => SetPosition(position);
 
 		public int Read(byte[] buffer, int offset, int length, out Meta? meta)
 		{
 			meta = default;
-			bool triggerEndSafe = false;
 			int read;
 
 			var instance = ffmpegInstance;
@@ -90,8 +90,9 @@ namespace TS3AudioBot.Audio
 
 			if (read == 0)
 			{
-				bool ret;
-				(ret, triggerEndSafe) = instance.IsIcyStream
+				AssertNotMainScheduler();
+
+				var (ret, triggerEndSafe) = instance.IsIcyStream
 					? OnReadEmptyIcy(instance)
 					: OnReadEmpty(instance);
 				if (ret)
@@ -103,12 +104,12 @@ namespace TS3AudioBot.Audio
 					AudioStop();
 					triggerEndSafe = true;
 				}
-			}
 
-			if (triggerEndSafe)
-			{
-				OnSongEnd?.Invoke(this, EventArgs.Empty);
-				return 0;
+				if (triggerEndSafe)
+				{
+					OnSongEnd?.Invoke(this, EventArgs.Empty);
+					return 0;
+				}
 			}
 
 			instance.HasTriedToReconnect = false;
@@ -149,11 +150,13 @@ namespace TS3AudioBot.Audio
 
 		private (bool ret, bool trigger) OnReadEmptyIcy(FfmpegInstance instance)
 		{
+			AssertNotMainScheduler();
+
 			if (instance.FfmpegProcess.HasExitedSafe() && !instance.HasTriedToReconnect)
 			{
 				Log.Debug("Connection to stream lost, retrying...");
 				instance.HasTriedToReconnect = true;
-				var newInstance = StartFfmpegProcessIcy(instance.ReconnectUrl);
+				var newInstance = StartFfmpegProcessIcy(instance.ReconnectUrl).Result;
 				if (newInstance.Ok)
 				{
 					newInstance.Value.HasTriedToReconnect = true;
@@ -210,17 +213,17 @@ namespace TS3AudioBot.Audio
 			return StartFfmpegProcessInternal(newInstance, arguments);
 		}
 
-		private R<FfmpegInstance, string> StartFfmpegProcessIcy(string url)
+		private async Task<R<FfmpegInstance, string>> StartFfmpegProcessIcy(string url)
 		{
 			StopFfmpegProcess();
 			Log.Trace("Start icy-stream request {0}", url);
 
 			try
 			{
-				var request = WebWrapper.CreateRequest(url).Unwrap();
+				var request = WebWrapper.CreateRequest(url);
 				request.Headers["Icy-MetaData"] = "1";
 
-				var response = request.GetResponse();
+				var response = await request.GetResponseAsync();
 				var stream = response.GetResponseStream();
 
 				if (!int.TryParse(response.Headers["icy-metaint"], out var metaint))
@@ -309,6 +312,12 @@ namespace TS3AudioBot.Audio
 				return TimeSpan.Zero;
 
 			return instance.ParsedSongLength ?? TimeSpan.Zero;
+		}
+
+		private void AssertNotMainScheduler()
+		{
+			if (TaskScheduler.Current == scheduler)
+				throw new Exception("Cannot read on own scheduler. Throwing to prevent deadlock");
 		}
 
 		public void Dispose()

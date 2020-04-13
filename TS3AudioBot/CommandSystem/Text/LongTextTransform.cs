@@ -115,7 +115,7 @@ namespace TS3AudioBot.CommandSystem.Text
 				this.tok = tok;
 			}
 
-			public readonly override string ToString() => $"i:{i} tok:{tok}";
+			public override readonly string ToString() => $"i:{i} tok:{tok}";
 		}
 	}
 }
