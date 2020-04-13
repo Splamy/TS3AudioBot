@@ -60,7 +60,7 @@ namespace TSLib.Query
 			{
 				connecting = true;
 
-				tcpClient.Connect(remoteAddress);
+				await tcpClient.ConnectAsync(remoteAddress.Address, remoteAddress.Port);
 
 				ConnectionData = conData;
 
@@ -96,7 +96,7 @@ namespace TSLib.Query
 
 		private async Task NetworkLoop(NetworkStream tcpStream, CancellationToken cancellationToken)
 		{
-			await Task.WhenAll(NetworkToPipeLoopAsync(tcpStream, dataPipe.Writer, cancellationToken), PipeProcessorAsync(dataPipe.Reader, cancellationToken)).ConfigureAwait(false);
+			await Task.WhenAll(NetworkToPipeLoopAsync(tcpStream, dataPipe.Writer, cancellationToken), PipeProcessorAsync(dataPipe.Reader, cancellationToken));
 			OnDisconnected?.Invoke(this, new DisconnectEventArgs(Reason.LeftServer));
 		}
 
@@ -113,9 +113,9 @@ namespace TSLib.Query
 				{
 					var mem = writer.GetMemory(minimumBufferSize);
 #if NETSTANDARD2_1 || NETCOREAPP3_1
-					int bytesRead = await stream.ReadAsync(mem, cancellationToken).ConfigureAwait(false);
+					int bytesRead = await stream.ReadAsync(mem, cancellationToken);
 #else
-					int bytesRead = await stream.ReadAsync(dataReadBuffer, 0, dataReadBuffer.Length, cancellationToken).ConfigureAwait(false);
+					int bytesRead = await stream.ReadAsync(dataReadBuffer, 0, dataReadBuffer.Length, cancellationToken);
 					dataReadBuffer.CopyTo(mem);
 #endif
 					if (bytesRead == 0)
@@ -124,7 +124,7 @@ namespace TSLib.Query
 				}
 				catch (IOException) { break; }
 
-				var result = await writer.FlushAsync(cancellationToken).ConfigureAwait(false);
+				var result = await writer.FlushAsync(cancellationToken);
 				if (result.IsCompleted || result.IsCanceled)
 					break;
 			}
@@ -135,7 +135,7 @@ namespace TSLib.Query
 		{
 			while (!cancelationToken.IsCancellationRequested)
 			{
-				var result = await reader.ReadAsync(cancelationToken).ConfigureAwait(false);
+				var result = await reader.ReadAsync(cancelationToken);
 
 				var buffer = result.Buffer;
 				SequencePosition? position;

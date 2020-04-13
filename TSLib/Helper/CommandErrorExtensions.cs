@@ -69,14 +69,6 @@ namespace TSLib.Messages
 			return R<T[], CommandError>.OkR((T[])result.Value.Notifications);
 		}
 
-		internal static R<T, CommandError> WrapSingle<T>(this IEnumerable<T> enu) where T : IMessage
-		{
-			var first = enu.FirstOrDefault();
-			if (first != null)
-				return R<T, CommandError>.OkR(first);
-			return R<T, CommandError>.Err(CommandError.NoResult);
-		}
-
 		public static R<TI, CommandError> WrapInterface<TC, TI>(in this R<TC, CommandError> result) where TC : notnull, IMessage, TI where TI : notnull
 		{
 			if (!result.Ok)

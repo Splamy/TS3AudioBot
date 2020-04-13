@@ -47,7 +47,6 @@ namespace TS3AudioBot
 			var config = ConfRoot.OpenOrCreate(configFilePath);
 			if (config is null)
 				return "Could not create config";
-			Config.Deprecated.UpgradeScript.CheckAndUpgrade(config);
 			ConfigUpgrade2.Upgrade(config.Configs.BotsPath.Value);
 			config.Save();
 

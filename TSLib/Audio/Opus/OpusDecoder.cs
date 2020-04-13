@@ -20,6 +20,7 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 using System;
+using System.Runtime.InteropServices;
 
 namespace TSLib.Audio.Opus
 {
@@ -45,12 +46,12 @@ namespace TSLib.Audio.Opus
 			if (outputChannels != 1 && outputChannels != 2)
 				throw new ArgumentOutOfRangeException(nameof(outputChannels));
 
-			IntPtr decoder = NativeMethods.opus_decoder_create(outputSampleRate, outputChannels, out IntPtr error);
+			var decoderPtr = NativeMethods.opus_decoder_create(outputSampleRate, outputChannels, out IntPtr error);
 			if ((Errors)error != Errors.Ok)
 			{
 				throw new Exception("Exception occured while creating decoder");
 			}
-			return new OpusDecoder(decoder, outputSampleRate, outputChannels);
+			return new OpusDecoder(decoderPtr, outputSampleRate, outputChannels);
 		}
 
 		private IntPtr decoder;
@@ -78,8 +79,7 @@ namespace TSLib.Audio.Opus
 
 			int frameSize = FrameCount(outputDecodedBuffer.Length);
 
-			// TODO fix hacky ref implementation once there is a good alternative with spans
-			int length = NativeMethods.opus_decode(decoder, ref inputOpusData[0], inputOpusData.Length, ref outputDecodedBuffer[0], frameSize, 0);
+			int length = NativeMethods.opus_decode(decoder, MemoryMarshal.GetReference(inputOpusData), inputOpusData.Length, out MemoryMarshal.GetReference(outputDecodedBuffer), frameSize, 0);
 
 			if (length < 0)
 				throw new Exception("Decoding failed - " + (Errors)length);

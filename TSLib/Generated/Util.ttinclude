@@ -28,5 +28,6 @@ using Ts3Permission = TSLib.TsPermission;
 
 using IconHash = System.Int32;
 using ConnectionId = System.UInt32;
+using EccKeyPubP256 = TSLib.Uid;
 #pragma warning restore CS8019";
 #>

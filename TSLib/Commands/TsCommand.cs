@@ -19,7 +19,7 @@ using TSLib.Helper;
 namespace TSLib.Commands
 {
 	/// <summary>Builds TeamSpeak (query) commands from parameters.</summary>
-	public partial class TsCommand : IEnumerable, IEnumerable<ICommandPart>
+	public partial class TsCommand : IEnumerable<ICommandPart>
 	{
 		private static readonly Regex CommandMatch = new Regex("[a-z0-9_]+", RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.ECMAScript);
 

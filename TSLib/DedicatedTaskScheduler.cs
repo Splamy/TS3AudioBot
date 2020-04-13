@@ -38,56 +38,21 @@ namespace TSLib
 			Tools.SetLogId(id);
 			foreach (var task in queue.GetConsumingEnumerable())
 			{
-				Log.ConditionalDebug("Processing Task");
+#if DEBUG
+				var sw = new System.Diagnostics.Stopwatch();
+				Log.Debug("Processing Task {0}", task.Id);
+#endif
 				TryExecuteTask(task);
+#if DEBUG
+				var time = sw.Elapsed;
+				Log.Debug("Task {0} took {1}. Resulted {2}", task.Id, time, task.Status);
+				if (queue.Count == 0)
+					Log.Debug("Eoq");
+#endif
 			}
 			Log.Debug("Finalizing TaskScheduler");
 			queue.Dispose();
 			Log.Info("TaskScheduler closed");
-		}
-
-		public Task Invoke(Action action)
-		{
-			if (Current == this)
-			{
-				action();
-				return Task.CompletedTask;
-			}
-
-			return Task.Factory.StartNew(action, CancellationToken.None, TaskCreationOptions.None, this);
-		}
-
-		public Task<T> Invoke<T>(Func<T> action)
-		{
-			if (Current == this)
-			{
-				var t = action();
-				return Task.FromResult(t);
-			}
-
-			return Task.Factory.StartNew(action, CancellationToken.None, TaskCreationOptions.None, this);
-		}
-
-		public Task InvokeAsync(Func<Task> action)
-		{
-			if (Current == this)
-			{
-				var t = action();
-				return t;
-			}
-
-			return Task.Factory.StartNew(action, CancellationToken.None, TaskCreationOptions.None, this).Unwrap();
-		}
-
-		public Task<T> InvokeAsync<T>(Func<Task<T>> action)
-		{
-			if (Current == this)
-			{
-				var t = action();
-				return t;
-			}
-
-			return Task.Factory.StartNew(action, CancellationToken.None, TaskCreationOptions.None, this).Unwrap();
 		}
 
 		protected override IEnumerable<Task>? GetScheduledTasks() => queue.ToArray();
@@ -112,6 +77,53 @@ namespace TSLib
 		public void Dispose()
 		{
 			queue.CompleteAdding();
+		}
+	}
+
+	public static class TaskSchedulerExtensions
+	{
+		public static Task Invoke(this TaskScheduler scheduler, Action action)
+		{
+			if (TaskScheduler.Current == scheduler)
+			{
+				action();
+				return Task.CompletedTask;
+			}
+
+			return Task.Factory.StartNew(action, CancellationToken.None, TaskCreationOptions.None, scheduler);
+		}
+
+		public static Task<T> Invoke<T>(this TaskScheduler scheduler, Func<T> action)
+		{
+			if (TaskScheduler.Current == scheduler)
+			{
+				var t = action();
+				return Task.FromResult(t);
+			}
+
+			return Task.Factory.StartNew(action, CancellationToken.None, TaskCreationOptions.None, scheduler);
+		}
+
+		public static Task InvokeAsync(this TaskScheduler scheduler, Func<Task> action)
+		{
+			if (TaskScheduler.Current == scheduler)
+			{
+				var t = action();
+				return t;
+			}
+
+			return Task.Factory.StartNew(action, CancellationToken.None, TaskCreationOptions.None, scheduler).Unwrap();
+		}
+
+		public static Task<T> InvokeAsync<T>(this TaskScheduler scheduler, Func<Task<T>> action)
+		{
+			if (TaskScheduler.Current == scheduler)
+			{
+				var t = action();
+				return t;
+			}
+
+			return Task.Factory.StartNew(action, CancellationToken.None, TaskCreationOptions.None, scheduler).Unwrap();
 		}
 	}
 }

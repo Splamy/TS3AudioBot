@@ -15,7 +15,7 @@ using System.Runtime.InteropServices;
 
 namespace TSLib.Audio
 {
-	public class PassiveMergePipe : IAudioPassiveProducer, IEnumerable<IAudioPassiveProducer>, ICollection<IAudioPassiveProducer>
+	public class PassiveMergePipe : IAudioPassiveProducer, ICollection<IAudioPassiveProducer>
 	{
 		private IAudioPassiveProducer[] safeProducerList = Array.Empty<IAudioPassiveProducer>();
 		private readonly List<IAudioPassiveProducer> producerList = new List<IAudioPassiveProducer>();

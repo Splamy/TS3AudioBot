@@ -41,10 +41,11 @@
       <PrivateAssets>all</PrivateAssets>
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
     </PackageReference>
-    <PackageReference Include="Portable.BouncyCastle" Version="1.8.6" />
+    <PackageReference Include="Portable.BouncyCastle" Version="1.8.6.7" />
     <PackageReference Include="Splamy.Ed25519.Toolkit" Version="1.0.3" />
-    <PackageReference Include="System.IO.Pipelines" Version="4.7.0" />
+    <PackageReference Include="System.IO.Pipelines" Version="4.7.1" />
     <PackageReference Condition="'$(TargetFramework)' == 'netstandard2.0'" Include="System.Memory" Version="4.5.3" />
+    <PackageReference Include="System.Memory" Version="4.5.4" />
   </ItemGroup>
   <ItemGroup>
     <None Include="ReSpeak.png" Pack="true" PackagePath="\" />

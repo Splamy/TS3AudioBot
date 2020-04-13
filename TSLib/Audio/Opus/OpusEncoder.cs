@@ -20,6 +20,7 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 using System;
+using System.Runtime.InteropServices;
 
 namespace TSLib.Audio.Opus
 {
@@ -46,12 +47,12 @@ namespace TSLib.Audio.Opus
 			if (inputChannels != 1 && inputChannels != 2)
 				throw new ArgumentOutOfRangeException(nameof(inputChannels));
 
-			IntPtr encoder = NativeMethods.opus_encoder_create(inputSamplingRate, inputChannels, application, out IntPtr error);
+			var encoderPtr = NativeMethods.opus_encoder_create(inputSamplingRate, inputChannels, application, out IntPtr error);
 			if ((Errors)error != Errors.Ok)
 			{
 				throw new Exception("Exception occured while creating encoder");
 			}
-			return new OpusEncoder(encoder, inputSamplingRate, inputChannels, application);
+			return new OpusEncoder(encoderPtr, inputSamplingRate, inputChannels, application);
 		}
 
 		private IntPtr encoder;
@@ -71,19 +72,18 @@ namespace TSLib.Audio.Opus
 		/// <param name="sampleLength">How many bytes to encode.</param>
 		/// <param name="outputEncodedBuffer">The encoded data is written to this buffer.</param>
 		/// <returns>Opus encoded audio buffer.</returns>
-		public Span<byte> Encode(Span<byte> inputPcmSamples, int sampleLength, byte[] outputEncodedBuffer)
+		public Span<byte> Encode(ReadOnlySpan<byte> inputPcmSamples, int sampleLength, Span<byte> outputEncodedBuffer)
 		{
 			if (disposed)
 				throw new ObjectDisposedException(nameof(OpusEncoder));
 
 			int frames = FrameCount(inputPcmSamples.Length);
-			// TODO fix hacky ref implementation once there is a good alternative with spans
-			int encodedLength = NativeMethods.opus_encode(encoder, ref inputPcmSamples[0], frames, outputEncodedBuffer, sampleLength);
+			int encodedLength = NativeMethods.opus_encode(encoder, MemoryMarshal.GetReference(inputPcmSamples), frames, out MemoryMarshal.GetReference(outputEncodedBuffer), sampleLength);
 
 			if (encodedLength < 0)
 				throw new Exception("Encoding failed - " + (Errors)encodedLength);
 
-			return outputEncodedBuffer.AsSpan(0, encodedLength);
+			return outputEncodedBuffer.Slice(0, encodedLength);
 		}
 
 		/// <summary>

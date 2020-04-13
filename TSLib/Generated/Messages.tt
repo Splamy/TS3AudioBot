@@ -134,7 +134,7 @@ foreach(var msg in gen.GetOrderedMsg())
 		<#= isNotify ? "public NotificationType NotifyType { get; } = NotificationType." + msg.name + ";" : "" #>
 		<#= isResponse ? "public string? ReturnCode { get; set; }" : "" #>
 <#
-	foreach (var (genField, optional) in msg.attributes.Select(f => gen.GetField(f))) { #>
+	foreach (var (genField, optional) in msg.attributes.Select(f => gen.GetField(f)).OrderBy(x => x.fld.pretty)) { #>
 		public <#= genField.TypeFin(optional) #> <#= genField.pretty #> { get; set; }<# } #>
 		#pragma warning restore CS8618
 
@@ -144,7 +144,7 @@ foreach(var msg in gen.GetOrderedMsg())
 			switch(name)
 			{
 <#
-		foreach (var (genField, optional) in msg.attributes.Select(f => gen.GetField(f))) {
+		foreach (var (genField, optional) in msg.attributes.Select(f => gen.GetField(f)).OrderBy(x => x.fld.ts)) {
 #>
 			case "<#= genField.ts #>": <#= GenerateDeserializer(genField) #> break;<#
 			}
@@ -164,7 +164,7 @@ foreach(var msg in gen.GetOrderedMsg())
 				switch(fld)
 				{
 <#
-		foreach (var (genField, optional) in msg.attributes.Select(f => gen.GetField(f))) {
+		foreach (var (genField, optional) in msg.attributes.Select(f => gen.GetField(f)).OrderBy(x => x.fld.ts)) {
 #>
 				case "<#= genField.ts #>": foreach(var toi in toc) { toi.<#= genField.pretty #> = <#= genField.pretty #>; } break;<#
 				}

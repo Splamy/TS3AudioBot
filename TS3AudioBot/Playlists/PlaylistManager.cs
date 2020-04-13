@@ -86,10 +86,8 @@ namespace TS3AudioBot.Playlists
 				bool listEnded;
 				if (forward == true)
 					listEnded = shuffle.Next();
-				else if (forward == false)
-					listEnded = shuffle.Prev();
 				else
-					listEnded = false;
+					listEnded = shuffle.Prev();
 
 				// Get a new seed when one play-through ended.
 				if (listEnded && Random)

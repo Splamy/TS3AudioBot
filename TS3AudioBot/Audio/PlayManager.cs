@@ -224,7 +224,8 @@ namespace TS3AudioBot.Audio
 			PlaylistItem? pli = null;
 			for (int i = 0; i < 10; i++)
 			{
-				if ((pli = playlistManager.Next(manually)) is null) break;
+				pli = playlistManager.Next(manually);
+				if (pli is null) break;
 				try { await StartResource(invoker, pli); }
 				catch (AudioBotException ex) { Log.Warn("Skipping: {0} because {1}", pli, ex.Message); }
 			}
@@ -239,7 +240,8 @@ namespace TS3AudioBot.Audio
 			PlaylistItem? pli = null;
 			for (int i = 0; i < 10; i++)
 			{
-				if ((pli = playlistManager.Previous(manually)) is null) break;
+				pli = playlistManager.Previous(manually);
+				if (pli is null) break;
 				try { await StartResource(invoker, pli); }
 				catch (AudioBotException ex) { Log.Warn("Skipping: {0} because {1}", pli, ex.Message); }
 			}
@@ -249,7 +251,7 @@ namespace TS3AudioBot.Audio
 				throw Error.LocalStr(string.Format(strings.error_playmgr_many_songs_failed, "!previous"));
 		}
 
-		public void SongStoppedEvent(object? sender, EventArgs e) => StopInternal(true);
+		public async void SongStoppedEvent(object? sender, EventArgs e) => await StopInternal(true);
 
 		public Task Stop() => StopInternal(false);
 

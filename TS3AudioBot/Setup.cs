@@ -155,9 +155,6 @@ namespace TS3AudioBot
 		[Option('V', "version", HelpText = "Gets the bot version.")]
 		public bool ShowVersion { get; set; }
 
-		//Console.WriteLine(" --help -h           Prints this help...");
-		//Console.WriteLine(" --version -V        Gets the bot version.");
-
 		// -i --interactive, minimal ui/console tool to execute basic stuff like
 		// create bot, excute commands
 

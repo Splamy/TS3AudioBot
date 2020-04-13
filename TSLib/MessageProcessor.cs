@@ -42,10 +42,9 @@ namespace TSLib
 			else
 				notifyname = msgSpan.Slice(0, splitindex).NewUtf8String();
 
-			bool hasEqual;
+			bool hasEqual = notifyname.IndexOf('=') >= 0;
 			NotificationType ntfyType;
-			if ((hasEqual = notifyname.IndexOf('=') >= 0)
-				|| (ntfyType = findTypeOfNotification(notifyname)) == NotificationType.Unknown)
+			if (hasEqual || (ntfyType = findTypeOfNotification(notifyname)) == NotificationType.Unknown)
 			{
 				if (!hasEqual)
 					Log.Debug("Maybe unknown notification: {0}", notifyname);

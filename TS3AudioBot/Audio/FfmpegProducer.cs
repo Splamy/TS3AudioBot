@@ -66,7 +66,7 @@ namespace TS3AudioBot.Audio
 
 		public TimeSpan Position => ffmpegInstance?.AudioTimer.SongPosition ?? TimeSpan.Zero;
 
-		public async Task Seek(TimeSpan position) => SetPosition(position);
+		public Task Seek(TimeSpan position) { SetPosition(position); return Task.CompletedTask; }
 
 		public int Read(byte[] buffer, int offset, int length, out Meta? meta)
 		{

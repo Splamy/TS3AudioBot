@@ -128,9 +128,7 @@ namespace TS3AudioBot
 
 			return await bot.Scheduler.InvokeAsync<R<BotInfo, string>>(async () =>
 			{
-				Console.WriteLine("Run: {0}", TaskScheduler.Current.Id);
 				var initializeResult = await bot.Run();
-				Console.WriteLine("Start: {0}", TaskScheduler.Current.Id);
 				if (!initializeResult.Ok)
 				{
 					await StopBot(bot);

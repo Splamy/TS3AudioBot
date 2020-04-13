@@ -225,7 +225,7 @@ namespace TSLib
 
 			var result = await FileTransferList();
 			if (result.Ok)
-				return result.Value.Where(x => x.ServerFileTransferId == token.ServerTransferId).WrapSingle();
+				return result.Value.Where(x => x.ServerFileTransferId == token.ServerTransferId).MapToSingle();
 			return result.Error;
 		}
 	}

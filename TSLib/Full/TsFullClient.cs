@@ -175,7 +175,7 @@ namespace TSLib.Full
 					Log.ConditionalDebug("[I] {0}", Tools.Utf8Encoder.GetString(packet.Data));
 					var result = msgProc.PushMessage(packet.Data);
 					if (result != null)
-						Task.Factory.StartNew(() => InvokeEvent(result.Value), CancellationToken.None, TaskCreationOptions.None, dispatcher);
+						dispatcher.Invoke(() => InvokeEvent(result.Value));
 					break;
 
 				case PacketType.Voice:
@@ -295,9 +295,9 @@ namespace TSLib.Full
 			await PermissionList();
 		}
 
-		partial void ProcessEachClientConnectionInfoUpdateRequest(ClientConnectionInfoUpdateRequest _)
+		async partial void ProcessEachClientConnectionInfoUpdateRequest(ClientConnectionInfoUpdateRequest _)
 		{
-			SendNoResponsed(packetHandler.NetworkStats.GenerateStatusAnswer());
+			await SendNoResponsed(packetHandler.NetworkStats.GenerateStatusAnswer());
 		}
 
 		partial void ProcessPermList(PermList[] permList)

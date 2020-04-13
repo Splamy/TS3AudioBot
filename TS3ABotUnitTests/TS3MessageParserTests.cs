@@ -17,7 +17,7 @@ namespace TS3ABotUnitTests
 		{
 			var notif = deserializer.GenerateNotification(Encoding.UTF8.GetBytes("cid=6"), NotificationType.ChannelChanged);
 			Assert.NotNull(notif);
-			Assert.AreEqual(notif.Length, 1);
+			Assert.AreEqual(1, notif.Length);
 			var notifs = notif[0];
 			AssertEx.PropertyValuesAreEquals(notifs, new ChannelChanged() { ChannelId = (ChannelId)6 });
 		}
@@ -27,7 +27,7 @@ namespace TS3ABotUnitTests
 		{
 			var notif = deserializer.GenerateNotification(Encoding.UTF8.GetBytes("clid=42 cluid=asdfe\\/rvt=="), NotificationType.ClientChatComposing);
 			Assert.NotNull(notif);
-			Assert.AreEqual(notif.Length, 1);
+			Assert.AreEqual(1, notif.Length);
 			var notifs = notif[0];
 			AssertEx.PropertyValuesAreEquals(notifs, new ClientChatComposing() { ClientId = (ClientId)42, ClientUid = (Uid)"asdfe/rvt==" });
 		}
@@ -37,7 +37,7 @@ namespace TS3ABotUnitTests
 		{
 			var notif = deserializer.GenerateNotification(Encoding.UTF8.GetBytes("cid=5 | cid=4"), NotificationType.ChannelChanged);
 			Assert.NotNull(notif);
-			Assert.AreEqual(notif.Length, 2);
+			Assert.AreEqual(2, notif.Length);
 			AssertEx.PropertyValuesAreEquals(notif[0], new ChannelChanged() { ChannelId = (ChannelId)5 });
 			AssertEx.PropertyValuesAreEquals(notif[1], new ChannelChanged() { ChannelId = (ChannelId)4 });
 		}
@@ -47,7 +47,7 @@ namespace TS3ABotUnitTests
 		{
 			var notif = deserializer.GenerateNotification(Encoding.UTF8.GetBytes("cluid=asdfe\\/rvt== clid=42 | clid=1337"), NotificationType.ClientChatComposing);
 			Assert.NotNull(notif);
-			Assert.AreEqual(notif.Length, 2);
+			Assert.AreEqual(2, notif.Length);
 			AssertEx.PropertyValuesAreEquals(notif[0], new ClientChatComposing() { ClientId = (ClientId)42, ClientUid = (Uid)"asdfe/rvt==" });
 			AssertEx.PropertyValuesAreEquals(notif[1], new ClientChatComposing() { ClientId = (ClientId)1337, ClientUid = (Uid)"asdfe/rvt==" });
 		}
@@ -63,7 +63,7 @@ namespace TS3ABotUnitTests
 			));
 			Assert.NotNull(notif);
 
-			Assert.AreEqual(notif.Length, 4);
+			Assert.AreEqual(4, notif.Length);
 			AssertEx.PropertyValuesAreEquals(notif[0], new ClientList() { ClientId = (ClientId)1, ChannelId = (ChannelId)1, DatabaseId = (ClientDbId)2, Name = "TestBob1", ClientType = ClientType.Full, Uid = (Uid)"u/dFMOFFipxS9fJ8HKv0KH6WVzA=" });
 			AssertEx.PropertyValuesAreEquals(notif[1], new ClientList() { ClientId = (ClientId)2, ChannelId = (ChannelId)4, DatabaseId = (ClientDbId)2, Name = "TestBob", ClientType = ClientType.Full, Uid = (Uid)"u/dFMOFFipxS9fJ8HKv0KH6WVzA=" });
 			AssertEx.PropertyValuesAreEquals(notif[2], new ClientList() { ClientId = (ClientId)3, ChannelId = (ChannelId)4, DatabaseId = (ClientDbId)6, Name = "Splamy", ClientType = ClientType.Full, Uid = (Uid)"uA0U7t4PBxdJ5TLnarsOHQh4/tY=" });
@@ -75,7 +75,7 @@ namespace TS3ABotUnitTests
 		{
 			var notif = deserializer.GenerateResponse<ResponseDictionary>(Encoding.UTF8.GetBytes("cmd a=1 c=3 b=2|b=4|b=5"));
 			Assert.NotNull(notif);
-			Assert.AreEqual(notif.Length, 3);
+			Assert.AreEqual(3, notif.Length);
 		}
 
 		[Test]

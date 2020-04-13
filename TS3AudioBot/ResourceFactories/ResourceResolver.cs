@@ -276,7 +276,7 @@ namespace TS3AudioBot.ResourceFactories
 			if (errors is null || errors.Count == 0)
 				throw new ArgumentException("No errors provided", nameof(errors));
 			if (errors.Count == 1)
-				return CouldNotLoad($"{errors[0].rsv}: {errors[0].err}");
+				return CouldNotLoad($"{errors[0].rsv}: {errors[0].err.Message}");
 			return CouldNotLoad(strings.error_resfac_multiple_factories_failed);
 		}
 
