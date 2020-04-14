@@ -88,6 +88,15 @@ namespace TSLib.Full.Book
 			return Server;
 		}
 
+		public void Reset()
+		{
+			Channels.Clear();
+			Clients.Clear();
+			Groups.Clear();
+			OwnClient = ClientId.Null;
+			Server = new Server();
+		}
+
 		// Manual post event functions
 
 		partial void PostClientEnterView(ClientEnterView msg) => SetOwnChannelSubscribed(msg.ClientId);

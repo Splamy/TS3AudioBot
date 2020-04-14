@@ -766,9 +766,9 @@ namespace TSLib.Full
 
 		private static readonly byte[] TsVersionSignPublicKey = Convert.FromBase64String("UrN1jX0dBE1vulTNLCoYwrVpfITyo+NBuq/twbf9hLw=");
 
-		public static bool EdCheck(VersionSign sign)
+		public static bool EdCheck(TsVersionSigned sign)
 		{
-			var ver = Encoding.ASCII.GetBytes(sign.PlatformName + sign.Name);
+			var ver = Encoding.ASCII.GetBytes(sign.Platform + sign.Version);
 			var signArr = Base64Decode(sign.Sign);
 			if (signArr is null)
 				return false;
@@ -777,10 +777,10 @@ namespace TSLib.Full
 
 		public static void VersionSelfCheck()
 		{
-			var versions = typeof(VersionSign).GetProperties().Where(prop => prop.PropertyType == typeof(VersionSign));
+			var versions = typeof(TsVersionSigned).GetProperties().Where(prop => prop.PropertyType == typeof(TsVersionSigned));
 			foreach (var ver in versions)
 			{
-				var verObj = (VersionSign)ver.GetValue(null)!;
+				var verObj = (TsVersionSigned)ver.GetValue(null)!;
 				if (!EdCheck(verObj))
 					throw new Exception($"Version is invalid: {verObj}");
 			}

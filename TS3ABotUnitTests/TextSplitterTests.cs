@@ -16,7 +16,7 @@ namespace TS3ABotUnitTests
 		{
 			for (int i = 4; i < MaxSplit; i++)
 			{
-				var parts = LongTextTransform.Transform(Str1, LongTextBehaviour.SplitHard, maxMessageSize: i).ToArray();
+				var parts = LongTextTransform.Split(Str1, LongTextBehaviour.SplitHard, maxMessageSize: i).ToArray();
 				foreach (var part in parts)
 				{
 					Assert.LessOrEqual(TsString.TokenLength(part), i);

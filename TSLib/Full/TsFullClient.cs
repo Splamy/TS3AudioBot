@@ -11,7 +11,6 @@ using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using TSLib.Audio;
 using TSLib.Commands;
@@ -41,16 +40,16 @@ namespace TSLib.Full
 		public ClientId ClientId => packetHandler.ClientId;
 		/// <summary>The disonnect message when leaving.</summary>
 		public string QuitMessage { get; set; } = "Disconnected";
-		/// <summary>The <see cref="Full.VersionSign"/> used to connect.</summary>
-		public VersionSign VersionSign => connectionDataFull.VersionSign;
-		/// <summary>The <see cref="Full.IdentityData"/> used to connect.</summary>
+		/// <summary>The <see cref="TsVersionSigned"/> used to connect.</summary>
+		public TsVersionSigned VersionSign => connectionDataFull.VersionSign;
+		/// <summary>The <see cref="IdentityData"/> used to connect.</summary>
 		public IdentityData Identity => connectionDataFull.Identity;
 		private TsClientStatus status;
 		public override bool Connected { get { lock (statusLock) return status == TsClientStatus.Connected; } }
 		public override bool Connecting { get { lock (statusLock) return status == TsClientStatus.Connecting; } }
 		protected override Deserializer Deserializer => msgProc.Deserializer;
 		private ConnectionDataFull connectionDataFull;
-		public Connection Book { get; set; } = new Connection();
+		public Connection Book { get; } = new Connection();
 
 		public override event EventHandler<DisconnectEventArgs>? OnDisconnected;
 		public event EventHandler<CommandError>? OnErrorEvent;
@@ -80,14 +79,17 @@ namespace TSLib.Full
 			if (!(conData is ConnectionDataFull conDataFull)) throw new ArgumentException($"Use the {nameof(ConnectionDataFull)} derivative to connect with the full client.", nameof(conData));
 			if (conDataFull.Identity is null) throw new ArgumentNullException(nameof(conDataFull.Identity));
 			if (conDataFull.VersionSign is null) throw new ArgumentNullException(nameof(conDataFull.VersionSign));
-			connectionDataFull = conDataFull;
-			ConnectionData = conData;
 
 			await Disconnect();
 
 			remoteAddress = await TsDnsResolver.TryResolve(conData.Address);
 			if (remoteAddress is null)
 				throw new TsException("Could not read or resolve address.");
+
+			connectionDataFull = conDataFull;
+			ConnectionData = conData;
+			ServerConstants = TsConst.Default;
+			Book.Reset();
 
 			var ctx = new ConnectionContext { WasExit = false };
 			lock (statusLock)
@@ -249,6 +251,9 @@ namespace TSLib.Full
 		partial void ProcessEachInitServer(InitServer initServer)
 		{
 			packetHandler.ClientId = initServer.ClientId;
+			var serverVersion = TsVersion.TryParse(initServer.ServerVersion, initServer.ServerPlatform);
+			if (serverVersion != null)
+				ServerConstants = TsConst.GetByServerBuildNum(serverVersion.Build);
 
 			lock (statusLock)
 				status = TsClientStatus.Connected;
@@ -474,11 +479,11 @@ namespace TSLib.Full
 
 		public Task ClientInit(string nickname, bool inputHardware, bool outputHardware,
 				string defaultChannel, string defaultChannelPassword, string serverPassword, string metaData,
-				string nicknamePhonetic, string defaultToken, string hwid, VersionSign versionSign)
+				string nicknamePhonetic, string defaultToken, string hwid, TsVersionSigned versionSign)
 			=> SendNoResponsed(new TsCommand("clientinit") {
 				{ "client_nickname", nickname },
-				{ "client_version", versionSign.Name },
-				{ "client_platform", versionSign.PlatformName },
+				{ "client_version", versionSign.Version },
+				{ "client_platform", versionSign.Platform },
 				{ "client_input_hardware", inputHardware },
 				{ "client_output_hardware", outputHardware },
 				{ "client_default_channel", defaultChannel },

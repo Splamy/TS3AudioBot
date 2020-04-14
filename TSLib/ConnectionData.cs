@@ -37,11 +37,11 @@ namespace TSLib
 		public IdentityData Identity { get; }
 		/// <summary>
 		/// Set this to the TeamSpeak 3 Version this client should appear as.
-		/// You can find predefined version data in the <see cref="Full.VersionSign"/>
+		/// You can find predefined version data in the <see cref="TsVersionSigned"/>
 		/// class. Please keep in mind that the version data has to have valid sign
 		/// to be accepted by an official TeamSpeak 3 Server.
 		/// </summary>
-		public VersionSign VersionSign { get; }
+		public TsVersionSigned VersionSign { get; }
 		/// <summary>The display username.</summary>
 		public string Username { get; }
 		/// <summary>The server password. Leave null if none.</summary>
@@ -58,7 +58,7 @@ namespace TSLib
 		public ConnectionDataFull(
 			string address,
 			IdentityData identity,
-			VersionSign? versionSign = null,
+			TsVersionSigned? versionSign = null,
 			string? username = null,
 			Password? serverPassword = null,
 			string? defaultChannel = null,
@@ -67,7 +67,7 @@ namespace TSLib
 				: base(address, logId)
 		{
 			Identity = identity;
-			VersionSign = versionSign ?? (Tools.IsLinux ? VersionSign.VER_LIN_3_X_X : VersionSign.VER_WIN_3_X_X);
+			VersionSign = versionSign ?? (Tools.IsLinux ? TsVersionSigned.VER_LIN_3_X_X : TsVersionSigned.VER_WIN_3_X_X);
 			Username = username ?? "TSLibUser";
 			ServerPassword = serverPassword ?? Password.Empty;
 			DefaultChannel = defaultChannel ?? string.Empty;

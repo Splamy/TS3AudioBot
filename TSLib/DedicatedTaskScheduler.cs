@@ -1,3 +1,12 @@
+// TSLib - A free TeamSpeak 3 and 5 client library
+// Copyright (C) 2017  TSLib contributors
+//
+// This program is free software: you can redistribute it and/or modify
+// it under the terms of the Open Software License v. 3.0
+//
+// You should have received a copy of the Open Software License along with this
+// program. If not, see <https://opensource.org/licenses/OSL-3.0>.
+
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -40,14 +49,14 @@ namespace TSLib
 			{
 #if DEBUG
 				var sw = new System.Diagnostics.Stopwatch();
-				Log.Debug("Processing Task {0}", task.Id);
+				Log.Trace("Processing Task {0}", task.Id);
 #endif
 				TryExecuteTask(task);
 #if DEBUG
 				var time = sw.Elapsed;
-				Log.Debug("Task {0} took {1}. Resulted {2}", task.Id, time, task.Status);
+				Log.Trace("Task {0} took {1}. Resulted {2}", task.Id, time, task.Status);
 				if (queue.Count == 0)
-					Log.Debug("Eoq");
+					Log.Trace("Eoq");
 #endif
 			}
 			Log.Debug("Finalizing TaskScheduler");

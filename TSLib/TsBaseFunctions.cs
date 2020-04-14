@@ -39,6 +39,7 @@ namespace TSLib
 		internal IPEndPoint? remoteAddress;
 		private ushort transferIdCnt;
 		protected abstract Deserializer Deserializer { get; }
+		public TsConst ServerConstants { get; protected set; } = TsConst.Default;
 
 		public abstract Task Connect(ConnectionData conData);
 		public abstract Task Disconnect();

@@ -1794,7 +1794,7 @@ namespace TS3AudioBot
 				limit = config.Commands.LongMessageSplitLimit;
 			}
 
-			foreach (var msgPart in LongTextTransform.Transform(message, behaviour, limit))
+			foreach (var msgPart in LongTextTransform.Split(message, behaviour, ts3Client.ServerConstants.MaxSizeTextMessage, limit))
 			{
 				switch (invoker.Visibiliy.Value)
 				{

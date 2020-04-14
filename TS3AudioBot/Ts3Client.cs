@@ -65,6 +65,7 @@ namespace TS3AudioBot
 		private ClientId[] ownChannelClients = Array.Empty<ClientId>();
 
 		public bool Connected => ts3FullClient.Connected;
+		public TsConst ServerConstants => ts3FullClient.ServerConstants;
 
 		public Ts3Client(ConfBot config, TsFullClient ts3FullClient, Id id)
 		{
@@ -142,25 +143,25 @@ namespace TS3AudioBot
 			if (closed)
 				return "Bot disposed";
 
-			VersionSign versionSign;
+			TsVersionSigned? versionSign;
 			if (!string.IsNullOrEmpty(config.Connect.ClientVersion.Build.Value))
 			{
 				var versionConf = config.Connect.ClientVersion;
-				versionSign = new VersionSign(versionConf.Build, versionConf.Platform.Value, versionConf.Sign);
+				versionSign = TsVersionSigned.TryParse(versionConf.Build, versionConf.Platform.Value, versionConf.Sign);
 
-				if (!versionSign.CheckValid())
+				if (versionSign is null)
 				{
 					Log.Warn("Invalid version sign, falling back to unknown :P");
-					versionSign = VersionSign.VER_WIN_3_X_X;
+					versionSign = TsVersionSigned.VER_WIN_3_X_X;
 				}
 			}
 			else if (Tools.IsLinux)
 			{
-				versionSign = VersionSign.VER_LIN_3_X_X;
+				versionSign = TsVersionSigned.VER_LIN_3_X_X;
 			}
 			else
 			{
-				versionSign = VersionSign.VER_WIN_3_X_X;
+				versionSign = TsVersionSigned.VER_WIN_3_X_X;
 			}
 
 			try

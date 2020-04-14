@@ -90,9 +90,9 @@
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>Types.gen.cs</LastGenOutput>
     </None>
-    <None Update="Generated\Versions.tt">
+    <None Update="Generated\TsVersion.gen.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
-      <LastGenOutput>Versions.cs</LastGenOutput>
+      <LastGenOutput>TsVersion.gen.cs</LastGenOutput>
     </None>
     <None Update="TsBaseFunctions.gen.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
@@ -135,10 +135,10 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>TsPermission.tt</DependentUpon>
     </Compile>
-    <Compile Update="Generated\Versions.cs">
+    <Compile Update="Generated\TsVersion.gen.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
-      <DependentUpon>Versions.tt</DependentUpon>
+      <DependentUpon>TsVersion.gen.tt</DependentUpon>
     </Compile>
     <Compile Update="Query\TsQueryClient.gen.cs">
       <DependentUpon>TsQueryClient.gen.tt</DependentUpon>

@@ -27,7 +27,7 @@ namespace TS3AudioBot.History
 
 		public string ProcessQuery(AudioLogEntry entry, Func<AudioLogEntry, string> format)
 		{
-			return SubstringToken(format(entry), TsConst.MaxSizeTextMessage);
+			return SubstringToken(format(entry), TsConst.Default.MaxSizeTextMessage);
 		}
 
 		public string ProcessQuery(IEnumerable<AudioLogEntry> entries, Func<AudioLogEntry, string> format)
@@ -46,7 +46,7 @@ namespace TS3AudioBot.History
 			StringBuilder strb;
 
 			// If the entire content fits within the ts3 limitation, we can concat and return it.
-			if (queryTokenLen <= TsConst.MaxSizeTextMessage)
+			if (queryTokenLen <= TsConst.Default.MaxSizeTextMessage)
 			{
 				if (queryTokenLen == 0) return "Nothing found!";
 				strb = new StringBuilder(queryTokenLen, queryTokenLen);
@@ -56,7 +56,7 @@ namespace TS3AudioBot.History
 				return strb.ToString();
 			}
 
-			int spareToken = TsConst.MaxSizeTextMessage;
+			int spareToken = TsConst.Default.MaxSizeTextMessage;
 			int listStart = 0;
 
 			// Otherwise we go iteratively through the list to test how many entries we can add with our token
@@ -115,7 +115,7 @@ namespace TS3AudioBot.History
 			}
 
 			// now we can just build our result and return
-			strb = new StringBuilder(TsConst.MaxSizeTextMessage - spareToken, TsConst.MaxSizeTextMessage);
+			strb = new StringBuilder(TsConst.Default.MaxSizeTextMessage - spareToken, TsConst.Default.MaxSizeTextMessage);
 			for (int i = useList.Count - 1; i >= 0; i--)
 			{
 				var eL = useList[i];
