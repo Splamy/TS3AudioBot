@@ -13,6 +13,9 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
+using System.Net;
+using System.Threading;
+using System.Threading.Tasks;
 using TS3AudioBot.Config;
 using TS3AudioBot.Helper;
 using TSLib.Helper;
@@ -36,7 +39,7 @@ namespace TS3AudioBot.Environment
 		private readonly ConfRoot conf;
 		private readonly DbStore database;
 		private readonly BotManager botManager;
-		private TickWorker? ticker;
+		private Timer? ticker;
 		private bool uploadParamEnabled;
 		private bool UploadEnabled => uploadParamEnabled && conf.Configs.SendStats;
 
@@ -100,10 +103,10 @@ namespace TS3AudioBot.Environment
 			uploadParamEnabled = upload;
 			if (ticker != null)
 				throw new InvalidOperationException();
-			ticker = TickPool.RegisterTick(() => TrackPoint(), CheckInterval, true);
+			ticker = new Timer(stats => ((Stats)stats!).TrackPoint(), this, CheckInterval, CheckInterval);
 		}
 
-		private void SendStats(StatsPing sendPacket)
+		private async Task SendStats(StatsPing sendPacket)
 		{
 			try
 			{
@@ -112,12 +115,13 @@ namespace TS3AudioBot.Environment
 				request.Timeout = 2000; // ms
 				request.Method = "POST";
 				request.ContentType = "application/json";
-				using (var rStream = request.GetRequestStream())
+				using (var rStream = await request.GetRequestStreamAsync())
 				using (var sw = new StreamWriter(rStream, Tools.Utf8Encoder))
 				{
 					JsonSer.Serialize(sw, sendPacket);
 				}
-				request.GetResponse().Dispose();
+				using var response = (HttpWebResponse)await request.GetResponseAsync();
+				Log.Debug("Stats response {0}", response.StatusCode);
 			}
 			catch (Exception ex) { Log.Debug(ex, "Could not upload stats"); }
 		}
@@ -139,7 +143,7 @@ namespace TS3AudioBot.Environment
 			return sendPacket;
 		}
 
-		private void TrackPoint()
+		private async void TrackPoint()
 		{
 			var nextId = statsPoints.GenNextIndex();
 

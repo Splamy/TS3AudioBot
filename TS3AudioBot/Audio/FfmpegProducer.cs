@@ -17,9 +17,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using TS3AudioBot.Config;
 using TS3AudioBot.Helper;
-using TSLib;
 using TSLib.Audio;
 using TSLib.Helper;
+using TSLib.Scheduler;
 
 namespace TS3AudioBot.Audio
 {

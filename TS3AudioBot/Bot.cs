@@ -10,7 +10,6 @@
 using System;
 using System.IO;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using TS3AudioBot.Algorithm;
 using TS3AudioBot.Audio;
@@ -30,6 +29,7 @@ using TSLib;
 using TSLib.Full;
 using TSLib.Helper;
 using TSLib.Messages;
+using TSLib.Scheduler;
 
 namespace TS3AudioBot
 {
@@ -39,7 +39,7 @@ namespace TS3AudioBot
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 
 		private readonly ConfBot config;
-		private TickWorker? idleTickWorker = null;
+		private readonly TickWorker idleTickWorker;
 
 		internal bool IsDisposed { get; private set; }
 		internal BotInjector Injector { get; }
@@ -117,11 +117,12 @@ namespace TS3AudioBot
 			var customTarget = Injector.GetModuleOrThrow<CustomTargetPipe>();
 			player.SetTarget(customTarget);
 			Injector.AddModule(ts3FullClient.Book);
-
 			playManager = Injector.GetModuleOrThrow<PlayManager>();
 			targetManager = Injector.GetModuleOrThrow<IVoiceTarget>();
 			sessionManager = Injector.GetModuleOrThrow<SessionManager>();
 			stats = Injector.GetModuleOrThrow<Stats>();
+
+			idleTickWorker = Scheduler.Invoke(() => Scheduler.CreateTimer(OnIdle, TimeSpan.MaxValue, false)).Result;
 
 			player.OnSongEnd += playManager.SongStoppedEvent;
 			player.OnSongUpdated += (s, e) => playManager.Update(e);
@@ -175,8 +176,6 @@ namespace TS3AudioBot
 			var result = await ts3client.Connect();
 			if (!result.Ok)
 				return result;
-
-			Log.Info("Bot \"{0}\"({1}) connected.", config.Name, Id);
 
 			EnableIdleTickWorker();
 
@@ -497,7 +496,6 @@ namespace TS3AudioBot
 
 		private async void OnIdle()
 		{
-			ValidateScheduler();
 			// DisableIdleTickWorker(); // fire once only ??
 
 			var onIdle = config.Events.OnIdle.Value;
@@ -516,21 +514,11 @@ namespace TS3AudioBot
 				DisableIdleTickWorker();
 				return;
 			}
-			var newWorker = TickPool.RegisterTick(OnIdle, idleTime, false);
-			SetIdleTickWorker(newWorker);
-			newWorker.Active = true;
+			idleTickWorker.Interval = idleTime;
+			idleTickWorker.Active = true;
 		}
 
-		private void DisableIdleTickWorker() => SetIdleTickWorker(null);
-
-		private void SetIdleTickWorker(TickWorker? worker)
-		{
-			var oldWoker = Interlocked.Exchange(ref idleTickWorker, worker);
-			if (oldWoker != null)
-			{
-				TickPool.UnregisterTicker(oldWoker);
-			}
-		}
+		private void DisableIdleTickWorker() => idleTickWorker.Active = false;
 
 		#endregion
 

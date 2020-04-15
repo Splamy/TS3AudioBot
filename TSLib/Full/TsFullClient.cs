@@ -10,6 +10,7 @@
 using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using TSLib.Audio;
@@ -17,6 +18,7 @@ using TSLib.Commands;
 using TSLib.Full.Book;
 using TSLib.Helper;
 using TSLib.Messages;
+using TSLib.Scheduler;
 using CmdR = System.Threading.Tasks.Task<System.E<TSLib.Messages.CommandError>>;
 
 namespace TSLib.Full
@@ -27,7 +29,7 @@ namespace TSLib.Full
 		private TsCrypt tsCrypt;
 		private PacketHandler<S2C, C2S> packetHandler;
 		private readonly AsyncMessageProcessor msgProc;
-		private readonly TaskScheduler dispatcher;
+		private readonly DedicatedTaskScheduler dispatcher;
 		private readonly bool ownDispatcher;
 
 		private readonly object statusLock = new object();
@@ -58,7 +60,7 @@ namespace TSLib.Full
 		/// <param name="dispatcherType">The message processing method for incomming notifications.
 		/// See <see cref="EventDispatchType"/> for further information about each type.</param>
 #pragma warning disable CS8618 // !NRT on Connect
-		public TsFullClient(TaskScheduler? dispatcher = null)
+		public TsFullClient(DedicatedTaskScheduler? dispatcher = null)
 #pragma warning restore CS8618
 		{
 			status = TsClientStatus.Disconnected;
@@ -90,6 +92,8 @@ namespace TSLib.Full
 			ConnectionData = conData;
 			ServerConstants = TsConst.Default;
 			Book.Reset();
+
+			Trace.Assert(context.ConnectEvent.Task.Status != TaskStatus.Running);
 
 			var ctx = new ConnectionContext { WasExit = false };
 			lock (statusLock)

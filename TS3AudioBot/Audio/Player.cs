@@ -15,6 +15,7 @@ using TS3AudioBot.ResourceFactories;
 using TSLib;
 using TSLib.Audio;
 using TSLib.Helper;
+using TSLib.Scheduler;
 
 namespace TS3AudioBot.Audio
 {

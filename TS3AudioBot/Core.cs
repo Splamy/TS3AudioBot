@@ -130,7 +130,6 @@ namespace TS3AudioBot
 			injector.GetModule<WebServer>()?.Dispose();
 			injector.GetModule<DbStore>()?.Dispose();
 			injector.GetModule<ResourceResolver>()?.Dispose();
-			TickPool.Close();
 		}
 	}
 }

@@ -49,7 +49,6 @@ namespace TS3AudioBot
 		};
 
 		private bool closed = false;
-		private TickWorker? reconnectTick = null;
 		private int reconnectCounter;
 		private ReconnectType? lastReconnect;
 
@@ -139,7 +138,6 @@ namespace TS3AudioBot
 		{
 			if (identity is null) throw new InvalidOperationException();
 
-			StopReconnectTickWorker();
 			if (closed)
 				return "Bot disposed";
 
@@ -178,7 +176,8 @@ namespace TS3AudioBot
 
 				await ts3FullClient.Connect(connectionConfig);
 
-				StopReconnectTickWorker();
+				Log.Info("Client connected.");
+
 				reconnectCounter = 0;
 				lastReconnect = null;
 				return R.Ok;
@@ -193,7 +192,6 @@ namespace TS3AudioBot
 		public async Task Disconnect()
 		{
 			closed = true;
-			StopReconnectTickWorker();
 			await ts3FullClient.Disconnect();
 			ts3FullClient.Dispose();
 		}
@@ -207,14 +205,6 @@ namespace TS3AudioBot
 				TsCrypt.ImproveSecurity(identity, targetLevel);
 				config.Connect.Identity.Offset.Value = identity.ValidKeyOffset;
 			}
-		}
-
-		private void StopReconnectTickWorker()
-		{
-			var reconnectTickLocal = reconnectTick;
-			reconnectTick = null;
-			if (reconnectTickLocal != null)
-				TickPool.UnregisterTicker(reconnectTickLocal);
 		}
 
 		#region TSLib functions wrapper
@@ -614,7 +604,7 @@ namespace TS3AudioBot
 			}
 
 			Log.Info("Trying to reconnect because of {0}. Delaying reconnect for {1:0} seconds", type, delay.Value.TotalSeconds);
-			await Task.Delay(delay.Value);
+			await Task.Delay(delay.Value); // TODO: Async add cancellation token ?
 			await ConnectClient();
 			return true;
 		}
