@@ -29,12 +29,16 @@ namespace TS3AudioBot
 		{ }
 
 		public AudioBotException(string message)
-			: base(message)
-		{ }
+			: base(null)
+		{
+			LocalStr = message;
+		}
 
 		public AudioBotException(string message, Exception inner)
-			: base(message, inner)
-		{ }
+			: base(null, inner)
+		{
+			LocalStr = message;
+		}
 
 		protected AudioBotException(SerializationInfo info, StreamingContext context)
 			: base(info, context)

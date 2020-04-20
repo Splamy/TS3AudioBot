@@ -13,6 +13,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using TSLib.Helper;
+using TSLib.Scheduler;
 
 namespace TS3AudioBot.Environment
 {
@@ -21,7 +22,6 @@ namespace TS3AudioBot.Environment
 		private static readonly Process CurrentProcess = Process.GetCurrentProcess();
 		private readonly ReaderWriterLockSlim historyLock = new ReaderWriterLockSlim();
 		private readonly Queue<SystemMonitorSnapshot> history = new Queue<SystemMonitorSnapshot>();
-		private Timer? ticker = null;
 
 		private bool historyChanged = true;
 		private SystemMonitorReport? lastReport = null;
@@ -30,11 +30,9 @@ namespace TS3AudioBot.Environment
 
 		public DateTime StartTime { get; } = Tools.Now;
 
-		public void StartTimedSnapshots()
+		public SystemMonitor(DedicatedTaskScheduler scheduler)
 		{
-			if (ticker != null)
-				throw new InvalidOperationException("Ticker already running");
-			ticker = new Timer(monitor => ((SystemMonitor)monitor!).CreateSnapshot(), this, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(1));
+			_ = scheduler.CreateTimer(CreateSnapshot, TimeSpan.FromSeconds(1), true);
 		}
 
 		public void CreateSnapshot()

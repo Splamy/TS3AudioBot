@@ -25,23 +25,28 @@ namespace TSLib.Scheduler
 		private readonly BlockingCollection<Task> queue = new BlockingCollection<Task>();
 		private readonly HashSet<TickWorker> timers = new HashSet<TickWorker>();
 		private readonly Thread thread;
-		private readonly Id id;
+		private readonly Id logId;
 		// This is not a duraration but an instant from ticks
 		// The TimeSpan class is used for calculation convenience
 		// The values is used as a cache so we don't need to recheck the list on each loop
 		private TimeSpan nextTimerDue = TimeSpan.MaxValue;
 		private bool IsOwnThread => Thread.CurrentThread == thread;
 #if DEBUG
-		private Stack<Task> taskStack = new Stack<Task>();
+		private readonly Stack<Task> taskStack = new Stack<Task>();
 		private TimeSpan lastTaskCompleted = TimeSpan.MinValue;
-		private Stopwatch overallWatch = new Stopwatch();
+		private readonly Stopwatch overallWatch = new Stopwatch();
 		private TimeSpan actualRunningTime;
 #endif
+		private DedicatedTaskScheduler()
+		{
+			factory = new TaskFactory(this);
+			thread = Thread.CurrentThread;
+		}
 
 		public DedicatedTaskScheduler(Id id)
 		{
 			factory = new TaskFactory(this);
-			this.id = id;
+			this.logId = id;
 			thread = new Thread(DoWork)
 			{
 				Name = DispatcherHelper.CreateDispatcherTitle(id)
@@ -49,9 +54,16 @@ namespace TSLib.Scheduler
 			thread.Start();
 		}
 
+		public static void FromCurrentThread(Action root)
+		{
+			var dedi = new DedicatedTaskScheduler();
+			_ = dedi.Invoke(root);
+			dedi.DoWork();
+		}
+
 		private void DoWork()
 		{
-			Tools.SetLogId(id);
+			Tools.SetLogId(logId);
 			while (!queue.IsCompleted)
 			{
 				TimeSpan timeTillNextTimer = DispatchTimers();
@@ -101,7 +113,7 @@ namespace TSLib.Scheduler
 				TimeSpan wait;
 				if (due < now)
 				{
-					this.Invoke(timer.Method);
+					_ = Invoke(timer.Method);
 					timer.Timestamp = GetTimestamp();
 					wait = timer.Interval;
 				}
@@ -161,7 +173,7 @@ namespace TSLib.Scheduler
 			if (taskStack.Count == 0)
 			{
 				var overallTime = overallWatch.Elapsed;
-				Log.Trace("Overall call time: {0:F3} Task Time: {1:F3} Overhead: {2:F3}",
+				Log.Debug("Overall call time: {0:F3} Task Time: {1:F3} Overhead: {2:F3}",
 					overallTime.TotalMilliseconds,
 					actualRunningTime.TotalMilliseconds,
 					(overallTime - actualRunningTime).TotalMilliseconds);
@@ -195,7 +207,7 @@ namespace TSLib.Scheduler
 
 		public TickWorker CreateTimer(Action method, TimeSpan interval, bool active)
 		{
-			CheckOwnThread();
+			VerifyOwnThread();
 			if (method is null) throw new ArgumentNullException(nameof(method));
 			var worker = new TickWorker(this, method, interval);
 			// This will add the worker to the list (if it's enabled)
@@ -205,14 +217,14 @@ namespace TSLib.Scheduler
 
 		internal void EnableTimer(TickWorker timer)
 		{
-			CheckOwnThread();
+			VerifyOwnThread();
 			timers.Add(timer);
 			BumpTimer();
 		}
 
 		internal void DisableTimer(TickWorker timer)
 		{
-			CheckOwnThread();
+			VerifyOwnThread();
 			timers.Remove(timer);
 		}
 
@@ -220,17 +232,25 @@ namespace TSLib.Scheduler
 
 		private TimeSpan GetTimestamp() => new TimeSpan(Stopwatch.GetTimestamp());
 
-		public void CheckOwnThread()
+		public void VerifyOwnThread()
 		{
 			if (!IsOwnThread)
-				throw new TaskSchedulerException("Cannot register a timer from an outside thread");
+			{
+				var stack = new StackTrace();
+				Log.Error("Current call is not scheduled correctly. Sched: {0}, Own: {1}. Stack: {2}",
+					(Current as DedicatedTaskScheduler)?.logId.ToString() ?? $"S{Current.Id}",
+					logId,
+					stack
+				);
+				throw new TaskSchedulerException("Cannot call from an outside thread");
+			}
 		}
 
 		// Invokes
 
 		public Task Invoke(Action action)
 		{
-			if (TaskScheduler.Current == this)
+			if (Current == this)
 			{
 				action();
 				return Task.CompletedTask;
@@ -241,7 +261,7 @@ namespace TSLib.Scheduler
 
 		public Task<T> Invoke<T>(Func<T> action)
 		{
-			if (TaskScheduler.Current == this)
+			if (Current == this)
 			{
 				var t = action();
 				return Task.FromResult(t);
@@ -252,7 +272,7 @@ namespace TSLib.Scheduler
 
 		public Task InvokeAsync(Func<Task> action)
 		{
-			if (TaskScheduler.Current == this)
+			if (Current == this)
 			{
 				var t = action();
 				return t;
@@ -263,7 +283,7 @@ namespace TSLib.Scheduler
 
 		public Task<T> InvokeAsync<T>(Func<Task<T>> action)
 		{
-			if (TaskScheduler.Current == this)
+			if (Current == this)
 			{
 				var t = action();
 				return t;

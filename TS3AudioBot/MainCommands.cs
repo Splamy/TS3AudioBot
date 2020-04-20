@@ -59,10 +59,6 @@ namespace TS3AudioBot
 
 		private const string YesNoOption = " !(yes|no)";
 
-		[Command("gc")]
-		public static void CommandGC()
-			=> GC.Collect();
-
 		// [...] = Optional
 		// <name> = Placeholder for a text
 		// [text] = Option for fixed text
@@ -299,7 +295,7 @@ namespace TS3AudioBot
 			info.ParentInjector = bot.Injector;
 			try
 			{
-				return await bot.Scheduler.InvokeAsync(async () => await cmd.Execute(info, Array.Empty<ICommand>()));
+				return await bot.Scheduler.InvokeAsync(() => cmd.Execute(info, Array.Empty<ICommand>()).AsTask());
 			}
 			finally
 			{
@@ -1553,23 +1549,23 @@ namespace TS3AudioBot
 		}
 
 		[Command("system quit", "cmd_quit_help")]
-		public static async Task<JsonEmpty> CommandSystemQuit(Core core, CallerInfo caller, UserSession? session = null, string? param = null)
+		public static JsonEmpty CommandSystemQuit(Core core, CallerInfo caller, UserSession? session = null, string? param = null)
 		{
 			const string force = "force";
 
 			if (caller.ApiCall || param == force)
 			{
-				await core.Stop();
+				core.Stop();
 				return new JsonEmpty(string.Empty);
 			}
 
-			async Task<string?> ResponseQuit(string message)
+			Task<string?> ResponseQuit(string message)
 			{
 				if (TextUtil.GetAnswer(message) == Answer.Yes)
 				{
-					await CommandSystemQuit(core, caller, session, force);
+					CommandSystemQuit(core, caller, session, force);
 				}
-				return null;
+				return Task.FromResult<string?>(null);
 			}
 
 			session.SetResponse(ResponseQuit);

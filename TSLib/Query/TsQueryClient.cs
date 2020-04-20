@@ -49,11 +49,11 @@ namespace TSLib.Query
 			dispatcher = new ExtraThreadEventDispatcher();
 		}
 
-		public override async Task Connect(ConnectionData conData)
+		public override async CmdR Connect(ConnectionData conData)
 		{
 			remoteAddress = await TsDnsResolver.TryResolve(conData.Address, TsDnsResolver.TsQueryDefaultPort);
 			if (remoteAddress is null)
-				throw new TsException("Could not read or resolve address.");
+				return CommandError.Custom("Could not read or resolve address.");
 
 			NetworkStream tcpStream;
 			try
@@ -69,16 +69,17 @@ namespace TSLib.Query
 				tcpWriter = new StreamWriter(tcpStream, Tools.Utf8Encoder) { NewLine = "\n" };
 
 				if (await tcpReader.ReadLineAsync() != "TS3")
-					throw new TsException("Protocol violation. The stream must start with 'TS3'");
+					return CommandError.Custom("Protocol violation. The stream must start with 'TS3'");
 				if (string.IsNullOrEmpty(await tcpReader.ReadLineAsync()))
 					await tcpReader.ReadLineAsync();
 			}
-			catch (SocketException ex) { throw new TsException("Could not connect.", ex); }
+			catch (SocketException ex) { return CommandError.Custom("Could not connect: " + ex.Message); }
 			finally { connecting = false; }
 
 			cts = new CancellationTokenSource();
 			dispatcher.Init(InvokeEvent, conData.LogId);
 			_ = NetworkLoop(tcpStream, cts.Token);
+			return R.Ok;
 		}
 
 		public override Task Disconnect()

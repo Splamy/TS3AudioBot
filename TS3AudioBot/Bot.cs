@@ -41,7 +41,7 @@ namespace TS3AudioBot
 		private readonly ConfBot config;
 		private readonly TickWorker idleTickWorker;
 
-		internal bool IsDisposed { get; private set; }
+		private bool isClosed;
 		internal BotInjector Injector { get; }
 		internal DedicatedTaskScheduler Scheduler { get; }
 
@@ -76,15 +76,17 @@ namespace TS3AudioBot
 			config.Events.OnIdle.Changed += (s, e) => EnableIdleTickWorker();
 
 			var builder = new DependencyBuilder(Injector);
-			builder.AddModule(this);
-			builder.AddModule(config);
-			builder.AddModule(Injector);
-			builder.AddModule(config.Playlists);
+			Injector.HideParentModule<CommandManager>();
+			Injector.HideParentModule<DedicatedTaskScheduler>();
+			Injector.AddModule(this);
+			Injector.AddModule(config);
+			Injector.AddModule(Injector);
+			Injector.AddModule(config.Playlists);
+			Injector.AddModule(config.History);
+			Injector.AddModule(Id);
 			builder.RequestModule<PlaylistIO>();
 			builder.RequestModule<PlaylistManager>();
-			builder.AddModule(Id);
 			builder.RequestModule<DedicatedTaskScheduler>();
-			builder.RequestModule<TaskScheduler, DedicatedTaskScheduler>();
 			builder.RequestModule<TsFullClient>();
 			builder.RequestModule<TsBaseFunctions, TsFullClient>();
 			builder.RequestModule<Ts3Client>();
@@ -93,12 +95,9 @@ namespace TS3AudioBot
 			builder.RequestModule<IVoiceTarget, CustomTargetPipe>();
 			builder.RequestModule<SessionManager>();
 			builder.RequestModule<ResolveContext>();
-			if (!builder.TryCreate<CommandManager>(out var commandManager))
-				throw new Exception("Failed to create commandManager");
-			builder.AddModule(commandManager);
+			builder.RequestModule<CommandManager>();
 			if (config.History.Enabled)
 			{
-				builder.AddModule(config.History);
 				builder.RequestModule<HistoryManager>();
 			}
 			builder.RequestModule<PlayManager>();
@@ -108,6 +107,7 @@ namespace TS3AudioBot
 				Log.Error("Missing bot module dependency");
 				throw new Exception("Could not load all bot modules");
 			}
+			Injector.ClearHiddenParentModules();
 
 			resourceResolver = Injector.GetModuleOrThrow<ResolveContext>();
 			ts3FullClient = Injector.GetModuleOrThrow<TsFullClient>();
@@ -121,6 +121,7 @@ namespace TS3AudioBot
 			targetManager = Injector.GetModuleOrThrow<IVoiceTarget>();
 			sessionManager = Injector.GetModuleOrThrow<SessionManager>();
 			stats = Injector.GetModuleOrThrow<Stats>();
+			var commandManager = Injector.GetModuleOrThrow<CommandManager>();
 
 			idleTickWorker = Scheduler.Invoke(() => Scheduler.CreateTimer(OnIdle, TimeSpan.MaxValue, false)).Result;
 
@@ -152,10 +153,12 @@ namespace TS3AudioBot
 			ts3client.OnMessageReceived += OnMessageReceived;
 			// Register callback to remove open private sessions, when user disconnects
 			ts3FullClient.OnEachClientLeftView += OnClientLeftView;
-			ts3client.OnBotDisconnect += OnBotDisconnect;
+			ts3client.OnBotConnected += OnBotConnected;
+			ts3client.OnBotDisconnected += OnBotDisconnected;
+			ts3client.OnBotStoppedReconnecting += OnBotStoppedReconnecting;
 			// Alone mode
 			ts3client.OnAloneChanged += OnAloneChanged;
-			ts3client.OnAloneChanged += (s, e) => customTarget.Alone = e.Alone;
+			ts3client.OnAloneChanged += (s, e) => { customTarget.Alone = e.Alone; return Task.CompletedTask; };
 			// Whisper stall
 			ts3client.OnWhisperNoTarget += (s, e) => player.SetStall();
 
@@ -170,36 +173,21 @@ namespace TS3AudioBot
 				commandManager.RegisterAlias(alias.Key, alias.Value).UnwrapToLog(Log);
 		}
 
-		public async Task<E<string>> Run()
+		public Task<E<string>> Run()
 		{
+			Scheduler.VerifyOwnThread();
+
 			Log.Info("Bot \"{0}\" connecting to \"{1}\"", config.Name, config.Connect.Address);
-			var result = await ts3client.Connect();
-			if (!result.Ok)
-				return result;
-
-			EnableIdleTickWorker();
-
-			var badges = config.Connect.Badges.Value;
-			if (!string.IsNullOrEmpty(badges))
-				ts3client?.ChangeBadges(badges);
-
-			var onStart = config.Events.OnConnect.Value;
-			if (!string.IsNullOrEmpty(onStart))
-			{
-				var info = CreateExecInfo();
-				await CallScript(info, onStart, false, true);
-			}
-
-			return R.Ok;
+			return Task.FromResult(ts3client.Connect());
 		}
 
 		public async Task Stop()
 		{
-			ValidateScheduler();
+			Scheduler.VerifyOwnThread();
 
 			Injector.GetModule<BotManager>()?.RemoveBot(this);
 
-			if (!IsDisposed) IsDisposed = true;
+			if (!isClosed) isClosed = true;
 			else return;
 
 			Log.Info("Bot ({0}) disconnecting.", Id);
@@ -216,7 +204,23 @@ namespace TS3AudioBot
 			config.ClearEvents();
 		}
 
-		private async void OnBotDisconnect(object? sender, DisconnectEventArgs e)
+		private async Task OnBotConnected(object? sender, EventArgs e)
+		{
+			EnableIdleTickWorker();
+
+			var badges = config.Connect.Badges.Value;
+			if (!string.IsNullOrEmpty(badges))
+				ts3client?.ChangeBadges(badges);
+
+			var onStart = config.Events.OnConnect.Value;
+			if (!string.IsNullOrEmpty(onStart))
+			{
+				var info = CreateExecInfo();
+				await CallScript(info, onStart, false, true);
+			}
+		}
+
+		private async Task OnBotDisconnected(object? sender, DisconnectEventArgs e)
 		{
 			DisableIdleTickWorker();
 
@@ -226,11 +230,14 @@ namespace TS3AudioBot
 				var info = CreateExecInfo();
 				await CallScript(info, onStop, false, true);
 			}
-
-			await Stop();
 		}
 
-		private async void OnMessageReceived(object? sender, TextMessage textMessage)
+		private Task OnBotStoppedReconnecting(object? sender, EventArgs e)
+		{
+			return Stop();
+		}
+
+		private async Task OnMessageReceived(object? sender, TextMessage textMessage)
 		{
 			if (textMessage?.Message == null)
 			{
@@ -332,9 +339,9 @@ namespace TS3AudioBot
 
 		public async Task UpdateBotStatusInternal()
 		{
-			ValidateScheduler();
+			Scheduler.VerifyOwnThread();
 
-			if (IsDisposed)
+			if (isClosed)
 				return;
 
 			if (!config.SetStatusDescription)
@@ -362,9 +369,9 @@ namespace TS3AudioBot
 
 		public async Task GenerateStatusImageInternal(bool playing, PlayInfoEventArgs? startEvent)
 		{
-			ValidateScheduler();
+			Scheduler.VerifyOwnThread();
 
-			if (!config.GenerateStatusAvatar || IsDisposed)
+			if (!config.GenerateStatusAvatar || isClosed)
 				return;
 
 			static Stream? GetRandomFile(string? basePath, string prefix)
@@ -524,9 +531,9 @@ namespace TS3AudioBot
 
 		#region Event: Alone/Party
 
-		private async void OnAloneChanged(object? sender, AloneChanged e)
+		private async Task OnAloneChanged(object? sender, AloneChanged e)
 		{
-			ValidateScheduler();
+			Scheduler.VerifyOwnThread();
 
 			string script;
 			TimeSpan delay;
@@ -576,19 +583,6 @@ namespace TS3AudioBot
 					await info.Write(TextMod.Format(config.Commands.Color, strings.error_call_unexpected_error.Mod().Color(Color.Red).Bold(), ex.Message))
 						.CatchToLog(Log);
 				}
-			}
-		}
-
-		private void ValidateScheduler()
-		{
-			if (TaskScheduler.Current != Scheduler)
-			{
-				var stack = new System.Diagnostics.StackTrace();
-				Log.Error("Current call is not scheduled correctly. Sched: {0}, Own: {1}. Stack: {2}",
-					TaskScheduler.Current.Id,
-					Scheduler.Id,
-					stack
-				);
 			}
 		}
 

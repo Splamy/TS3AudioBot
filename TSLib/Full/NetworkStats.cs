@@ -33,10 +33,10 @@ namespace TSLib.Full
 		internal void LogOutPacket<TDir>(ref Packet<TDir> packet)
 		{
 			var kind = TypeToKind(packet.PacketType);
-			outPackets[(int)kind]++;
-			outBytes[(int)kind] += packet.Raw.Length;
 			lock (queueLock)
 			{
+				outPackets[(int)kind]++;
+				outBytes[(int)kind] += packet.Raw.Length;
 				DropOver(outBytesTime, TimeMinute);
 				outBytesTime.Enqueue(new PacketData((ushort)packet.Raw.Length, Tools.Now, kind));
 			}
@@ -45,10 +45,10 @@ namespace TSLib.Full
 		internal void LogInPacket<TDir>(ref Packet<TDir> packet)
 		{
 			var kind = TypeToKind(packet.PacketType);
-			inPackets[(int)kind]++;
-			inBytes[(int)kind] += packet.Raw.Length;
 			lock (queueLock)
 			{
+				inPackets[(int)kind]++;
+				inBytes[(int)kind] += packet.Raw.Length;
 				DropOver(inBytesTime, TimeMinute);
 				inBytesTime.Enqueue(new PacketData((ushort)packet.Raw.Length, Tools.Now, kind));
 			}

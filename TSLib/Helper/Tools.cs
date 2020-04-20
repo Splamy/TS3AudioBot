@@ -72,5 +72,16 @@ namespace TSLib.Helper
 		public static void SetLogId(string id) => NLog.MappedDiagnosticsLogicalContext.Set("BotId", id);
 
 		public static Exception UnhandledDefault<T>(T value) where T : struct { return new MissingEnumCaseException(typeof(T).Name, value.ToString() ?? string.Empty); }
+
+#if NETSTANDARD2_0
+		public static bool Remove<K, V>(this Dictionary<K, V> dict, K key, out V value)
+		{
+			if (dict.TryGetValue(key, out value))
+			{
+				return dict.Remove(key);
+			}
+			return false;
+		}
+#endif
 	}
 }

@@ -10,19 +10,26 @@
 using System;
 using System.IO;
 using System.Net;
+using System.Net.Http;
 using System.Threading.Tasks;
 using TS3AudioBot.Localization;
+using System.Net.Http.Headers;
 
 namespace TS3AudioBot.Helper
 {
 	public static class WebWrapper
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
-		public static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(5);
+		public static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(10);
+
+		private static readonly HttpClient httpClient = new HttpClient();
 
 		static WebWrapper()
 		{
 			ServicePointManager.DefaultConnectionLimit = int.MaxValue;
+			httpClient.Timeout = DefaultTimeout;
+			httpClient.DefaultRequestHeaders.UserAgent.Clear();
+			httpClient.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("TS3AudioBot", Environment.SystemData.AssemblyData.Version));
 		}
 
 		public static Task<string> DownloadStringAsync(string? link, params (string name, string value)[] headers)
@@ -33,17 +40,19 @@ namespace TS3AudioBot.Helper
 		}
 		public static async Task<string> DownloadStringAsync(Uri uri, params (string name, string value)[] headers)
 		{
-			var request = CreateRequest(uri);
+			//var request = CreateRequest(uri);
+
+			var request = new HttpRequestMessage(HttpMethod.Get, uri);
 
 			foreach (var (name, value) in headers)
 				request.Headers.Add(name, value);
 
 			try
 			{
-				using var response = await request.GetResponseAsync();
-				using var stream = response.GetResponseStream();
-				using var reader = new StreamReader(stream);
-				var site = await reader.ReadToEndAsync();
+				using var response = await httpClient.SendAsync(request);
+				if (!response.IsSuccessStatusCode)
+					throw Error.LocalStr(strings.error_net_unknown);
+				var site = await response.Content.ReadAsStringAsync();
 				return site;
 			}
 			catch (Exception ex)

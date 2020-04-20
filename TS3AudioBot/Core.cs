@@ -20,6 +20,7 @@ using TS3AudioBot.ResourceFactories;
 using TS3AudioBot.Rights;
 using TS3AudioBot.Sessions;
 using TS3AudioBot.Web;
+using TSLib.Scheduler;
 
 namespace TS3AudioBot
 {
@@ -28,71 +29,72 @@ namespace TS3AudioBot
 		private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 		private readonly string configFilePath;
 		private bool forceNextExit;
+		private readonly DedicatedTaskScheduler scheduler;
 		private readonly CoreInjector injector;
 
-		public Core(string? configFilePath = null)
+		public Core(DedicatedTaskScheduler scheduler, string? configFilePath = null)
 		{
+			this.scheduler = scheduler;
 			// setting defaults
 			this.configFilePath = configFilePath ?? FilesConst.CoreConfig;
 
 			injector = new CoreInjector();
 		}
 
-		public async Task<E<string>> Run(ParameterData setup)
+		public async Task Run(ParameterData setup)
 		{
-			AppDomain.CurrentDomain.UnhandledException += ExceptionHandler;
+			scheduler.VerifyOwnThread();
+
+			AppDomain.CurrentDomain.UnhandledException += UnhandledExceptionHandler;
 			TaskScheduler.UnobservedTaskException += UnobservedTaskExceptionHandler;
 			Console.CancelKeyPress += ConsoleInterruptHandler;
 
 			var config = ConfRoot.OpenOrCreate(configFilePath);
 			if (config is null)
-				return "Could not create config";
+				throw new Exception("Could not create config");
 			ConfigUpgrade2.Upgrade(config.Configs.BotsPath.Value);
 			config.Save();
 
 			var builder = new DependencyBuilder(injector);
 
-			builder.AddModule(this);
-			builder.AddModule(config);
-			builder.AddModule(injector);
-			builder.AddModule(config.Db);
+			injector.AddModule(this);
+			injector.AddModule(scheduler);
+			injector.AddModule(injector);
+			injector.AddModule(config);
+			injector.AddModule(config.Db);
+			injector.AddModule(config.Plugins);
+			injector.AddModule(config.Web);
+			injector.AddModule(config.Web.Interface);
+			injector.AddModule(config.Web.Api);
+			injector.AddModule(config.Rights);
+			injector.AddModule(config.Factories);
 			builder.RequestModule<SystemMonitor>();
 			builder.RequestModule<DbStore>();
-			builder.AddModule(config.Plugins);
 			builder.RequestModule<PluginManager>();
-			builder.AddModule(config.Web);
-			builder.AddModule(config.Web.Interface);
-			builder.AddModule(config.Web.Api);
 			builder.RequestModule<WebServer>();
-			builder.AddModule(config.Rights);
 			builder.RequestModule<RightsManager>();
 			builder.RequestModule<BotManager>();
 			builder.RequestModule<TokenManager>();
 			builder.RequestModule<CommandManager>();
-			builder.AddModule(config.Factories);
 			builder.RequestModule<ResourceResolver>();
 			builder.RequestModule<Stats>();
 
 			if (!builder.Build())
-				return "Could not load all core modules";
+				throw new Exception("Could not load all core modules");
 
 			YoutubeDlHelper.DataObj = config.Tools.YoutubeDl;
 
-			builder.GetModuleOrThrow<SystemMonitor>().StartTimedSnapshots();
-			builder.GetModuleOrThrow<CommandManager>().RegisterCollection(MainCommands.Bag);
-			builder.GetModuleOrThrow<RightsManager>().CreateConfigIfNotExists(setup.Interactive);
-			builder.GetModuleOrThrow<WebServer>().StartWebServer();
-			builder.GetModuleOrThrow<Stats>().StartTimer(setup.SendStats);
-			await builder.GetModuleOrThrow<BotManager>().RunBots(setup.Interactive);
-
-			return R.Ok;
+			injector.GetModuleOrThrow<CommandManager>().RegisterCollection(MainCommands.Bag);
+			injector.GetModuleOrThrow<RightsManager>().CreateConfigIfNotExists(setup.Interactive);
+			injector.GetModuleOrThrow<WebServer>().StartWebServer();
+			injector.GetModuleOrThrow<Stats>().StartTimer(setup.SendStats);
+			await injector.GetModuleOrThrow<BotManager>().RunBots(setup.Interactive);
 		}
 
-		public void ExceptionHandler(object sender, UnhandledExceptionEventArgs e)
+		public void UnhandledExceptionHandler(object sender, UnhandledExceptionEventArgs e)
 		{
 			Log.Fatal(e.ExceptionObject as Exception, "Critical program failure!");
-			Stop().Wait();
-			System.Environment.Exit(-1);
+			StopAsync().RunSynchronously();
 		}
 
 		public static void UnobservedTaskExceptionHandler(object? sender, UnobservedTaskExceptionEventArgs e)
@@ -109,7 +111,7 @@ namespace TS3AudioBot
 					Log.Info("Got interrupt signal, trying to soft-exit.");
 					e.Cancel = true;
 					forceNextExit = true;
-					Stop().Wait();
+					Stop();
 				}
 				else
 				{
@@ -119,7 +121,9 @@ namespace TS3AudioBot
 			}
 		}
 
-		public async Task Stop()
+		public void Stop() => _ = scheduler.InvokeAsync(StopAsync);
+
+		private async Task StopAsync()
 		{
 			Log.Info("TS3AudioBot shutting down.");
 
@@ -130,6 +134,9 @@ namespace TS3AudioBot
 			injector.GetModule<WebServer>()?.Dispose();
 			injector.GetModule<DbStore>()?.Dispose();
 			injector.GetModule<ResourceResolver>()?.Dispose();
+			injector.GetModule<DedicatedTaskScheduler>()?.Dispose();
+
+			Log.Info("Bye");
 		}
 	}
 }

@@ -342,7 +342,7 @@ namespace TS3AudioBot.Config
 			var value = conf.Value;
 			if (value.Count == 0)
 				return null;
-			var last = value[value.Count - 1];
+			var last = value[^1];
 			var repeat = last == "repeat" || last == "repeat last"; // "repeat" might get removed for other loops, but for now keep as hidden alternative
 			var max = repeat ? value.Count - 2 : value.Count - 1;
 			if (index <= max)
@@ -355,7 +355,7 @@ namespace TS3AudioBot.Config
 		{
 			if (value.Count == 0)
 				return R.Ok;
-			var last = value[value.Count - 1];
+			var last = value[^1];
 			var repeat = last == "repeat" || last == "repeat last";
 			if (repeat && value.Count == 1)
 				return $"Specified 'repeat' without any previous value.";

@@ -132,7 +132,7 @@ namespace TS3AudioBot
 				if (!initializeResult.Ok)
 				{
 					await StopBot(bot);
-					return $"Bot failed to connect ({initializeResult.Error})";
+					return $"Bot failed to initialize ({initializeResult.Error})";
 				}
 				return bot.GetInfo();
 			});

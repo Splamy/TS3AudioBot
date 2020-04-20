@@ -23,7 +23,6 @@ namespace TSLib
 		public Deserializer Deserializer { get; } = new Deserializer();
 
 		protected ReadOnlyMemory<byte>? cmdLineBuffer;
-		protected readonly object waitBlockLock = new object();
 		private const byte AsciiSpace = (byte)' ';
 
 		protected BaseMessageProcessor(Func<string, NotificationType> findTypeOfNotification)
@@ -65,26 +64,23 @@ namespace TSLib
 				}
 
 				var lazyNotification = new LazyNotification(notification, ntfyType);
-				lock (waitBlockLock)
+				var dependantList = dependingBlocks[(int)ntfyType];
+				if (dependantList != null)
 				{
-					var dependantList = dependingBlocks[(int)ntfyType];
-					if (dependantList != null)
+					foreach (var item in dependantList)
 					{
-						foreach (var item in dependantList)
+						item.SetNotification(lazyNotification);
+						if (item.DependsOn != null)
 						{
-							item.SetNotification(lazyNotification);
-							if (item.DependsOn != null)
+							foreach (var otherDepType in item.DependsOn)
 							{
-								foreach (var otherDepType in item.DependsOn)
-								{
-									if (otherDepType == ntfyType)
-										continue;
-									dependingBlocks[(int)otherDepType]?.Remove(item);
-								}
+								if (otherDepType == ntfyType)
+									continue;
+								dependingBlocks[(int)otherDepType]?.Remove(item);
 							}
 						}
-						dependantList.Clear();
 					}
+					dependantList.Clear();
 				}
 
 				return lazyNotification;
@@ -103,11 +99,11 @@ namespace TSLib
 
 	internal sealed class AsyncMessageProcessor : BaseMessageProcessor
 	{
-		private readonly ConcurrentDictionary<string, WaitBlock> requestDict;
+		private readonly Dictionary<string, WaitBlock> requestDict;
 
 		public AsyncMessageProcessor(Func<string, NotificationType> findTypeOfNotification) : base(findTypeOfNotification)
 		{
-			requestDict = new ConcurrentDictionary<string, WaitBlock>();
+			requestDict = new Dictionary<string, WaitBlock>();
 		}
 
 		protected override LazyNotification? PushMessageInternal(CommandError errorStatus, NotificationType ntfyType)
@@ -118,52 +114,42 @@ namespace TSLib
 			}
 
 			// otherwise it is the result status code to a request
-			lock (waitBlockLock)
+			if (requestDict.Remove(errorStatus.ReturnCode, out var waitBlock))
 			{
-				if (requestDict.TryRemove(errorStatus.ReturnCode, out var waitBlock))
-				{
-					waitBlock.SetAnswerAuto(errorStatus, cmdLineBuffer);
-					cmdLineBuffer = null;
-				}
-				else { /* ??? */ }
+				waitBlock.SetAnswerAuto(errorStatus, cmdLineBuffer);
+				cmdLineBuffer = null;
 			}
+			else { /* ??? */ }
 
 			return null;
 		}
 
 		public void EnqueueRequest(string returnCode, WaitBlock waitBlock)
 		{
-			lock (waitBlockLock)
+			requestDict.Add(returnCode, waitBlock);
+			if (waitBlock.DependsOn != null)
 			{
-				if (!requestDict.TryAdd(returnCode, waitBlock))
-					throw new InvalidOperationException("Trying to add already existing WaitBlock returnCode");
-				if (waitBlock.DependsOn != null)
+				foreach (var dependantType in waitBlock.DependsOn)
 				{
-					foreach (var dependantType in waitBlock.DependsOn)
-					{
-						var depentantList = dependingBlocks[(int)dependantType];
-						if (depentantList is null)
-							dependingBlocks[(int)dependantType] = depentantList = new List<WaitBlock>();
+					var depentantList = dependingBlocks[(int)dependantType];
+					if (depentantList is null)
+						dependingBlocks[(int)dependantType] = depentantList = new List<WaitBlock>();
 
-						depentantList.Add(waitBlock);
-					}
+					depentantList.Add(waitBlock);
 				}
 			}
 		}
 
 		public override void DropQueue()
 		{
-			lock (waitBlockLock)
-			{
-				foreach (var wb in requestDict.Values)
-					wb.SetError(CommandError.ConnectionClosed);
-				requestDict.Clear();
+			foreach (var wb in requestDict.Values)
+				wb.SetError(CommandError.ConnectionClosed);
+			requestDict.Clear();
 
-				foreach (var block in dependingBlocks)
-				{
-					block?.ForEach(wb => wb.SetError(CommandError.ConnectionClosed));
-					block?.Clear();
-				}
+			foreach (var block in dependingBlocks)
+			{
+				block?.ForEach(wb => wb.SetError(CommandError.ConnectionClosed));
+				block?.Clear();
 			}
 		}
 	}

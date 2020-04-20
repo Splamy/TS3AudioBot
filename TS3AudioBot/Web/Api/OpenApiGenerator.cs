@@ -213,7 +213,7 @@ namespace TS3AudioBot.Web.Api
 			{
 				return new OApiSchema("array")
 				{
-					items = NormalToSchema(type.GetElementType()!)
+					Items = NormalToSchema(type.GetElementType()!)
 				};
 			}
 
@@ -242,19 +242,23 @@ namespace TS3AudioBot.Web.Api
 
 		private class OApiSchema
 		{
-			public string type { get; set; }
-			public string? format { get; set; }
-			public OApiSchema? additionalProperties { get; set; }
-			public OApiSchema? items { get; set; }
+			[JsonProperty(PropertyName = "type")]
+			public string Type { get; set; }
+			[JsonProperty(PropertyName = "format")]
+			public string? Format { get; set; }
+			[JsonProperty(PropertyName = "additionalProperties")]
+			public OApiSchema? AdditionalProperties { get; set; }
+			[JsonProperty(PropertyName = "items")]
+			public OApiSchema? Items { get; set; }
 
 			public OApiSchema(string type)
 			{
-				this.type = type;
+				Type = type;
 			}
 
-			public static OApiSchema FromBasic(string type, string? format = null) => new OApiSchema(type) { format = format };
+			public static OApiSchema FromBasic(string type, string? format = null) => new OApiSchema(type) { Format = format };
 
-			public OApiSchema ObjWrap() => new OApiSchema("object") { additionalProperties = this };
+			public OApiSchema ObjWrap() => new OApiSchema("object") { AdditionalProperties = this };
 		}
 	}
 }

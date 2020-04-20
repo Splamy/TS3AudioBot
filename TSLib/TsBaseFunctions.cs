@@ -41,7 +41,7 @@ namespace TSLib
 		protected abstract Deserializer Deserializer { get; }
 		public TsConst ServerConstants { get; protected set; } = TsConst.Default;
 
-		public abstract Task Connect(ConnectionData conData);
+		public abstract CmdR Connect(ConnectionData conData);
 		public abstract Task Disconnect();
 		public abstract void Dispose();
 

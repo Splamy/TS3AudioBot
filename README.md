@@ -50,7 +50,7 @@ Download either one of the latest builds from our [nightly server](https://splam
 #### Linux
 1. dotnet core: Get the latest `dotnet core 3.1` version by following [this tutorial](https://dotnet.microsoft.com/download/linux-package-manager/ubuntu16-04/sdk-current) and follow the steps after choosing your platform
 1. Other dependencies:
-* on **Ubuntu**:  
+* on **Ubuntu**/**Debian**:  
 Run `sudo apt-get install libopus-dev ffmpeg`
 * on **Arch Linux**:  
 Run `sudo pacman -S opus ffmpeg`

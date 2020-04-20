@@ -43,8 +43,8 @@ namespace TSLib
 		/// See <see cref="CommandParameter"/>, <see cref="CommandOption"/> or <see cref="CommandMultiParameter"/> for more information.</param>
 		/// 
 		/// 
-		public Task<R<ResponseDictionary[], CommandError>> Send(string command, params ICommandPart[] parameter)
-			=> Send<ResponseDictionary>(new TsCommand(command, parameter));
+		public async Task<R<ResponseDictionary[], CommandError>> Send(string command, params ICommandPart[] parameter)
+			=> await Send<ResponseDictionary>(new TsCommand(command, parameter));
 
 		/// <summary>
 		/// Sends a TS-command.
@@ -56,8 +56,8 @@ namespace TSLib
 		/// See <see cref="CommandParameter"/>, <see cref="CommandOption"/> or <see cref="CommandMultiParameter"/> for more information.</param>
 		/// 
 		/// <returns>Returns an enumeration of the deserialized and split up in <see cref="T"/> objects data.</returns>
-		public Task<R<T[], CommandError>> Send<T>(string command, params ICommandPart[] parameter) where T : IResponse, new()
-			=> Send<T>(new TsCommand(command, parameter));
+		public async Task<R<T[], CommandError>> Send<T>(string command, params ICommandPart[] parameter) where T : IResponse, new()
+			=> await Send<T>(new TsCommand(command, parameter));
 
 		/// <summary>
 		/// Sends a TS-command.
@@ -69,8 +69,8 @@ namespace TSLib
 		/// See <see cref="CommandParameter"/>, <see cref="CommandOption"/> or <see cref="CommandMultiParameter"/> for more information.</param>
 		/// 
 		/// 
-		public Task<E<CommandError>> SendVoid(string command, params ICommandPart[] parameter)
-			=> Send<ResponseVoid>(new TsCommand(command, parameter)).ContinueWith(t => t.Result.OnlyError());
+		public async Task<E<CommandError>> SendVoid(string command, params ICommandPart[] parameter)
+			=> await Send<ResponseVoid>(new TsCommand(command, parameter));
 
 		/// <summary>
 		/// Sends a TS-command.
@@ -82,8 +82,8 @@ namespace TSLib
 		/// See <see cref="CommandParameter"/>, <see cref="CommandOption"/> or <see cref="CommandMultiParameter"/> for more information.</param>
 		/// 
 		/// 
-		public Task<E<CommandError>> SendVoid(TsCommand com)
-			=> Send<ResponseVoid>(com).ContinueWith(t => t.Result.OnlyError());
+		public async Task<E<CommandError>> SendVoid(TsCommand com)
+			=> await Send<ResponseVoid>(com);
 
 		/// <summary>
 		/// Sends a TS-command.
@@ -95,8 +95,8 @@ namespace TSLib
 		/// See <see cref="CommandParameter"/>, <see cref="CommandOption"/> or <see cref="CommandMultiParameter"/> for more information.</param>
 		/// <param name="type">The notification type to wait for and serialize to when called from the full client.</param>
 		/// 
-		public Task<R<ResponseDictionary[], CommandError>> SendHybrid(string command, NotificationType type, params ICommandPart[] parameter)
-			=> SendHybrid<ResponseDictionary>(new TsCommand(command, parameter), type);
+		public async Task<R<ResponseDictionary[], CommandError>> SendHybrid(string command, NotificationType type, params ICommandPart[] parameter)
+			=> await SendHybrid<ResponseDictionary>(new TsCommand(command, parameter), type);
 
 		/// <summary>
 		/// Sends a TS-command.
@@ -108,36 +108,36 @@ namespace TSLib
 		/// See <see cref="CommandParameter"/>, <see cref="CommandOption"/> or <see cref="CommandMultiParameter"/> for more information.</param>
 		/// <param name="type">The notification type to wait for and serialize to when called from the full client.</param>
 		/// <returns>Returns an enumeration of the deserialized and split up in <see cref="T"/> objects data.</returns>
-		public Task<R<T[], CommandError>> SendHybrid<T>(string command, NotificationType type, params ICommandPart[] parameter) where T : class, IResponse, new()
-			=> SendHybrid<T>(new TsCommand(command, parameter), type);
+		public async Task<R<T[], CommandError>> SendHybrid<T>(string command, NotificationType type, params ICommandPart[] parameter) where T : class, IResponse, new()
+			=> await SendHybrid<T>(new TsCommand(command, parameter), type);
 
 
 #pragma warning disable CS0067
 
-		public virtual event NotifyEventHandler<ChannelChanged>? OnChannelChanged;
-		public virtual event EventHandler<ChannelChanged>? OnEachChannelChanged;
-		public virtual event NotifyEventHandler<ChannelCreated>? OnChannelCreated;
-		public virtual event EventHandler<ChannelCreated>? OnEachChannelCreated;
-		public virtual event NotifyEventHandler<ChannelDeleted>? OnChannelDeleted;
-		public virtual event EventHandler<ChannelDeleted>? OnEachChannelDeleted;
-		public virtual event NotifyEventHandler<ChannelEdited>? OnChannelEdited;
-		public virtual event EventHandler<ChannelEdited>? OnEachChannelEdited;
-		public virtual event NotifyEventHandler<ChannelMoved>? OnChannelMoved;
-		public virtual event EventHandler<ChannelMoved>? OnEachChannelMoved;
-		public virtual event NotifyEventHandler<ChannelPasswordChanged>? OnChannelPasswordChanged;
-		public virtual event EventHandler<ChannelPasswordChanged>? OnEachChannelPasswordChanged;
-		public virtual event NotifyEventHandler<ClientEnterView>? OnClientEnterView;
-		public virtual event EventHandler<ClientEnterView>? OnEachClientEnterView;
-		public virtual event NotifyEventHandler<ClientLeftView>? OnClientLeftView;
-		public virtual event EventHandler<ClientLeftView>? OnEachClientLeftView;
-		public virtual event NotifyEventHandler<ClientMoved>? OnClientMoved;
-		public virtual event EventHandler<ClientMoved>? OnEachClientMoved;
-		public virtual event NotifyEventHandler<ServerEdited>? OnServerEdited;
-		public virtual event EventHandler<ServerEdited>? OnEachServerEdited;
-		public virtual event NotifyEventHandler<TextMessage>? OnTextMessage;
-		public virtual event EventHandler<TextMessage>? OnEachTextMessage;
-		public virtual event NotifyEventHandler<TokenUsed>? OnTokenUsed;
-		public virtual event EventHandler<TokenUsed>? OnEachTokenUsed;
+		public abstract event NotifyEventHandler<ChannelChanged>? OnChannelChanged;
+		public abstract event EventHandler<ChannelChanged>? OnEachChannelChanged;
+		public abstract event NotifyEventHandler<ChannelCreated>? OnChannelCreated;
+		public abstract event EventHandler<ChannelCreated>? OnEachChannelCreated;
+		public abstract event NotifyEventHandler<ChannelDeleted>? OnChannelDeleted;
+		public abstract event EventHandler<ChannelDeleted>? OnEachChannelDeleted;
+		public abstract event NotifyEventHandler<ChannelEdited>? OnChannelEdited;
+		public abstract event EventHandler<ChannelEdited>? OnEachChannelEdited;
+		public abstract event NotifyEventHandler<ChannelMoved>? OnChannelMoved;
+		public abstract event EventHandler<ChannelMoved>? OnEachChannelMoved;
+		public abstract event NotifyEventHandler<ChannelPasswordChanged>? OnChannelPasswordChanged;
+		public abstract event EventHandler<ChannelPasswordChanged>? OnEachChannelPasswordChanged;
+		public abstract event NotifyEventHandler<ClientEnterView>? OnClientEnterView;
+		public abstract event EventHandler<ClientEnterView>? OnEachClientEnterView;
+		public abstract event NotifyEventHandler<ClientLeftView>? OnClientLeftView;
+		public abstract event EventHandler<ClientLeftView>? OnEachClientLeftView;
+		public abstract event NotifyEventHandler<ClientMoved>? OnClientMoved;
+		public abstract event EventHandler<ClientMoved>? OnEachClientMoved;
+		public abstract event NotifyEventHandler<ServerEdited>? OnServerEdited;
+		public abstract event EventHandler<ServerEdited>? OnEachServerEdited;
+		public abstract event NotifyEventHandler<TextMessage>? OnTextMessage;
+		public abstract event EventHandler<TextMessage>? OnEachTextMessage;
+		public abstract event NotifyEventHandler<TokenUsed>? OnTokenUsed;
+		public abstract event EventHandler<TokenUsed>? OnEachTokenUsed;
 
 #pragma warning restore CS0067
 	}

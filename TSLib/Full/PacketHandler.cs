@@ -82,9 +82,10 @@ namespace TSLib.Full
 			this.id = id;
 		}
 
-		public void Connect(IPEndPoint address)
+		public E<string> Connect(IPEndPoint address)
 		{
-			Initialize(address, true);
+			if (!Initialize(address, true).GetOk(out var error))
+				return "Failed to initialize: " + error.Message;
 			// The old client used to send 'clientinitiv' as the first message.
 			// All newer servers still ack it but do not require it anymore.
 			// Therefore there is no use in sending it.
@@ -92,14 +93,14 @@ namespace TSLib.Full
 			//  it because the packed-ids the server expects are fixed.
 			IncPacketCounter(PacketType.Command);
 			// Send the actual new init packet.
-			AddOutgoingPacket(tsCrypt.ProcessInit1<TIn>(null).Value, PacketType.Init1);
+			return AddOutgoingPacket(tsCrypt.ProcessInit1<TIn>(null).Value, PacketType.Init1);
 		}
 
 		public void Listen(IPEndPoint address)
 		{
 			lock (sendLoopLock)
 			{
-				Initialize(address, false);
+				Initialize(address, false).Unwrap();
 				// dummy
 				initPacketCheck = new ResendPacket<TOut>(new Packet<TOut>(Array.Empty<byte>(), 0, 0, 0))
 				{
@@ -109,7 +110,7 @@ namespace TSLib.Full
 			}
 		}
 
-		private void Initialize(IPEndPoint address, bool connect)
+		private E<Exception> Initialize(IPEndPoint address, bool connect)
 		{
 			if (address is null) throw new ArgumentNullException(nameof(address));
 
@@ -158,12 +159,13 @@ namespace TSLib.Full
 						// TODO init socketevargs stuff
 					}
 				}
-				catch (SocketException ex) { throw new TsException("Could not connect", ex); }
+				catch (SocketException ex) { return ex; }
 
 				pingCheckRunning = 0;
 				pingCheck = Tools.Now;
 				if (resendTimer == null)
 					resendTimer = new Timer((_) => { using (MappedDiagnosticsLogicalContext.SetScoped("BotId", id)) ResendLoop(); }, null, ClockResolution, ClockResolution);
+				return R.Ok;
 			}
 		}
 
@@ -236,6 +238,7 @@ namespace TSLib.Full
 					first = false;
 				}
 
+				Debug.Assert(!NeedsSplitting(blockSize));
 				var sendResult = SendOutgoingData(rawData.Slice(pos, blockSize), packetType, flags);
 				if (!sendResult.Ok)
 					return sendResult;
@@ -753,7 +756,13 @@ namespace TSLib.Full
 
 			try
 			{
+				var sw = Stopwatch.StartNew();
 				socket!.SendTo(packet.Raw, packet.Raw.Length, SocketFlags.None, remoteAddress);
+				var elap = sw.ElapsedMilliseconds;
+				if (elap > 100)
+				{
+					LogRaw.Warn("Raw LONG: {0}ms", elap);
+				}
 				return R.Ok;
 			}
 			catch (SocketException ex)

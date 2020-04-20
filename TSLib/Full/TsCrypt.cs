@@ -549,7 +549,11 @@ namespace TSLib.Full
 					len = eaxCipher.ProcessBytes(packet.Data, 0, packet.Size, result, 0);
 					len += eaxCipher.DoFinal(result, len);
 				}
-				catch (Exception ex) { throw new TsException("Internal encryption error.", ex); }
+				catch (Exception ex)
+				{
+					Log.Error(ex, "Internal encryption error.");
+					throw;
+				}
 			}
 
 			// result consists of [Data..., Mac...]

@@ -32,9 +32,11 @@ namespace TS3AudioBot
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private readonly Id id;
 
-		public event EventHandler<DisconnectEventArgs>? OnBotDisconnect;
-		public event EventHandler<TextMessage>? OnMessageReceived;
-		public event EventHandler<AloneChanged>? OnAloneChanged;
+		public event AsyncEventHandler? OnBotConnected;
+		public event AsyncEventHandler<DisconnectEventArgs>? OnBotDisconnected;
+		public event AsyncEventHandler? OnBotStoppedReconnecting;
+		public event AsyncEventHandler<TextMessage>? OnMessageReceived;
+		public event AsyncEventHandler<AloneChanged>? OnAloneChanged;
 		public event EventHandler? OnWhisperNoTarget;
 
 		private static readonly string[] QuitMessages = {
@@ -74,29 +76,29 @@ namespace TS3AudioBot
 			ts3FullClient.OnEachTextMessage += ExtendedTextMessage;
 			ts3FullClient.OnErrorEvent += TsFullClient_OnErrorEvent;
 			ts3FullClient.OnDisconnected += TsFullClient_OnDisconnected;
-			ts3FullClient.OnEachClientMoved += (_, e) =>
+			ts3FullClient.OnEachClientMoved += async (_, e) =>
 			{
 				UpdateReconnectChannel(e.ClientId, e.TargetChannelId);
-				if (AloneRecheckRequired(e.ClientId, e.TargetChannelId)) IsAloneRecheck();
+				if (AloneRecheckRequired(e.ClientId, e.TargetChannelId)) await IsAloneRecheck();
 			};
-			ts3FullClient.OnEachClientEnterView += (_, e) =>
+			ts3FullClient.OnEachClientEnterView += async (_, e) =>
 			{
 				UpdateReconnectChannel(e.ClientId, e.TargetChannelId);
-				if (AloneRecheckRequired(e.ClientId, e.TargetChannelId)) IsAloneRecheck();
-				else if (AloneRecheckRequired(e.ClientId, e.SourceChannelId)) IsAloneRecheck();
+				if (AloneRecheckRequired(e.ClientId, e.TargetChannelId)) await IsAloneRecheck();
+				else if (AloneRecheckRequired(e.ClientId, e.SourceChannelId)) await IsAloneRecheck();
 			};
-			ts3FullClient.OnEachClientLeftView += (_, e) =>
+			ts3FullClient.OnEachClientLeftView += async (_, e) =>
 			{
 				UpdateReconnectChannel(e.ClientId, e.TargetChannelId);
-				if (AloneRecheckRequired(e.ClientId, e.TargetChannelId)) IsAloneRecheck();
-				else if (AloneRecheckRequired(e.ClientId, e.SourceChannelId)) IsAloneRecheck();
+				if (AloneRecheckRequired(e.ClientId, e.TargetChannelId)) await IsAloneRecheck();
+				else if (AloneRecheckRequired(e.ClientId, e.SourceChannelId)) await IsAloneRecheck();
 			};
 
 			this.config = config;
 			identity = null;
 		}
 
-		public async Task<E<string>> Connect()
+		public E<string> Connect()
 		{
 			// get or compute identity
 			var identityConf = config.Connect.Identity;
@@ -131,15 +133,16 @@ namespace TS3AudioBot
 			reconnectChannel = null;
 			ts3FullClient.QuitMessage = Tools.PickRandom(QuitMessages);
 			ClearAllCaches();
-			return await ConnectClient();
+			_ = ConnectClient();
+			return R.Ok;
 		}
 
-		private async Task<E<string>> ConnectClient()
+		private async Task ConnectClient()
 		{
 			if (identity is null) throw new InvalidOperationException();
 
 			if (closed)
-				return "Bot disposed";
+				return;
 
 			TsVersionSigned? versionSign;
 			if (!string.IsNullOrEmpty(config.Connect.ClientVersion.Build.Value))
@@ -162,31 +165,27 @@ namespace TS3AudioBot
 				versionSign = TsVersionSigned.VER_WIN_3_X_X;
 			}
 
-			try
+			var connectionConfig = new ConnectionDataFull(config.Connect.Address, identity,
+				versionSign: versionSign,
+				username: config.Connect.Name,
+				serverPassword: config.Connect.ServerPassword.Get(),
+				defaultChannel: reconnectChannel?.ToPath() ?? config.Connect.Channel,
+				defaultChannelPassword: config.Connect.ChannelPassword.Get(),
+				logId: id);
+
+			config.SaveWhenExists().UnwrapToLog(Log);
+
+			if (!(await ts3FullClient.Connect(connectionConfig)).GetOk(out var error))
 			{
-				var connectionConfig = new ConnectionDataFull(config.Connect.Address, identity,
-					versionSign: versionSign,
-					username: config.Connect.Name,
-					serverPassword: config.Connect.ServerPassword.Get(),
-					defaultChannel: reconnectChannel?.ToPath() ?? config.Connect.Channel,
-					defaultChannelPassword: config.Connect.ChannelPassword.Get(),
-					logId: id);
-
-				config.SaveWhenExists();
-
-				await ts3FullClient.Connect(connectionConfig);
-
-				Log.Info("Client connected.");
-
-				reconnectCounter = 0;
-				lastReconnect = null;
-				return R.Ok;
+				Log.Error("Could not connect: {0}", error.ErrorFormat());
+				return;
 			}
-			catch (TsException qcex)
-			{
-				Log.Error(qcex, "There is either a problem with your connection configuration, or the bot has not all permissions it needs.");
-				return "Connect error";
-			}
+
+			Log.Info("Client connected.");
+			reconnectCounter = 0;
+			lastReconnect = null;
+
+			await OnBotConnected.InvokeAsync(this);
 		}
 
 		public async Task Disconnect()
@@ -508,6 +507,8 @@ namespace TS3AudioBot
 
 		private async void TsFullClient_OnDisconnected(object? sender, DisconnectEventArgs e)
 		{
+			await OnBotDisconnected.InvokeAsync(this, e);
+
 			if (e.Error != null)
 			{
 				var error = e.Error;
@@ -517,7 +518,7 @@ namespace TS3AudioBot
 					if (config.Connect.Identity.Level.Value == -1 && !string.IsNullOrEmpty(error.ExtraMessage))
 					{
 						int targetSecLevel = int.Parse(error.ExtraMessage);
-						UpdateIndentityToSecurityLevel(targetSecLevel);
+						UpdateIndentityToSecurityLevel(targetSecLevel); // TODO Async
 						await ConnectClient();
 						return; // skip triggering event, we want to reconnect
 					}
@@ -529,7 +530,7 @@ namespace TS3AudioBot
 					break;
 
 				case TsErrorCode.client_too_many_clones_connected:
-					Log.Warn("Seems like another client with the same identity is already connected.");
+					Log.Warn("Another client with the same identity is already connected.");
 					if (await TryReconnect(ReconnectType.Error))
 						return;
 					break;
@@ -563,7 +564,7 @@ namespace TS3AudioBot
 				})) return;
 			}
 
-			OnBotDisconnect?.Invoke(this, e);
+			await OnBotStoppedReconnecting.InvokeAsync(this);
 		}
 
 		private async Task<bool> TryReconnect(ReconnectType type)
@@ -609,12 +610,12 @@ namespace TS3AudioBot
 			return true;
 		}
 
-		private void ExtendedTextMessage(object? sender, TextMessage textMessage)
+		private async void ExtendedTextMessage(object? sender, TextMessage textMessage)
 		{
 			// Prevent loopback of own textmessages
 			if (textMessage.InvokerId == ts3FullClient.ClientId)
 				return;
-			OnMessageReceived?.Invoke(sender, textMessage);
+			await OnMessageReceived.InvokeAsync(sender, textMessage);
 		}
 
 		private void UpdateReconnectChannel(ClientId clientId, ChannelId channelId)
@@ -626,19 +627,20 @@ namespace TS3AudioBot
 		private bool AloneRecheckRequired(ClientId clientId, ChannelId channelId)
 			=> ownChannelClients.Contains(clientId) || channelId == ts3FullClient.Book.Self()?.Channel;
 
-		private void IsAloneRecheck()
+		private Task IsAloneRecheck()
 		{
 			var self = ts3FullClient.Book.Self();
 			if (self == null)
-				return;
+				return Task.CompletedTask;
 			var ownChannel = self.Channel;
 			ownChannelClients = ts3FullClient.Book.Clients.Values.Where(c => c.Channel == ownChannel && c != self).Select(c => c.Id).ToArray();
 			var newAlone = ownChannelClients.Length == 0;
 			if (newAlone != alone)
 			{
 				alone = newAlone;
-				OnAloneChanged?.Invoke(this, new AloneChanged(newAlone));
+				return OnAloneChanged.InvokeAsync(this, new AloneChanged(newAlone));
 			}
+			return Task.CompletedTask;
 		}
 
 		#endregion

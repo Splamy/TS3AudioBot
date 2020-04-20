@@ -14,11 +14,11 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
-using System.Threading;
 using System.Threading.Tasks;
 using TS3AudioBot.Config;
 using TS3AudioBot.Helper;
 using TSLib.Helper;
+using TSLib.Scheduler;
 
 namespace TS3AudioBot.Environment
 {
@@ -39,7 +39,7 @@ namespace TS3AudioBot.Environment
 		private readonly ConfRoot conf;
 		private readonly DbStore database;
 		private readonly BotManager botManager;
-		private Timer? ticker;
+		private readonly TickWorker ticker;
 		private bool uploadParamEnabled;
 		private bool UploadEnabled => uploadParamEnabled && conf.Configs.SendStats;
 
@@ -55,13 +55,14 @@ namespace TS3AudioBot.Environment
 		// bot id -> factory
 		private readonly ConcurrentDictionary<Id, string> runningSongsPerFactory = new ConcurrentDictionary<Id, string>();
 
-		public Stats(ConfRoot conf, DbStore database, BotManager botManager)
+		public Stats(ConfRoot conf, DbStore database, BotManager botManager, DedicatedTaskScheduler scheduler)
 		{
 			this.conf = conf;
 			this.database = database;
 			this.botManager = botManager;
 			uploadParamEnabled = true;
 			runtimeLastTrack = Tools.Now;
+			ticker = scheduler.CreateTimer(TrackPoint, CheckInterval, false);
 
 			meta = database.GetMetaData(StatsTable);
 			trackEntries = database.GetCollection<StatsData>(StatsTable);
@@ -101,9 +102,7 @@ namespace TS3AudioBot.Environment
 		public void StartTimer(bool upload)
 		{
 			uploadParamEnabled = upload;
-			if (ticker != null)
-				throw new InvalidOperationException();
-			ticker = new Timer(stats => ((Stats)stats!).TrackPoint(), this, CheckInterval, CheckInterval);
+			ticker.Active = true;
 		}
 
 		private async Task SendStats(StatsPing sendPacket)
@@ -167,7 +166,7 @@ namespace TS3AudioBot.Environment
 			if (UploadEnabled && statsPoints.LastSend + SendInterval < now)
 			{
 				var sendData = GetStatsTill(statsPoints.LastSend);
-				SendStats(sendData);
+				await SendStats(sendData);
 				statsPoints.LastSend = now;
 			}
 

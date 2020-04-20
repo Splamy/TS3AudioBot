@@ -82,8 +82,8 @@ namespace TSLib
 		/// See <see cref="CommandParameter"/>, <see cref="CommandOption"/> or <see cref="CommandMultiParameter"/> for more information.</param>
 		/// <# if(isHybrid) { #><param name="type">The notification type to wait for and serialize to when called from the full client.</param><# } #>
 		/// <# if(hasReturn == "T") { #><returns>Returns an enumeration of the deserialized and split up in <see cref="T"/> objects data.</returns><# } #>
-		public <#= retType #> <#= callTitle #><#= genMod #>(<#= callParam #>)<#= genSuffix #>
-			=> <#= fwdTitle #><#= fwdModInfix #>(<#= fwdParam #>)<#= fwdSuffix #>;
+		public async <#= retType #> <#= callTitle #><#= genMod #>(<#= callParam #>)<#= genSuffix #>
+			=> await <#= fwdTitle #><#= fwdModInfix #>(<#= fwdParam #>);
 <# }} #>
 
 #pragma warning disable CS0067

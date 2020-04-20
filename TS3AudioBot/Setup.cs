@@ -19,6 +19,7 @@ using System.Threading.Tasks;
 using TS3AudioBot.Environment;
 using TS3AudioBot.Helper;
 using TSLib.Helper;
+using TSLib.Scheduler;
 
 namespace TS3AudioBot
 {
@@ -26,7 +27,12 @@ namespace TS3AudioBot
 	{
 		private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
-		public static async Task Main(string[] args)
+		public static void Main(string[] args)
+		{
+			DedicatedTaskScheduler.FromCurrentThread(() => MainAsync(args));
+		}
+
+		public static async void MainAsync(string[] args)
 		{
 			Thread.CurrentThread.Name = "TAB Main";
 			Tools.SetLogId("Core");
@@ -75,14 +81,9 @@ namespace TS3AudioBot
 				LogHeader();
 
 			// Initialize the actual core
-			var core = new Core(setup.ConfigFile);
+			var core = new Core((DedicatedTaskScheduler)TaskScheduler.Current, setup.ConfigFile);
 
-			var initResult = await core.Run(setup);
-			if (!initResult)
-			{
-				Log.Error("Core initialization failed: {0}", initResult.Error);
-				await core.Stop();
-			}
+			await core.Run(setup);
 		}
 
 		public static void SetupLog()
