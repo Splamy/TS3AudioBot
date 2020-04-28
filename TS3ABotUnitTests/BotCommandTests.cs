@@ -24,7 +24,7 @@ namespace TS3ABotUnitTests
 		public void BotCommandTest()
 		{
 			var execInfo = Utils.GetExecInfo("ic3");
-			string? CallCommand(string command) => CommandManager.Execute(execInfo, command).Result.AsString();
+			string? CallCommand(string command) => CommandManager.Execute(execInfo, command).GetAwaiter().GetResult().AsString();
 
 			var output = CallCommand("!help");
 			Assert.AreEqual(output, CallCommand("!h"));
@@ -138,7 +138,7 @@ namespace TS3ABotUnitTests
 		public void XCommandSystemTest()
 		{
 			var execInfo = Utils.GetExecInfo("ic3", false);
-			string? CallCommand(string command) => CommandManager.Execute(execInfo, command).Result.AsString();
+			string? CallCommand(string command) => CommandManager.Execute(execInfo, command).GetAwaiter().GetResult().AsString();
 
 			var group = execInfo.GetModule<CommandManager>()!.RootGroup;
 			group.AddCommand("one", new FunctionCommand(() => "ONE"));
@@ -188,7 +188,7 @@ namespace TS3ABotUnitTests
 		public void XCommandSystemTest2()
 		{
 			var execInfo = Utils.GetExecInfo("exact");
-			string? CallCommand(string command) => CommandManager.Execute(execInfo, command).Result.AsString();
+			string? CallCommand(string command) => CommandManager.Execute(execInfo, command).GetAwaiter().GetResult().AsString();
 			var group = execInfo.GetModule<CommandManager>()!.RootGroup;
 
 			var o1 = new OverloadedFunctionCommand();

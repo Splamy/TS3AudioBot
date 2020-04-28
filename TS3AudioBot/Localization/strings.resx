@@ -981,4 +981,10 @@ with the id {1}?</value>
   <data name="error_ts_code_781" xml:space="preserve">
     <value>Invalid channel password.</value>
   </data>
+  <data name="cmd_subscribe_client_help" xml:space="preserve">
+    <value>Subscribes the specified client to listen from anywhere</value>
+  </data>
+  <data name="cmd_unsubscribe_client_help" xml:space="preserve">
+    <value>Unsubscribes the specified client to listen from anywhere.</value>
+  </data>
 </root>

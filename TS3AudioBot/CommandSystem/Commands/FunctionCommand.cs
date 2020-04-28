@@ -9,6 +9,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
@@ -229,9 +230,14 @@ namespace TS3AudioBot.CommandSystem.Commands
 				else
 					kind = ParamKind.Dependency;
 
-				if (!foundTail && kind.IsNormal() && arg == typeof(string))
+				if (kind.IsNormal())
 				{
-					kind = ParamKind.NormalTailString;
+					// If we have the last normal parameter, check if it fits the criteria
+					// to be extened to a tail string.
+					// If it does not, we set foundTail to true anyway, since no other
+					// fitting parameter would be a tail anymore
+					if (!foundTail && arg == typeof(string))
+						kind = ParamKind.NormalTailString;
 					foundTail = true;
 				}
 
@@ -367,6 +373,7 @@ namespace TS3AudioBot.CommandSystem.Commands
 		NormalTailString,
 	}
 
+	[DebuggerDisplay("{Kind} {Name,nq}{Optional ? \"?\" : \"\",nq} ({Type.Name,nq})")]
 	public readonly struct ParamInfo
 	{
 		public ParamKind Kind { get; }

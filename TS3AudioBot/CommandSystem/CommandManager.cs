@@ -35,11 +35,11 @@ namespace TS3AudioBot.CommandSystem
 		private readonly Dictionary<string, AliasCommand> aliasPaths = new Dictionary<string, AliasCommand>();
 		private readonly HashSet<string> commandPaths = new HashSet<string>();
 		private readonly HashSet<ICommandBag> baggedCommands = new HashSet<ICommandBag>();
-		private readonly RightsManager rightsManager;
+		private readonly RightsManager? rightsManager;
 
 		public CommandGroup RootGroup { get; } = new CommandGroup();
 
-		public CommandManager(RightsManager rightsManager)
+		public CommandManager(RightsManager? rightsManager)
 		{
 			this.rightsManager = rightsManager;
 		}
