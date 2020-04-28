@@ -1,0 +1,6 @@
+Since netstandard2.0 does not contain a lot of features wich are required for
+C# 8 or available in with netstandard2.1 / dotnet core 3.+ this folder
+provides preprocessor-conditionals to supply them.
+
+The folder can be completely deleted once netstandard2.0 is not targeted
+anymore.

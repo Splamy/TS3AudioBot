@@ -11,7 +11,6 @@ using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using TSLib.Full;
-using TSLib.Helper;
 using TSLib.Messages;
 
 namespace TSLib

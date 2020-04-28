@@ -210,8 +210,9 @@ namespace TSLib.Scheduler
 			VerifyOwnThread();
 			if (method is null) throw new ArgumentNullException(nameof(method));
 			var worker = new TickWorker(this, method, interval);
-			// This will add the worker to the list (if it's enabled)
-			worker.Active = active;
+			// Add the worker to the list (if it's enabled)
+			if (active)
+				worker.Enable();
 			return worker;
 		}
 

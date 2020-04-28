@@ -57,9 +57,6 @@ namespace TSLib.Helper
 
 		public static TimeSpan Min(this TimeSpan a, TimeSpan b) => a < b ? a : b;
 		public static TimeSpan Max(this TimeSpan a, TimeSpan b) => a > b ? a : b;
-#if NETSTANDARD2_0
-		public static TimeSpan Divide(this TimeSpan timeSpan, double divisor) => TimeSpan.FromTicks((long)(timeSpan.Ticks / divisor));
-#endif
 
 		public static int MathMod(int x, int mod) => (x % mod + mod) % mod;
 
@@ -72,16 +69,5 @@ namespace TSLib.Helper
 		public static void SetLogId(string id) => NLog.MappedDiagnosticsLogicalContext.Set("BotId", id);
 
 		public static Exception UnhandledDefault<T>(T value) where T : struct { return new MissingEnumCaseException(typeof(T).Name, value.ToString() ?? string.Empty); }
-
-#if NETSTANDARD2_0
-		public static bool Remove<K, V>(this Dictionary<K, V> dict, K key, out V value)
-		{
-			if (dict.TryGetValue(key, out value))
-			{
-				return dict.Remove(key);
-			}
-			return false;
-		}
-#endif
 	}
 }

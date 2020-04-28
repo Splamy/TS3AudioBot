@@ -99,7 +99,7 @@ namespace TSLib.Audio
 				safeConsumerList[i].Write(bufSpan, meta);
 			}
 			// safe one memcopy call by passing the last one our original data
-			safeConsumerList[safeConsumerList.Count - 1].Write(data, meta);
+			safeConsumerList[^1].Write(data, meta);
 		}
 	}
 }

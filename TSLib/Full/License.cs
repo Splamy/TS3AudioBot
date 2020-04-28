@@ -123,7 +123,7 @@ namespace TSLib.Full
 			block.Key = data.Slice(1, 32).ToArray();
 
 			var allLen = MinBlockLen + read;
-			var hash = TsCrypt.Hash512It(data.Slice(1, allLen - 1).ToArray());
+			var hash = TsCrypt.Hash512It(data[1..allLen].ToArray());
 			block.Hash = hash.AsSpan(0, 32).ToArray();
 
 			return (block, allLen);

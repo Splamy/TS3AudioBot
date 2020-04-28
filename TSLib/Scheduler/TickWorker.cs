@@ -15,7 +15,6 @@ namespace TSLib.Scheduler
 	{
 		readonly DedicatedTaskScheduler parent;
 		private TimeSpan interval;
-		private bool active = false;
 
 		internal Action Method { get; }
 		internal TimeSpan Timestamp { get; set; } = TimeSpan.Zero;
@@ -31,16 +30,23 @@ namespace TSLib.Scheduler
 			}
 		}
 
-		public bool Active
+		public bool IsActive { get; private set; } = false;
+
+		public void Enable()
 		{
-			get => active;
-			set
+			if (!IsActive)
 			{
-				active = value;
-				if (active)
-					parent.EnableTimer(this);
-				else
-					parent.DisableTimer(this);
+				parent.EnableTimer(this);
+				IsActive = true;
+			}
+		}
+
+		public void Disable()
+		{
+			if (IsActive)
+			{
+				parent.DisableTimer(this);
+				IsActive = false;
 			}
 		}
 

@@ -7,15 +7,15 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using Newtonsoft.Json;
 using System;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Threading.Tasks;
 using TS3AudioBot.Localization;
-using System.Net.Http.Headers;
-using Newtonsoft.Json;
-using System.Linq;
 
 namespace TS3AudioBot.Helper
 {

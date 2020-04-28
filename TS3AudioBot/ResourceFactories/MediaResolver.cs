@@ -7,13 +7,11 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
-using Heijden.DNS;
 using PlaylistsNET.Content;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Net;
 using System.Threading.Tasks;
 using TS3AudioBot.Config;
 using TS3AudioBot.Helper;
@@ -66,18 +64,18 @@ namespace TS3AudioBot.ResourceFactories
 
 		public string RestoreLink(ResolveContext _, AudioResource resource) => resource.ResourceId;
 
-		private async Task<ResData> ValidateFromString(ConfBot config, string uriStr)
+		private Task<ResData> ValidateFromString(ConfBot config, string uriStr)
 		{
 			var uri = GetUri(config, uriStr);
-			return await ValidateUri(uri);
+			return ValidateUri(uri);
 		}
 
-		private async Task<ResData> ValidateUri(Uri uri)
+		private Task<ResData> ValidateUri(Uri uri)
 		{
 			if (uri.IsWeb())
-				return await ValidateWeb(uri);
+				return ValidateWeb(uri);
 			if (uri.IsFile())
-				return ValidateFile(uri);
+				return Task.Run(() => ValidateFile(uri));
 
 			throw Error.LocalStr(strings.error_media_invalid_uri);
 		}
@@ -211,11 +209,8 @@ namespace TS3AudioBot.ResourceFactories
 			{
 				if (uri.IsFile())
 				{
-					if (File.Exists(url))
-					{
-						using var stream = File.OpenRead(uri.AbsolutePath);
-						return await GetPlaylistContentAsync(stream, url);
-					}
+					using var stream = File.OpenRead(uri.AbsolutePath);
+					return await GetPlaylistContentAsync(stream, url);
 				}
 				else if (uri.IsWeb())
 				{
@@ -252,15 +247,6 @@ namespace TS3AudioBot.ResourceFactories
 			switch (anyId)
 			{
 			case ".m3u":
-				{
-					var parser = new M3uContent();
-					var list = parser.GetFromStream(stream);
-
-					items = new List<PlaylistItem>(
-						from e in list.PlaylistEntries
-						select new PlaylistItem(new AudioResource(e.Path, e.Title, ResolverFor)));
-					break;
-				}
 			case ".m3u8":
 			case "application/mpegurl":
 			case "application/x-mpegurl":
@@ -269,7 +255,7 @@ namespace TS3AudioBot.ResourceFactories
 			case "application/vnd.apple.mpegurl":
 			case "application/vnd.apple.mpegurl.audio":
 				{
-					var parser = new M3u8Content();
+					var parser = new M3uContent();
 					var list = parser.GetFromStream(stream);
 
 					items = new List<PlaylistItem>(

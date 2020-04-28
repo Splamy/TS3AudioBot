@@ -100,7 +100,7 @@ namespace TS3AudioBot.Environment
 		public void StartTimer(bool upload)
 		{
 			uploadParamEnabled = upload;
-			ticker.Active = true;
+			ticker.Enable();
 		}
 
 		private async Task SendStats(StatsPing sendPacket)

@@ -31,7 +31,7 @@ build:
 
 deploy_script:
 - pwsh: |-
-    Install-Module Microsoft.PowerShell.Archive -MinimumVersion 1.2.3.0 -Repository PSGallery -Force
+    Install-Module Microsoft.PowerShell.Archive -MinimumVersion 1.2.5 -Repository PSGallery -Force
 
     if(${env:UPLOAD_TOKEN}) {
       dotnet publish TS3AudioBot -c Release --framework netcoreapp3.1

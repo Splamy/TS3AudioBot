@@ -13,7 +13,6 @@
     <PlatformTarget>AnyCPU</PlatformTarget>
     <Prefer32Bit>false</Prefer32Bit>
     <DebugType>portable</DebugType>
-    <CodeAnalysisRuleSet>../TS3AudioBot.ruleset</CodeAnalysisRuleSet>
 
     <ApplicationIcon>Media\favicon.ico</ApplicationIcon>
 
@@ -47,7 +46,7 @@
       <ExcludeAssets>analyzers</ExcludeAssets>
     </PackageReference>
     <PackageReference Include="Nett" Version="0.15.0" />
-    <PackageReference Include="PlaylistsNET" Version="1.0.5" />
+    <PackageReference Include="PlaylistsNET" Version="1.0.6" />
     <PackageReference Include="SixLabors.ImageSharp" Version="1.0.0-beta0007" />
   </ItemGroup>
 

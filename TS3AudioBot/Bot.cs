@@ -522,10 +522,10 @@ namespace TS3AudioBot
 				return;
 			}
 			idleTickWorker.Interval = idleTime;
-			idleTickWorker.Active = true;
+			idleTickWorker.Enable();
 		}
 
-		private void DisableIdleTickWorker() => idleTickWorker.Active = false;
+		private void DisableIdleTickWorker() => idleTickWorker.Disable();
 
 		#endregion
 

@@ -65,7 +65,7 @@ namespace TSLib.Messages
 			var arrItems = new HashSet<string>();
 			var single = new List<string>();
 
-			if (!ParseKeyValueLine(arr[arr.Length - 1], line.Slice(pipes[pipes.Count - 1] + 1).Trim(AsciiSpace), arrItems, null))
+			if (!ParseKeyValueLine(arr[^1], line.Slice(pipes[^1] + 1).Trim(AsciiSpace), arrItems, null))
 				return null;
 
 			for (int i = 0; i < pipes.Count - 1; i++)
