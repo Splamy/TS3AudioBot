@@ -85,7 +85,7 @@ namespace TS3AudioBot.ResourceFactories.Youtube
 
 		private async Task<PlayResource> ResolveResourceInternal(AudioResource resource)
 		{
-			var resulthtml = await WebWrapper.DownloadStringAsync($"https://www.youtube.com/get_video_info?video_id={resource.ResourceId}");
+			var resulthtml = await WebWrapper.Request($"https://www.youtube.com/get_video_info?video_id={resource.ResourceId}").AsString();
 
 			var videoTypes = new List<VideoData>();
 			var dataParse = ParseQueryString(resulthtml);
@@ -140,8 +140,8 @@ namespace TS3AudioBot.ResourceFactories.Youtube
 			List<M3uEntry>? webList = null;
 			try
 			{
-				webList = await WebWrapper.GetResponseAsync(requestUrl, async response =>
-					await M3uReader.TryGetData(response.GetResponseStream())
+				webList = await WebWrapper.Request(requestUrl).ToAction(async response =>
+					await M3uReader.TryGetData(await response.Content.ReadAsStreamAsync())
 				);
 			}
 			catch (AudioBotException ex) { throw Error.LocalStr(strings.error_media_internal_invalid).Exception(ex); }
@@ -242,7 +242,7 @@ namespace TS3AudioBot.ResourceFactories.Youtube
 			return autoselectIndex;
 		}
 
-		private static Task ValidateMedia(VideoData media) => WebWrapper.GetResponseAsync(media.Link, timeout: TimeSpan.FromSeconds(3));
+		private static Task ValidateMedia(VideoData media) => WebWrapper.Request(media.Link).WithTimeout(TimeSpan.FromSeconds(3)).Send();
 
 		private static VideoCodec GetCodec(string type)
 		{
@@ -300,15 +300,14 @@ namespace TS3AudioBot.ResourceFactories.Youtube
 			string? nextToken = null;
 			do
 			{
-				var response = await WebWrapper.DownloadStringAsync("https://www.googleapis.com/youtube/v3/playlistItems"
+				var parsed = await WebWrapper.Request("https://www.googleapis.com/youtube/v3/playlistItems"
 						+ "?part=contentDetails,snippet"
 						+ "&fields=" + Uri.EscapeDataString("items(contentDetails/videoId,snippet/title),nextPageToken")
 						+ "&maxResults=50"
 						+ "&playlistId=" + id
 						+ (nextToken != null ? "&pageToken=" + nextToken : string.Empty)
-						+ "&key=" + YoutubeProjectId);
+						+ "&key=" + YoutubeProjectId).AsJson<JsonVideoListResponse>();
 
-				var parsed = JsonConvert.DeserializeObject<JsonVideoListResponse>(response);
 				var videoItems = parsed.items;
 				if (!plist.AddRange(
 					videoItems.Select(item =>
@@ -378,15 +377,16 @@ namespace TS3AudioBot.ResourceFactories.Youtube
 			return rc;
 		}
 
-		public Task<Stream> GetThumbnail(ResolveContext _, PlayResource playResource)
+		public Task GetThumbnail(ResolveContext _, PlayResource playResource, Func<Stream, Task> action)
 		{
 			// default  :  120px/ 90px /default.jpg
 			// medium   :  320px/180px /mqdefault.jpg
 			// high     :  480px/360px /hqdefault.jpg
 			// standard :  640px/480px /sddefault.jpg
 			// maxres   : 1280px/720px /maxresdefault.jpg
-			var imgurl = new Uri($"https://i.ytimg.com/vi/{playResource.AudioResource.ResourceId}/mqdefault.jpg");
-			return WebWrapper.GetResponseUnsafeAsync(imgurl);
+			return WebWrapper
+				.Request($"https://i.ytimg.com/vi/{playResource.AudioResource.ResourceId}/mqdefault.jpg")
+				.ToStream(action);
 		}
 
 		public async Task<IList<AudioResource>> Search(ResolveContext _, string keyword)
@@ -400,7 +400,7 @@ namespace TS3AudioBot.ResourceFactories.Youtube
 		public async Task<IList<AudioResource>> SearchYoutubeApi(string keyword)
 		{
 			const int maxResults = 10;
-			var response = await WebWrapper.DownloadStringAsync(
+			var parsed = await WebWrapper.Request(
 					"https://www.googleapis.com/youtube/v3/search"
 					+ "?part=snippet"
 					+ "&fields=" + Uri.EscapeDataString("items(id/videoId,snippet(channelTitle,title))")
@@ -408,9 +408,8 @@ namespace TS3AudioBot.ResourceFactories.Youtube
 					+ "&safeSearch=none"
 					+ "&q=" + Uri.EscapeDataString(keyword)
 					+ "&maxResults=" + maxResults
-					+ "&key=" + YoutubeProjectId);
+					+ "&key=" + YoutubeProjectId).AsJson<JsonSearchListResponse>();
 
-			var parsed = JsonConvert.DeserializeObject<JsonSearchListResponse>(response);
 			return parsed.items.Select(item => new AudioResource(
 				item.id?.videoId ?? throw new NullReferenceException("item.id.videoId was null"),
 				item.snippet?.title,

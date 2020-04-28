@@ -206,16 +206,15 @@ namespace TS3AudioBot.ResourceFactories
 			}
 		}
 
-		public async Task<Stream> GetThumbnail(ResolveContext ctx, PlayResource playResource)
+		public async Task GetThumbnail(ResolveContext ctx, PlayResource playResource, Func<Stream, Task> action)
 		{
 			var resolver = GetResolverByType<IThumbnailResolver>(playResource.AudioResource.AudioType);
 			if (resolver is null)
 				throw Error.LocalStr(string.Format(strings.error_resfac_no_registered_factory, playResource.AudioResource.AudioType));
 
 			var sw = Stopwatch.StartNew();
-			var result = await resolver.GetThumbnail(ctx, playResource);
+			await resolver.GetThumbnail(ctx, playResource, action);
 			Log.Debug("Took {0}ms to load thumbnail.", sw.ElapsedMilliseconds);
-			return result;
 		}
 
 		public async Task<IList<AudioResource>> Search(ResolveContext ctx, string resolverName, string query)

@@ -14,6 +14,8 @@ using System.Net.Http;
 using System.Threading.Tasks;
 using TS3AudioBot.Localization;
 using System.Net.Http.Headers;
+using Newtonsoft.Json;
+using System.Linq;
 
 namespace TS3AudioBot.Helper
 {
@@ -21,110 +23,164 @@ namespace TS3AudioBot.Helper
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		public static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(10);
+		private const string TimeoutPropertyKey = "RequestTimeout";
+		private static readonly JsonSerializer JsonSerializer = JsonSerializer.CreateDefault();
 
-		private static readonly HttpClient httpClient = new HttpClient();
+		public static HttpClient HttpClient { get; } = new HttpClient();
 
 		static WebWrapper()
 		{
 			ServicePointManager.DefaultConnectionLimit = int.MaxValue;
-			httpClient.Timeout = DefaultTimeout;
-			httpClient.DefaultRequestHeaders.UserAgent.Clear();
-			httpClient.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("TS3AudioBot", Environment.SystemData.AssemblyData.Version));
+			HttpClient.Timeout = DefaultTimeout;
+			HttpClient.DefaultRequestHeaders.UserAgent.Clear();
+			HttpClient.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("TS3AudioBot", Environment.SystemData.AssemblyData.Version));
 		}
 
-		public static Task<string> DownloadStringAsync(string? link, params (string name, string value)[] headers)
+		// Start
+
+		public static HttpRequestMessage Request(string? link) => Request(CreateUri(link));
+		public static HttpRequestMessage Request(Uri uri) => new HttpRequestMessage(HttpMethod.Get, uri);
+
+		// Prepare
+
+		public static HttpRequestMessage WithMethod(this HttpRequestMessage request, HttpMethod method)
 		{
-			if (!Uri.TryCreate(link, UriKind.RelativeOrAbsolute, out var uri))
-				throw Error.LocalStr(strings.error_media_invalid_uri);
-			return DownloadStringAsync(uri, headers);
+			request.Method = method;
+			return request;
 		}
-		public static async Task<string> DownloadStringAsync(Uri uri, params (string name, string value)[] headers)
+
+		public static HttpRequestMessage WithHeader(this HttpRequestMessage request, string name, string value)
 		{
-			//var request = CreateRequest(uri);
+			request.Headers.Add(name, value);
+			return request;
+		}
 
-			var request = new HttpRequestMessage(HttpMethod.Get, uri);
+		public static HttpRequestMessage WithTimeout(this HttpRequestMessage request, TimeSpan timeout)
+		{
+			request.Properties[TimeoutPropertyKey] = timeout;
+			return request;
+		}
 
-			foreach (var (name, value) in headers)
-				request.Headers.Add(name, value);
+		// Return
 
+		public static async Task Send(this HttpRequestMessage request)
+		{
 			try
 			{
-				using var response = await httpClient.SendAsync(request);
-				if (!response.IsSuccessStatusCode)
-					throw Error.LocalStr(strings.error_net_unknown);
-				var site = await response.Content.ReadAsStringAsync();
-				return site;
+				using (request)
+				{
+					using var response = await HttpClient.SendAsync(request);
+					CheckOkReturnCodeOrThrow(response);
+				}
 			}
-			catch (Exception ex)
+			catch (HttpRequestException ex)
 			{
 				throw ToLoggedError(ex);
 			}
 		}
 
-		public static Task GetResponseAsync(string? link, Func<WebResponse, Task>? body = null, TimeSpan? timeout = null)
+		public static async Task<string> AsString(this HttpRequestMessage request)
 		{
-			if (!Uri.TryCreate(link, UriKind.RelativeOrAbsolute, out var uri))
-				throw Error.LocalStr(strings.error_media_invalid_uri);
-			return GetResponseAsync(uri, body, timeout);
-		}
-		public static async Task GetResponseAsync(Uri uri, Func<WebResponse, Task>? body = null, TimeSpan? timeout = null)
-		{
-			var request = CreateRequest(uri, timeout);
-
 			try
 			{
-				using var response = await request.GetResponseAsync();
-				if (body != null)
+				using (request)
+				{
+					using var response = await HttpClient.SendAsync(request);
+					CheckOkReturnCodeOrThrow(response);
+					return await response.Content.ReadAsStringAsync();
+				}
+			}
+			catch (HttpRequestException ex)
+			{
+				throw ToLoggedError(ex);
+			}
+		}
+
+		public static async Task<T> AsJson<T>(this HttpRequestMessage request) where T : class
+		{
+			try
+			{
+				using (request)
+				{
+					using var response = await HttpClient.SendAsync(request);
+					CheckOkReturnCodeOrThrow(response);
+					using var stream = await response.Content.ReadAsStreamAsync();
+					using var sr = new StreamReader(stream);
+					using var reader = new JsonTextReader(sr);
+					var obj = JsonSerializer.Deserialize<T>(reader);
+					if (obj is null) throw Error.LocalStr(strings.error_net_empty_response);
+					return obj;
+				}
+			}
+			catch (JsonException ex)
+			{
+				Log.Debug(ex, "Failed to parse json.");
+				throw Error.LocalStr(strings.error_media_internal_invalid + " (json-request)");
+			}
+			catch (HttpRequestException ex)
+			{
+				throw ToLoggedError(ex);
+			}
+		}
+
+		public static async Task ToAction(this HttpRequestMessage request, Func<HttpResponseMessage, Task> body)
+		{
+			try
+			{
+				using (request)
+				{
+					using var response = await HttpClient.SendAsync(request);
+					CheckOkReturnCodeOrThrow(response);
 					await body.Invoke(response);
+				}
 			}
-			catch (Exception ex)
+			catch (HttpRequestException ex)
 			{
 				throw ToLoggedError(ex);
 			}
 		}
 
-		public static Task<T> GetResponseAsync<T>(string? link, Func<WebResponse, Task<T>> body, TimeSpan? timeout = null)
+		public static async Task<T> ToAction<T>(this HttpRequestMessage request, Func<HttpResponseMessage, Task<T>> body)
 		{
-			if (!Uri.TryCreate(link, UriKind.RelativeOrAbsolute, out var uri))
-				throw Error.LocalStr(strings.error_media_invalid_uri);
-			return GetResponseAsync(uri, body, timeout);
-		}
-		public static async Task<T> GetResponseAsync<T>(Uri uri, Func<WebResponse, Task<T>> body, TimeSpan? timeout = null)
-		{
-			var request = CreateRequest(uri, timeout);
-
 			try
 			{
-				using var response = await request.GetResponseAsync();
-				return await body.Invoke(response);
+				using (request)
+				{
+					using var response = await HttpClient.SendAsync(request);
+					CheckOkReturnCodeOrThrow(response);
+					return await body.Invoke(response);
+				}
 			}
-			catch (Exception ex)
+			catch (HttpRequestException ex)
 			{
 				throw ToLoggedError(ex);
 			}
 		}
 
-		public static async Task<Stream> GetResponseUnsafeAsync(string? link, TimeSpan? timeout = null)
-		{
-			if (!Uri.TryCreate(link, UriKind.RelativeOrAbsolute, out var uri))
-				throw Error.LocalStr(strings.error_media_invalid_uri);
+		public static Task ToStream(this HttpRequestMessage request, Func<Stream, Task> body)
+			=> request.ToAction(async response => await body(await response.Content.ReadAsStreamAsync()));
 
-			return await GetResponseUnsafeAsync(uri, timeout);
-		}
-		public static async Task<Stream> GetResponseUnsafeAsync(Uri uri, TimeSpan? timeout = null)
+		public static async Task<Stream> UnsafeStream(this HttpRequestMessage request)
 		{
-			var request = CreateRequest(uri, timeout);
-
 			try
 			{
-				var response = await request.GetResponseAsync();
-				return response.GetResponseStream();
+				using (request)
+				{
+					using var response = await HttpClient.SendAsync(request);
+					CheckOkReturnCodeOrThrow(response);
+					return await response.Content.ReadAsStreamAsync();
+				}
 			}
-			catch (Exception ex)
+			catch (HttpRequestException ex)
 			{
 				throw ToLoggedError(ex);
 			}
 		}
+
+		public static string? GetSingle(this HttpHeaders headers, string name)
+			=> headers.TryGetValues(name, out var hvals) ? hvals.FirstOrDefault() : null;
+
+		// ======
 
 		private static AudioBotException ToLoggedError(Exception ex)
 		{
@@ -148,26 +204,17 @@ namespace TS3AudioBot.Helper
 			throw Error.LocalStr(strings.error_net_unknown);
 		}
 
-		public static WebRequest CreateRequest(string? link, TimeSpan? timeout = null)
+		private static Uri CreateUri(string? link)
 		{
 			if (!Uri.TryCreate(link, UriKind.RelativeOrAbsolute, out var uri))
 				throw Error.LocalStr(strings.error_media_invalid_uri);
-			return CreateRequest(uri, timeout);
+			return uri;
 		}
-		public static WebRequest CreateRequest(Uri uri, TimeSpan? timeout = null)
+
+		private static void CheckOkReturnCodeOrThrow(HttpResponseMessage response)
 		{
-			try
-			{
-				var request = WebRequest.Create(uri);
-				request.Timeout = (int)(timeout ?? DefaultTimeout).TotalMilliseconds;
-				if (request is HttpWebRequest httpRequest)
-				{
-					httpRequest.UserAgent = "TS3AudioBot";
-					httpRequest.KeepAlive = false;
-				}
-				return request;
-			}
-			catch (NotSupportedException ex) { throw Error.LocalStr(strings.error_media_invalid_uri).Exception(ex); }
+			if (!response.IsSuccessStatusCode)
+				throw Error.LocalStr(strings.error_net_unknown); // TODO error code
 		}
 	}
 }

@@ -12,8 +12,7 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.IO;
-using System.Net;
+using System.Net.Http;
 using System.Threading.Tasks;
 using TS3AudioBot.Config;
 using TS3AudioBot.Helper;
@@ -34,7 +33,6 @@ namespace TS3AudioBot.Environment
 			NullValueHandling = NullValueHandling.Ignore,
 			Formatting = Formatting.None,
 		};
-		private static readonly Newtonsoft.Json.JsonSerializer JsonSer = Newtonsoft.Json.JsonSerializer.Create(JsonSettings);
 
 		private readonly ConfRoot conf;
 		private readonly DbStore database;
@@ -110,17 +108,15 @@ namespace TS3AudioBot.Environment
 			try
 			{
 				Log.Debug("Send: {@data}", sendPacket);
-				var request = WebWrapper.CreateRequest(new Uri("https://splamy.de/api/tab/stats"));
-				request.Timeout = 2000; // ms
-				request.Method = "POST";
-				request.ContentType = "application/json";
-				using (var rStream = await request.GetRequestStreamAsync())
-				using (var sw = new StreamWriter(rStream, Tools.Utf8Encoder))
+				var request = WebWrapper
+					.Request("https://splamy.de/api/tab/stats")
+					.WithMethod(HttpMethod.Post);
+				request.Content = new StringContent(JsonConvert.SerializeObject(sendPacket), Tools.Utf8Encoder, "application/json");
+				await request.ToAction(response =>
 				{
-					JsonSer.Serialize(sw, sendPacket);
-				}
-				using var response = (HttpWebResponse)await request.GetResponseAsync();
-				Log.Debug("Stats response {0}", response.StatusCode);
+					Log.Debug("Stats response {0}", response.StatusCode);
+					return Task.CompletedTask;
+				});
 			}
 			catch (Exception ex) { Log.Debug(ex, "Could not upload stats"); }
 		}

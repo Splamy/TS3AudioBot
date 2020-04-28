@@ -29,7 +29,7 @@ namespace TS3AudioBot.Localization
 		{
 			loadedLanguage.Add("en", new LanguageData
 			{
-				IsIntenal = true,
+				IsInternal = true,
 				LoadedSuccessfully = true,
 			});
 
@@ -75,7 +75,7 @@ namespace TS3AudioBot.Localization
 					return R.Ok;
 
 				// Do not attempt to download or load integrated languages
-				if (languageDataInfo.IsIntenal)
+				if (languageDataInfo.IsInternal)
 					continue;
 
 				var tryFile = GetCultureFileInfo(currentResolveCulture);
@@ -100,11 +100,10 @@ namespace TS3AudioBot.Localization
 						languageDataInfo.TriedDownloading = true;
 						Directory.CreateDirectory(tryFile.DirectoryName);
 						Log.Info("Downloading the resource pack for the language '{0}'", currentResolveCulture.Name);
-						await WebWrapper.GetResponseAsync($"https://splamy.de/api/language/project/ts3ab/language/{currentResolveCulture.Name}/dll", async response =>
+						await WebWrapper.Request($"https://splamy.de/api/language/project/ts3ab/language/{currentResolveCulture.Name}/dll").ToAction(async response =>
 						{
-							using var dataStream = response.GetResponseStream();
 							using var fs = File.Open(tryFile.FullName, FileMode.Create, FileAccess.Write, FileShare.None);
-							await dataStream.CopyToAsync(fs);
+							await response.Content.CopyToAsync(fs);
 						});
 					}
 					catch (Exception ex)
@@ -154,8 +153,7 @@ namespace TS3AudioBot.Localization
 			try
 			{
 				Log.Info("Checking for requested language online");
-				var data = await WebWrapper.DownloadStringAsync("https://splamy.de/api/language/project/ts3ab/languages");
-				var arr = Newtonsoft.Json.JsonConvert.DeserializeObject<string[]>(data);
+				var arr = await WebWrapper.Request("https://splamy.de/api/language/project/ts3ab/languages").AsJson<string[]>();
 				return new HashSet<string>(arr);
 			}
 			catch (Exception ex)
@@ -172,7 +170,7 @@ namespace TS3AudioBot.Localization
 
 		private class LanguageData
 		{
-			public bool IsIntenal { get; set; } = false;
+			public bool IsInternal { get; set; } = false;
 			public bool LoadedSuccessfully { get; set; } = false;
 			public bool TriedDownloading { get; set; } = false;
 		}

@@ -403,8 +403,8 @@ namespace TS3AudioBot
 				{
 					try
 					{
-						using var thumbStream = await resourceResolver.GetThumbnail(startEvent.PlayResource);
-						setStream = (await ImageUtil.ResizeImageSave(thumbStream)).Stream;
+						await resourceResolver.GetThumbnail(startEvent.PlayResource,
+							async thumbStream => setStream = (await ImageUtil.ResizeImageSave(thumbStream)).Stream);
 					}
 					catch (AudioBotException ex) { Log.Debug(ex, "Failed to fetch thumbnail image"); }
 				}

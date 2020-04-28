@@ -126,9 +126,9 @@ namespace TS3AudioBot
 		public static async Task CommandBotAvatarSet(Ts3Client ts3Client, string url)
 		{
 			url = TextUtil.ExtractUrlFromBb(url);
-			await WebWrapper.GetResponseAsync(url, async x =>
+			await WebWrapper.Request(url).ToAction(async x =>
 			{
-				using var stream = x.GetResponseStream();
+				using var stream = await x.Content.ReadAsStreamAsync();
 				using var image = await ImageUtil.ResizeImageSave(stream);
 				await ts3Client.UploadAvatar(image.Stream);
 			});
@@ -329,10 +329,12 @@ namespace TS3AudioBot
 				var cur = playManager.CurrentPlayData;
 				if (cur is null)
 					throw Error.LocalStr(strings.info_currently_not_playing);
-				using var stream = await resourceFactory.GetThumbnail(cur.PlayResource);
-				using var image = await ImageUtil.ResizeImageSave(stream);
-				response.ContentType = image.Mime;
-				await image.Stream.CopyToAsync(response.Body);
+				await resourceFactory.GetThumbnail(cur.PlayResource, async stream =>
+				{
+					using var image = await ImageUtil.ResizeImageSave(stream);
+					response.ContentType = image.Mime;
+					await image.Stream.CopyToAsync(response.Body);
+				});
 			});
 
 		[Command("eval")]
@@ -1531,6 +1533,12 @@ namespace TS3AudioBot
 				targetManager.WhisperChannelSubscribe(false, subChan);
 		}
 
+		[Command("subscribe client")]
+		public static void CommandSubscribeUser(IVoiceTarget targetManager, ClientId client)
+		{
+			targetManager.WhisperClientSubscribe(client);
+		}
+
 		[Command("system info", "_undocumented")]
 		public static JsonValue CommandSystemInfo(SystemMonitor systemMonitor)
 		{
@@ -1630,6 +1638,12 @@ namespace TS3AudioBot
 
 		[Command("unsubscribe temporary")]
 		public static void CommandUnsubscribeTemporary(IVoiceTarget targetManager) => targetManager.ClearTemporary();
+
+		[Command("unsubscribe client")]
+		public static void CommandUnsubscribeUser(IVoiceTarget targetManager, ClientId client)
+		{
+			targetManager.WhisperClientUnsubscribe(client);
+		}
 
 		[Command("version")]
 		public static JsonValue<BuildData> CommandVersion() => new JsonValue<BuildData>(SystemData.AssemblyData, d => d.ToLongString());

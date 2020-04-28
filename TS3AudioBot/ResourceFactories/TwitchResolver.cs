@@ -44,39 +44,33 @@ namespace TS3AudioBot.ResourceFactories
 			var channel = resource.ResourceId;
 
 			// request api token
-			var jsonResponse = await WebWrapper.DownloadStringAsync($"https://api.twitch.tv/api/channels/{channel}/access_token", ("Client-ID", TwitchClientIdPrivate));
-
-			JsonAccessToken access;
-			try
-			{
-				access = JsonConvert.DeserializeObject<JsonAccessToken>(jsonResponse);
-			}
-			catch (Exception ex)
-			{
-				Log.Debug(ex, "Failed to parse jsonResponse. (Data: {0})", jsonResponse);
-				throw Error.LocalStr(strings.error_media_internal_invalid + " (jsonResponse)");
-			}
+			var access = await WebWrapper
+				.Request($"https://api.twitch.tv/api/channels/{channel}/access_token")
+				.WithHeader("Client-ID", TwitchClientIdPrivate)
+				.AsJson<JsonAccessToken>();
 
 			// request m3u8 file
-			if (access.token is null || access.sig is null)
+			if (access is null || access.token is null || access.sig is null)
 				throw Error.LocalStr(strings.error_media_internal_invalid + " (tokenResult|sigResult)");
 			var token = Uri.EscapeUriString(access.token);
 			var sig = access.sig;
 			// guaranteed to be random, chosen by fair dice roll.
 			const int random = 4;
-			var m3u8 = await WebWrapper.DownloadStringAsync($"http://usher.twitch.tv/api/channel/hls/{channel}.m3u8?player=twitchweb&&token={token}&sig={sig}&allow_audio_only=true&allow_source=true&type=any&p={random}");
+			var m3u8 = await WebWrapper
+				.Request($"http://usher.twitch.tv/api/channel/hls/{channel}.m3u8?player=twitchweb&&token={token}&sig={sig}&allow_audio_only=true&allow_source=true&type=any&p={random}")
+				.AsString();
 
 			// parse m3u8 file
 			var dataList = new List<StreamData>();
 			using (var reader = new System.IO.StringReader(m3u8))
 			{
-				var header = await reader.ReadLineAsync();
+				var header = reader.ReadLine();
 				if (string.IsNullOrEmpty(header) || header != "#EXTM3U")
 					throw Error.LocalStr(strings.error_media_internal_missing + " (m3uHeader)");
 
 				while (true)
 				{
-					var blockInfo = await reader.ReadLineAsync();
+					var blockInfo = reader.ReadLine();
 					if (string.IsNullOrEmpty(blockInfo))
 						break;
 
@@ -88,7 +82,7 @@ namespace TS3AudioBot.ResourceFactories
 					{
 					case "EXT-X-TWITCH-INFO": break; // Ignore twitch info line
 					case "EXT-X-MEDIA":
-						string? streamInfo = await reader.ReadLineAsync();
+						string? streamInfo = reader.ReadLine();
 						Match infoMatch;
 						if (string.IsNullOrEmpty(streamInfo)
 							|| !(infoMatch = M3U8ExtMatch.Match(streamInfo)).Success
@@ -115,7 +109,7 @@ namespace TS3AudioBot.ResourceFactories
 							}
 						}
 
-						streamData.Url = await reader.ReadLineAsync();
+						streamData.Url = reader.ReadLine();
 						dataList.Add(streamData);
 						break;
 					}

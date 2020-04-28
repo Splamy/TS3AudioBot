@@ -7,6 +7,7 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using Heijden.DNS;
 using PlaylistsNET.Content;
 using System;
 using System.Collections.Generic;
@@ -90,31 +91,27 @@ namespace TS3AudioBot.ResourceFactories
 
 		private static async Task<ResData> ValidateWeb(Uri link)
 		{
-			var request = WebWrapper.CreateRequest(link);
-			if (request is HttpWebRequest httpRequest)
-			{
-				httpRequest.Headers["Icy-MetaData"] = "1";
-			}
-
 			try
 			{
-				using var response = await request.GetResponseAsync();
-				if (response.Headers["icy-metaint"] != null)
+				return await WebWrapper.Request(link).WithHeader("Icy-MetaData", "1").ToAction(async response =>
 				{
-					return new ResData(link.AbsoluteUri, null) { IsIcyStream = true };
-				}
-				var contentType = response.Headers[HttpResponseHeader.ContentType];
-				if (contentType == "application/vnd.apple.mpegurl"
-					|| contentType == "application/vnd.apple.mpegurl.audio")
-				{
-					return new ResData(link.AbsoluteUri, null); // No title meta info
-				}
-				else
-				{
-					using var stream = response.GetResponseStream();
-					var headerData = GetStreamHeaderData(stream);
-					return new ResData(link.AbsoluteUri, headerData.Title) { Image = headerData.Picture };
-				}
+					if (response.Headers.GetSingle("icy-metaint") != null)
+					{
+						return new ResData(link.AbsoluteUri, null) { IsIcyStream = true };
+					}
+					var contentType = response.Headers.GetSingle("ContentType");
+					if (contentType == "application/vnd.apple.mpegurl"
+						|| contentType == "application/vnd.apple.mpegurl.audio")
+					{
+						return new ResData(link.AbsoluteUri, null); // No title meta info
+					}
+					else
+					{
+						using var stream = await response.Content.ReadAsStreamAsync();
+						var headerData = GetStreamHeaderData(stream);
+						return new ResData(link.AbsoluteUri, headerData.Title) { Image = headerData.Picture };
+					}
+				});
 			}
 			catch (Exception ex)
 			{
@@ -222,13 +219,13 @@ namespace TS3AudioBot.ResourceFactories
 				}
 				else if (uri.IsWeb())
 				{
-					return await WebWrapper.GetResponseAsync(uri, async response =>
+					return await WebWrapper.Request(uri).ToAction(async response =>
 					{
-						var contentType = response.Headers.Get("Content-Type");
+						var contentType = response.Headers.GetSingle("Content-Type");
 						int index = url.LastIndexOf('.');
 						string anyId = index >= 0 ? url.Substring(index) : url;
 
-						using var stream = response.GetResponseStream();
+						using var stream = await response.Content.ReadAsStreamAsync();
 						return await GetPlaylistContentAsync(stream, url, contentType);
 					});
 				}
@@ -332,17 +329,7 @@ namespace TS3AudioBot.ResourceFactories
 			return new Playlist(items).SetTitle(name);
 		}
 
-		private static async Task<Stream> GetStreamFromUriUnsafe(Uri uri)
-		{
-			if (uri.IsWeb())
-				return await WebWrapper.GetResponseUnsafeAsync(uri);
-			if (uri.IsFile())
-				return File.OpenRead(uri.LocalPath);
-
-			throw Error.LocalStr(strings.error_media_invalid_uri);
-		}
-
-		public async Task<Stream> GetThumbnail(ResolveContext _, PlayResource playResource)
+		public async Task GetThumbnail(ResolveContext _, PlayResource playResource, Func<Stream, Task> action)
 		{
 			byte[]? rawImgData;
 
@@ -353,14 +340,20 @@ namespace TS3AudioBot.ResourceFactories
 			else
 			{
 				var uri = new Uri(playResource.PlayUri);
-				using var stream = await GetStreamFromUriUnsafe(uri);
-				rawImgData = AudioTagReader.GetData(stream)?.Picture;
+
+				if (uri.IsWeb())
+					rawImgData = await WebWrapper.Request(uri)
+						.ToAction(async response => AudioTagReader.GetData(await response.Content.ReadAsStreamAsync())?.Picture);
+				else if (uri.IsFile())
+					rawImgData = AudioTagReader.GetData(File.OpenRead(uri.LocalPath))?.Picture;
+				else
+					throw Error.LocalStr(strings.error_media_invalid_uri);
 			}
 
 			if (rawImgData is null)
 				throw Error.LocalStr(strings.error_media_image_not_found);
 
-			return new MemoryStream(rawImgData);
+			await action(new MemoryStream(rawImgData));
 		}
 
 		public void Dispose() { }
@@ -386,8 +379,7 @@ namespace TS3AudioBot.ResourceFactories
 	{
 		public static bool IsWeb(this Uri uri)
 			=> uri.Scheme == Uri.UriSchemeHttp
-			|| uri.Scheme == Uri.UriSchemeHttps
-			|| uri.Scheme == Uri.UriSchemeFtp;
+			|| uri.Scheme == Uri.UriSchemeHttps;
 
 		public static bool IsFile(this Uri uri)
 			=> uri.Scheme == Uri.UriSchemeFile;

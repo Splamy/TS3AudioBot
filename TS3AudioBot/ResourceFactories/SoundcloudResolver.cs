@@ -38,14 +38,21 @@ namespace TS3AudioBot.ResourceFactories
 
 		public async Task<PlayResource> GetResource(ResolveContext? _, string uri)
 		{
-			var jsonResponse = await WebWrapper.DownloadStringAsync($"https://api.soundcloud.com/resolve.json?url={Uri.EscapeUriString(uri)}&client_id={SoundcloudClientId}").Try();
-			if (jsonResponse is null)
+			JsonTrackInfo? track = null;
+			try
+			{
+				track = await WebWrapper
+					.Request($"https://api.soundcloud.com/resolve.json?url={Uri.EscapeUriString(uri)}&client_id={SoundcloudClientId}")
+					.AsJson<JsonTrackInfo>();
+			}
+			catch (Exception ex) { Log.Debug(ex, "Failed to get via api"); }
+
+			if (track is null)
 			{
 				if (!SoundcloudLink.IsMatch(uri))
 					throw Error.LocalStr(strings.error_media_invalid_uri);
 				return await YoutubeDlWrappedAsync(uri);
 			}
-			var track = JsonConvert.DeserializeObject<JsonTrackInfo>(jsonResponse);
 			var resource = CheckAndGet(track);
 			if (resource is null)
 				throw Error.LocalStr(strings.error_media_internal_missing + " (parsedDict)");
@@ -80,12 +87,6 @@ namespace TS3AudioBot.ResourceFactories
 				return $"https://soundcloud.com/{artistName}/{trackName}";
 
 			return "https://soundcloud.com";
-		}
-
-		private static JToken? ParseJson(string jsonResponse)
-		{
-			try { return JToken.Parse(jsonResponse); }
-			catch (JsonReaderException) { return null; }
 		}
 
 		private AudioResource? CheckAndGet(JsonTrackInfo track)
@@ -124,9 +125,10 @@ namespace TS3AudioBot.ResourceFactories
 
 		public async Task<Playlist> GetPlaylist(ResolveContext _, string url)
 		{
-			var jsonResponse = await WebWrapper.DownloadStringAsync($"https://api.soundcloud.com/resolve.json?url={Uri.EscapeUriString(url)}&client_id={SoundcloudClientId}");
+			var playlist = await WebWrapper
+				.Request($"https://api.soundcloud.com/resolve.json?url={Uri.EscapeUriString(url)}&client_id={SoundcloudClientId}")
+				.AsJson<JsonPlaylist>();
 
-			var playlist = JsonConvert.DeserializeObject<JsonPlaylist>(jsonResponse);
 			if (playlist is null || playlist.title is null || playlist.tracks is null)
 			{
 				Log.Debug("Parts of playlist response are empty: {@json}", playlist);
@@ -148,22 +150,21 @@ namespace TS3AudioBot.ResourceFactories
 			return plist;
 		}
 
-		public async Task<Stream> GetThumbnail(ResolveContext _, PlayResource playResource)
+		public async Task GetThumbnail(ResolveContext _, PlayResource playResource, Func<Stream, Task> action)
 		{
-			var jsonResponse = await WebWrapper.DownloadStringAsync($"https://api.soundcloud.com/tracks/{playResource.AudioResource.ResourceId}?client_id={SoundcloudClientId}");
-			var parsedDict = ParseJson(jsonResponse);
-			if (parsedDict is null)
-				throw Error.LocalStr(strings.error_media_internal_missing + " (parsedDict)");
-
-			if (!parsedDict.TryCast<string>("artwork_url", out var imgUrl))
+			var thumb = await WebWrapper
+				.Request($"https://api.soundcloud.com/tracks/{playResource.AudioResource.ResourceId}?client_id={SoundcloudClientId}")
+				.AsJson<JsonTumbnailMinimal>();
+			if (thumb is null)
+				throw Error.LocalStr(strings.error_media_internal_missing + " (thumb)");
+			if (thumb.artwork_url is null)
 				throw Error.LocalStr(strings.error_media_internal_missing + " (artwork_url)");
 
 			// t500x500: 500px×500px
 			// crop    : 400px×400px
 			// t300x300: 300px×300px
 			// large   : 100px×100px 
-			imgUrl = imgUrl.Replace("-large", "-t300x300");
-			return await WebWrapper.GetResponseUnsafeAsync(imgUrl);
+			await WebWrapper.Request(thumb.artwork_url.Replace("-large", "-t300x300")).ToStream(action);
 		}
 
 		public void Dispose() { }
@@ -185,6 +186,10 @@ namespace TS3AudioBot.ResourceFactories
 		{
 			public string? title;
 			public JsonTrackInfo[]? tracks;
+		}
+		private class JsonTumbnailMinimal
+		{
+			public string? artwork_url;
 		}
 		// ReSharper enable ClassNeverInstantiated.Local, InconsistentNaming
 #pragma warning restore CS0649, CS0169, IDE1006

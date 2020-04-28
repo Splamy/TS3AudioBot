@@ -9,6 +9,7 @@
 
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using System;
 using System.IO;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -22,7 +23,7 @@ namespace TS3AudioBot.ResourceFactories
 		private static readonly Regex BandcampUrlRegex = new Regex(@"([\w_-]+).bandcamp.com/track/([\w_-]+)", Util.DefaultRegexConfig);
 		private static readonly Regex TrackLinkRegex = new Regex(@"""mp3-128""\s*:\s*""([^""]*)""", Util.DefaultRegexConfig);
 		private static readonly Regex TrackNameRegex = new Regex(@"""title""\s*:\s*""([^""]*)""", Util.DefaultRegexConfig);
-		private static readonly Regex TrackArtRegex = new Regex(@"""art_id""\s*:\s*(\d+)\s*,", Util.DefaultRegexConfig);
+		private static readonly Regex TrackArtRegex = new Regex(@"""album_art_id""\s*:\s*(\d+)\s*,", Util.DefaultRegexConfig);
 		private static readonly Regex TrackMainJsonRegex = new Regex(@"trackinfo\s*:(.*),(\r|\n)", Util.DefaultRegexConfig);
 
 		private const string AddArtist = "artist";
@@ -41,7 +42,7 @@ namespace TS3AudioBot.ResourceFactories
 			var artistName = match.Groups[1].Value;
 			var trackName = match.Groups[2].Value;
 
-			var webSite = await WebWrapper.DownloadStringAsync($"https://{artistName}.bandcamp.com/track/{trackName}");
+			var webSite = await WebWrapper.Request($"https://{artistName}.bandcamp.com/track/{trackName}").AsString();
 
 			match = TrackMainJsonRegex.Match(webSite);
 			if (!match.Success)
@@ -101,9 +102,9 @@ namespace TS3AudioBot.ResourceFactories
 		}
 
 		private static Task<string> DownloadEmbeddedSite(string id)
-			=> WebWrapper.DownloadStringAsync($"https://bandcamp.com/EmbeddedPlayer/v=2/track={id}");
+			=> WebWrapper.Request($"https://bandcamp.com/EmbeddedPlayer/v=2/track={id}").AsString();
 
-		public async Task<Stream> GetThumbnail(ResolveContext _, PlayResource playResource)
+		public async Task GetThumbnail(ResolveContext _, PlayResource playResource, Func<Stream, Task> action)
 		{
 			string? artId = null;
 			if (playResource is BandcampPlayResource bandcampPlayResource)
@@ -136,7 +137,7 @@ namespace TS3AudioBot.ResourceFactories
 			// 15 :  135px/ 135px
 			// 16 :  700px/ 700px
 			// 42 :   50px/  50px / supporter
-			return await WebWrapper.GetResponseUnsafeAsync($"https://f4.bcbits.com/img/a{artId}_4.jpg");
+			await WebWrapper.Request($"https://f4.bcbits.com/img/a{artId}_4.jpg").ToStream(action);
 		}
 
 		private static string? GetTrackArtId(string site)

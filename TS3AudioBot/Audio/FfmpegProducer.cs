@@ -53,7 +53,11 @@ namespace TS3AudioBot.Audio
 			this.id = id;
 		}
 
-		public async Task AudioStart(string url, TimeSpan? startOff = null) => StartFfmpegProcess(url, startOff ?? TimeSpan.Zero);
+		public Task AudioStart(string url, TimeSpan? startOff = null)
+		{
+			StartFfmpegProcess(url, startOff ?? TimeSpan.Zero);
+			return Task.CompletedTask;
+		}
 
 		public async Task AudioStartIcy(string url) => await StartFfmpegProcessIcy(url);
 
@@ -220,17 +224,17 @@ namespace TS3AudioBot.Audio
 
 			try
 			{
-				var request = WebWrapper.CreateRequest(url);
-				request.Headers["Icy-MetaData"] = "1";
+				var response = await WebWrapper.HttpClient.SendAsync(WebWrapper
+					.Request(url)
+					.WithHeader("Icy-MetaData", "1"));
 
-				var response = await request.GetResponseAsync();
-				var stream = response.GetResponseStream();
-
-				if (!int.TryParse(response.Headers["icy-metaint"], out var metaint))
+				if (!int.TryParse(response.Headers.GetSingle("icy-metaint"), out var metaint))
 				{
+					response.Dispose();
 					return "Invalid icy stream tags";
 				}
 
+				var stream = await response.Content.ReadAsStreamAsync();
 				var newInstance = new FfmpegInstance(
 					url,
 					new PreciseAudioTimer(this),
