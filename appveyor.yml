@@ -20,8 +20,8 @@ environment:
   UPLOAD_TOKEN:
     secure: wQTHAXf9NMII8m8gga6cVnA/yE6PCW5jzOppF7jgUlM=
 cache:
-  - '%USERPROFILE%\.nuget\packages'
-  - WebInterface\node_modules -> WebInterface\package.json
+  - '%USERPROFILE%\.nuget\packages -> TS3AudioBot\TS3AudioBot.csproj, TSLib\TSLib.csproj, TS3ABotUnitTests\TS3ABotUnitTests.csproj'
+  - 'WebInterface\node_modules -> WebInterface\package.json'
 before_build:
 - pwsh: |-
     nuget restore
@@ -38,27 +38,30 @@ deploy_script:
       $targets_linux = "linux-x64", "linux-arm", "linux-arm64"
       $targets = $targets_linux + "win-x64"
       foreach ($target in $targets) {
+        Write-Host -ForegroundColor Yellow Publishing $target
         dotnet publish TS3AudioBot -c Release --framework netcoreapp3.1 --self-contained --runtime $target -p:PublishSingleFile=true,IncludeSymbolsInSingleFile=true,PublishTrimmed=true
       }
 
+      Write-Host -ForegroundColor Yellow Extracting Version
       $rel = [io.path]::combine("${env:APPVEYOR_BUILD_FOLDER}", "TS3AudioBot", "bin", "Release")
       cd([io.path]::combine(${rel}, "netcoreapp3.1"))
       (dotnet .\TS3AudioBot.dll -V | Out-String) -match "Version: (?<version>[-_\d\w\.]+)"
       $ver = $matches['version']
       echo "Current version: ${ver}"
 
+      Write-Host -ForegroundColor Yellow Building Webinterface
       cd([io.path]::combine("${env:APPVEYOR_BUILD_FOLDER}", "WebInterface"))
       npm install
       npm run build
       $webInter = [io.path]::combine(${rel}, "WebInterface")
       Copy-Item "./dist" -Destination $webInter -Recurse
 
-      Write-Host -ForegroundColor Yellow Publishing dotnet core 3.1
+      Write-Host -ForegroundColor Yellow Packing dotnet core 3.1
       cd([io.path]::combine(${rel}, "netcoreapp3.1", "publish"))
       Compress-Archive -Path *.*,lib,../../WebInterface -DestinationPath TS3AudioBot.zip
       Invoke-RestMethod -Uri "https://splamy.de/api/nightly/ts3ab/${env:APPVEYOR_REPO_BRANCH}?filename=TS3AudioBot.zip&commit=${env:APPVEYOR_REPO_COMMIT}&version=${ver}" -Headers @{ "Content-Type" = "application/zip"; "Authorization" = "${env:UPLOAD_TOKEN}" } -Method Put -InFile .\TS3AudioBot.zip
 
-      Write-Host -ForegroundColor Yellow Publishing win-x64
+      Write-Host -ForegroundColor Yellow Packing win-x64
       cd([io.path]::combine(${rel}, "netcoreapp3.1", "win-x64", "publish"))
       Compress-Archive -Path TS3AudioBot.exe,../../../WebInterface -DestinationPath TS3AudioBot.zip
       Invoke-RestMethod -Uri "https://splamy.de/api/nightly/ts3ab/${env:APPVEYOR_REPO_BRANCH}_win_x64?filename=TS3AudioBot.zip&commit=${env:APPVEYOR_REPO_COMMIT}&version=${ver}" -Headers @{ "Content-Type" = "application/zip"; "Authorization" = "${env:UPLOAD_TOKEN}" } -Method Put -InFile .\TS3AudioBot.zip
@@ -66,7 +69,7 @@ deploy_script:
       $pack_linux = [io.path]::combine("${env:APPVEYOR_BUILD_FOLDER}", "Tools", "pack_linux.csx")
 
       foreach ($target in $targets_linux) {
-        Write-Host -ForegroundColor Yellow Publishing $target
+        Write-Host -ForegroundColor Yellow Packing $target
         cd([io.path]::combine(${rel}, "netcoreapp3.1", $target, "publish"))
         Copy-Item $webInter -Destination "./WebInterface" -Recurse
         # creates TS3AudioBot.tar.gz

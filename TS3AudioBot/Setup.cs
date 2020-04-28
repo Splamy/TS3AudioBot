@@ -27,12 +27,11 @@ namespace TS3AudioBot
 	{
 		private static readonly Logger Log = LogManager.GetCurrentClassLogger();
 
-		public static void Main(string[] args)
-		{
-			DedicatedTaskScheduler.FromCurrentThread(() => MainAsync(args));
-		}
+		public const int ExitCodeOk = 0;
+		public const int ExitCodeMalformedArguments = 1;
+		public const int ExitCodeLibopusLoadError = 2;
 
-		public static async void MainAsync(string[] args)
+		public static int Main(string[] args)
 		{
 			Thread.CurrentThread.Name = "TAB Main";
 			Tools.SetLogId("Core");
@@ -52,13 +51,13 @@ namespace TS3AudioBot
 					h.Copyright = "";
 					return HelpText.DefaultParsingErrorsHandler(parsedArgs, h);
 				}));
-				System.Environment.Exit(1);
+				return ExitCodeMalformedArguments;
 			}
 
 			if (setup.ShowVersion)
 			{
 				Console.WriteLine(SystemData.AssemblyData.ToLongString());
-				return;
+				return ExitCodeOk;
 			}
 
 			if (setup.ShowStatsExample)
@@ -68,11 +67,12 @@ namespace TS3AudioBot
 				Console.WriteLine("Please keep this feature enabled to help us improve and grow.");
 				Console.WriteLine("An example stats packet looks like this:");
 				Console.WriteLine(Stats.CreateExample());
-				return;
+				return ExitCodeOk;
 			}
 
 			SetupLog();
-			if (!SetupLibopus()) System.Environment.Exit(1);
+			if (!SetupLibopus())
+				return ExitCodeLibopusLoadError;
 
 			if (setup.Llgc)
 				EnableLlgc();
@@ -80,6 +80,12 @@ namespace TS3AudioBot
 			if (!setup.HideBanner)
 				LogHeader();
 
+			DedicatedTaskScheduler.FromCurrentThread(() => StartBot(setup));
+			return ExitCodeOk;
+		}
+
+		private static async void StartBot(ParameterData setup)
+		{
 			// Initialize the actual core
 			var core = new Core((DedicatedTaskScheduler)TaskScheduler.Current, setup.ConfigFile);
 

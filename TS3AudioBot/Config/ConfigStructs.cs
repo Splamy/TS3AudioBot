@@ -55,7 +55,7 @@ namespace TS3AudioBot.Config
 	{
 		public ConfPath Media { get; } = Create<ConfPath>("media",
 			"The default path to look for local resources.");
-		public ConfResolverYoutube Youtube = Create<ConfResolverYoutube>("youtube");
+		public ConfResolverYoutube Youtube { get; } = Create<ConfResolverYoutube>("youtube");
 	}
 
 	public class ConfResolverYoutube : ConfigTable

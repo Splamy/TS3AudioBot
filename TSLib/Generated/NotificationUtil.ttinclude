@@ -17,7 +17,7 @@ HashSet<string> sharedNotifications = new HashSet<string> {
 public void GenNtfyDecls(IEnumerable<Messages.Msg> enu, bool root = false) {
 	PushIndent("\t\t");
 	WriteLine("");
-	var modifier = root ? " virtual" : " override";
+	var modifier = root ? " abstract" : " override";
 
 	foreach(var ntfy in enu)
 	{
