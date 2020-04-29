@@ -754,8 +754,13 @@ namespace TSLib.Full
 
 		public ConnectionContext()
 		{
-			ConnectEvent = new TaskCompletionSource<E<CommandError>>();
-			DisconnectEvent = new TaskCompletionSource<object?>();
+			// Note: TCS.SetResult can continue to run the code of the 'await TSC.Task'
+			// somewhere else synchronously.
+			// While the TsFC class is designed to be resistend to problems regarding
+			// intermediate state changes with such call, we still add the runasync Task
+			// option for a more consistent processing order and better predictable behaviour.
+			ConnectEvent = new TaskCompletionSource<E<CommandError>>(TaskCreationOptions.RunContinuationsAsynchronously);
+			DisconnectEvent = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
 		}
 	}
 }

@@ -7,13 +7,13 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
-using Newtonsoft.Json;
 using System;
 using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Text.Json;
 using System.Threading.Tasks;
 using TS3AudioBot.Localization;
 
@@ -24,16 +24,15 @@ namespace TS3AudioBot.Helper
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		public static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(10);
 		private const string TimeoutPropertyKey = "RequestTimeout";
-		private static readonly JsonSerializer JsonSerializer = JsonSerializer.CreateDefault();
 
-		public static HttpClient HttpClient { get; } = new HttpClient();
+		private static readonly HttpClient httpClient = new HttpClient();
 
 		static WebWrapper()
 		{
 			ServicePointManager.DefaultConnectionLimit = int.MaxValue;
-			HttpClient.Timeout = DefaultTimeout;
-			HttpClient.DefaultRequestHeaders.UserAgent.Clear();
-			HttpClient.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("TS3AudioBot", Environment.SystemData.AssemblyData.Version));
+			httpClient.Timeout = DefaultTimeout;
+			httpClient.DefaultRequestHeaders.UserAgent.Clear();
+			httpClient.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("TS3AudioBot", Environment.SystemData.AssemblyData.Version));
 		}
 
 		// Start
@@ -69,7 +68,7 @@ namespace TS3AudioBot.Helper
 			{
 				using (request)
 				{
-					using var response = await HttpClient.SendAsync(request);
+					using var response = await httpClient.SendDefaultAsync(request);
 					CheckOkReturnCodeOrThrow(response);
 				}
 			}
@@ -85,7 +84,7 @@ namespace TS3AudioBot.Helper
 			{
 				using (request)
 				{
-					using var response = await HttpClient.SendAsync(request);
+					using var response = await httpClient.SendAsync(request);
 					CheckOkReturnCodeOrThrow(response);
 					return await response.Content.ReadAsStringAsync();
 				}
@@ -96,18 +95,16 @@ namespace TS3AudioBot.Helper
 			}
 		}
 
-		public static async Task<T> AsJson<T>(this HttpRequestMessage request) where T : class
+		public static async Task<T> AsJson<T>(this HttpRequestMessage request)
 		{
 			try
 			{
 				using (request)
 				{
-					using var response = await HttpClient.SendAsync(request);
+					using var response = await httpClient.SendAsync(request);
 					CheckOkReturnCodeOrThrow(response);
 					using var stream = await response.Content.ReadAsStreamAsync();
-					using var sr = new StreamReader(stream);
-					using var reader = new JsonTextReader(sr);
-					var obj = JsonSerializer.Deserialize<T>(reader);
+					var obj = await JsonSerializer.DeserializeAsync<T>(stream);
 					if (obj is null) throw Error.LocalStr(strings.error_net_empty_response);
 					return obj;
 				}
@@ -129,7 +126,7 @@ namespace TS3AudioBot.Helper
 			{
 				using (request)
 				{
-					using var response = await HttpClient.SendAsync(request);
+					using var response = await httpClient.SendDefaultAsync(request);
 					CheckOkReturnCodeOrThrow(response);
 					await body.Invoke(response);
 				}
@@ -146,7 +143,7 @@ namespace TS3AudioBot.Helper
 			{
 				using (request)
 				{
-					using var response = await HttpClient.SendAsync(request);
+					using var response = await httpClient.SendDefaultAsync(request);
 					CheckOkReturnCodeOrThrow(response);
 					return await body.Invoke(response);
 				}
@@ -160,15 +157,15 @@ namespace TS3AudioBot.Helper
 		public static Task ToStream(this HttpRequestMessage request, Func<Stream, Task> body)
 			=> request.ToAction(async response => await body(await response.Content.ReadAsStreamAsync()));
 
-		public static async Task<Stream> UnsafeStream(this HttpRequestMessage request)
+		public static async Task<HttpResponseMessage> UnsafeResponse(this HttpRequestMessage request)
 		{
 			try
 			{
 				using (request)
 				{
-					using var response = await HttpClient.SendAsync(request);
+					var response = await httpClient.SendDefaultAsync(request);
 					CheckOkReturnCodeOrThrow(response);
-					return await response.Content.ReadAsStreamAsync();
+					return response;
 				}
 			}
 			catch (HttpRequestException ex)
@@ -177,10 +174,16 @@ namespace TS3AudioBot.Helper
 			}
 		}
 
+		public static async Task<Stream> UnsafeStream(this HttpRequestMessage request)
+			=> await (await request.UnsafeResponse()).Content.ReadAsStreamAsync();
+
 		public static string? GetSingle(this HttpHeaders headers, string name)
 			=> headers.TryGetValues(name, out var hvals) ? hvals.FirstOrDefault() : null;
 
 		// ======
+
+		private static Task<HttpResponseMessage> SendDefaultAsync(this HttpClient client, HttpRequestMessage request)
+			=> client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
 
 		private static AudioBotException ToLoggedError(Exception ex)
 		{

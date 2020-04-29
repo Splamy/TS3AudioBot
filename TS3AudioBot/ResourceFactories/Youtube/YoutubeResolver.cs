@@ -242,7 +242,7 @@ namespace TS3AudioBot.ResourceFactories.Youtube
 			return autoselectIndex;
 		}
 
-		private static Task ValidateMedia(VideoData media) => WebWrapper.Request(media.Link).WithTimeout(TimeSpan.FromSeconds(3)).Send();
+		private static Task ValidateMedia(VideoData media) => WebWrapper.Request(media.Link).Send();
 
 		private static VideoCodec GetCodec(string type)
 		{

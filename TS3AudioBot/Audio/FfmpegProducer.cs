@@ -224,9 +224,10 @@ namespace TS3AudioBot.Audio
 
 			try
 			{
-				var response = await WebWrapper.HttpClient.SendAsync(WebWrapper
+				var response = await WebWrapper
 					.Request(url)
-					.WithHeader("Icy-MetaData", "1"));
+					.WithHeader("Icy-MetaData", "1")
+					.UnsafeResponse();
 
 				if (!int.TryParse(response.Headers.GetSingle("icy-metaint"), out var metaint))
 				{

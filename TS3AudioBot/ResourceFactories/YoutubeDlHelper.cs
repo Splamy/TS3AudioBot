@@ -14,6 +14,7 @@ using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using TS3AudioBot.Config;
 using TS3AudioBot.Helper;
@@ -131,7 +132,7 @@ namespace TS3AudioBot.ResourceFactories
 				tmproc.ErrorDataReceived += (s, e) => stdErr.Append(e.Data);
 				tmproc.BeginOutputReadLine();
 				tmproc.BeginErrorReadLine();
-				tmproc.WaitForExit(20000);
+				await tmproc.WaitForExitAsync(TimeSpan.FromSeconds(20));
 
 				if (!tmproc.HasExitedSafe())
 				{
@@ -199,6 +200,47 @@ namespace TS3AudioBot.ResourceFactories
 				}
 			}
 			return best;
+		}
+
+		// https://stackoverflow.com/a/50461641/2444047
+		/// <summary>
+		/// Waits asynchronously for the process to exit.
+		/// </summary>
+		/// <param name="process">The process to wait for cancellation.</param>
+		/// <param name="timeout">The maximum time to wait for exit before returning anyway.</param>
+		/// <param name="cancellationToken">A cancellation token. If invoked, the task will return 
+		/// immediately as canceled.</param>
+		/// <returns>A Task representing waiting for the process to end.</returns>
+		public static async Task WaitForExitAsync(this Process process, TimeSpan timeout, CancellationToken cancellationToken = default)
+		{
+			var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+
+			void Process_Exited(object? sender, EventArgs e)
+			{
+				tcs.TrySetResult(true);
+			}
+
+			process.EnableRaisingEvents = true;
+			process.Exited += Process_Exited;
+
+			try
+			{
+				if (process.HasExited)
+				{
+					return;
+				}
+
+				var timoutTask = Task.Delay(timeout, cancellationToken);
+
+				using (cancellationToken.Register(() => tcs.TrySetCanceled()))
+				{
+					await Task.WhenAny(tcs.Task, timoutTask).ConfigureAwait(false);
+				}
+			}
+			finally
+			{
+				process.Exited -= Process_Exited;
+			}
 		}
 	}
 
