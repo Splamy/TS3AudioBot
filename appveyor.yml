@@ -1,0 +1,128 @@
+version: appveyor-{branch}-{build}
+branches:
+  only:
+  - master
+  - develop
+image: Visual Studio 2019
+configuration: Release
+clone_depth: 99999
+init:
+- pwsh: dotnet --version;
+clone_script:
+- pwsh: >-
+    git clone -q --recursive --branch=$env:APPVEYOR_REPO_BRANCH https://github.com/$env:APPVEYOR_REPO_NAME.git $env:APPVEYOR_BUILD_FOLDER
+
+    git config remote.origin.fetch +refs/heads/*:refs/remotes/origin/*
+
+    git fetch
+
+    git checkout -qf master
+
+    git checkout -qf $env:APPVEYOR_REPO_COMMIT
+environment:
+  UPLOAD_TOKEN:
+    secure: wQTHAXf9NMII8m8gga6cVnA/yE6PCW5jzOppF7jgUlM=
+cache:
+- '%USERPROFILE%\.nuget\packages'
+- WebInterface\node_modules -> WebInterface\package.json
+before_build:
+- pwsh: nuget restore
+build:
+  parallel: true
+  verbosity: minimal
+after_build:
+- pwsh: >-
+    dotnet publish TS3AudioBot --framework netcoreapp2.2 -c Release
+
+    dotnet publish TS3AudioBot --framework netcoreapp3.1 -c Release
+deploy_script:
+- pwsh: >-
+    Install-Module Microsoft.PowerShell.Archive -MinimumVersion 1.2.3.0 -Repository PSGallery -Force
+
+
+    if(${env:UPLOAD_TOKEN}) {
+      $rel = [io.path]::combine("${env:APPVEYOR_BUILD_FOLDER}", "TS3AudioBot", "bin", "Release")
+      cd([io.path]::combine(${rel}, "net472"))
+      (.\TS3AudioBot.exe -V | Out-String) -match "Version: (?<version>[-_\d\w\.]+)"
+      $ver = $matches['version']
+      echo "Current version: ${ver}"
+
+      cd([io.path]::combine("${env:APPVEYOR_BUILD_FOLDER}", "WebInterface"))
+      npm install
+      npm run build
+      $dst = [io.path]::combine(${rel}, "WebInterface")
+      Copy-Item "./dist" -Destination $dst -Recurse
+
+      #net
+      cd([io.path]::combine(${rel}, "net472"))
+      Compress-Archive -Path *.exe,*.dll,*.config,lib,../WebInterface -DestinationPath TS3AudioBot.zip
+      Invoke-RestMethod -Uri "https://splamy.de/api/nightly/ts3ab/${env:APPVEYOR_REPO_BRANCH}?filename=TS3AudioBot.zip&commit=${env:APPVEYOR_REPO_COMMIT}&version=${ver}" -Headers @{ "Content-Type" = "application/zip"; "Authorization" = "${env:UPLOAD_TOKEN}" } -Method Put -InFile .\TS3AudioBot.zip
+
+      #core 2.2
+      cd([io.path]::combine(${rel}, "netcoreapp2.2", "publish"))
+      Compress-Archive -Path *.*,lib,../../WebInterface -DestinationPath TS3AudioBot.zip
+      Invoke-RestMethod -Uri "https://splamy.de/api/nightly/ts3ab/${env:APPVEYOR_REPO_BRANCH}_dotnet_core?filename=TS3AudioBot.zip&commit=${env:APPVEYOR_REPO_COMMIT}&version=${ver}" -Headers @{ "Content-Type" = "application/zip"; "Authorization" = "${env:UPLOAD_TOKEN}" } -Method Put -InFile .\TS3AudioBot.zip
+
+      #core 3.1
+      cd([io.path]::combine(${rel}, "netcoreapp3.1", "publish"))
+      Compress-Archive -Path *.*,lib,../../WebInterface -DestinationPath TS3AudioBot.zip
+      Invoke-RestMethod -Uri "https://splamy.de/api/nightly/ts3ab/${env:APPVEYOR_REPO_BRANCH}_dotnet_core_3_1_preview?filename=TS3AudioBot.zip&commit=${env:APPVEYOR_REPO_COMMIT}&version=${ver}" -Headers @{ "Content-Type" = "application/zip"; "Authorization" = "${env:UPLOAD_TOKEN}" } -Method Put -InFile .\TS3AudioBot.zip
+    }
+on_success:
+- pwsh: >-
+    # cut to the first 7 chars of the commit hash
+
+    $commitCut = $env:APPVEYOR_REPO_COMMIT.Substring(0, 7)
+
+    # and set up a nice teamspeak link for it
+
+    $commitLink = "[url=https://github.com/$env:APPVEYOR_REPO_NAME/commit/$env:APPVEYOR_REPO_COMMIT]$commitCut[/url]"
+
+    # now we do the same for the appveyor build
+
+    $buildLink = "[url=https://ci.appveyor.com/project/$env:APPVEYOR_REPO_NAME/builds/$env:APPVEYOR_BUILD_ID]Build #$env:APPVEYOR_BUILD_NUMBER[/url]"
+
+
+    $gitTitle = git log --format=%B -n 1 HEAD | Out-String
+
+
+    $finalMsg = [System.Uri]::EscapeDataString("Commit $commitLink in branch $env:APPVEYOR_REPO_BRANCH ($buildLink) [b][color=green]succeeded[/b].`n Summary: $gitTitle")
+
+    $finalMsg = $finalMsg.Replace("(", "%28").Replace(")", "%29")
+
+
+    try { Invoke-RestMethod -Uri "https://bot.splamy.de/api/bot/template/splamy/(/xecute(/pm/channel/$finalMsg)" }
+
+    catch {
+      Write-Host "Failed to notify:"
+      Write-Host $_
+    }
+on_failure:
+- pwsh: >-
+    # cut to the first 7 chars of the commit hash
+
+    $commitCut = $env:APPVEYOR_REPO_COMMIT.Substring(0, 7)
+
+    # and set up a nice teamspeak link for it
+
+    $commitLink = "[url=https://github.com/$env:APPVEYOR_REPO_NAME/commit/$env:APPVEYOR_REPO_COMMIT]$commitCut[/url]"
+
+    # now we do the same for the appveyor build
+
+    $buildLink = "[url=https://ci.appveyor.com/project/$env:APPVEYOR_REPO_NAME/builds/$env:APPVEYOR_BUILD_ID]Build #$env:APPVEYOR_BUILD_NUMBER[/url]"
+
+
+    $gitTitle = git log --format=%B -n 1 HEAD | Out-String
+
+
+    $finalMsg = [System.Uri]::EscapeDataString("Commit $commitLink in branch $env:APPVEYOR_REPO_BRANCH ($buildLink) [b][color=red]failed[/b].`n Summary: $gitTitle")
+
+    $finalMsg = $finalMsg.Replace("(", "%28").Replace(")", "%29")
+
+
+    try { Invoke-RestMethod -Uri "https://bot.splamy.de/api/bot/template/splamy/(/xecute(/pm/channel/$finalMsg)" }
+
+    catch {
+      Write-Host "Failed to notify:"
+      Write-Host $_
+    }
