@@ -48,7 +48,7 @@ namespace TS3AudioBot.Rights
 				DeclDeny = declDeny;
 				return true;
 			case "include":
-				if (tomlObj.TryGetValueArray<string>(out var includeNames))
+				if (!tomlObj.TryGetValueArray<string>(out var includeNames))
 				{
 					ctx.Errors.Add("<include> Field has invalid data.");
 					includeNames = null;
