@@ -46,11 +46,12 @@ Download either one of the latest builds from our [nightly server](https://splam
   Versions are mostly considered stable but won't get bigger features as fast.
 - [![Download](https://img.shields.io/badge/Download-develop-green.svg)](https://splamy.de/api/nightly/ts3ab/develop_dotnet_core/download)
   Will always have the latest and greatest but might not be fully stable or have broken features.
+- [Docker](https://github.com/getdrunkonmovies-com/TS3AudioBot_docker) (NOTE: This build is community-maintained. It comes with all dependencies as well as youtube-dl preconfigured)
 
 #### Linux
 1. dotnet core: Get the latest `dotnet core 2.2` version by following [this tutorial](https://dotnet.microsoft.com/download/linux-package-manager/ubuntu16-04/sdk-current) and follow the steps after choosing your platform
 1. Other dependencies:
-* on **Ubuntu**:  
+* on **Ubuntu**/**Debian**:  
 Run `sudo apt-get install libopus-dev ffmpeg`
 * on **Arch Linux**:  
 Run `sudo pacman -S opus ffmpeg`
