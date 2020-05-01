@@ -226,7 +226,11 @@ namespace TS3AudioBot.Audio
 			{
 				pli = playlistManager.Next(manually);
 				if (pli is null) break;
-				try { await StartResource(invoker, pli); }
+				try
+				{
+					await StartResource(invoker, pli);
+					return;
+				}
 				catch (AudioBotException ex) { Log.Warn("Skipping: {0} because {1}", pli, ex.Message); }
 			}
 			if (pli is null)
@@ -242,7 +246,11 @@ namespace TS3AudioBot.Audio
 			{
 				pli = playlistManager.Previous(manually);
 				if (pli is null) break;
-				try { await StartResource(invoker, pli); }
+				try
+				{
+					await StartResource(invoker, pli);
+					return;
+				}
 				catch (AudioBotException ex) { Log.Warn("Skipping: {0} because {1}", pli, ex.Message); }
 			}
 			if (pli is null)
