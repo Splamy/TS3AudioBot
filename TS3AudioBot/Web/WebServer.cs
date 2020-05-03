@@ -60,7 +60,7 @@ namespace TS3AudioBot.Web
 			}
 		}
 
-		private string? FindWebFolder()
+		public string? FindWebFolder()
 		{
 			var webData = config.Interface;
 			if (string.IsNullOrEmpty(webData.Path))

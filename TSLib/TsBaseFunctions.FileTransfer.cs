@@ -48,7 +48,14 @@ namespace TSLib
 			var request = await FileTransferInitUpload(channel, path, channelPassword, cftid, stream.Length, overwrite, false);
 			if (!request.Ok)
 			{
-				if (closeStream) stream.Close();
+				if (closeStream)
+				{
+#if NETSTANDARD2_0
+					stream.Dispose();
+#else
+					await stream.DisposeAsync();
+#endif
+				}
 				return request.Error;
 			}
 			var token = new FileTransferToken(stream, request.Value, channel, path, channelPassword, stream.Length, createMd5) { CloseStreamWhenDone = closeStream };
@@ -78,7 +85,14 @@ namespace TSLib
 			var request = await FileTransferInitDownload(channel, path, channelPassword, cftid, 0);
 			if (!request.Ok)
 			{
-				if (closeStream) stream.Close();
+				if (closeStream)
+				{
+#if NETSTANDARD2_0
+					stream.Dispose();
+#else
+					await stream.DisposeAsync();
+#endif
+				}
 				return request.Error;
 			}
 			var token = new FileTransferToken(stream, request.Value, channel, path, channelPassword, 0) { CloseStreamWhenDone = closeStream };
@@ -143,7 +157,14 @@ namespace TSLib
 				{
 					token.Status = TransferStatus.Done;
 					if (token.CloseStreamWhenDone)
-						token.LocalStream.Close();
+					{
+#if NETSTANDARD2_0
+						token.LocalStream.Dispose();
+#else
+						await token.LocalStream.DisposeAsync();
+#endif
+					}
+
 				}
 			}
 			catch (IOException ex)
@@ -211,7 +232,11 @@ namespace TSLib
 			token.Status = TransferStatus.Cancelled;
 			if (delete && token.CloseStreamWhenDone)
 			{
-				token.LocalStream.Close();
+#if NETSTANDARD2_0
+				token.LocalStream.Dispose();
+#else
+				await token.LocalStream.DisposeAsync();
+#endif
 			}
 		}
 

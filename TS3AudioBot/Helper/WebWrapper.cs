@@ -72,7 +72,7 @@ namespace TS3AudioBot.Helper
 					CheckOkReturnCodeOrThrow(response);
 				}
 			}
-			catch (HttpRequestException ex)
+			catch (Exception ex) when (ex is HttpRequestException || ex is OperationCanceledException)
 			{
 				throw ToLoggedError(ex);
 			}
@@ -89,7 +89,7 @@ namespace TS3AudioBot.Helper
 					return await response.Content.ReadAsStringAsync();
 				}
 			}
-			catch (HttpRequestException ex)
+			catch (Exception ex) when (ex is HttpRequestException || ex is OperationCanceledException)
 			{
 				throw ToLoggedError(ex);
 			}
@@ -114,7 +114,7 @@ namespace TS3AudioBot.Helper
 				Log.Debug(ex, "Failed to parse json.");
 				throw Error.LocalStr(strings.error_media_internal_invalid + " (json-request)");
 			}
-			catch (HttpRequestException ex)
+			catch (Exception ex) when (ex is HttpRequestException || ex is OperationCanceledException)
 			{
 				throw ToLoggedError(ex);
 			}
@@ -131,7 +131,7 @@ namespace TS3AudioBot.Helper
 					await body.Invoke(response);
 				}
 			}
-			catch (HttpRequestException ex)
+			catch (Exception ex) when (ex is HttpRequestException || ex is OperationCanceledException)
 			{
 				throw ToLoggedError(ex);
 			}
@@ -148,7 +148,7 @@ namespace TS3AudioBot.Helper
 					return await body.Invoke(response);
 				}
 			}
-			catch (HttpRequestException ex)
+			catch (Exception ex) when (ex is HttpRequestException || ex is OperationCanceledException)
 			{
 				throw ToLoggedError(ex);
 			}
@@ -168,7 +168,7 @@ namespace TS3AudioBot.Helper
 					return response;
 				}
 			}
-			catch (HttpRequestException ex)
+			catch (Exception ex) when (ex is HttpRequestException || ex is OperationCanceledException)
 			{
 				throw ToLoggedError(ex);
 			}
@@ -177,34 +177,24 @@ namespace TS3AudioBot.Helper
 		public static async Task<Stream> UnsafeStream(this HttpRequestMessage request)
 			=> await (await request.UnsafeResponse()).Content.ReadAsStreamAsync();
 
+		// Util
+
 		public static string? GetSingle(this HttpHeaders headers, string name)
 			=> headers.TryGetValues(name, out var hvals) ? hvals.FirstOrDefault() : null;
-
-		// ======
 
 		private static Task<HttpResponseMessage> SendDefaultAsync(this HttpClient client, HttpRequestMessage request)
 			=> client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
 
 		private static AudioBotException ToLoggedError(Exception ex)
 		{
-			if (ex is WebException webEx)
+			if (ex is OperationCanceledException webEx)
 			{
-				if (webEx.Status == WebExceptionStatus.Timeout)
-				{
-					Log.Warn(webEx, "Request timed out");
-					throw Error.LocalStr(strings.error_net_timeout).Exception(ex);
-				}
-				else if (webEx.Response is HttpWebResponse errorResponse)
-				{
-					Log.Warn(webEx, "Web error: [{0}] {1}", (int)errorResponse.StatusCode, errorResponse.StatusCode);
-					throw Error
-						.LocalStr($"{strings.error_net_error_status_code} [{(int)errorResponse.StatusCode}] {errorResponse.StatusCode}")
-						.Exception(ex);
-				}
+				Log.Warn(webEx, "Request timed out");
+				throw Error.Exception(ex).LocalStr(strings.error_net_timeout);
 			}
 
 			Log.Debug(ex, "Unknown request error");
-			throw Error.LocalStr(strings.error_net_unknown);
+			throw Error.Exception(ex).LocalStr(strings.error_net_unknown);
 		}
 
 		private static Uri CreateUri(string? link)
@@ -217,7 +207,11 @@ namespace TS3AudioBot.Helper
 		private static void CheckOkReturnCodeOrThrow(HttpResponseMessage response)
 		{
 			if (!response.IsSuccessStatusCode)
-				throw Error.LocalStr(strings.error_net_unknown); // TODO error code
+			{
+				Log.Warn("Web error: [{0}] {1}", (int)response.StatusCode, response.StatusCode);
+				throw Error
+					.LocalStr($"{strings.error_net_error_status_code} [{(int)response.StatusCode}] {response.StatusCode}");
+			}
 		}
 	}
 }

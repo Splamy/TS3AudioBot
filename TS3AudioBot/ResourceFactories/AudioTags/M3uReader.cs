@@ -126,7 +126,7 @@ namespace TS3AudioBot.ResourceFactories.AudioTags
 				}
 				throw Error.Str("List too long");
 			}
-			catch (Exception ex) { throw Error.Str("List too long").Exception(ex); }
+			catch (Exception ex) { throw Error.Exception(ex).Str("List too long"); }
 		}
 	}
 

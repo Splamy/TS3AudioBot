@@ -162,28 +162,31 @@ namespace TS3AudioBot.ResourceFactories
 			catch (Win32Exception ex)
 			{
 				Log.Error(ex, "Failed to run youtube-dl: {0}", ex.Message);
-				throw Error.LocalStr(strings.error_ytdl_failed_to_run).Exception(ex);
+				throw Error.Exception(ex).LocalStr(strings.error_ytdl_failed_to_run);
 			}
 		}
 
-		public static T ParseResponse<T>(string json) where T : notnull
+		public static T ParseResponse<T>(string? json) where T : notnull
 		{
+			if (string.IsNullOrEmpty(json))
+				throw Error.LocalStr(strings.error_ytdl_empty_response);
+
 			try
 			{
-				if (string.IsNullOrEmpty(json))
-					throw Error.LocalStr(strings.error_ytdl_empty_response);
 
 				return JsonConvert.DeserializeObject<T>(json);
 			}
 			catch (Exception ex)
 			{
 				Log.Debug(ex, "Failed to read youtube-dl json data");
-				throw Error.LocalStr(strings.error_media_internal_invalid).Exception(ex);
+				throw Error.Exception(ex).LocalStr(strings.error_media_internal_invalid);
 			}
 		}
 
 		public static JsonYtdlFormat? FilterBest(IEnumerable<JsonYtdlFormat>? formats)
 		{
+			Log.Debug("Picking from options: {@formats}", formats);
+
 			if (formats is null)
 				return null;
 
@@ -199,6 +202,8 @@ namespace TS3AudioBot.ResourceFactories
 					best = format;
 				}
 			}
+
+			Log.Debug("Picked: {@format}", best);
 			return best;
 		}
 

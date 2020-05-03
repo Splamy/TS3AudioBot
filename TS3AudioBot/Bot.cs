@@ -128,8 +128,8 @@ namespace TS3AudioBot
 			player.OnSongEnd += playManager.SongStoppedEvent;
 			player.OnSongUpdated += (s, e) => playManager.Update(e);
 			// Update idle status events
-			playManager.BeforeResourceStarted += (s, e) => DisableIdleTickWorker();
-			playManager.PlaybackStopped += (s, e) => EnableIdleTickWorker();
+			playManager.BeforeResourceStarted += (s, e) => { DisableIdleTickWorker(); return Task.CompletedTask; };
+			playManager.PlaybackStopped += (s, e) => { EnableIdleTickWorker(); return Task.CompletedTask; };
 			// Used for the voice_mode script
 			playManager.BeforeResourceStarted += BeforeResourceStarted;
 			// Update the own status text to the current song title
@@ -142,13 +142,14 @@ namespace TS3AudioBot
 				{
 					if (e.MetaData != null)
 						historyManager.LogAudioResource(new HistorySaveData(e.PlayResource.AudioResource, e.MetaData.ResourceOwnerUid));
+					return Task.CompletedTask;
 				};
 			// Update our thumbnail
 			playManager.AfterResourceStarted += (s, e) => GenerateStatusImage(true, e);
 			playManager.PlaybackStopped += (s, e) => GenerateStatusImage(false, null);
 			// Stats
-			playManager.AfterResourceStarted += (s, e) => stats.TrackSongStart(Id, e.ResourceData.AudioType);
-			playManager.ResourceStopped += (s, e) => stats.TrackSongStop(Id);
+			playManager.AfterResourceStarted += (s, e) => { stats.TrackSongStart(Id, e.ResourceData.AudioType); return Task.CompletedTask; };
+			playManager.ResourceStopped += (s, e) => { stats.TrackSongStop(Id); return Task.CompletedTask; };
 			// Register callback for all messages happening
 			ts3client.OnMessageReceived += OnMessageReceived;
 			// Register callback to remove open private sessions, when user disconnects
@@ -438,7 +439,7 @@ namespace TS3AudioBot
 
 		#endregion
 
-		private async void BeforeResourceStarted(object? sender, PlayInfoEventArgs e)
+		private async Task BeforeResourceStarted(object? sender, PlayInfoEventArgs e)
 		{
 			const string DefaultVoiceScript = "!whisper off";
 			const string DefaultWhisperScript = "!xecute (!whisper subscription) (!unsubscribe temporary) (!subscribe channeltemp (!getmy channel))";

@@ -35,6 +35,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="CliWrap" Version="3.0.2" />
     <PackageReference Include="CommandLineParser" Version="2.8.0" />
     <PackageReference Include="NLog" Version="4.7.0" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />

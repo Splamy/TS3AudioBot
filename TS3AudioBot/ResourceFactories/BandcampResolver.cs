@@ -50,7 +50,7 @@ namespace TS3AudioBot.ResourceFactories
 
 			JToken jobj;
 			try { jobj = JToken.Parse(match.Groups[1].Value); }
-			catch (JsonReaderException ex) { throw Error.LocalStr(strings.error_media_internal_missing + " (TrackMainJsonRegex.JToken)").Exception(ex); }
+			catch (JsonReaderException ex) { throw Error.Exception(ex).LocalStr(strings.error_media_internal_missing + " (TrackMainJsonRegex.JToken)"); }
 
 			if (!(jobj is JArray jarr) || jarr.Count == 0)
 				throw Error.LocalStr(strings.error_media_no_stream_extracted);

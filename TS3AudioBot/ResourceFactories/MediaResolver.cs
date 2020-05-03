@@ -114,7 +114,7 @@ namespace TS3AudioBot.ResourceFactories
 			catch (Exception ex)
 			{
 				Log.Debug(ex, "Failed to validate song");
-				throw Error.LocalStr(strings.error_net_unknown).Exception(ex);
+				throw Error.Exception(ex).LocalStr(strings.error_net_unknown);
 			}
 		}
 
@@ -128,12 +128,12 @@ namespace TS3AudioBot.ResourceFactories
 			}
 			catch (UnauthorizedAccessException ex)
 			{
-				throw Error.LocalStr(strings.error_io_missing_permission).Exception(ex);
+				throw Error.Exception(ex).LocalStr(strings.error_io_missing_permission);
 			}
 			catch (Exception ex)
 			{
 				Log.Warn(ex, "Failed to load song \"{0}\", because {1}", foundPath.OriginalString, ex.Message);
-				throw Error.LocalStr(strings.error_io_unknown_error).Exception(ex);
+				throw Error.Exception(ex).LocalStr(strings.error_io_unknown_error);
 			}
 		}
 
@@ -200,7 +200,7 @@ namespace TS3AudioBot.ResourceFactories
 				catch (Exception ex)
 				{
 					Log.Warn("Failed to load playlist \"{0}\", because {1}", url, ex.Message);
-					throw Error.LocalStr(strings.error_io_unknown_error).Exception(ex);
+					throw Error.Exception(ex).LocalStr(strings.error_io_unknown_error);
 				}
 			}
 
@@ -229,7 +229,7 @@ namespace TS3AudioBot.ResourceFactories
 			catch (Exception ex)
 			{
 				Log.Warn(ex, "Error opening/reading playlist file");
-				throw Error.LocalStr(strings.error_io_unknown_error).Exception(ex);
+				throw Error.Exception(ex).LocalStr(strings.error_io_unknown_error);
 			}
 		}
 

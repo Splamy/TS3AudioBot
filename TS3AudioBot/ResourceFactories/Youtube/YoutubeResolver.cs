@@ -144,7 +144,7 @@ namespace TS3AudioBot.ResourceFactories.Youtube
 					await M3uReader.TryGetData(await response.Content.ReadAsStreamAsync())
 				);
 			}
-			catch (AudioBotException ex) { throw Error.LocalStr(strings.error_media_internal_invalid).Exception(ex); }
+			catch (Exception ex) { throw Error.Exception(ex).LocalStr(strings.error_media_internal_invalid); }
 
 			const string AacHe = "mp4a.40.5";
 			const string AacLc = "mp4a.40.2";

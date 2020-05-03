@@ -7,10 +7,13 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using CliWrap;
+using CliWrap.Buffered;
 using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -34,6 +37,7 @@ using TS3AudioBot.Plugins;
 using TS3AudioBot.ResourceFactories;
 using TS3AudioBot.Rights;
 using TS3AudioBot.Sessions;
+using TS3AudioBot.Web;
 using TS3AudioBot.Web.Api;
 using TS3AudioBot.Web.Model;
 using TSLib;
@@ -144,7 +148,7 @@ namespace TS3AudioBot
 		public static Task CommandBotDescriptionSet(Ts3Client ts3Client, string description) => ts3Client.ChangeDescription(description);
 
 		[Command("bot diagnose", "_undocumented")]
-		public static JsonArray<SelfDiagnoseMessage> CommandBotDiagnose(Player player, IVoiceTarget target, Connection book)
+		public static async Task<JsonArray<SelfDiagnoseMessage>> CommandBotDiagnose(Player player, IVoiceTarget target, Connection book, ConfRoot rootConf, WebServer webServer)
 		{
 			var problems = new List<SelfDiagnoseMessage>();
 			// ** Diagnose common playback problems and more **
@@ -154,17 +158,51 @@ namespace TS3AudioBot
 
 			// Check talk power
 			if (self != null && curChan != null && !self.TalkPowerGranted && self.TalkPower < curChan.NeededTalkPower)
-				problems.Add(new SelfDiagnoseMessage("The bot does not have enough talk power.", SelfDiagnoseLevel.Warning));
+				problems.Add(new SelfDiagnoseMessage("The bot does not have enough talk power.", "play", SelfDiagnoseLevel.Warning));
 
 			// Check volume 0
 			if (player.Volume == 0)
-				problems.Add(new SelfDiagnoseMessage("The volume level is at 0.", SelfDiagnoseLevel.Warning));
+				problems.Add(new SelfDiagnoseMessage("The volume level is at 0.", "play", SelfDiagnoseLevel.Warning));
 
 			// Check if send mode hasn't been selected yet
 			if (target.SendMode == TargetSendMode.None)
-				problems.Add(new SelfDiagnoseMessage("Send mode is currently 'None', use '!whisper off' for example to send via voice.", SelfDiagnoseLevel.Warning));
+				problems.Add(new SelfDiagnoseMessage("Send mode is currently 'None', use '!whisper off' for example to send via voice.", "play", SelfDiagnoseLevel.Warning));
 
-			// ... more
+			// - Check if ffmpeg exists
+			// - Check ffmpeg https support (https://gitter.im/TS3AudioBot/Lobby?at=5eaf1e14f0377f1631656b7a)
+			//   Seems like CentOS 7 for e.g. by default has no https
+			try
+			{
+				var ffPath = rootConf.Tools.Ffmpeg.Path.Value;
+				var result = await Cli.Wrap(ffPath)
+					.WithArguments(new[] { "-hide_banner", "-protocols" })
+					.ExecuteBufferedAsync();
+				var protos = new HashSet<string>(result.StandardOutput
+					.Split('\n')
+					.Select(x => x.Trim())
+					.SkipWhile(x => x != "Input:").Skip(1)
+					.TakeWhile(x => x != "Output:"));
+				foreach (var wantProto in new[] { "http", "https", "hls" })
+				{
+					if (!protos.Contains(wantProto))
+						problems.Add(new SelfDiagnoseMessage($"Your ffmpeg binary is missing '{wantProto}'. Some streams might not play.", "play", SelfDiagnoseLevel.Warning));
+				}
+			}
+			catch (Exception ex)
+			{
+				problems.Add(new SelfDiagnoseMessage($"Could not find or run ffmpeg binary. Playback will NOT work. ({ex.Message})", "play", SelfDiagnoseLevel.Error));
+			}
+
+			// Check if web path is found
+			{
+				if (!rootConf.Web.Interface.Enabled)
+					problems.Add(new SelfDiagnoseMessage($"WebInterface is disabled.", "web", SelfDiagnoseLevel.Info));
+
+				var webPath = webServer.FindWebFolder();
+				if (rootConf.Web.Interface.Enabled &&
+					(webPath is null || !Directory.Exists(webPath) || !System.IO.File.Exists(Path.Combine(webPath, "index.html"))))
+					problems.Add(new SelfDiagnoseMessage($"WebInterface is enabled, but the required files are missing.", "web", SelfDiagnoseLevel.Error));
+			}
 
 			return new JsonArray<SelfDiagnoseMessage>(problems, x =>
 			{
@@ -172,7 +210,7 @@ namespace TS3AudioBot
 					return "No problems detected";
 				var strb = new StringBuilder("The following issues have been found:");
 				foreach (var prob in x)
-					strb.Append("\n- ").Append(prob.Description);
+					strb.Append("\n- ").Append(prob.Level).Append(": ").Append(prob.Description);
 				return strb.ToString();
 			});
 		}

@@ -58,11 +58,11 @@ namespace TS3AudioBot.Audio
 
 		private static int ScaleBitrate(int value) => Tools.Clamp(value, 1, 255) * 1000;
 
-		public event EventHandler? OnSongEnd;
-		public event EventHandler<SongInfoChanged>? OnSongUpdated;
+		public event AsyncEventHandler? OnSongEnd;
+		public event AsyncEventHandler<SongInfoChanged>? OnSongUpdated;
 
-		private void TriggerSongEnd(object? o, EventArgs e) => scheduler.Invoke(() => OnSongEnd?.Invoke(this, EventArgs.Empty));
-		private void TriggerSongUpdated(object? o, SongInfoChanged e) => scheduler.Invoke(() => OnSongUpdated?.Invoke(this, e));
+		private void TriggerSongEnd(object? o, EventArgs e) => scheduler.InvokeAsync(() => OnSongEnd.InvokeAsync(this, EventArgs.Empty));
+		private void TriggerSongUpdated(object? o, SongInfoChanged e) => scheduler.InvokeAsync(() => OnSongUpdated.InvokeAsync(this, e));
 
 		public async Task Play(PlayResource res)
 		{

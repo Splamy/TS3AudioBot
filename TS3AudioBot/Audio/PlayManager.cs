@@ -35,11 +35,11 @@ namespace TS3AudioBot.Audio
 		public PlayInfoEventArgs? CurrentPlayData { get; private set; }
 		public bool IsPlaying => CurrentPlayData != null;
 
-		public event EventHandler<PlayInfoEventArgs>? OnResourceUpdated;
-		public event EventHandler<PlayInfoEventArgs>? BeforeResourceStarted;
-		public event EventHandler<PlayInfoEventArgs>? AfterResourceStarted;
-		public event EventHandler<SongEndEventArgs>? ResourceStopped;
-		public event EventHandler? PlaybackStopped;
+		public event AsyncEventHandler<PlayInfoEventArgs>? OnResourceUpdated;
+		public event AsyncEventHandler<PlayInfoEventArgs>? BeforeResourceStarted;
+		public event AsyncEventHandler<PlayInfoEventArgs>? AfterResourceStarted;
+		public event AsyncEventHandler<SongEndEventArgs>? ResourceStopped;
+		public event AsyncEventHandler? PlaybackStopped;
 
 		public PlayManager(ConfBot config, Player playerConnection, PlaylistManager playlistManager, ResolveContext resourceResolver, Stats stats)
 		{
@@ -182,7 +182,7 @@ namespace TS3AudioBot.Audio
 		{
 			var sourceLink = resourceResolver.RestoreLink(play.AudioResource);
 			var playInfo = new PlayInfoEventArgs(invoker, play, sourceLink);
-			BeforeResourceStarted?.Invoke(this, playInfo);
+			await BeforeResourceStarted.InvokeAsync(this, playInfo);
 
 			if (string.IsNullOrWhiteSpace(play.PlayUri))
 			{
@@ -195,12 +195,12 @@ namespace TS3AudioBot.Audio
 			catch (AudioBotException ex)
 			{
 				Log.Error("Error return from player: {0}", ex.Message);
-				throw Error.LocalStr(strings.error_playmgr_internal_error).Exception(ex);
+				throw Error.Exception(ex).LocalStr(strings.error_playmgr_internal_error);
 			}
 
 			playerConnection.Volume = Tools.Clamp(playerConnection.Volume, confBot.Audio.Volume.Min, confBot.Audio.Volume.Max);
 			CurrentPlayData = playInfo; // TODO meta as readonly
-			AfterResourceStarted?.Invoke(this, playInfo);
+			await AfterResourceStarted.InvokeAsync(this, playInfo);
 		}
 
 		private async Task StartCurrent(InvokerData invoker, bool manually = true)
@@ -259,13 +259,13 @@ namespace TS3AudioBot.Audio
 				throw Error.LocalStr(string.Format(strings.error_playmgr_many_songs_failed, "!previous"));
 		}
 
-		public async void SongStoppedEvent(object? sender, EventArgs e) => await StopInternal(true);
+		public async Task SongStoppedEvent(object? sender, EventArgs e) => await StopInternal(true);
 
 		public Task Stop() => StopInternal(false);
 
 		private async Task StopInternal(bool songEndedByCallback)
 		{
-			ResourceStopped?.Invoke(this, new SongEndEventArgs(songEndedByCallback));
+			await ResourceStopped.InvokeAsync(this, new SongEndEventArgs(songEndedByCallback));
 
 			if (songEndedByCallback)
 			{
@@ -281,7 +281,7 @@ namespace TS3AudioBot.Audio
 			PlaybackStopped?.Invoke(this, EventArgs.Empty);
 		}
 
-		public void Update(SongInfoChanged newInfo)
+		public async Task Update(SongInfoChanged newInfo)
 		{
 			var data = CurrentPlayData;
 			if (data is null)
@@ -289,7 +289,14 @@ namespace TS3AudioBot.Audio
 			if (newInfo.Title != null)
 				data.ResourceData.ResourceTitle = newInfo.Title;
 			// further properties...
-			OnResourceUpdated?.Invoke(this, data);
+			try
+			{
+				await OnResourceUpdated.InvokeAsync(this, data);
+			}
+			catch (AudioBotException ex)
+			{
+				Log.Warn(ex, "Error in OnResourceUpdated event.");
+			}
 		}
 
 		public static MetaData? ParseAttributes(string[] attrs)
