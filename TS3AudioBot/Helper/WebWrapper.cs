@@ -14,6 +14,7 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text.Json;
+using System.Threading;
 using System.Threading.Tasks;
 using TS3AudioBot.Localization;
 
@@ -25,7 +26,7 @@ namespace TS3AudioBot.Helper
 		public static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(10);
 		private const string TimeoutPropertyKey = "RequestTimeout";
 
-		private static readonly HttpClient httpClient = new HttpClient();
+		private static readonly HttpClient httpClient = new HttpClient(new RedirectHandler(new HttpClientHandler()));
 
 		static WebWrapper()
 		{
@@ -69,7 +70,6 @@ namespace TS3AudioBot.Helper
 				using (request)
 				{
 					using var response = await httpClient.SendDefaultAsync(request);
-					CheckOkReturnCodeOrThrow(response);
 				}
 			}
 			catch (Exception ex) when (ex is HttpRequestException || ex is OperationCanceledException)
@@ -84,8 +84,7 @@ namespace TS3AudioBot.Helper
 			{
 				using (request)
 				{
-					using var response = await httpClient.SendAsync(request);
-					CheckOkReturnCodeOrThrow(response);
+					using var response = await httpClient.SendDefaultAsync(request);
 					return await response.Content.ReadAsStringAsync();
 				}
 			}
@@ -101,8 +100,7 @@ namespace TS3AudioBot.Helper
 			{
 				using (request)
 				{
-					using var response = await httpClient.SendAsync(request);
-					CheckOkReturnCodeOrThrow(response);
+					using var response = await httpClient.SendDefaultAsync(request);
 					using var stream = await response.Content.ReadAsStreamAsync();
 					var obj = await JsonSerializer.DeserializeAsync<T>(stream);
 					if (obj is null) throw Error.LocalStr(strings.error_net_empty_response);
@@ -127,7 +125,6 @@ namespace TS3AudioBot.Helper
 				using (request)
 				{
 					using var response = await httpClient.SendDefaultAsync(request);
-					CheckOkReturnCodeOrThrow(response);
 					await body.Invoke(response);
 				}
 			}
@@ -144,7 +141,6 @@ namespace TS3AudioBot.Helper
 				using (request)
 				{
 					using var response = await httpClient.SendDefaultAsync(request);
-					CheckOkReturnCodeOrThrow(response);
 					return await body.Invoke(response);
 				}
 			}
@@ -164,7 +160,6 @@ namespace TS3AudioBot.Helper
 				using (request)
 				{
 					var response = await httpClient.SendDefaultAsync(request);
-					CheckOkReturnCodeOrThrow(response);
 					return response;
 				}
 			}
@@ -182,8 +177,12 @@ namespace TS3AudioBot.Helper
 		public static string? GetSingle(this HttpHeaders headers, string name)
 			=> headers.TryGetValues(name, out var hvals) ? hvals.FirstOrDefault() : null;
 
-		private static Task<HttpResponseMessage> SendDefaultAsync(this HttpClient client, HttpRequestMessage request)
-			=> client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+		private static async Task<HttpResponseMessage> SendDefaultAsync(this HttpClient client, HttpRequestMessage request)
+		{
+			var response = await client.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+			CheckOkReturnCodeOrThrow(response);
+			return response;
+		}
 
 		private static AudioBotException ToLoggedError(Exception ex)
 		{
@@ -212,6 +211,37 @@ namespace TS3AudioBot.Helper
 				throw Error
 					.LocalStr($"{strings.error_net_error_status_code} [{(int)response.StatusCode}] {response.StatusCode}");
 			}
+		}
+	}
+
+	// HttpClient does not allow unsafe HTTPS->HTTP redirects.
+	// But we don't care because audio streaming is not security critical
+	// This loop implements a simple redirect following on 301/302 with at most 5 redirects.
+	public class RedirectHandler : DelegatingHandler
+	{
+		private const int MaxRedirects = 5;
+
+		public RedirectHandler(HttpMessageHandler innerHandler)
+			: base(innerHandler)
+		{ }
+
+		protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+		{
+			HttpResponseMessage response;
+			for (int i = 0; i < MaxRedirects; i++)
+			{
+				response = await base.SendAsync(request, cancellationToken);
+				if (response.StatusCode == HttpStatusCode.Moved || response.StatusCode == HttpStatusCode.Redirect)
+				{
+					request.RequestUri = response.Headers.Location;
+				}
+				else
+				{
+					return response;
+				}
+			}
+
+			throw Error.LocalStr(strings.error_media_internal_invalid + " (Max redirects reached)");
 		}
 	}
 }
