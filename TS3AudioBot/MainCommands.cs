@@ -1402,21 +1402,17 @@ namespace TS3AudioBot
 		}
 
 		[Command("settings bot get", "cmd_settings_get_help")]
-		public static ConfigPart CommandSettingsBotGet(BotManager bots, ConfRoot config, string botName, string? path = null)
+		public static async Task<ConfigPart> CommandSettingsBotGet(BotManager bots, ConfRoot config, string botName, string? path = null)
 		{
-			// TODO: Async !!
 			var bot = bots.GetBotLock(botName);
-			var confBot = GetConf(bot, config, botName);
-			return CommandSettingsGet(confBot, path);
+			return await GetConf(bot, config, botName, b => CommandSettingsGet(b, path));
 		}
 
 		[Command("settings bot set", "cmd_settings_set_help")]
-		public static void CommandSettingsBotSet(BotManager bots, ConfRoot config, string botName, string path, string? value = null)
+		public static async Task CommandSettingsBotSet(BotManager bots, ConfRoot config, string botName, string path, string? value = null)
 		{
-			// TODO: Async !!
 			var bot = bots.GetBotLock(botName);
-			var confBot = GetConf(bot, config, botName);
-			CommandSettingsSet(confBot, path, value);
+			await GetConf(bot, config, botName, b => { CommandSettingsSet(b, path, value); return null!; });
 		}
 
 		[Command("settings bot reload")]
@@ -1450,21 +1446,21 @@ namespace TS3AudioBot
 			throw new NotImplementedException();
 		}
 
-		private static ConfBot GetConf(Bot? bot, ConfRoot config, string name)
+		private static async Task<ConfigPart> GetConf(Bot? bot, ConfRoot config, string name, Func<ConfBot, ConfigPart> scheduledAction)
 		{
 			if (bot != null)
 			{
 				if (bot.Injector.TryGet<ConfBot>(out var conf))
-					return conf;
+					return await bot.Scheduler.InvokeAsync(() => Task.FromResult(scheduledAction(conf)));
 				else
-					throw new CommandException(strings.error_call_unexpected_error, CommandExceptionReason.CommandError);
+					throw new CommandException("Missing ConfBot", CommandExceptionReason.CommandError);
 			}
 			else
 			{
 				var getTemplateResult = config.GetBotConfig(name);
 				if (!getTemplateResult.Ok)
 					throw new CommandException(strings.error_bot_does_not_exist, getTemplateResult.Error, CommandExceptionReason.CommandError);
-				return getTemplateResult.Value;
+				return await Task.FromResult(scheduledAction(getTemplateResult.Value));
 			}
 		}
 

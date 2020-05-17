@@ -137,13 +137,8 @@ namespace TS3AudioBot.Web.Api
 					await responseStream.WriteAsync(returnString);
 				}
 			}
-			catch (AudioBotException ex)
-			{
-				await ReturnError(ex, response);
-			}
 			catch (Exception ex)
 			{
-				Log.Error(ex, "Unexpected command error");
 				await ReturnError(ex, response);
 			}
 		}
@@ -204,6 +199,10 @@ namespace TS3AudioBot.Web.Api
 					jsonError = ReturnCommandError(cex, response);
 					break;
 
+				case AudioBotException abex:
+					jsonError = new JsonError(abex.Message, CommandExceptionReason.CommandError);
+					break;
+
 				case NotImplementedException _:
 					response.StatusCode = (int)HttpStatusCode.NotImplemented;
 					break;
@@ -213,7 +212,7 @@ namespace TS3AudioBot.Web.Api
 					break;
 
 				default:
-					Log.Error(ex, "Unexpected command error");
+					Log.Error(ex, "Unknown command error");
 					response.StatusCode = (int)HttpStatusCode.InternalServerError;
 					break;
 				}

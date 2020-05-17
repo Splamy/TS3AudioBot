@@ -134,7 +134,7 @@ namespace TS3AudioBot.Environment
 				sendPacket.Add(entry);
 				avgBots += entry.RunningBots;
 			}
-			sendPacket.RunningBots = avgBots / count;
+			sendPacket.RunningBots = count == 0 ? 0 : (uint)(avgBots / (float)count + .5f);
 			return sendPacket;
 		}
 
@@ -228,7 +228,7 @@ namespace TS3AudioBot.Environment
 			sendData.RunningBots = 3;
 			sendData.SongStats = new Dictionary<string, StatsFactory>()
 			{
-				{"youtube", new StatsFactory{
+				{ "youtube", new StatsFactory {
 					PlayRequests = 100,
 					PlayFromUser = 42,
 					Playtime = TimeSpan.FromMinutes(12.34),
