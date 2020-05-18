@@ -25,6 +25,8 @@ namespace TS3AudioBot.Environment
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private const string StatsTable = "stats";
+		private const string StatsTableAcc = "stats_acc";
+		private const int OverallId = 1;
 		private const int StatsVersion = 1;
 		private static readonly TimeSpan CheckInterval = TimeSpan.FromMinutes(1);
 		private static readonly TimeSpan SendInterval = TimeSpan.FromDays(1);
@@ -45,6 +47,7 @@ namespace TS3AudioBot.Environment
 		private readonly StatsData overallStats;
 		private readonly StatsMeta statsPoints;
 		private readonly LiteCollection<StatsData> trackEntries;
+		private readonly LiteCollection<StatsData> accEntries;
 		private readonly StatsData CurrentStatsData = new StatsData()
 		{
 			SongStats = new ConcurrentDictionary<string, StatsFactory>()
@@ -64,7 +67,10 @@ namespace TS3AudioBot.Environment
 
 			meta = database.GetMetaData(StatsTable);
 			trackEntries = database.GetCollection<StatsData>(StatsTable);
+			trackEntries.EnsureIndex(x => x.Id, true);
 			trackEntries.EnsureIndex(x => x.Time);
+			accEntries = database.GetCollection<StatsData>(StatsTableAcc);
+			accEntries.EnsureIndex(x => x.Id, true);
 
 			if (meta.Version != StatsVersion || meta.CustomData is null)
 			{
@@ -81,14 +87,10 @@ namespace TS3AudioBot.Environment
 				// Upgrade steps here
 			}
 
-			overallStats = trackEntries.FindById(0);
-			if (overallStats is null)
+			overallStats = accEntries.FindById(OverallId) ?? new StatsData
 			{
-				overallStats = new StatsData
-				{
-					Id = 0
-				};
-			}
+				Id = OverallId
+			};
 		}
 
 		private void UpdateMeta()
@@ -156,7 +158,7 @@ namespace TS3AudioBot.Environment
 			Log.Debug("Track: {@data}", CurrentStatsData);
 			trackEntries.Upsert(CurrentStatsData);
 			overallStats.Add(CurrentStatsData);
-			trackEntries.Upsert(overallStats);
+			accEntries.Upsert(overallStats);
 			CurrentStatsData.Reset();
 
 			if (UploadEnabled && statsPoints.LastSend + SendInterval < now)
