@@ -580,7 +580,7 @@ with the id {1}?</value>
     <value>Error: {0}</value>
   </data>
   <data name="error_call_unexpected_error" xml:space="preserve">
-    <value>An unexpected error occured: {0}</value>
+    <value>An unexpected error occurred: {0}</value>
   </data>
   <data name="error_cmd_at_least_four_argument" xml:space="preserve">
     <value>Need at least four arguments to evaluate.</value>

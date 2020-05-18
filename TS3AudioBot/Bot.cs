@@ -58,6 +58,7 @@ namespace TS3AudioBot
 		private readonly IVoiceTarget targetManager;
 		private readonly Player player;
 		private readonly Stats stats;
+		private readonly LocalizationManager localization;
 
 		public Bot(Id id, ConfBot config, BotInjector injector)
 		{
@@ -68,7 +69,7 @@ namespace TS3AudioBot
 			// Registering config changes
 			config.Language.Changed += async (s, e) =>
 			{
-				var langResult = await LocalizationManager.LoadLanguage(e.NewValue, true);
+				var langResult = await localization.LoadLanguage(e.NewValue, true);
 				if (!langResult.Ok)
 					Log.Error("Failed to load language file ({0})", langResult.Error);
 			};
@@ -96,6 +97,7 @@ namespace TS3AudioBot
 			builder.RequestModule<SessionManager>();
 			builder.RequestModule<ResolveContext>();
 			builder.RequestModule<CommandManager>();
+			builder.RequestModule<LocalizationManager>();
 			if (config.History.Enabled)
 			{
 				builder.RequestModule<HistoryManager>();
@@ -122,6 +124,7 @@ namespace TS3AudioBot
 			sessionManager = Injector.GetModuleOrThrow<SessionManager>();
 			stats = Injector.GetModuleOrThrow<Stats>();
 			var commandManager = Injector.GetModuleOrThrow<CommandManager>();
+			localization = Injector.GetModuleOrThrow<LocalizationManager>();
 
 			idleTickWorker = Scheduler.Invoke(() => Scheduler.CreateTimer(OnIdle, TimeSpan.MaxValue, false)).Result;
 
@@ -247,9 +250,13 @@ namespace TS3AudioBot
 			}
 			Log.Debug("TextMessage: {@textMessage}", textMessage);
 
-			var langResult = await LocalizationManager.LoadLanguage(config.Language, false);
-			if (!langResult.Ok)
-				Log.Error("Failed to load language file ({0})", langResult.Error);
+			if (!localization.LanguageLoaded)
+			{
+				var langResult = await localization.LoadLanguage(config.Language, false);
+				if (!langResult.Ok)
+					Log.Error("Failed to load language file ({0})", langResult.Error);
+			}
+			localization.ApplyLanguage();
 
 			textMessage.Message = textMessage.Message.TrimStart(' ');
 			if (!textMessage.Message.StartsWith("!", StringComparison.Ordinal))

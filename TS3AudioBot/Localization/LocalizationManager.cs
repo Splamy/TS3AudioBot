@@ -19,11 +19,14 @@ using TS3AudioBot.Helper;
 
 namespace TS3AudioBot.Localization
 {
-	public static class LocalizationManager
+	public class LocalizationManager
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private static readonly Dictionary<string, LanguageData> loadedLanguage = new Dictionary<string, LanguageData>();
 		private static readonly DynamicResourceManager dynResMan;
+
+		private CultureInfo? culture;
+		public bool LanguageLoaded => culture != null;
 
 		static LocalizationManager()
 		{
@@ -40,9 +43,8 @@ namespace TS3AudioBot.Localization
 			resManField.SetValue(null, dynResMan);
 		}
 
-		public static async ValueTask<E<string>> LoadLanguage(string lang, bool forceDownload)
+		public async ValueTask<E<string>> LoadLanguage(string lang, bool forceDownload)
 		{
-			CultureInfo culture;
 			try { culture = CultureInfo.GetCultureInfo(lang); }
 			catch (CultureNotFoundException) { return "Language not found"; }
 
@@ -53,14 +55,23 @@ namespace TS3AudioBot.Localization
 				var result = await LoadLanguageAssembly(languageDataInfo, culture, forceDownload);
 				if (!result.Ok)
 				{
-					Thread.CurrentThread.CurrentUICulture = CultureInfo.InvariantCulture;
+					culture = CultureInfo.InvariantCulture;
 					return result.Error;
 				}
 				languageDataInfo.LoadedSuccessfully = true;
 			}
 
-			Thread.CurrentThread.CurrentUICulture = culture;
 			return R.Ok;
+		}
+
+		public void ApplyLanguage()
+		{
+			var applyCulture = culture ?? CultureInfo.InvariantCulture;
+
+			Thread.CurrentThread.CurrentCulture =
+			Thread.CurrentThread.CurrentUICulture =
+			CultureInfo.CurrentCulture =
+			CultureInfo.CurrentUICulture = applyCulture;
 		}
 
 		private static async Task<E<string>> LoadLanguageAssembly(LanguageData languageDataInfo, CultureInfo culture, bool forceDownload)

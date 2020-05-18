@@ -1774,7 +1774,7 @@ namespace TS3AudioBot.Localization {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to An unexpected error occured: {0}.
+        ///   Looks up a localized string similar to An unexpected error occurred: {0}.
         /// </summary>
         internal static string error_call_unexpected_error {
             get {
