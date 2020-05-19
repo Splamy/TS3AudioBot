@@ -268,7 +268,7 @@
     <value>&lt;id&gt; Adds a link to your private playlist from the history by &lt;id&gt;.</value>
   </data>
   <data name="cmd_list_clear_help" xml:space="preserve">
-    <value>Clears your private playlist.</value>
+    <value>Clears a playlist.</value>
   </data>
   <data name="cmd_list_delete_help" xml:space="preserve">
     <value>&lt;name&gt; Deletes the playlist with the name &lt;name&gt;. You can only delete playlists which you also have created. Admins can delete every playlist.</value>
@@ -986,5 +986,8 @@ with the id {1}?</value>
   </data>
   <data name="cmd_unsubscribe_client_help" xml:space="preserve">
     <value>Unsubscribes the specified client to listen from anywhere.</value>
+  </data>
+  <data name="cmd_jump_help" xml:space="preserve">
+    <value>Jumps to the requested index in the current queue and starts playing.</value>
   </data>
 </root>

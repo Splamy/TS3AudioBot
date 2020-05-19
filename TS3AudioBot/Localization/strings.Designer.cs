@@ -748,6 +748,15 @@ namespace TS3AudioBot.Localization {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Jumps to the requested index in the current queue and starts playing..
+        /// </summary>
+        internal static string cmd_jump_help {
+            get {
+                return ResourceManager.GetString("cmd_jump_help", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Guess what?.
         /// </summary>
         internal static string cmd_kickme_help {
@@ -784,7 +793,7 @@ namespace TS3AudioBot.Localization {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Clears your private playlist..
+        ///   Looks up a localized string similar to Clears a playlist..
         /// </summary>
         internal static string cmd_list_clear_help {
             get {

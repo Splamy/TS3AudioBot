@@ -266,7 +266,7 @@ namespace TS3AudioBot
 		[Command("bot info client", "_undocumented")]
 		public static Client? CommandBotInfoClient(Connection book, ApiCall _) => book.Self();
 
-		[Command("bot info template")]
+		[Command("bot info template", "cmd_bot_info_help")]
 		public static BotInfo CommandBotInfo(BotManager botManager, ConfRoot config, string name)
 		{
 			var bot = botManager.GetBotLock(name);
