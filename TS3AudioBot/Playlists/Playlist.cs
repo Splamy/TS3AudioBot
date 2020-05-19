@@ -82,7 +82,7 @@ namespace TS3AudioBot.Playlists
 
 		public void Clear() => items.Clear();
 
-		private static readonly E<LocalStr> ErrorFull = new LocalStr("Playlist is full");
+		private static readonly E<LocalStr> ErrorFull = new LocalStr("Playlist is full"); // TODO: Loc
 	}
 
 	public interface IReadOnlyPlaylist

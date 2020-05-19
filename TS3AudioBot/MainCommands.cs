@@ -266,6 +266,16 @@ namespace TS3AudioBot
 		[Command("bot info client", "_undocumented")]
 		public static Client? CommandBotInfoClient(Connection book, ApiCall _) => book.Self();
 
+		[Command("bot info template")]
+		public static BotInfo CommandBotInfo(BotManager botManager, ConfRoot config, string name)
+		{
+			var bot = botManager.GetBotLock(name);
+			if (bot != null)
+				return CommandBotInfo(bot);
+			var botInfo = GetOfflineBotInfo(config, name).UnwrapThrow();
+			return botInfo;
+		}
+
 		[Command("bot list")]
 		public static JsonArray<BotInfo> CommandBotList(BotManager bots, ConfRoot config)
 		{
@@ -283,16 +293,30 @@ namespace TS3AudioBot
 				var name = botConfig.Name;
 				if (name is null || infoList.ContainsKey(name))
 					continue;
-				infoList[name] = new BotInfo
-				{
-					Id = null,
-					Name = name,
-					Server = botConfig.Connect.Address,
-					Status = BotStatus.Offline,
-				};
+				infoList[name] = GetOfflineBotInfo(botConfig);
 			}
 			return new JsonArray<BotInfo>(infoList.Values.Concat(botInfoList.Where(x => string.IsNullOrEmpty(x.Name))).ToArray(),
 				bl => string.Join("\n", bl.Select(x => x.ToString())));
+		}
+
+		private static R<BotInfo, LocalStr> GetOfflineBotInfo(ConfRoot config, string name)
+		{
+			var result = config.GetBotConfig(name);
+			if (!result.Ok)
+				return new LocalStr(result.Error.Message);
+			var botConfig = result.Value;
+			return GetOfflineBotInfo(botConfig);
+		}
+
+		private static BotInfo GetOfflineBotInfo(ConfBot botConfig)
+		{
+			return new BotInfo
+			{
+				Id = null,
+				Name = botConfig.Name,
+				Server = botConfig.Connect.Address,
+				Status = BotStatus.Offline,
+			};
 		}
 
 		[Command("bot move")]
@@ -781,8 +805,8 @@ namespace TS3AudioBot
 			}
 			else if (expression.StartsWith("@"))
 			{
-				var subOffset = expression.Substring(1).Trim();
-				if (string.IsNullOrEmpty(subOffset))
+				var subOffset = expression.AsSpan(1).Trim();
+				if (subOffset.IsEmpty)
 					index = 0;
 				else if (!int.TryParse(subOffset, out index))
 					throw new CommandException(strings.error_unrecognized_descriptor, CommandExceptionReason.CommandError);
@@ -872,6 +896,12 @@ namespace TS3AudioBot
 			return new JsonValue<JObject>(api, string.Empty);
 		}
 
+		[Command("jump")]
+		public static async Task CommandJump(PlayManager playManager, PlaylistManager playlistManager, InvokerData invoker, string offset) {
+			playlistManager.Index = GetIndexExpression(playlistManager, offset);
+			await playManager.Play(invoker);
+		}
+
 		[Command("kickme")]
 		public static Task CommandKickme(Ts3Client ts3Client, ClientCall invoker)
 			=> CommandKickme(ts3Client, invoker, false);
@@ -907,6 +937,10 @@ namespace TS3AudioBot
 			}).UnwrapThrow();
 			return JsonValue.Create(getData!, strings.info_ok);
 		}
+
+		[Command("list clear")]
+		public static void CommandListClear(PlaylistManager playlistManager, string listId)
+			=> playlistManager.ModifyPlaylist(listId, plist => plist.Clear()).UnwrapThrow();
 
 		[Command("list create", "_undocumented")]
 		public static void CommandListCreate(PlaylistManager playlistManager, string listId, string? title = null)
