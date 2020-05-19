@@ -188,7 +188,7 @@ namespace TS3AudioBot.Helper
 		{
 			if (ex is OperationCanceledException webEx)
 			{
-				Log.Warn(webEx, "Request timed out");
+				Log.Debug(webEx, "Request timed out");
 				throw Error.Exception(ex).LocalStr(strings.error_net_timeout);
 			}
 
@@ -207,7 +207,7 @@ namespace TS3AudioBot.Helper
 		{
 			if (!response.IsSuccessStatusCode)
 			{
-				Log.Warn("Web error: [{0}] {1}", (int)response.StatusCode, response.StatusCode);
+				Log.Debug("Web error: [{0}] {1}", (int)response.StatusCode, response.StatusCode);
 				throw Error
 					.LocalStr($"{strings.error_net_error_status_code} [{(int)response.StatusCode}] {response.StatusCode}");
 			}

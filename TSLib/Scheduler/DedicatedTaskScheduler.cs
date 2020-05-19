@@ -90,7 +90,7 @@ namespace TSLib.Scheduler
 				nextTimerDue = TimeSpan.MaxValue;
 				return Timeout.InfiniteTimeSpan;
 			}
-			// [Huristic]
+			// [Heuristic]
 			// Problem: We don't want to recheck the list each time a new Task
 			// is processed from the queue.
 			// Idea: On very high load, when the queue is permanently full and
@@ -182,6 +182,8 @@ namespace TSLib.Scheduler
 			}
 		}
 #endif
+
+		public override int MaximumConcurrencyLevel => 1;
 
 		protected override IEnumerable<Task>? GetScheduledTasks() => queue.ToArray();
 
@@ -292,6 +294,8 @@ namespace TSLib.Scheduler
 
 			return factory.StartNew(action, CancellationToken.None, TaskCreationOptions.None, this).Unwrap();
 		}
+
+		public override string ToString() => $"Dedicated Task Scheduler: {logId}";
 
 		public void Dispose()
 		{

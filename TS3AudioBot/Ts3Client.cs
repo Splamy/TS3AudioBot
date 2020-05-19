@@ -627,20 +627,19 @@ namespace TS3AudioBot
 		private bool AloneRecheckRequired(ClientId clientId, ChannelId channelId)
 			=> ownChannelClients.Contains(clientId) || channelId == ts3FullClient.Book.Self()?.Channel;
 
-		private Task IsAloneRecheck()
+		private async ValueTask IsAloneRecheck()
 		{
 			var self = ts3FullClient.Book.Self();
 			if (self == null)
-				return Task.CompletedTask;
+				return;
 			var ownChannel = self.Channel;
 			ownChannelClients = ts3FullClient.Book.Clients.Values.Where(c => c.Channel == ownChannel && c != self).Select(c => c.Id).ToArray();
 			var newAlone = ownChannelClients.Length == 0;
 			if (newAlone != alone)
 			{
 				alone = newAlone;
-				return OnAloneChanged.InvokeAsync(this, new AloneChanged(newAlone));
+				await OnAloneChanged.InvokeAsync(this, new AloneChanged(newAlone));
 			}
-			return Task.CompletedTask;
 		}
 
 		#endregion

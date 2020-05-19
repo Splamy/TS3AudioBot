@@ -239,7 +239,7 @@ namespace TS3AudioBot.ResourceFactories
 
 				using (cancellationToken.Register(() => tcs.TrySetCanceled()))
 				{
-					await Task.WhenAny(tcs.Task, timoutTask).ConfigureAwait(false);
+					await Task.WhenAny(tcs.Task, timoutTask);
 				}
 			}
 			finally

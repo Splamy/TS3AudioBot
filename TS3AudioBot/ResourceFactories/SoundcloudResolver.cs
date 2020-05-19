@@ -171,23 +171,23 @@ namespace TS3AudioBot.ResourceFactories
 		// ReSharper disable ClassNeverInstantiated.Local, InconsistentNaming
 		private class JsonTrackInfo
 		{
-			public int id;
-			public string? title;
-			public string? permalink;
-			public JsonTrackUser? user;
+			public int id { get; set; }
+			public string? title { get; set; }
+			public string? permalink { get; set; }
+			public JsonTrackUser? user { get; set; }
 		}
 		private class JsonTrackUser
 		{
-			public string? permalink;
+			public string? permalink { get; set; }
 		}
 		private class JsonPlaylist
 		{
-			public string? title;
-			public JsonTrackInfo[]? tracks;
+			public string? title { get; set; }
+			public JsonTrackInfo[]? tracks { get; set; }
 		}
 		private class JsonTumbnailMinimal
 		{
-			public string? artwork_url;
+			public string? artwork_url { get; set; }
 		}
 		// ReSharper enable ClassNeverInstantiated.Local, InconsistentNaming
 #pragma warning restore CS0649, CS0169, IDE1006
