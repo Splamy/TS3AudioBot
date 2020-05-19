@@ -468,14 +468,6 @@ namespace TS3AudioBot
 		public async Task<bool> IsChannelCommander()
 			=> (await GetClientInfoById(ts3FullClient.ClientId)).IsChannelCommander;
 
-		public R<Client, LocalStr> GetSelf()
-		{
-			var self = ts3FullClient.Book.Self();
-			if (self is null)
-				return new LocalStr(strings.error_ts_no_client_found);
-			return self;
-		}
-
 		public void InvalidateClientBuffer() => clientbufferOutdated = true;
 
 		private void ClearAllCaches()

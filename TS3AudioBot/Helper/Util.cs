@@ -89,17 +89,6 @@ namespace TS3AudioBot.Helper
 			return ret;
 		}
 
-		public static string UnrollException(this Exception? ex)
-		{
-			var strb = new StringBuilder();
-			while (ex != null)
-			{
-				strb.AppendFormat("MSG: {0}\nTYPE:{1}\nSTACK:{2}\n", ex.Message, ex.GetType().Name, ex.StackTrace);
-				ex = ex.InnerException;
-			}
-			return strb.ToString();
-		}
-
 		public static Stream? GetEmbeddedFile(string name)
 		{
 			var assembly = Assembly.GetExecutingAssembly();

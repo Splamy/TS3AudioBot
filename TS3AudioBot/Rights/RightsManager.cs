@@ -20,6 +20,7 @@ using TS3AudioBot.Helper;
 using TS3AudioBot.Rights.Matchers;
 using TS3AudioBot.Web.Api;
 using TSLib;
+using TSLib.Full;
 using TSLib.Helper;
 using TSLib.Messages;
 
@@ -98,7 +99,7 @@ namespace TS3AudioBot.Rights
 				// For this step we will prefer query calls which can give us more than one information
 				// at once and lazily fall back to other calls as long as needed.
 
-				if (info.TryGet<Ts3Client>(out var ts) && info.TryGet<TsBaseFunctions>(out var tsClient))
+				if (info.TryGet<Ts3Client>(out var ts) && info.TryGet<TsFullClient>(out var tsClient))
 				{
 					ServerGroupId[]? serverGroups = clientCall.ServerGroups;
 					ChannelId? channelId = clientCall.ChannelId;

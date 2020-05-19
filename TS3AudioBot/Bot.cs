@@ -345,7 +345,7 @@ namespace TS3AudioBot
 			return Scheduler.InvokeAsync(UpdateBotStatusInternal);
 		}
 
-		public async Task UpdateBotStatusInternal()
+		private async Task UpdateBotStatusInternal()
 		{
 			Scheduler.VerifyOwnThread();
 
@@ -367,7 +367,8 @@ namespace TS3AudioBot
 				setString = strings.info_botstatus_sleeping;
 			}
 
-			await ts3client.ChangeDescription(setString ?? "").CatchToLog(Log);
+			var result = await ts3FullClient.ChangeDescription(setString ?? "");
+			result.UnwrapToLog(Log);
 		}
 
 		public Task GenerateStatusImage(bool playing, PlayInfoEventArgs? startEvent)
@@ -375,7 +376,7 @@ namespace TS3AudioBot
 			return Scheduler.InvokeAsync(() => GenerateStatusImageInternal(playing, startEvent));
 		}
 
-		public async Task GenerateStatusImageInternal(bool playing, PlayInfoEventArgs? startEvent)
+		private async Task GenerateStatusImageInternal(bool playing, PlayInfoEventArgs? startEvent)
 		{
 			Scheduler.VerifyOwnThread();
 
@@ -430,7 +431,8 @@ namespace TS3AudioBot
 				{
 					using (setStream)
 					{
-						await ts3client.UploadAvatar(setStream);
+						var result = await ts3FullClient.UploadAvatar(setStream);
+						result.UnwrapToLog(Log);
 					}
 				}
 				catch (Exception ex)
@@ -440,7 +442,8 @@ namespace TS3AudioBot
 			}
 			else
 			{
-				await ts3FullClient.DeleteAvatar().CatchToLog(Log);
+				var result = await ts3FullClient.DeleteAvatar();
+				result.UnwrapToLog(Log);
 			}
 		}
 
