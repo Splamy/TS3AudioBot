@@ -20,7 +20,6 @@ using TS3AudioBot.Localization;
 using TSLib;
 using TSLib.Commands;
 using TSLib.Full;
-using TSLib.Full.Book;
 using TSLib.Helper;
 using TSLib.Messages;
 using CmdE = System.Threading.Tasks.Task<System.E<TS3AudioBot.Localization.LocalStr>>;
@@ -47,7 +46,7 @@ namespace TS3AudioBot
 			"?", "c(ꙩ_Ꙩ)ꜿ", "I'll be back", "Your advertisement could be here",
 			"connection lost", "disconnected", "Requested by API.",
 			"Robert'); DROP TABLE students;--", "It works!! No, wait...",
-			"Notice me, senpai", ":wq", "Soon™"
+			"Notice me, senpai", ":wq", "Soon™", "It's not a bug, it's a feature"
 		};
 
 		private bool closed = false;
@@ -216,7 +215,7 @@ namespace TS3AudioBot
 		public Task KickClientFromChannel(params ClientId[] clientId) => ts3FullClient.KickClientFromChannel(clientId).UnwrapThrow();
 
 		public Task ChangeDescription(string description)
-			=> ts3FullClient.ChangeDescription(description, ts3FullClient.ClientId).UnwrapThrow();
+			=> ts3FullClient.ChangeDescription(description).UnwrapThrow();
 
 		public Task ChangeBadges(string badgesString)
 		{

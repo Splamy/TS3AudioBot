@@ -28,7 +28,9 @@ namespace TSLib.Messages
 
 		public string ErrorFormat()
 		{
-			if (MissingPermissionId != TsPermission.unknown && MissingPermissionId != TsPermission.undefined)
+			if (MissingPermissionId != null
+				&& MissingPermissionId != TsPermission.unknown
+				&& MissingPermissionId != TsPermission.undefined)
 				return $"{Id}: the command failed to execute: {Message} (missing permission:{MissingPermissionId})";
 			else
 				return $"{Id}: the command failed to execute: {Message}";

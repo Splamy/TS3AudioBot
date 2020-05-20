@@ -135,6 +135,9 @@ namespace TSLib
 			if (isDisposed)
 				return;
 
+			answerWaiterAsync.TrySetResult(CommandError.ConnectionClosed);
+			notificationWaiterAsync?.TrySetCanceled();
+
 			isDisposed = true;
 		}
 	}

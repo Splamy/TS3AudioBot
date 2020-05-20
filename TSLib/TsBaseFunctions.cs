@@ -325,7 +325,7 @@ namespace TSLib
 		{
 			var token = await UploadFile(image, ChannelId.Null, "/avatar", overwrite: true, createMd5: true);
 			if (!token.Ok)
-				return token.Error;
+				return CommandError.Custom("Avatar upload failed: " + token.Error.ErrorFormat());
 			if (token.Value.Status != TransferStatus.Done)
 				return CommandError.Custom("Avatar upload failed");
 			var md5 = string.Concat(token.Value.Md5Sum.Select(x => x.ToString("x2")));

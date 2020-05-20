@@ -59,8 +59,7 @@ namespace TSLib
 				return request.Error;
 			}
 			var token = new FileTransferToken(stream, request.Value, channel, path, channelPassword, stream.Length, createMd5) { CloseStreamWhenDone = closeStream };
-			await Transfer(token);
-			return token;
+			return await Transfer(token);
 		}
 
 		/// <summary>Initiate a file download from the server.</summary>
@@ -180,6 +179,8 @@ namespace TSLib
 				if (token.Status != TransferStatus.Done && token.Status != TransferStatus.Cancelled)
 					token.Status = TransferStatus.Failed;
 			}
+			if (token.Status == TransferStatus.Failed)
+				return CommandError.Custom("Upload didn't finish");
 			return token;
 		}
 

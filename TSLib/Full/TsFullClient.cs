@@ -26,8 +26,6 @@ namespace TSLib.Full
 	/// <summary>Creates a full TeamSpeak3 client with voice capabilities.</summary>
 	public sealed partial class TsFullClient : TsBaseFunctions, IAudioActiveProducer, IAudioPassiveConsumer
 	{
-		private TsCrypt tsCrypt;
-		private PacketHandler<S2C, C2S> packetHandler;
 		private readonly AsyncMessageProcessor msgProc;
 		private readonly DedicatedTaskScheduler scheduler;
 		private readonly bool isOwnScheduler;
@@ -37,13 +35,13 @@ namespace TSLib.Full
 
 		public override ClientType ClientType => ClientType.Full;
 		/// <summary>The client id given to this connection by the server.</summary>
-		public ClientId ClientId => packetHandler.ClientId;
+		public ClientId ClientId => context?.PacketHandler.ClientId ?? ClientId.Null;
 		/// <summary>The disonnect message when leaving.</summary>
 		public string QuitMessage { get; set; } = "Disconnected";
 		/// <summary>The <see cref="TsVersionSigned"/> used to connect.</summary>
-		public TsVersionSigned VersionSign => connectionDataFull.VersionSign;
+		public TsVersionSigned? VersionSign => context?.ConnectionDataFull.VersionSign;
 		/// <summary>The <see cref="IdentityData"/> used to connect.</summary>
-		public IdentityData Identity => connectionDataFull.Identity;
+		public IdentityData? Identity => context?.ConnectionDataFull.Identity;
 		/// <summary>
 		/// Status overview:
 		/// <list type="bullet">
@@ -70,7 +68,6 @@ namespace TSLib.Full
 		public override bool Connected => status == TsClientStatus.Connected;
 		public override bool Connecting => status == TsClientStatus.Connecting;
 		protected override Deserializer Deserializer => msgProc.Deserializer;
-		private ConnectionDataFull connectionDataFull;
 		public Connection Book { get; } = new Connection();
 
 		public override event EventHandler<DisconnectEventArgs>? OnDisconnected;
@@ -79,9 +76,7 @@ namespace TSLib.Full
 		/// <summary>Creates a new client. A client can manage one connection to a server.</summary>
 		/// <param name="dispatcherType">The message processing method for incomming notifications.
 		/// See <see cref="EventDispatchType"/> for further information about each type.</param>
-#pragma warning disable CS8618 // !NRT on Connect
 		public TsFullClient(DedicatedTaskScheduler? scheduler = null)
-#pragma warning restore CS8618
 		{
 			status = TsClientStatus.Disconnected;
 			msgProc = new AsyncMessageProcessor(MessageHelper.GetToClientNotificationType);
@@ -107,32 +102,26 @@ namespace TSLib.Full
 			if (remoteAddress is null)
 				return CommandError.Custom("Could not read or resolve address.");
 
-			connectionDataFull = conDataFull;
 			ConnectionData = conData;
 			ServerConstants = TsConst.Default;
 			Book.Reset();
 			returnCode = 0;
 
-			tsCrypt = new TsCrypt(conDataFull.Identity);
-
-			var ctx = new ConnectionContext();
+			var ctx = new ConnectionContext(conDataFull);
 			context = ctx;
 
-			packetHandler = new PacketHandler<S2C, C2S>(tsCrypt, conData.LogId)
+			ctx.PacketHandler.PacketEvent = (ref Packet<S2C> packet) => { PacketEvent(ctx, ref packet); };
+			ctx.PacketHandler.StopEvent = (closeReason) =>
 			{
-				PacketEvent = (ref Packet<S2C> packet) => { PacketEvent(ctx, ref packet); },
-				StopEvent = (closeReason) =>
+				_ = scheduler.Invoke(() =>
 				{
-					_ = scheduler.Invoke(() =>
-					{
-						ctx.ExitReason ??= closeReason;
-						ChangeState(ctx, TsClientStatus.Disconnected);
-					});
-				}
+					ctx.ExitReason ??= closeReason;
+					ChangeState(ctx, TsClientStatus.Disconnected);
+				});
 			};
 
 			ChangeState(ctx, TsClientStatus.Connecting);
-			if (!packetHandler.Connect(remoteAddress).GetOk(out var error))
+			if (!ctx.PacketHandler.Connect(remoteAddress).GetOk(out var error))
 			{
 				ChangeState(ctx, TsClientStatus.Disconnected);
 				return CommandError.Custom(error);
@@ -148,21 +137,21 @@ namespace TSLib.Full
 		{
 			scheduler.VerifyOwnThread();
 
-			if (context == null)
+			var ctx = context;
+			if (ctx is null)
 				return;
-			var currentContext = context;
 
 			// TODO: Consider if it is better when in connecting state to wait for connect completion then disconnect
 			if (status == TsClientStatus.Connected)
 			{
 				await ClientDisconnect(Reason.LeftServer, QuitMessage);
-				ChangeState(currentContext, TsClientStatus.Disconnecting);
+				ChangeState(ctx, TsClientStatus.Disconnecting);
 			}
 			else
 			{
-				ChangeState(currentContext, TsClientStatus.Disconnected);
+				ChangeState(ctx, TsClientStatus.Disconnected);
 			}
-			await currentContext.DisconnectEvent.Task;
+			await ctx.DisconnectEvent.Task;
 		}
 
 		private void ChangeState(ConnectionContext ctx, TsClientStatus setStatus, CommandError? error = null)
@@ -193,7 +182,7 @@ namespace TSLib.Full
 			case (TsClientStatus.Connected, TsClientStatus.Disconnected):
 			case (TsClientStatus.Disconnecting, TsClientStatus.Disconnected):
 				status = TsClientStatus.Disconnected;
-				packetHandler.Stop();
+				ctx.PacketHandler.Stop();
 				msgProc.DropQueue();
 
 				var statusBefore = status;
@@ -264,25 +253,27 @@ namespace TSLib.Full
 
 		async partial void ProcessEachInitIvExpand(InitIvExpand initIvExpand)
 		{
-			if (context is null) throw new InvalidOperationException("context should be set");
+			var ctx = context;
+			if (ctx is null) throw new InvalidOperationException("context should be set");
 
-			packetHandler.ReceivedFinalInitAck();
+			ctx.PacketHandler.ReceivedFinalInitAck();
 
-			var result = tsCrypt.CryptoInit(initIvExpand.Alpha, initIvExpand.Beta, initIvExpand.Omega);
+			var result = ctx.TsCrypt.CryptoInit(initIvExpand.Alpha, initIvExpand.Beta, initIvExpand.Omega);
 			if (!result)
 			{
-				ChangeState(context, TsClientStatus.Disconnected, CommandError.Custom($"Failed to calculate shared secret: {result.Error}"));
+				ChangeState(ctx, TsClientStatus.Disconnected, CommandError.Custom($"Failed to calculate shared secret: {result.Error}"));
 				return;
 			}
 
-			await DefaultClientInit();
+			await DefaultClientInit(ctx);
 		}
 
 		async partial void ProcessEachInitIvExpand2(InitIvExpand2 initIvExpand2)
 		{
-			if (context is null) throw new InvalidOperationException("context should be set");
+			var ctx = context;
+			if (ctx is null) throw new InvalidOperationException("context should be set");
 
-			packetHandler.ReceivedFinalInitAck();
+			ctx.PacketHandler.ReceivedFinalInitAck();
 
 			var (publicKey, privateKey) = TsCrypt.GenerateTemporaryKey();
 
@@ -291,30 +282,31 @@ namespace TSLib.Full
 			Array.Copy(publicKey, 0, toSign, 0, 32);
 			var beta = Convert.FromBase64String(initIvExpand2.Beta);
 			Array.Copy(beta, 0, toSign, 32, 54);
-			var sign = TsCrypt.Sign(connectionDataFull.Identity.PrivateKey, toSign);
+			var sign = TsCrypt.Sign(ctx.ConnectionDataFull.Identity.PrivateKey, toSign);
 			var proof = Convert.ToBase64String(sign);
 			await ClientEk(ekBase64, proof);
 
-			var result = tsCrypt.CryptoInit2(initIvExpand2.License, initIvExpand2.Omega, initIvExpand2.Proof, initIvExpand2.Beta, privateKey);
+			var result = ctx.TsCrypt.CryptoInit2(initIvExpand2.License, initIvExpand2.Omega, initIvExpand2.Proof, initIvExpand2.Beta, privateKey);
 			if (!result)
 			{
-				ChangeState(context, TsClientStatus.Disconnected, CommandError.Custom($"Failed to calculate shared secret: {result.Error}"));
+				ChangeState(ctx, TsClientStatus.Disconnected, CommandError.Custom($"Failed to calculate shared secret: {result.Error}"));
 				return;
 			}
 
-			await DefaultClientInit();
+			await DefaultClientInit(ctx);
 		}
 
 		partial void ProcessEachInitServer(InitServer initServer)
 		{
-			if (context is null) throw new InvalidOperationException("context should be set");
+			var ctx = context;
+			if (ctx is null) throw new InvalidOperationException("context should be set");
 
-			packetHandler.ClientId = initServer.ClientId;
+			ctx.PacketHandler.ClientId = initServer.ClientId;
 			var serverVersion = TsVersion.TryParse(initServer.ServerVersion, initServer.ServerPlatform);
 			if (serverVersion != null)
 				ServerConstants = TsConst.GetByServerBuildNum(serverVersion.Build);
 
-			ChangeState(context, TsClientStatus.Connected);
+			ChangeState(ctx, TsClientStatus.Connected);
 
 		}
 
@@ -326,22 +318,24 @@ namespace TSLib.Full
 
 		partial void ProcessEachCommandError(CommandError error)
 		{
-			if (context is null) throw new InvalidOperationException("context should be set");
+			var ctx = context;
+			if (ctx is null) throw new InvalidOperationException("context should be set");
 
 			if (status == TsClientStatus.Connecting)
-				ChangeState(context, TsClientStatus.Disconnected, error);
+				ChangeState(ctx, TsClientStatus.Disconnected, error);
 			else
 				OnErrorEvent?.Invoke(this, error);
 		}
 
 		partial void ProcessEachClientLeftView(ClientLeftView clientLeftView)
 		{
-			if (context is null) throw new InvalidOperationException("context should be set");
+			var ctx = context;
+			if (ctx is null) throw new InvalidOperationException("context should be set");
 
-			if (clientLeftView.ClientId == packetHandler.ClientId)
+			if (clientLeftView.ClientId == ctx.PacketHandler.ClientId)
 			{
-				context.ExitReason = clientLeftView.Reason;
-				ChangeState(context, TsClientStatus.Disconnected);
+				ctx.ExitReason = clientLeftView.Reason;
+				ChangeState(ctx, TsClientStatus.Disconnected);
 			}
 		}
 
@@ -353,7 +347,9 @@ namespace TSLib.Full
 
 		async partial void ProcessEachClientConnectionInfoUpdateRequest(ClientConnectionInfoUpdateRequest _)
 		{
-			await SendNoResponsed(packetHandler.NetworkStats.GenerateStatusAnswer());
+			if (context is null) throw new InvalidOperationException("context should be set");
+
+			await SendNoResponsed(context.PacketHandler.NetworkStats.GenerateStatusAnswer());
 		}
 
 		partial void ProcessPermList(PermList[] permList)
@@ -372,14 +368,18 @@ namespace TSLib.Full
 			Deserializer.PermissionTransform = new TablePermissionTransform(buildPermissions.ToArray());
 		}
 
-		private Task DefaultClientInit() => ClientInit(
-			connectionDataFull.Username,
-			true, true,
-			connectionDataFull.DefaultChannel,
-			connectionDataFull.DefaultChannelPassword.HashedPassword,
-			connectionDataFull.ServerPassword.HashedPassword,
-			string.Empty, string.Empty, string.Empty,
-			connectionDataFull.Identity.ClientUid.ToString(), VersionSign);
+		private Task DefaultClientInit(ConnectionContext context)
+		{
+			var cdf = context.ConnectionDataFull;
+			return ClientInit(
+				cdf.Username,
+				true, true,
+				cdf.DefaultChannel,
+				cdf.DefaultChannelPassword.HashedPassword,
+				cdf.ServerPassword.HashedPassword,
+				string.Empty, string.Empty, string.Empty,
+				cdf.Identity.ClientUid.ToString(), cdf.VersionSign, cdf.Identity.ValidKeyOffset);
+		}
 
 		// ***
 
@@ -442,6 +442,8 @@ namespace TSLib.Full
 			if (status != TsClientStatus.Connecting && status != TsClientStatus.Connected)
 				return CommandError.ConnectionClosed;
 
+			if (context is null) throw new InvalidOperationException("context should be set");
+
 			if (com.ExpectResponse)
 			{
 				var responseNumber = unchecked(++returnCode);
@@ -453,7 +455,7 @@ namespace TSLib.Full
 			var message = com.ToString();
 			Log.Debug("[O] {0}", message);
 			byte[] data = Tools.Utf8Encoder.GetBytes(message);
-			var sendResult = packetHandler.AddOutgoingPacket(data, PacketType.Command);
+			var sendResult = context.PacketHandler.AddOutgoingPacket(data, PacketType.Command);
 			if (!sendResult)
 				Log.Debug("packetHandler couldn't send packet: {0}", sendResult.Error);
 			return R.Ok;
@@ -462,7 +464,7 @@ namespace TSLib.Full
 		/// <summary>Release all resources. Does not wait for a normal disconnect. Await Disconnect for this instead.</summary>
 		public override void Dispose()
 		{
-			packetHandler.Stop();
+			context?.PacketHandler.Stop();
 			if (isOwnScheduler && scheduler is IDisposable disp)
 				disp.Dispose();
 		}
@@ -531,7 +533,7 @@ namespace TSLib.Full
 
 		public Task ClientInit(string nickname, bool inputHardware, bool outputHardware,
 				string defaultChannel, string defaultChannelPassword, string serverPassword, string metaData,
-				string nicknamePhonetic, string defaultToken, string hwid, TsVersionSigned versionSign)
+				string nicknamePhonetic, string defaultToken, string hwid, TsVersionSigned versionSign, ulong keyOffset)
 			=> SendNoResponsed(new TsCommand("clientinit") {
 				{ "client_nickname", nickname },
 				{ "client_version", versionSign.Version },
@@ -543,7 +545,7 @@ namespace TSLib.Full
 				{ "client_server_password", serverPassword }, // base64(sha1(pass))
 				{ "client_meta_data", metaData },
 				{ "client_version_sign", versionSign.Sign },
-				{ "client_key_offset", Identity.ValidKeyOffset },
+				{ "client_key_offset", keyOffset },
 				{ "client_nickname_phonetic", nicknamePhonetic },
 				{ "client_default_token", defaultToken },
 				{ "hwid", hwid },
@@ -569,6 +571,9 @@ namespace TSLib.Full
 
 		public void SendAudio(in ReadOnlySpan<byte> data, Codec codec)
 		{
+			var ctx = context;
+			if (ctx is null) return;
+
 			// [X,X,Y,DATA]
 			// > X is a ushort in H2N order of an own audio packet counter
 			//     it seems it can be the same as the packet counter so we will let the packethandler do it.
@@ -577,11 +582,14 @@ namespace TSLib.Full
 			tmpBuffer[2] = (byte)codec;
 			data.CopyTo(tmpBuffer.Slice(3));
 
-			packetHandler.AddOutgoingPacket(tmpBuffer, PacketType.Voice);
+			ctx.PacketHandler.AddOutgoingPacket(tmpBuffer, PacketType.Voice);
 		}
 
 		public void SendAudioWhisper(in ReadOnlySpan<byte> data, Codec codec, IReadOnlyList<ChannelId> channelIds, IReadOnlyList<ClientId> clientIds)
 		{
+			var ctx = context;
+			if (ctx is null) return;
+
 			// [X,X,Y,N,M,(U,U,U,U,U,U,U,U)*,(T,T)*,DATA]
 			// > X is a ushort in H2N order of an own audio packet counter
 			//     it seems it can be the same as the packet counter so we will let the packethandler do it.
@@ -601,11 +609,14 @@ namespace TSLib.Full
 				BinaryPrimitives.WriteUInt16BigEndian(tmpBuffer.Slice(5 + channelIds.Count * 8 + (i * 2)), clientIds[i].Value);
 			data.CopyTo(tmpBuffer.Slice(offset));
 
-			packetHandler.AddOutgoingPacket(tmpBuffer, PacketType.VoiceWhisper);
+			ctx.PacketHandler.AddOutgoingPacket(tmpBuffer, PacketType.VoiceWhisper);
 		}
 
 		public void SendAudioGroupWhisper(in ReadOnlySpan<byte> data, Codec codec, GroupWhisperType type, GroupWhisperTarget target, ulong targetId = 0)
 		{
+			var ctx = context;
+			if (ctx is null) return;
+
 			// [X,X,Y,N,M,U,U,U,U,U,U,U,U,DATA]
 			// > X is a ushort in H2N order of an own audio packet counter
 			//     it seems it can be the same as the packet counter so we will let the packethandler do it.
@@ -620,7 +631,7 @@ namespace TSLib.Full
 			BinaryPrimitives.WriteUInt64BigEndian(tmpBuffer.Slice(5), targetId);
 			data.CopyTo(tmpBuffer.Slice(13));
 
-			packetHandler.AddOutgoingPacket(tmpBuffer, PacketType.VoiceWhisper, PacketFlags.Newprotocol);
+			ctx.PacketHandler.AddOutgoingPacket(tmpBuffer, PacketType.VoiceWhisper, PacketFlags.Newprotocol);
 		}
 
 		public async Task<R<ClientConnectionInfo, CommandError>> GetClientConnectionInfo(ClientId clientId)
@@ -748,19 +759,25 @@ namespace TSLib.Full
 	internal class ConnectionContext
 	{
 		public Reason? ExitReason { get; set; }
+		public TsCrypt TsCrypt { get; }
+		public PacketHandler<S2C, C2S> PacketHandler { get; set; }
+		public ConnectionDataFull ConnectionDataFull { get; set; }
 
 		public TaskCompletionSource<E<CommandError>> ConnectEvent { get; }
 		public TaskCompletionSource<object?> DisconnectEvent { get; }
 
-		public ConnectionContext()
+		public ConnectionContext(ConnectionDataFull connectionDataFull)
 		{
 			// Note: TCS.SetResult can continue to run the code of the 'await TSC.Task'
 			// somewhere else synchronously.
-			// While the TsFC class is designed to be resistend to problems regarding
+			// While the TsFullClient class is designed to be resistend to problems regarding
 			// intermediate state changes with such call, we still add the runasync Task
 			// option for a more consistent processing order and better predictable behaviour.
 			ConnectEvent = new TaskCompletionSource<E<CommandError>>(TaskCreationOptions.RunContinuationsAsynchronously);
 			DisconnectEvent = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
+			TsCrypt = new TsCrypt(connectionDataFull.Identity);
+			PacketHandler = new PacketHandler<S2C, C2S>(TsCrypt, connectionDataFull.LogId);
+			ConnectionDataFull = connectionDataFull;
 		}
 	}
 }
