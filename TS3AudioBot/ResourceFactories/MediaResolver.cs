@@ -328,12 +328,19 @@ namespace TS3AudioBot.ResourceFactories
 				var uri = new Uri(playResource.PlayUri);
 
 				if (uri.IsWeb())
+				{
 					rawImgData = await WebWrapper.Request(uri)
 						.ToAction(async response => AudioTagReader.GetData(await response.Content.ReadAsStreamAsync())?.Picture);
+				}
 				else if (uri.IsFile())
-					rawImgData = AudioTagReader.GetData(File.OpenRead(uri.LocalPath))?.Picture;
+				{
+					using var file = File.Open(uri.LocalPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+					rawImgData = AudioTagReader.GetData(file)?.Picture;
+				}
 				else
+				{
 					throw Error.LocalStr(strings.error_media_invalid_uri);
+				}
 			}
 
 			if (rawImgData is null)
