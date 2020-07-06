@@ -122,7 +122,7 @@ namespace TSLib.Full
 			return StateGet(index) ? ItemSetStatus.InWindowSet : ItemSetStatus.InWindowNotSet;
 		}
 
-		public bool TryDequeue(out T value)
+		public bool TryDequeue([MaybeNullWhen(false)] out T value)
 		{
 			if (!TryPeekStart(0, out value)) return false;
 			BufferPop();

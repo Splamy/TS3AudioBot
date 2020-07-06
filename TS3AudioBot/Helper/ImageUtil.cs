@@ -29,7 +29,7 @@ namespace TS3AudioBot.Helper
 			try
 			{
 				using var limitStream = new LimitStream(imgStream, Limits.MaxImageStreamSize);
-				return await Task.Run(() => ResizeImage(limitStream, resizeMaxWidth));
+				return await ResizeImage(limitStream, resizeMaxWidth);
 			}
 			catch (NotSupportedException)
 			{
@@ -43,9 +43,9 @@ namespace TS3AudioBot.Helper
 			}
 		}
 
-		private static ImageHolder ResizeImage(Stream imgStream, int resizeMaxWidth = ResizeMaxWidthDefault)
+		private static async Task<ImageHolder> ResizeImage(Stream imgStream, int resizeMaxWidth = ResizeMaxWidthDefault)
 		{
-			using var img = Image.Load(imgStream);
+			using var img = await Image.LoadAsync(imgStream);
 			if (img.Width > Limits.MaxImageDimension || img.Height > Limits.MaxImageDimension
 				|| img.Width == 0 || img.Height == 0)
 				throw Error.LocalStr("Dropping image because too large"); // TODO

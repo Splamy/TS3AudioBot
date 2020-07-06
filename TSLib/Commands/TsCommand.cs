@@ -76,7 +76,7 @@ namespace TSLib.Commands
 
 		/// <summary>Builds this command to the query-like command.</summary>
 		/// <returns>The formatted query-like command.</returns>
-		public override string ToString() => raw ?? (raw = BuildToString(Command, GetParameter()));
+		public override string ToString() => raw ??= BuildToString(Command, GetParameter());
 
 		/// <summary>Builds the command from its parameters and returns the query-like command.</summary>
 		/// <param name="command">The command name.</param>

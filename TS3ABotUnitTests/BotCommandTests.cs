@@ -188,7 +188,7 @@ namespace TS3ABotUnitTests
 		public void XCommandSystemTest2()
 		{
 			var execInfo = Utils.GetExecInfo("exact");
-			string? CallCommand(string command) => CommandManager.Execute(execInfo, command).GetAwaiter().GetResult().AsString();
+			string? CallCommand(string command) => CommandManager.Execute(execInfo!, command).GetAwaiter().GetResult().AsString();
 			var group = execInfo.GetModule<CommandManager>()!.RootGroup;
 
 			var o1 = new OverloadedFunctionCommand();

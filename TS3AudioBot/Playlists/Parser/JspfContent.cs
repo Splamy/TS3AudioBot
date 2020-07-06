@@ -93,8 +93,9 @@ namespace TS3AudioBot.Playlists.Parser
 			return new XspfMeta(key, value);
 		}
 
-		public override void WriteJson(JsonWriter writer, XspfMeta value, JsonSerializer serializer)
+		public override void WriteJson(JsonWriter writer, XspfMeta? value, JsonSerializer serializer)
 		{
+			if (value is null) throw new ArgumentNullException(nameof(value));
 			writer.WriteStartObject();
 			writer.WritePropertyName(value.Key);
 			writer.WriteValue(value.Value);

@@ -30,7 +30,7 @@ namespace TS3AudioBot.Helper
 				value = new T[tomlArray.Length];
 				for (int i = 0; i < tomlArray.Length; i++)
 				{
-					if (!tomlArray.Items[i].TryGetValue(out value[i]))
+					if (!tomlArray.Items[i].TryGetValue(out value[i]!))
 					{
 						value = null;
 						return false;
@@ -246,7 +246,7 @@ namespace TS3AudioBot.Helper
 			{
 			case '*':
 				{
-					var rest = pathM.Slice(1);
+					var rest = pathM[1..];
 					if (rest.IsEmpty)
 						return obj.GetAllSubItems();
 
@@ -276,12 +276,12 @@ namespace TS3AudioBot.Helper
 						if (path[i] == '*')
 							throw new ArgumentException("Invalid wildcard position", nameof(pathM));
 
-						var currentSub = path.Slice(i);
+						var currentSub = path[i..];
 						if (!IsIdentifier(currentSub)) // if (!IsName)
 						{
 							cont = true;
-							subItemName = path.Slice(0, i);
-							rest = pathM.Slice(i);
+							subItemName = path[..i];
+							rest = pathM[i..];
 							break;
 						}
 					}
@@ -314,7 +314,7 @@ namespace TS3AudioBot.Helper
 				{
 					if (i == 0)
 						throw new ArgumentException("Empty array indexer", nameof(pathM));
-					var indexer = path.Slice(1, i - 1);
+					var indexer = path[1..i];
 					var rest = pathM.Slice(i + 1);
 					bool cont = rest.Length > 0;
 
@@ -362,7 +362,7 @@ namespace TS3AudioBot.Helper
 			if (!IsDot(path))
 				throw new ArgumentException("Expected dot", nameof(pathM));
 
-			var rest = pathM.Slice(1);
+			var rest = pathM[1..];
 			if (!IsIdentifier(rest.Span))
 				throw new ArgumentException("Expected identifier after dot", nameof(pathM));
 
