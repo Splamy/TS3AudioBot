@@ -110,7 +110,12 @@ namespace TSLib.Full
 			var ctx = new ConnectionContext(conDataFull);
 			context = ctx;
 
-			ctx.PacketHandler.PacketEvent = (ref Packet<S2C> packet) => { PacketEvent(ctx, ref packet); };
+			ctx.PacketHandler.PacketEvent = (ref Packet<S2C> packet) =>
+			{
+				if (status == TsClientStatus.Disconnected)
+					return;
+				PacketEvent(ctx, ref packet);
+			};
 			ctx.PacketHandler.StopEvent = (closeReason) =>
 			{
 				_ = scheduler.Invoke(() =>
