@@ -618,16 +618,15 @@ namespace TSLib.Full
 				if (initPacketCheck is null)
 					return true;
 				// optional: add random number check from init data
-				var forwardData = tsCrypt.ProcessInit1<TIn>(packet.Data);
-				if (!forwardData.Ok)
+				if (!tsCrypt.ProcessInit1<TIn>(packet.Data).Get(out var forwardData, out var error))
 				{
-					LogRaw.Debug("Error init: {0}", forwardData.Error);
+					LogRaw.Debug("Error init: {0}", error);
 					return false;
 				}
 				initPacketCheck = null;
-				if (forwardData.Value.Length == 0) // TODO XXX
+				if (forwardData.Length == 0) // TODO XXX
 					return true;
-				AddOutgoingPacket(forwardData.Value, PacketType.Init1);
+				AddOutgoingPacket(forwardData, PacketType.Init1);
 				return true;
 			}
 		}

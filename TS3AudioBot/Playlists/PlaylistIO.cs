@@ -73,16 +73,14 @@ namespace TS3AudioBot.Playlists
 					hasWriteLock = true;
 				}
 
-				var result = ReadFromFile(listId);
-
-				if (result.Ok)
+				if (ReadFromFile(listId).Get(out var plist, out var error))
 				{
-					playlistCache.Set(listId, result.Value);
-					return result.Value;
+					playlistCache.Set(listId, plist);
+					return plist;
 				}
 				else
 				{
-					return result.Error;
+					return error;
 				}
 			}
 			finally
@@ -102,9 +100,8 @@ namespace TS3AudioBot.Playlists
 
 			using var sr = new StreamReader(fi.Open(FileMode.Open, FileAccess.Read, FileShare.Read), Tools.Utf8Encoder);
 			var metaRes = ReadHeadStream(sr);
-			if (!metaRes.Ok)
-				return metaRes.Error;
-			var meta = metaRes.Value;
+			if (!metaRes.Get(out var meta, out var error))
+				return error;
 
 			playlistInfo[listId] = meta;
 

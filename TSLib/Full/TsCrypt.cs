@@ -84,9 +84,8 @@ namespace TSLib.Full
 		/// <returns>The identity information.</returns>
 		public static R<IdentityData, string> LoadIdentityDynamic(string key, ulong keyOffset = 0, ulong lastCheckedKeyOffset = 0)
 		{
-			var tsIdentity = DeobfuscateAndImportTsIdentity(key);
-			if (tsIdentity.Ok)
-				return tsIdentity.Value;
+			if (DeobfuscateAndImportTsIdentity(key).GetOk(out var tsIdentity))
+				return tsIdentity;
 			return LoadIdentity(key, keyOffset, lastCheckedKeyOffset);
 		}
 
@@ -260,10 +259,10 @@ namespace TSLib.Full
 			if (betaBytes is null) return "betaBytes parameter is invalid";
 			var omegaBytes = Base64Decode(omega);
 			if (omegaBytes is null) return "omegaBytes parameter is invalid";
-			var serverPublicKey = ImportPublicKey(omegaBytes);
-			if (!serverPublicKey.Ok) return "server public key is invalid";
+			if (!ImportPublicKey(omegaBytes).GetOk(out var serverPublicKey))
+				return "server public key is invalid";
 
-			byte[] sharedKey = GetSharedSecret(serverPublicKey.Value);
+			byte[] sharedKey = GetSharedSecret(serverPublicKey);
 			return SetSharedSecret(alphaBytes, betaBytes, sharedKey);
 		}
 
@@ -319,20 +318,18 @@ namespace TSLib.Full
 			if (proofBytes is null) return "proof parameter is invalid";
 			var betaBytes = Base64Decode(beta);
 			if (betaBytes is null) return "beta parameter is invalid";
-			var serverPublicKey = ImportPublicKey(omegaBytes);
-			if (!serverPublicKey.Ok) return "server public key is invalid";
+			if (!ImportPublicKey(omegaBytes).GetOk(out var serverPublicKey))
+				return "server public key is invalid";
 
 			// Verify that our connection isn't tampered with
-			if (!VerifySign(serverPublicKey.Value, licenseBytes, proofBytes))
+			if (!VerifySign(serverPublicKey, licenseBytes, proofBytes))
 				return "The init proof is not valid. Your connection might be tampered with or the server is an idiot.";
 
 			var sw = Stopwatch.StartNew();
-			var licenseChainR = Licenses.Parse(licenseBytes);
-			if (!licenseChainR.Ok)
-				return licenseChainR.Error;
+			if (!Licenses.Parse(licenseBytes).Get(out var licenseChain, out var error))
+				return error;
 			Log.Debug("Parsed license successfully in {0:F3}ms", sw.Elapsed.TotalMilliseconds);
 
-			var licenseChain = licenseChainR.Value;
 			sw.Restart();
 			var key = licenseChain.DeriveKey();
 			Log.Debug("Processed license successfully in {0:F3}ms", sw.Elapsed.TotalMilliseconds);
@@ -458,9 +455,8 @@ namespace TSLib.Full
 
 				// Prepare solution
 				int level = BinaryPrimitives.ReadInt32BigEndian(data.AsSpan(initTypeLen + 128));
-				var y = SolveRsaChallange(data, initTypeLen, level);
-				if (!y.Ok)
-					return y.Error;
+				if (!SolveRsaChallange(data, initTypeLen, level).Get(out var y, out var error))
+					return error;
 
 				// Copy bytes for this result: [Version..., InitType..., data..., y..., text...]
 				sendData = new byte[versionLen + initTypeLen + 64 + 64 + 4 + 100 + 64 + textBytes.Length];
@@ -471,7 +467,7 @@ namespace TSLib.Full
 				// Copy data
 				Array.Copy(data, initTypeLen, sendData, versionLen + initTypeLen, 232);
 				// Copy y
-				Array.Copy(y.Value, 0, sendData, versionLen + initTypeLen + 232 + (64 - y.Value.Length), y.Value.Length);
+				Array.Copy(y, 0, sendData, versionLen + initTypeLen + 232 + (64 - y.Length), y.Length);
 				// Copy text
 				Array.Copy(textBytes, 0, sendData, versionLen + initTypeLen + 232 + 64, textBytes.Length);
 				return sendData;

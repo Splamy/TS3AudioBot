@@ -161,9 +161,8 @@ namespace TS3AudioBot.Playlists
 		public E<LocalStr> ModifyPlaylist(string listId, Action<Playlist> action)
 		{
 			var res = GetSpecialPlaylist(listId);
-			if (res)
+			if (res.GetOk(out var plist))
 			{
-				var plist = res.Value;
 				lock (listLock)
 				{
 					action(plist);
@@ -172,13 +171,10 @@ namespace TS3AudioBot.Playlists
 			}
 			else
 			{
-				var checkName = Util.IsSafeFileName(listId);
-				if (!checkName.Ok)
-					return checkName.Error;
-				res = playlistPool.Read(listId);
-				if (!res.Ok)
-					return res.Error;
-				var plist = res.Value;
+				if (!Util.IsSafeFileName(listId).GetOk(out var error))
+					return error;
+				if (!playlistPool.Read(listId).Get(out plist, out error))
+					return error;
 				lock (listLock)
 				{
 					action(plist);

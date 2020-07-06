@@ -109,13 +109,12 @@ namespace TS3AudioBot
 			}
 			else
 			{
-				var identityResult = TsCrypt.LoadIdentityDynamic(identityConf.PrivateKey.Value, identityConf.Offset.Value);
-				if (!identityResult.Ok)
+				if (!TsCrypt.LoadIdentityDynamic(identityConf.PrivateKey.Value, identityConf.Offset.Value)
+					.Get(out identity, out var error))
 				{
-					Log.Error("The identity from the config file is corrupted. Remove it to generate a new one next start; or try to repair it.");
+					Log.Error("The identity from the config file is corrupted. Remove it to generate a new one next start; or try to repair it. ({0})", error);
 					return "Corrupted identity";
 				}
-				identity = identityResult.Value;
 				identityConf.PrivateKey.Value = identity.PrivateKeyString;
 				identityConf.Offset.Value = identity.ValidKeyOffset;
 			}

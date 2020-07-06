@@ -152,10 +152,10 @@ namespace TS3AudioBot.Rights
 					{
 						// TODO check if there is any better way to only get the permissions needed.
 						var result = await tsClient.PermOverview(databaseId.Value, channelId.Value, 0);
-						if (result.Ok)
+						if (result.GetOk(out var perms))
 						{
 							execCtx.Permissions = new PermOverview[Enum.GetValues(typeof(TsPermission)).Length];
-							foreach (var perm in result.Value)
+							foreach (var perm in perms)
 							{
 								if (perm.PermissionId < 0 || (int)perm.PermissionId >= execCtx.Permissions.Length)
 									continue;

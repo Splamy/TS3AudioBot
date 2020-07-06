@@ -9,6 +9,7 @@
 
 using System.Diagnostics;
 using System.Diagnostics.CodeAnalysis;
+using System.Runtime.CompilerServices;
 
 namespace System
 {
@@ -42,8 +43,8 @@ namespace System
 		public TError Error { get; }
 		public TSuccess Value { get; }
 
-		private R(TSuccess value) { isError = false; Error = default!; if (value == null) throw new ArgumentNullException(nameof(value), "Return of ok must not be null."); Value = value; }
-		private R(TError error) { isError = true; Value = default!; if (error == null) throw new ArgumentNullException(nameof(error), "Error must not be null."); Error = error; }
+		private R(TSuccess value) { if (value is null) throw new ArgumentNullException(nameof(value), "Return of ok must not be null."); isError = false; Error = default!; Value = value; }
+		private R(TError error) { if (error is null) throw new ArgumentNullException(nameof(error), "Error must not be null."); isError = true; Value = default!; Error = error; }
 		internal R(bool isError, TSuccess value, TError error) { this.isError = isError; Value = value; Error = error; }
 
 		/// <summary>Creates a new failed result with an error object</summary>
@@ -60,34 +61,27 @@ namespace System
 		public static implicit operator R<TSuccess, TError>(TError error) => new R<TSuccess, TError>(error);
 
 		// Fluent get
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public bool GetOk([MaybeNullWhen(false)] out TSuccess value)
 		{
-			if (Ok)
-				value = Value;
-			else
-				value = default!;
+			value = Value;
 			return Ok;
 		}
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public bool Get([MaybeNullWhen(false)] out TSuccess result, [MaybeNullWhen(true)] out TError error)
 		{
-			if (Ok)
-			{
-				result = Value;
-				error = default!;
-			}
-			else
-			{
-				result = default!;
-				error = Error;
-			}
+			result = Value;
+			error = Error;
 			return Ok;
 		}
 
 		// Unwrapping
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		[return: MaybeNull, NotNullIfNotNull("alt")]
 		public TSuccess OkOr([AllowNull] TSuccess alt) => Ok ? Value : alt;
 
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public TSuccess Unwrap() => Ok ? Value : throw new InvalidOperationException("Called upwrap on error");
 
 		// Downwrapping
@@ -132,10 +126,7 @@ namespace System
 		// Fluent get
 		public bool GetOk([MaybeNullWhen(true)] out TError error)
 		{
-			if (Ok)
-				error = default!;
-			else
-				error = Error;
+			error = Error;
 			return Ok;
 		}
 

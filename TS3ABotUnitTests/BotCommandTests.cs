@@ -76,7 +76,7 @@ namespace TS3ABotUnitTests
 		{
 			var execInfo = Utils.GetExecInfo("ic3");
 			string? CallCommand(string command) => CommandManager.Execute(execInfo, command).Result.AsString();
-			var group = execInfo.GetModule<CommandManager>()!.RootGroup;
+			var group = execInfo.GetModuleOrThrow<CommandManager>().RootGroup;
 			group.AddCommand("cmd", new FunctionCommand(s => s));
 
 			Assert.AreEqual("a", CallCommand("!cmd a"));
@@ -139,8 +139,8 @@ namespace TS3ABotUnitTests
 		{
 			var execInfo = Utils.GetExecInfo("ic3", false);
 			string? CallCommand(string command) => CommandManager.Execute(execInfo, command).GetAwaiter().GetResult().AsString();
+			var group = execInfo.GetModuleOrThrow<CommandManager>().RootGroup;
 
-			var group = execInfo.GetModule<CommandManager>()!.RootGroup;
 			group.AddCommand("one", new FunctionCommand(() => "ONE"));
 			group.AddCommand("two", new FunctionCommand(() => "TWO"));
 			group.AddCommand("echo", new FunctionCommand(s => s));
@@ -189,7 +189,7 @@ namespace TS3ABotUnitTests
 		{
 			var execInfo = Utils.GetExecInfo("exact");
 			string? CallCommand(string command) => CommandManager.Execute(execInfo!, command).GetAwaiter().GetResult().AsString();
-			var group = execInfo.GetModule<CommandManager>()!.RootGroup;
+			var group = execInfo.GetModuleOrThrow<CommandManager>().RootGroup;
 
 			var o1 = new OverloadedFunctionCommand();
 			o1.AddCommand(new FunctionCommand(new Action<int>((_) => { })));

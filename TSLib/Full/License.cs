@@ -35,7 +35,7 @@ namespace TSLib.Full
 
 			// Read licenses
 			var res = new Licenses();
-			data = data.Slice(1);
+			data = data[1..];
 			while (data.Length > 0)
 			{
 				// Read next license
@@ -89,9 +89,8 @@ namespace TSLib.Full
 			switch (data[33])
 			{
 			case 0:
-				var result = ReadNullString(data.Slice(46));
-				if (!result.Ok) return result.Error;
-				var nullStr = result.Value;
+				if (!ReadNullString(data[46..]).Get(out var nullStr, out var error))
+					return error;
 				block = new IntermediateLicenseBlock(nullStr.str);
 				read = 5 + nullStr.read;
 				break;
@@ -99,10 +98,9 @@ namespace TSLib.Full
 			case 2:
 				if (!Enum.IsDefined(typeof(ServerLicenseType), data[42]))
 					return $"Unknown license type {data[42]}";
-				result = ReadNullString(data.Slice(47));
-				if (!result.Ok) return result.Error;
-				nullStr = result.Value;
-				block = new ServerLicenseBlock(result.Value.str, (ServerLicenseType)data[42]);
+				if (!ReadNullString(data[47..]).Get(out nullStr, out error))
+					return error;
+				block = new ServerLicenseBlock(nullStr.str, (ServerLicenseType)data[42]);
 				read = 6 + nullStr.read;
 				break;
 
