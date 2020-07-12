@@ -1,0 +1,22 @@
+version: 2
+jobs:
+  build:
+    
+    working_directory: ~/TS3AudioBot
+
+    docker:
+      - image: amd64/debian
+
+    steps:
+      - checkout
+      - run: wget https://packages.microsoft.com/config/debian/10/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
+      - run: dpkg -i packages-microsoft-prod.deb
+      - run: rm packages-microsoft-prod.deb
+      - run: sudo apt update
+      - run: sudo apt install apt-transport-https -y
+      - run: sudo apt update
+      - run: sudo apt install dotnet-sdk-2.2 -y
+      - run: dotnet build --framework netcoreapp2.2 --configuration Release TS3AudioBot
+      
+      - store_artifacts:
+          path: TS3AudioBot/bin/Release/netcoreapp2.2
