@@ -1148,7 +1148,7 @@ namespace TS3AudioBot
 		[Command("param", "_undocumented")] // TODO add documentation, when name decided
 		public static async Task<object?> CommandParam(ExecutionInformation info, int index)
 		{
-			if (!info.TryGet<AliasContext>(out var ctx) || ctx.Arguments == null)
+			if (!info.TryGet<AliasContext>(out var ctx) || ctx.Arguments is null)
 				throw new CommandException("No parameter available", CommandExceptionReason.CommandError);
 
 			if (index < 0 || index >= ctx.Arguments.Count)
@@ -1819,7 +1819,7 @@ namespace TS3AudioBot
 					strb.Append(strings.cmd_whisper_list_target_whisper_channel).Append(": [").Append(string.Join(",", x.WhisperChannel)).Append("]");
 					break;
 				case TargetSendMode.WhisperGroup:
-					if (x.GroupWhisper == null) throw new ArgumentNullException();
+					if (x.GroupWhisper is null) throw new ArgumentNullException();
 					strb.AppendFormat(strings.cmd_whisper_list_target_whispergroup, x.GroupWhisper.Type, x.GroupWhisper.Target, x.GroupWhisper.TargetId);
 					break;
 				default:

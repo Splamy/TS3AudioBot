@@ -23,7 +23,7 @@ namespace TSLib.Full.Book
 		public Channel? CurrentChannel()
 		{
 			var self = Self();
-			if (self == null)
+			if (self is null)
 				return null;
 			return GetChannel(self.Channel);
 		}

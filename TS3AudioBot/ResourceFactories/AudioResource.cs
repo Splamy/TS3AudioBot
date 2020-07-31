@@ -55,7 +55,7 @@ namespace TS3AudioBot.ResourceFactories
 
 		public string? Get(string key)
 		{
-			if (AdditionalData == null)
+			if (AdditionalData is null)
 				return null;
 			return AdditionalData.TryGetValue(key, out var value) ? value : null;
 		}

@@ -48,10 +48,12 @@ namespace TSLib.Commands
 		}
 
 		[DebuggerStepThrough]
-		public virtual TsCommand Add(ICommandPart addParameter)
+		public virtual TsCommand Add(ICommandPart? addParameter)
 		{
+			if (addParameter is null)
+				return this;
 			raw = null;
-			if (parameter == null)
+			if (parameter is null)
 				parameter = new List<ICommandPart>();
 			else if (parameter.IsReadOnly)
 				parameter = new List<ICommandPart>(parameter);

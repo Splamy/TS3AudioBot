@@ -423,6 +423,13 @@ namespace TSLib
 			=> SendHybrid<ServerConnectionInfo>(new TsCommand("serverrequestconnectioninfo"),
 				NotificationType.ServerConnectionInfo).MapToSingle();
 
+		public Task<R<ServerGroupClientList[], CommandError>> ServerGroupClientList(ServerGroupId serverGroupId, bool getNames = false)
+			=> SendHybrid<ServerGroupClientList>(new TsCommand("servergroupclientlist")
+			{
+				{ "sgid", serverGroupId },
+				{ getNames ? new CommandOption("names") : null }
+			}, NotificationType.ServerGroupClientList);
+
 		#endregion
 	}
 }

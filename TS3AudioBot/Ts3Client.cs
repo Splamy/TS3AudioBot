@@ -196,7 +196,7 @@ namespace TS3AudioBot
 
 		private void UpdateIndentityToSecurityLevel(int targetLevel)
 		{
-			if (identity == null) throw new InvalidOperationException();
+			if (identity is null) throw new InvalidOperationException();
 			if (TsCrypt.GetSecurityLevel(identity) < targetLevel)
 			{
 				Log.Info("Calculating up to required security level: {0}", targetLevel);
@@ -249,7 +249,7 @@ namespace TS3AudioBot
 			await RefreshClientBuffer(false);
 			var client = Filter.DefaultFilter.Filter(
 				clientbuffer.Select(cb => new KeyValuePair<string, ClientList>(cb.Name, cb)), name).FirstOrDefault().Value;
-			if (client == null)
+			if (client is null)
 				throw new CommandException(strings.error_ts_no_client_found);
 			return client;
 		}
@@ -621,7 +621,7 @@ namespace TS3AudioBot
 		private async ValueTask IsAloneRecheck()
 		{
 			var self = ts3FullClient.Book.Self();
-			if (self == null)
+			if (self is null)
 				return;
 			var ownChannel = self.Channel;
 			ownChannelClients = ts3FullClient.Book.Clients.Values.Where(c => c.Channel == ownChannel && c != self).Select(c => c.Id).ToArray();

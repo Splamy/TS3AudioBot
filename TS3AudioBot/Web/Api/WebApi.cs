@@ -114,7 +114,7 @@ namespace TS3AudioBot.Web.Api
 				Thread.CurrentThread.CurrentUICulture = CultureInfo.InvariantCulture;
 				var res = await command.Execute(execInfo, Array.Empty<ICommand>());
 
-				if (res == null)
+				if (res is null)
 				{
 					response.StatusCode = (int)HttpStatusCode.NoContent;
 				}
