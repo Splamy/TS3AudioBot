@@ -103,13 +103,13 @@ namespace TS3AudioBot
 			var identityConf = config.Connect.Identity;
 			if (string.IsNullOrEmpty(identityConf.PrivateKey))
 			{
-				identity = TsCrypt.GenerateNewIdentity();
+				identity = IdentityData.GenerateNewIdentity();
 				identityConf.PrivateKey.Value = identity.PrivateKeyString;
 				identityConf.Offset.Value = identity.ValidKeyOffset;
 			}
 			else
 			{
-				if (!TsCrypt.LoadIdentityDynamic(identityConf.PrivateKey.Value, identityConf.Offset.Value)
+				if (!IdentityData.FromAny(identityConf.PrivateKey.Value, identityConf.Offset.Value)
 					.Get(out identity, out var error))
 				{
 					Log.Error("The identity from the config file is corrupted. Remove it to generate a new one next start; or try to repair it. ({0})", error);
@@ -196,10 +196,10 @@ namespace TS3AudioBot
 		private void UpdateIndentityToSecurityLevel(int targetLevel)
 		{
 			if (identity is null) throw new InvalidOperationException();
-			if (TsCrypt.GetSecurityLevel(identity) < targetLevel)
+			if (identity.GetSecurityLevel() < targetLevel)
 			{
 				Log.Info("Calculating up to required security level: {0}", targetLevel);
-				TsCrypt.ImproveSecurity(identity, targetLevel);
+				identity.ImproveSecurity(targetLevel);
 				config.Connect.Identity.Offset.Value = identity.ValidKeyOffset;
 			}
 		}
