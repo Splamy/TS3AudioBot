@@ -21,17 +21,17 @@
   "author": "Splamy",
   "license": "OSL-3.0",
   "dependencies": {
-    "@mdi/font": "^5.4.55",
+    "@mdi/font": "^5.5.55",
     "buefy": "^0.8.20",
     "lodash-es": "^4.17.15",
-    "swagger-ui-dist": "^3.31.1",
+    "swagger-ui-dist": "^3.32.1",
     "vue": "^2.6.11",
-    "vue-router": "^3.4.2"
+    "vue-router": "^3.4.3"
   },
   "devDependencies": {
     "@types/lodash-es": "^4.17.3",
     "copy-webpack-plugin": "^6.0.3",
-	"css-loader": "^3.5.3",
+    "css-loader": "^3.5.3",
     "file-loader": "^6.0.0",
     "html-webpack-plugin": "^4.3.0",
     "less": "^3.12.2",
@@ -53,6 +53,6 @@
     "webpack-merge": "^5.1.1"
   },
   "note": {
-	"_1": "css-loaded 4.X.X is available but breaks everything and I don't know why"
+    "_1": "css-loaded 4.X.X is available but breaks everything and I don't know why"
   }
 }
