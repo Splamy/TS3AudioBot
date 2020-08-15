@@ -28,8 +28,6 @@ namespace TS3AudioBot.Sessions
 			dbTokenList = database.GetCollection<DbApiToken>(ApiTokenTable);
 			dbTokenList.EnsureIndex(x => x.UserUid, true);
 			dbTokenList.EnsureIndex(x => x.Token, true);
-
-			database.GetMetaData(ApiTokenTable);
 		}
 
 		public string GenerateToken(string authId, TimeSpan? timeout = null)

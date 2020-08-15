@@ -133,8 +133,9 @@ namespace TS3AudioBot
 			// Update idle status events
 			playManager.BeforeResourceStarted += (s, e) => { DisableIdleTickWorker(); return Task.CompletedTask; };
 			playManager.PlaybackStopped += (s, e) => { EnableIdleTickWorker(); return Task.CompletedTask; };
-			// Used for the voice_mode script
+			// Used for custom scripts, like voice_mode, onsongstart
 			playManager.BeforeResourceStarted += BeforeResourceStarted;
+			playManager.AfterResourceStarted += AfterResourceStarted;
 			// Update the own status text to the current song title
 			playManager.AfterResourceStarted += (s, e) => UpdateBotStatus();
 			playManager.PlaybackStopped += (s, e) => UpdateBotStatus();
@@ -143,8 +144,8 @@ namespace TS3AudioBot
 			if (Injector.TryGet<HistoryManager>(out var historyManager))
 				playManager.AfterResourceStarted += (s, e) =>
 				{
-					if (e.MetaData != null)
-						historyManager.LogAudioResource(new HistorySaveData(e.PlayResource.AudioResource, e.MetaData.ResourceOwnerUid));
+					if (e.PlayInfo != null)
+						historyManager.LogAudioResource(new HistorySaveData(e.PlayResource.AudioResource, e.PlayInfo.ResourceOwnerUid));
 					return Task.CompletedTask;
 				};
 			// Update our thumbnail
@@ -338,6 +339,39 @@ namespace TS3AudioBot
 			sessionManager.RemoveSession(eventArgs.ClientId);
 		}
 
+		private async Task BeforeResourceStarted(object? sender, PlayInfoEventArgs e)
+		{
+			const string DefaultVoiceScript = "!whisper off";
+			const string DefaultWhisperScript = "!xecute (!whisper subscription) (!unsubscribe temporary) (!subscribe channeltemp (!getmy channel))";
+
+			var mode = config.Audio.SendMode.Value;
+			string script;
+			if (mode.StartsWith("!", StringComparison.Ordinal))
+				script = mode;
+			else if (mode.Equals("voice", StringComparison.OrdinalIgnoreCase))
+				script = DefaultVoiceScript;
+			else if (mode.Equals("whisper", StringComparison.OrdinalIgnoreCase))
+				script = DefaultWhisperScript;
+			else
+			{
+				Log.Error("Invalid voice mode");
+				return;
+			}
+
+			var info = CreateExecInfo(e.Invoker);
+			await CallScript(info, script, false, true);
+		}
+
+		private async Task AfterResourceStarted(object? sender, PlayInfoEventArgs e)
+		{
+			var onSongStart = config.Events.OnSongStart.Value;
+			if (!string.IsNullOrEmpty(onSongStart))
+			{
+				var info = CreateExecInfo();
+				await CallScript(info, onSongStart, false, true);
+			}
+		}
+
 		#region Status: Description, Avatar
 
 		public Task UpdateBotStatus()
@@ -449,28 +483,7 @@ namespace TS3AudioBot
 
 		#endregion
 
-		private async Task BeforeResourceStarted(object? sender, PlayInfoEventArgs e)
-		{
-			const string DefaultVoiceScript = "!whisper off";
-			const string DefaultWhisperScript = "!xecute (!whisper subscription) (!unsubscribe temporary) (!subscribe channeltemp (!getmy channel))";
-
-			var mode = config.Audio.SendMode.Value;
-			string script;
-			if (mode.StartsWith("!", StringComparison.Ordinal))
-				script = mode;
-			else if (mode.Equals("voice", StringComparison.OrdinalIgnoreCase))
-				script = DefaultVoiceScript;
-			else if (mode.Equals("whisper", StringComparison.OrdinalIgnoreCase))
-				script = DefaultWhisperScript;
-			else
-			{
-				Log.Error("Invalid voice mode");
-				return;
-			}
-
-			var info = CreateExecInfo(e.Invoker);
-			await CallScript(info, script, false, true);
-		}
+		#region Script Execution
 
 		private async Task CallScript(ExecutionInformation info, string command, bool answer, bool skipRights)
 		{
@@ -509,6 +522,35 @@ namespace TS3AudioBot
 			info.AddModule(Filter.GetFilterByNameOrDefault(config.Commands.Matcher));
 			return info;
 		}
+
+		private async Task TryCatchCommand(ExecutionInformation info, bool answer, Func<Task> action)
+		{
+			try
+			{
+				await action.Invoke();
+			}
+			catch (AudioBotException ex)
+			{
+				NLog.LogLevel commandErrorLevel = answer ? NLog.LogLevel.Debug : NLog.LogLevel.Warn;
+				Log.Log(commandErrorLevel, ex, "Command Error ({0})", ex.Message);
+				if (answer)
+				{
+					await info.Write(TextMod.Format(config.Commands.Color, strings.error_call_error.Mod().Color(Color.Red).Bold(), ex.Message))
+						.CatchToLog(Log);
+				}
+			}
+			catch (Exception ex)
+			{
+				Log.Error(ex, "Unexpected command error: {0}", ex.Message);
+				if (answer)
+				{
+					await info.Write(TextMod.Format(config.Commands.Color, strings.error_call_unexpected_error.Mod().Color(Color.Red).Bold(), ex.Message))
+						.CatchToLog(Log);
+				}
+			}
+		}
+
+		#endregion
 
 		#region Event: Idle
 
@@ -569,33 +611,6 @@ namespace TS3AudioBot
 		}
 
 		#endregion
-
-		private async Task TryCatchCommand(ExecutionInformation info, bool answer, Func<Task> action)
-		{
-			try
-			{
-				await action.Invoke();
-			}
-			catch (AudioBotException ex)
-			{
-				NLog.LogLevel commandErrorLevel = answer ? NLog.LogLevel.Debug : NLog.LogLevel.Warn;
-				Log.Log(commandErrorLevel, ex, "Command Error ({0})", ex.Message);
-				if (answer)
-				{
-					await info.Write(TextMod.Format(config.Commands.Color, strings.error_call_error.Mod().Color(Color.Red).Bold(), ex.Message))
-						.CatchToLog(Log);
-				}
-			}
-			catch (Exception ex)
-			{
-				Log.Error(ex, "Unexpected command error: {0}", ex.Message);
-				if (answer)
-				{
-					await info.Write(TextMod.Format(config.Commands.Color, strings.error_call_unexpected_error.Mod().Color(Color.Red).Bold(), ex.Message))
-						.CatchToLog(Log);
-				}
-			}
-		}
 
 		public BotInfo GetInfo() => new BotInfo
 		{

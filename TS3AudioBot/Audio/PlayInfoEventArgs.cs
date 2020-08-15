@@ -17,7 +17,7 @@ namespace TS3AudioBot.Audio
 		public InvokerData Invoker { get; }
 		public PlayResource PlayResource { get; }
 		public AudioResource ResourceData => PlayResource.AudioResource;
-		public MetaData? MetaData => PlayResource.Meta;
+		public PlayInfo? PlayInfo => PlayResource.PlayInfo;
 		public string? SourceLink { get; }
 
 		public PlayInfoEventArgs(InvokerData invoker, PlayResource playResource, string? sourceLink)

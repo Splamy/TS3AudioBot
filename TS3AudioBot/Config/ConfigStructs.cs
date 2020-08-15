@@ -291,6 +291,8 @@ namespace TS3AudioBot.Config
 		public ConfigValue<TimeSpan> PartyDelay { get; } = new ConfigValue<TimeSpan>("party_delay", TimeSpan.Zero,
 			"Specifies how long the bot has to be alone until the 'onalone' event gets fired.\n" +
 			"You can specify the time in the ISO-8601 format \"PT30S\" or like: 15s, 1h, 3m30s");
+		public ConfigValue<string> OnSongStart { get; } = new ConfigValue<string>("onsongstart", "",
+			"Called when a new song starts.");
 	}
 
 	// Utility config structs

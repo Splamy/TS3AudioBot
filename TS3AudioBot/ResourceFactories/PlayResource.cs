@@ -16,13 +16,15 @@ namespace TS3AudioBot.ResourceFactories
 	{
 		public AudioResource AudioResource { get; }
 		public string PlayUri { get; }
-		public MetaData? Meta { get; set; }
+		public PlayInfo? PlayInfo { get; set; }
+		public SongInfo? SongInfo { get; set; }
 
-		public PlayResource(string uri, AudioResource baseData, MetaData? meta = null)
+		public PlayResource(string uri, AudioResource baseData, PlayInfo? playInfo = null, SongInfo? songInfo = null)
 		{
 			AudioResource = baseData;
 			PlayUri = uri;
-			Meta = meta;
+			PlayInfo = playInfo;
+			SongInfo = songInfo;
 		}
 
 		public override string ToString() => AudioResource.ToString();

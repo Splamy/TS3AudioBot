@@ -18,8 +18,8 @@ namespace TS3AudioBot.Audio
 		private bool hasFired = false;
 
 		public IAudioPassiveProducer? InStream { get; set; }
-		public TimeSpan Length => TimeSpan.Zero;
-		public TimeSpan Position => TimeSpan.Zero;
+		public TimeSpan? Length => null;
+		public TimeSpan? Position => null;
 
 		public event EventHandler? OnSongEnd;
 		event EventHandler<SongInfoChanged> IPlayerSource.OnSongUpdated { add { } remove { } }

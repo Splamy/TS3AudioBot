@@ -60,8 +60,8 @@ namespace TS3AudioBot.ResourceFactories.Youtube
 			Match matchTimestamp = YtTimestampMatch.Match(uri);
 			if (matchYtId.Success && int.TryParse(matchTimestamp.Groups[1].Value, out var secs))
 			{
-				play.Meta ??= new MetaData();
-				play.Meta.StartOffset = TimeSpan.FromSeconds(secs);
+				play.PlayInfo ??= new PlayInfo();
+				play.PlayInfo.StartOffset = TimeSpan.FromSeconds(secs);
 			}
 			return play;
 		}
@@ -350,6 +350,7 @@ namespace TS3AudioBot.ResourceFactories.Youtube
 
 			var response = await YoutubeDlHelper.GetSingleVideo(resource.ResourceId);
 			resource.ResourceTitle = response.AutoTitle ?? $"Youtube-{resource.ResourceId}";
+			var songInfo = YoutubeDlHelper.MapToSongInfo(response);
 			var format = YoutubeDlHelper.FilterBest(response.formats);
 			var url = format?.url;
 
@@ -357,7 +358,7 @@ namespace TS3AudioBot.ResourceFactories.Youtube
 				throw Error.LocalStr(strings.error_ytdl_empty_response);
 
 			Log.Debug("youtube-dl succeeded!");
-			return new PlayResource(url, resource);
+			return new PlayResource(url, resource, songInfo: songInfo);
 		}
 
 		public static Dictionary<string, List<string>> ParseQueryString(string requestQueryString)

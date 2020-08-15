@@ -66,9 +66,9 @@ namespace TS3AudioBot.Audio
 			StopFfmpegProcess();
 		}
 
-		public TimeSpan Length => GetCurrentSongLength();
+		public TimeSpan? Length => GetCurrentSongLength();
 
-		public TimeSpan Position => ffmpegInstance?.AudioTimer.SongPosition ?? TimeSpan.Zero;
+		public TimeSpan? Position => ffmpegInstance?.AudioTimer.SongPosition;
 
 		public Task Seek(TimeSpan position) { SetPosition(position); return Task.CompletedTask; }
 
@@ -310,14 +310,7 @@ namespace TS3AudioBot.Audio
 			}
 		}
 
-		private TimeSpan GetCurrentSongLength()
-		{
-			var instance = ffmpegInstance;
-			if (instance is null)
-				return TimeSpan.Zero;
-
-			return instance.ParsedSongLength ?? TimeSpan.Zero;
-		}
+		private TimeSpan? GetCurrentSongLength() => ffmpegInstance?.ParsedSongLength;
 
 		private void AssertNotMainScheduler()
 		{

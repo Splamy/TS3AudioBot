@@ -27,6 +27,11 @@ namespace TS3AudioBot.Playlists.Parser
 			return serializer.Deserialize<XspfPlaylist>(jsonTextReader) ?? throw new NullReferenceException("Data empty");
 		}
 
+		public XspfPlaylist GetFromString(string playlistString)
+		{
+			throw new NotImplementedException();
+		}
+
 		public string ToText(XspfPlaylist playlist)
 		{
 			return JsonConvert.SerializeObject(playlist);

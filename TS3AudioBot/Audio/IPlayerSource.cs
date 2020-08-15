@@ -18,8 +18,8 @@ namespace TS3AudioBot.Audio
 		event EventHandler OnSongEnd;
 		event EventHandler<SongInfoChanged> OnSongUpdated;
 
-		TimeSpan Length { get; }
-		TimeSpan Position { get; }
+		TimeSpan? Length { get; }
+		TimeSpan? Position { get; }
 
 		Task Seek(TimeSpan position);
 	}

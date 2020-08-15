@@ -207,6 +207,17 @@ namespace TS3AudioBot.ResourceFactories
 			return best;
 		}
 
+		public static SongInfo MapToSongInfo(JsonYtdlDump dump)
+		{
+			return new SongInfo
+			{
+				Title = dump.title,
+				Track = dump.track,
+				Artist = dump.artist,
+				Length = TimeSpan.FromSeconds(dump.duration)
+			};
+		}
+
 		// https://stackoverflow.com/a/50461641/2444047
 		/// <summary>
 		/// Waits asynchronously for the process to exit.
@@ -260,6 +271,7 @@ namespace TS3AudioBot.ResourceFactories
 	{
 		public string? title { get; set; }
 		public string? track { get; set; }
+		public string? artist { get; set; }
 		// TODO int -> timespan converter
 		public float duration { get; set; }
 		public string? id { get; set; }

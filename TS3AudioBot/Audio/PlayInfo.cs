@@ -13,23 +13,23 @@ using TSLib;
 
 namespace TS3AudioBot.Audio
 {
-	public sealed class MetaData
+	public sealed class PlayInfo
 	{
 		/// <summary>Defaults to: invoker.Uid - Can be set if the owner of a song differs from the invoker.</summary>
 		public Uid? ResourceOwnerUid { get; set; }
 		/// <summary>Starts the song at the specified time if set.</summary>
 		public TimeSpan? StartOffset { get; set; }
 
-		public MetaData(TimeSpan? startOffset = null)
+		public PlayInfo(TimeSpan? startOffset = null)
 		{
 			StartOffset = startOffset;
 		}
 
-		public MetaData Merge(MetaData other) => Merge(this, other);
+		public PlayInfo Merge(PlayInfo other) => Merge(this, other);
 
 		[return: NotNullIfNotNull("self")]
 		[return: NotNullIfNotNull("other")]
-		public static MetaData? Merge(MetaData? self, MetaData? other)
+		public static PlayInfo? Merge(PlayInfo? self, PlayInfo? other)
 		{
 			if (other is null)
 				return self;
@@ -40,20 +40,20 @@ namespace TS3AudioBot.Audio
 			return self;
 		}
 
-		public static MetaData MergeDefault(MetaData? self, MetaData? other)
-			=> Merge(self, other) ?? new MetaData();
+		public static PlayInfo MergeDefault(PlayInfo? self, PlayInfo? other)
+			=> Merge(self, other) ?? new PlayInfo();
 	}
 
 	public interface IMetaContainer
 	{
-		public MetaData? Meta { get; set; }
+		public PlayInfo? PlayInfo { get; set; }
 	}
 
 	public static class MetaContainerExtensions
 	{
-		public static T MergeMeta<T>(this T container, MetaData? other) where T : IMetaContainer
+		public static T MergeMeta<T>(this T container, PlayInfo? other) where T : IMetaContainer
 		{
-			container.Meta = MetaData.Merge(container.Meta, other);
+			container.PlayInfo = PlayInfo.Merge(container.PlayInfo, other);
 			return container;
 		}
 	}

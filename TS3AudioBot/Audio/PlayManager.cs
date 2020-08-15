@@ -50,8 +50,8 @@ namespace TS3AudioBot.Audio
 			this.stats = stats;
 		}
 
-		public Task Enqueue(InvokerData invoker, AudioResource ar, MetaData? meta = null) => Enqueue(invoker, new PlaylistItem(ar, meta));
-		public async Task Enqueue(InvokerData invoker, string message, string? audioType = null, MetaData? meta = null)
+		public Task Enqueue(InvokerData invoker, AudioResource ar, PlayInfo? meta = null) => Enqueue(invoker, new PlaylistItem(ar, meta));
+		public async Task Enqueue(InvokerData invoker, string message, string? audioType = null, PlayInfo? meta = null)
 		{
 			PlayResource playResource;
 			try { playResource = await resourceResolver.Load(message, audioType); }
@@ -77,8 +77,8 @@ namespace TS3AudioBot.Audio
 
 		private static PlaylistItem UpdateItem(InvokerData invoker, PlaylistItem item)
 		{
-			item.Meta ??= new MetaData();
-			item.Meta.ResourceOwnerUid = invoker.ClientUid;
+			item.PlayInfo ??= new PlayInfo();
+			item.PlayInfo.ResourceOwnerUid = invoker.ClientUid;
 			return item;
 		}
 
@@ -95,7 +95,7 @@ namespace TS3AudioBot.Audio
 		/// <param name="ar">The resource to load and play.</param>
 		/// <param name="meta">Allows overriding certain settings for the resource. Can be null.</param>
 		/// <returns>Ok if successful, or an error message otherwise.</returns>
-		public async Task Play(InvokerData invoker, AudioResource ar, MetaData? meta = null)
+		public async Task Play(InvokerData invoker, AudioResource ar, PlayInfo? meta = null)
 		{
 			if (ar is null)
 				throw new ArgumentNullException(nameof(ar));
@@ -116,7 +116,7 @@ namespace TS3AudioBot.Audio
 		/// <param name="audioType">The associated resource type string to a factory.</param>
 		/// <param name="meta">Allows overriding certain settings for the resource. Can be null.</param>
 		/// <returns>Ok if successful, or an error message otherwise.</returns>
-		public async Task Play(InvokerData invoker, string link, string? audioType = null, MetaData? meta = null)
+		public async Task Play(InvokerData invoker, string link, string? audioType = null, PlayInfo? meta = null)
 		{
 			PlayResource playResource;
 			try { playResource = await resourceResolver.Load(link, audioType); }
@@ -175,7 +175,7 @@ namespace TS3AudioBot.Audio
 				throw;
 			}
 			stats.TrackSongLoad(item.AudioResource.AudioType, true, false);
-			await StartResource(invoker, playResource.MergeMeta(item.Meta));
+			await StartResource(invoker, playResource.MergeMeta(item.PlayInfo));
 		}
 
 		private async Task StartResource(InvokerData invoker, PlayResource play)
@@ -299,12 +299,12 @@ namespace TS3AudioBot.Audio
 			}
 		}
 
-		public static MetaData? ParseAttributes(string[] attrs)
+		public static PlayInfo? ParseAttributes(string[] attrs)
 		{
 			if (attrs is null || attrs.Length == 0)
 				return null;
 
-			var meta = new MetaData();
+			var meta = new PlayInfo();
 			foreach (var attr in attrs)
 			{
 				if (attr.StartsWith("@"))

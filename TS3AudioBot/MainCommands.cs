@@ -897,7 +897,8 @@ namespace TS3AudioBot
 		}
 
 		[Command("jump")]
-		public static async Task CommandJump(PlayManager playManager, PlaylistManager playlistManager, InvokerData invoker, string offset) {
+		public static async Task CommandJump(PlayManager playManager, PlaylistManager playlistManager, InvokerData invoker, string offset)
+		{
 			playlistManager.Index = GetIndexExpression(playlistManager, offset);
 			await playManager.Play(invoker);
 		}
@@ -1330,14 +1331,14 @@ namespace TS3AudioBot
 		[Usage("<sec>", "Time in seconds")]
 		[Usage("<min:sec>", "Time in Minutes:Seconds")]
 		[Usage("<0h0m0s>", "Time in hours, minutes and seconds")]
-		public static async Task CommandSeek(Player playerConnection, TimeSpan position)
+		public static async Task CommandSeek(Player player, TimeSpan position)
 		{
 			//if (!parsed)
 			//	throw new CommandException(strings.cmd_seek_invalid_format, CommandExceptionReason.CommandError);
-			if (position < TimeSpan.Zero || position > playerConnection.Length)
+			if (position < TimeSpan.Zero || position > player.Length)
 				throw new CommandException(strings.cmd_seek_out_of_range, CommandExceptionReason.CommandError);
 
-			await playerConnection.Seek(position);
+			await player.Seek(position);
 		}
 
 		private static IList<AudioResource> GetSearchResult(this UserSession session)
@@ -1543,22 +1544,24 @@ namespace TS3AudioBot
 		}
 
 		[Command("song")]
-		public static JsonValue<SongInfo> CommandSong(PlayManager playManager, Player playerConnection, Bot bot, ClientCall? invoker = null)
+		public static JsonValue<CurrentSongInfo> CommandSong(PlayManager playManager, Player player, Bot bot, ClientCall? invoker = null)
 		{
 			if (playManager.CurrentPlayData is null)
 				throw new CommandException(strings.info_currently_not_playing, CommandExceptionReason.CommandError);
 			if (bot.QuizMode && invoker != null && playManager.CurrentPlayData.Invoker.ClientUid != invoker.ClientUid)
 				throw new CommandException(strings.info_quizmode_is_active, CommandExceptionReason.CommandError);
 
+			var position = player.Position ?? TimeSpan.Zero;
+			var length = player.Length ?? playManager.CurrentPlayData.PlayResource.SongInfo?.Length ?? TimeSpan.Zero;
 			return JsonValue.Create(
-				new SongInfo
+				new CurrentSongInfo
 				{
 					Title = playManager.CurrentPlayData.ResourceData.ResourceTitle,
 					AudioType = playManager.CurrentPlayData.ResourceData.AudioType,
 					Link = playManager.CurrentPlayData.SourceLink,
-					Position = playerConnection.Position,
-					Length = playerConnection.Length,
-					Paused = playerConnection.Paused,
+					Position = position,
+					Length = length,
+					Paused = player.Paused,
 				},
 				x =>
 				{

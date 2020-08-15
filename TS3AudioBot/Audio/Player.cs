@@ -69,7 +69,7 @@ namespace TS3AudioBot.Audio
 			if (res is MediaPlayResource mres && mres.IsIcyStream)
 				await FfmpegProducer.AudioStartIcy(res.PlayUri);
 			else
-				await FfmpegProducer.AudioStart(res.PlayUri, res.Meta?.StartOffset);
+				await FfmpegProducer.AudioStart(res.PlayUri, res.PlayInfo?.StartOffset);
 			Play(FfmpegProducer);
 		}
 
@@ -116,9 +116,9 @@ namespace TS3AudioBot.Audio
 			MergePipe.Dispose();
 		}
 
-		public TimeSpan Length => CurrentPlayerSource?.Length ?? TimeSpan.Zero;
+		public TimeSpan? Length => CurrentPlayerSource?.Length;
 
-		public TimeSpan Position => CurrentPlayerSource?.Position ?? TimeSpan.Zero;
+		public TimeSpan? Position => CurrentPlayerSource?.Position;
 
 		public Task Seek(TimeSpan position) => CurrentPlayerSource?.Seek(position) ?? Task.CompletedTask;
 

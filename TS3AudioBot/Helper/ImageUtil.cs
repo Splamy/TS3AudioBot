@@ -29,9 +29,12 @@ namespace TS3AudioBot.Helper
 			try
 			{
 				using var limitStream = new LimitStream(imgStream, Limits.MaxImageStreamSize);
-				return await ResizeImage(limitStream, resizeMaxWidth);
+				using var mem = new MemoryStream();
+				await limitStream.CopyToAsync(mem);
+				mem.Seek(0, SeekOrigin.Begin);
+				return ResizeImage(mem, resizeMaxWidth);
 			}
-			catch (NotSupportedException)
+			catch (ImageFormatException)
 			{
 				Log.Debug("Dropping image because of unknown format");
 				throw Error.LocalStr("Dropping image because of unknown format"); // TODO
@@ -43,9 +46,9 @@ namespace TS3AudioBot.Helper
 			}
 		}
 
-		private static async Task<ImageHolder> ResizeImage(Stream imgStream, int resizeMaxWidth = ResizeMaxWidthDefault)
+		private static ImageHolder ResizeImage(Stream imgStream, int resizeMaxWidth)
 		{
-			using var img = await Image.LoadAsync(imgStream);
+			using var img = Image.Load(imgStream);
 			if (img.Width > Limits.MaxImageDimension || img.Height > Limits.MaxImageDimension
 				|| img.Width == 0 || img.Height == 0)
 				throw Error.LocalStr("Dropping image because too large"); // TODO

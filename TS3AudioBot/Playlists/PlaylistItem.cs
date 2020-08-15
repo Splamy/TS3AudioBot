@@ -16,18 +16,18 @@ namespace TS3AudioBot.Playlists
 {
 	public class PlaylistItem : IAudioResourceResult, IMetaContainer
 	{
-		public MetaData? Meta { get; set; }
+		public PlayInfo? PlayInfo { get; set; }
 		public AudioResource AudioResource { get; }
 
-		public PlaylistItem(AudioResource resource, MetaData? meta = null)
+		public PlaylistItem(AudioResource resource, PlayInfo? meta = null)
 		{
 			AudioResource = resource ?? throw new ArgumentNullException(nameof(resource));
-			Meta = meta;
+			PlayInfo = meta;
 		}
 
 		public static PlaylistItem From(PlayResource playResource)
 		{
-			return new PlaylistItem(playResource.AudioResource, playResource.Meta);
+			return new PlaylistItem(playResource.AudioResource, playResource.PlayInfo);
 		}
 
 		public override string ToString() => AudioResource.ResourceTitle ?? $"{AudioResource.AudioType}: {AudioResource.ResourceId}";

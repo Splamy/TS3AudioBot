@@ -160,7 +160,7 @@ namespace TSLib.Commands
 			this.raw = raw;
 		}
 
-		public override TsCommand Add(ICommandPart addParameter)
+		public override TsCommand Add(ICommandPart? addParameter)
 		{
 			throw new InvalidOperationException("Raw commands cannot be extented");
 		}
