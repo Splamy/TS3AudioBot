@@ -49,6 +49,7 @@
     <PackageReference Include="Nett" Version="0.15.0" />
     <PackageReference Include="PlaylistsNET" Version="1.1.2" />
     <PackageReference Include="SixLabors.ImageSharp" Version="1.0.0" />
+    <TrimmerRootAssembly Include="System.Text.Json" />
   </ItemGroup>
 
   <ItemGroup>
