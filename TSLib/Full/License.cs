@@ -242,5 +242,8 @@ namespace TSLib.Full
 		Athp,
 		Aal,
 		Default,
+		Gamer,
+		Sponsorship,
+		Commercial,
 	}
 }
