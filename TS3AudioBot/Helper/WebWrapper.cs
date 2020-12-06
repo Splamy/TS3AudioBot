@@ -35,7 +35,7 @@ namespace TS3AudioBot.Helper
 			httpClient.DefaultRequestHeaders.UserAgent.Clear();
 			ProductInfoHeaderValue version = ProductInfoHeaderValue.TryParse($"TS3AudioBot/{Environment.SystemData.AssemblyData.Version}", out var v)
 					? v
-					: new ProductInfoHeaderValue("TS3AudioBot", null);
+					: new ProductInfoHeaderValue("TS3AudioBot", "1.3.3.7");
 			httpClient.DefaultRequestHeaders.UserAgent.Add(version);
 		}
 
