@@ -33,7 +33,10 @@ namespace TS3AudioBot.Helper
 			ServicePointManager.DefaultConnectionLimit = int.MaxValue;
 			httpClient.Timeout = DefaultTimeout;
 			httpClient.DefaultRequestHeaders.UserAgent.Clear();
-			httpClient.DefaultRequestHeaders.UserAgent.Add(new ProductInfoHeaderValue("TS3AudioBot", Environment.SystemData.AssemblyData.Version));
+			ProductInfoHeaderValue version = ProductInfoHeaderValue.TryParse($"TS3AudioBot/{Environment.SystemData.AssemblyData.Version}", out var v)
+					? v
+					: new ProductInfoHeaderValue("TS3AudioBot", null);
+			httpClient.DefaultRequestHeaders.UserAgent.Add(version);
 		}
 
 		// Start
