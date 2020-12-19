@@ -267,10 +267,13 @@ namespace TS3AudioBot.Audio
 		{
 			await ResourceStopped.InvokeAsync(this, new SongEndEventArgs(songEndedByCallback));
 
-			CurrentPlayData = null;
 			if (songEndedByCallback)
 			{
-				try { await Next(CurrentPlayData?.Invoker ?? InvokerData.Anonymous, false); }
+				try
+				{
+					await Next(CurrentPlayData?.Invoker ?? InvokerData.Anonymous, false);
+					return;
+				}
 				catch (AudioBotException ex) { Log.Info("Song queue ended: {0}", ex.Message); }
 			}
 			else
@@ -278,6 +281,7 @@ namespace TS3AudioBot.Audio
 				playerConnection.Stop();
 			}
 
+			CurrentPlayData = null;
 			PlaybackStopped?.Invoke(this, EventArgs.Empty);
 		}
 
