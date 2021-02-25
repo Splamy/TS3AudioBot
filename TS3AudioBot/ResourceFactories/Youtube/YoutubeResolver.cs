@@ -288,7 +288,7 @@ namespace TS3AudioBot.ResourceFactories.Youtube
 
 			string id = matchYtId.Groups[2].Value;
 			if (string.IsNullOrEmpty(YoutubeProjectId))
-				return await GetPlaylistYoutubeDl(id);
+				return await GetPlaylistYoutubeDl(id, url);
 			else
 				return await GetPlaylistYoutubeApi(id);
 		}
@@ -327,9 +327,9 @@ namespace TS3AudioBot.ResourceFactories.Youtube
 			return plist;
 		}
 
-		private async Task<Playlist> GetPlaylistYoutubeDl(string id)
+		private async Task<Playlist> GetPlaylistYoutubeDl(string id, string url)
 		{
-			var plistData = await YoutubeDlHelper.GetPlaylistAsync(id);
+			var plistData = await YoutubeDlHelper.GetPlaylistAsync(url);
 			var plist = new Playlist().SetTitle(plistData.title ?? $"youtube-{id}");
 			plist.AddRange(plistData.entries
 				.Where(entry => entry.id != null)

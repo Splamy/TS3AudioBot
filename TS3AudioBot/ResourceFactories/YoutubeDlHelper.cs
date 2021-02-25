@@ -42,13 +42,13 @@ namespace TS3AudioBot.ResourceFactories
 			return await RunYoutubeDl<JsonYtdlDump>(ytdlPath.Value.ytdlpath, param);
 		}
 
-		public static async Task<JsonYtdlPlaylistDump> GetPlaylistAsync(string id)
+		public static async Task<JsonYtdlPlaylistDump> GetPlaylistAsync(string url)
 		{
 			var ytdlPath = FindYoutubeDl();
 			if (ytdlPath is null)
 				throw Error.LocalStr(strings.error_ytdl_not_found);
 
-			var param = $"{ytdlPath.Value.param}{ParamGetPlaylist} {id}";
+			var param = $"{ytdlPath.Value.param}{ParamGetPlaylist} {url}";
 			return await RunYoutubeDl<JsonYtdlPlaylistDump>(ytdlPath.Value.ytdlpath, param);
 		}
 
@@ -224,7 +224,7 @@ namespace TS3AudioBot.ResourceFactories
 		/// </summary>
 		/// <param name="process">The process to wait for cancellation.</param>
 		/// <param name="timeout">The maximum time to wait for exit before returning anyway.</param>
-		/// <param name="cancellationToken">A cancellation token. If invoked, the task will return 
+		/// <param name="cancellationToken">A cancellation token. If invoked, the task will return
 		/// immediately as canceled.</param>
 		/// <returns>A Task representing waiting for the process to end.</returns>
 		public static async Task WaitForExitAsync(this Process process, TimeSpan timeout, CancellationToken cancellationToken = default)
