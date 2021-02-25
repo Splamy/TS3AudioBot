@@ -490,7 +490,7 @@ with the id {1}?</value>
     <value>You are not allowed to delete others playlists.</value>
   </data>
   <data name="cmd_list_delete_confirm" xml:space="preserve">
-    <value>Do you really want to delete the playlist "{0}"</value>
+    <value>Do you really want to delete the playlist "{0}"?</value>
   </data>
   <data name="cmd_list_load_response" xml:space="preserve">
     <value>Loaded "{0}" with {1} songs.</value>

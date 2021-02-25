@@ -960,7 +960,7 @@ namespace TS3AudioBot
 			}
 
 			session.SetResponse(ResponseListDelete);
-			return new JsonEmpty(string.Format(strings.cmd_list_delete_confirm, listId));
+			return new JsonEmpty(string.Format(strings.cmd_list_delete_confirm + YesNoOption, listId));
 		}
 
 		[Command("list delete")]
