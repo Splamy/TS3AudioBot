@@ -103,7 +103,7 @@ namespace TS3AudioBot
 			Log.Error(e.Exception, "Unobserved Task error!");
 		}
 
-		public void ConsoleInterruptHandler(object sender, ConsoleCancelEventArgs e)
+		public void ConsoleInterruptHandler(object? sender, ConsoleCancelEventArgs e)
 		{
 			if (e.SpecialKey == ConsoleSpecialKey.ControlC)
 			{

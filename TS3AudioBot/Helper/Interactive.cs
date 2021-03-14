@@ -28,7 +28,7 @@ namespace TS3AudioBot.Helper
 
 		public static string? LoopAction(string question, Func<string, bool> action)
 		{
-			string text;
+			string? text;
 			do
 			{
 				Console.WriteLine(question);
@@ -42,7 +42,7 @@ namespace TS3AudioBot.Helper
 
 		public static async Task<string?> LoopActionAsync(string question, Func<string, Task<bool>> action)
 		{
-			string text;
+			string? text;
 			do
 			{
 				Console.WriteLine(question);

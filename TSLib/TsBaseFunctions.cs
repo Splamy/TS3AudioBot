@@ -369,9 +369,9 @@ namespace TSLib
 		public abstract Task<R<FileDownload, CommandError>> FileTransferInitDownload(ChannelId channelId, string path, string channelPassword,
 			ushort clientTransferId, long seek);
 
-		public Task<R<FileTransfer[], CommandError>> FileTransferList()
-			=> SendHybrid<FileTransfer>(new TsCommand("ftlist"),
-				NotificationType.FileTransfer);
+		public Task<R<Filetransfer[], CommandError>> FileTransferList()
+			=> SendHybrid<Filetransfer>(new TsCommand("ftlist"),
+				NotificationType.Filetransfer);
 
 		public Task<R<FileList[], CommandError>> FileTransferGetFileList(ChannelId channelId, string path, string channelPassword = "")
 			=> SendHybrid<FileList>(new TsCommand("ftgetfilelist") {

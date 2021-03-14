@@ -71,23 +71,13 @@ namespace TSLib.Full
 
 		private static PacketKind TypeToKind(PacketType type)
 		{
-			switch (type)
+			return type switch
 			{
-			case PacketType.Voice:
-			case PacketType.VoiceWhisper:
-				return PacketKind.Speech;
-			case PacketType.Command:
-			case PacketType.CommandLow:
-			case PacketType.Ack:
-			case PacketType.AckLow:
-			case PacketType.Init1:
-				return PacketKind.Control;
-			case PacketType.Ping:
-			case PacketType.Pong:
-				return PacketKind.Keepalive;
-			default:
-				throw Tools.UnhandledDefault(type);
-			}
+				PacketType.Voice or PacketType.VoiceWhisper => PacketKind.Speech,
+				PacketType.Command or PacketType.CommandLow or PacketType.Ack or PacketType.AckLow or PacketType.Init1 => PacketKind.Control,
+				PacketType.Ping or PacketType.Pong => PacketKind.Keepalive,
+				_ => throw Tools.UnhandledDefault(type),
+			};
 		}
 
 		private static void GetWithin(Queue<PacketData> queue, TimeSpan time, out DataCatergory data)

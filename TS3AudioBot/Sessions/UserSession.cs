@@ -39,7 +39,7 @@ namespace TS3AudioBot.Sessions
 			if (!assocMap.TryGetValue(key, out var valueObj))
 				return false;
 
-			if (!(valueObj is TData valueT))
+			if (valueObj is not TData valueT)
 				return false;
 
 			value = valueT;

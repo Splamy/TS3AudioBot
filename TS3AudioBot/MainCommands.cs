@@ -178,8 +178,7 @@ namespace TS3AudioBot
 					.WithArguments(new[] { "-hide_banner", "-protocols" })
 					.ExecuteBufferedAsync();
 				var protos = new HashSet<string>(result.StandardOutput
-					.Split('\n')
-					.Select(x => x.Trim())
+					.Split('\n', StringSplitOptions.TrimEntries)
 					.SkipWhile(x => x != "Input:").Skip(1)
 					.TakeWhile(x => x != "Output:"));
 				foreach (var wantProto in new[] { "http", "https", "hls" })
@@ -656,7 +655,7 @@ namespace TS3AudioBot
 			session.SetResponse(ResponseHistoryDelete);
 			var name = ale.AudioResource.ResourceTitle;
 			if (name?.Length > 100)
-				name = name.Substring(100) + "...";
+				name = name[100..] + "...";
 			return new JsonEmpty(string.Format(strings.cmd_history_delete_confirm + YesNoOption, name, id));
 		}
 
@@ -1572,7 +1571,7 @@ namespace TS3AudioBot
 					tmb.Append(x.Length.TotalHours >= 1 || x.Position.TotalHours >= 1
 						? $"{x.Position:hh\\:mm\\:ss}/{x.Length:hh\\:mm\\:ss}"
 						: $"{x.Position:mm\\:ss}/{x.Length:mm\\:ss}");
-					tmb.Append("]");
+					tmb.Append(']');
 					return tmb.ToString();
 				}
 			);
@@ -1830,7 +1829,7 @@ namespace TS3AudioBot
 				case TargetSendMode.Voice: strb.Append(strings.cmd_whisper_list_target_voice); break;
 				case TargetSendMode.Whisper:
 					strb.Append(strings.cmd_whisper_list_target_whisper_clients).Append(": [").Append(string.Join(",", x.WhisperClients)).Append("]\n");
-					strb.Append(strings.cmd_whisper_list_target_whisper_channel).Append(": [").Append(string.Join(",", x.WhisperChannel)).Append("]");
+					strb.Append(strings.cmd_whisper_list_target_whisper_channel).Append(": [").Append(string.Join(",", x.WhisperChannel)).Append(']');
 					break;
 				case TargetSendMode.WhisperGroup:
 					if (x.GroupWhisper is null) throw new ArgumentNullException();

@@ -19,7 +19,7 @@ namespace TS3AudioBot.History
 		/// <summary>A unique id for each <see cref="ResourceFactories.AudioResource"/>, given by the history system.</summary>
 		public int Id { get; set; }
 		/// <summary>Left for legacy reasons. The dbid of the teamspeak user, who played this song first.</summary>
-		[Obsolete]
+		[Obsolete("Use UserUid instead")]
 		public uint? UserInvokeId { get; set; }
 		/// <summary>The Uid of the teamspeak user, who played this song first.</summary>
 		public string? UserUid { get; set; }

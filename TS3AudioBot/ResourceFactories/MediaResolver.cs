@@ -137,7 +137,7 @@ namespace TS3AudioBot.ResourceFactories
 			}
 		}
 
-		private Uri GetUri(ConfBot conf, string uri)
+		private static Uri GetUri(ConfBot conf, string uri)
 		{
 			if (Uri.TryCreate(uri, UriKind.Absolute, out Uri? uriResult))
 			{
@@ -218,7 +218,7 @@ namespace TS3AudioBot.ResourceFactories
 					{
 						var contentType = response.Headers.GetSingle("Content-Type");
 						int index = url.LastIndexOf('.');
-						string anyId = index >= 0 ? url.Substring(index) : url;
+						string anyId = index >= 0 ? url[index..] : url;
 
 						using var stream = await response.Content.ReadAsStreamAsync();
 						return await GetPlaylistContentAsync(stream, url, contentType);
@@ -310,7 +310,7 @@ namespace TS3AudioBot.ResourceFactories
 			if (string.IsNullOrEmpty(name))
 			{
 				var index = url.LastIndexOfAny(new[] { '\\', '/' });
-				name = index >= 0 ? url.Substring(index) : url;
+				name = index >= 0 ? url[index..] : url;
 			}
 			return new Playlist(items).SetTitle(name);
 		}

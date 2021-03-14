@@ -129,7 +129,7 @@ namespace TS3AudioBot.History
 		}
 
 		public static string DefaultAleFormat(AudioLogEntry e)
-			=> string.Format("{0} ({2}): {1}", e.Id, e.AudioResource.ResourceTitle, e.UserUid, e.PlayCount, e.Timestamp);
+			=> string.Format("{0} ({2}): {1}", e.Id, e.AudioResource.ResourceTitle, e.UserUid);
 
 		/// <summary>Trims a string to have the given token count at max.</summary>
 		/// <param name="value">The string to substring from the left side.</param>

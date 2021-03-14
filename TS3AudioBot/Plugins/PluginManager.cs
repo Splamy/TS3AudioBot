@@ -124,7 +124,7 @@ namespace TS3AudioBot.Plugins
 			(file.Extension != ".cs" && file.Extension != ".dll" && file.Extension != ".exe")
 			|| File.Exists(file.FullName + ".ignore");
 
-		private Plugin TryGetPlugin(string identifier)
+		private Plugin? TryGetPlugin(string identifier)
 		{
 			if (plugins.TryGetValue(identifier, out var plugin))
 				return plugin;
@@ -205,7 +205,7 @@ namespace TS3AudioBot.Plugins
 			var digits = (int)Math.Floor(Math.Log10(pluginList.Count) + 1);
 			foreach (var plugin in pluginList)
 			{
-				strb.Append("#").Append(plugin.Id.ToString("D" + digits, CultureInfo.InvariantCulture)).Append('|');
+				strb.Append('#').Append(plugin.Id.ToString("D" + digits, CultureInfo.InvariantCulture)).Append('|');
 				switch (plugin.Status)
 				{
 				case PluginStatus.Off: strb.Append("OFF"); break;

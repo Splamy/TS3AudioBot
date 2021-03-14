@@ -93,7 +93,7 @@ namespace TS3AudioBot.Web.Api
 			var parameters = new JArray();
 
 			var pathBuilder = new StringBuilder();
-			pathBuilder.Append("/");
+			pathBuilder.Append('/');
 			pathBuilder.Append(command.InvokeName.Replace(' ', '/'));
 			foreach (var param in command.CommandParameter)
 			{
@@ -112,7 +112,7 @@ namespace TS3AudioBot.Web.Api
 					if (param.Kind == ParamKind.NormalArray)
 						pathBuilder.Append("/{").Append(param.Name).Append("}...");
 					else
-						pathBuilder.Append("/{").Append(param.Name).Append("}");
+						pathBuilder.Append("/{").Append(param.Name).Append('}');
 
 					var addparam = new JObject(
 						new JProperty("name", param.Name),

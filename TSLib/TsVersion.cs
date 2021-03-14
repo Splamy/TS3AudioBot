@@ -18,7 +18,7 @@ namespace TSLib
 	{
 		protected static readonly Regex VersionPattern = new Regex(@"([^ ])* \[Build: (\d+)\]", RegexOptions.ECMAScript | RegexOptions.Compiled);
 
-		private static readonly Dictionary<string, ClientPlatform> Platforms = new Dictionary<string, ClientPlatform> {
+		private static readonly Dictionary<string, ClientPlatform> Platforms = new() {
 			{ "Windows", ClientPlatform.Windows },
 			{ "Linux", ClientPlatform.Linux },
 			{ "OS X", ClientPlatform.MacOs },

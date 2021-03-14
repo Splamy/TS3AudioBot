@@ -33,7 +33,7 @@ namespace TS3AudioBot.CommandSystem.Ast
 				if (tailString is null)
 				{
 					if (TailLength == 0)
-						tailString = FullRequest.Substring(Position);
+						tailString = FullRequest[Position..];
 					else
 						tailString = FullRequest.Substring(Position, TailLength);
 				}

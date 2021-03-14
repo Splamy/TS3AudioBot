@@ -252,7 +252,7 @@ namespace TS3AudioBot.CommandSystem
 					return "An empty named function under a group cannot be overloaded.";
 			}
 
-			if (!(com is FunctionCommand funcCom))
+			if (com is not FunctionCommand funcCom)
 				return $"The command cannot be inserted into a complex node ({name}).";
 
 			switch (subCommand)
@@ -303,7 +303,7 @@ namespace TS3AudioBot.CommandSystem
 			// build up the list to our desired node
 			for (int i = 0; i < comPath.Length - 1; i++)
 			{
-				if (!(node.Self.GetCommand(comPath[i]) is CommandGroup nextGroup))
+				if (node.Self.GetCommand(comPath[i]) is not CommandGroup nextGroup)
 					break;
 
 				node = new CommandUnloadNode(node, nextGroup);
@@ -377,7 +377,7 @@ namespace TS3AudioBot.CommandSystem
 				for (int i = cmd.Parameter.Count - 1; i >= 1; i--)
 				{
 					var para = cmd.Parameter[i];
-					if (!(para is AstValue astVal) || astVal.StringType != StringType.FreeString)
+					if (para is not AstValue astVal || astVal.StringType != StringType.FreeString)
 						break;
 
 					arguments[i] = new ResultCommand(new TailString(astVal.Value, astVal.TailString));

@@ -18,7 +18,7 @@ namespace TSLib.Helper
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 
-#if !NETCOREAPP3_1
+#if NETSTANDARD2_0 || NETSTANDARD2_1
 		[DllImport("kernel32.dll", SetLastError = true)]
 		private static extern IntPtr LoadLibrary(string dllToLoad);
 #endif
@@ -42,12 +42,12 @@ namespace TSLib.Helper
 				foreach (var libPath in LibPathOptions(lib))
 				{
 					Log.Debug("Loading \"{0}\" from \"{1}\"", lib, libPath);
-#if NETCOREAPP3_1
-					if (NativeLibrary.TryLoad(libPath, out _))
-						return true;
-#else
+#if NETSTANDARD2_0 || NETSTANDARD2_1
 					var handle = LoadLibrary(libPath);
 					if (handle != IntPtr.Zero)
+						return true;
+#else
+					if (NativeLibrary.TryLoad(libPath, out _))
 						return true;
 #endif
 				}

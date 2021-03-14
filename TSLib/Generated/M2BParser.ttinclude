@@ -6,14 +6,17 @@ public class M2BDeclarations
 	{
 		var toml = Nett.Toml.ReadFile<M2BDeclarations>(file);
 
+		// Remove all messages which we don't want to handle and propagiate those removed messages to the m2b rules
+		toml.rule.RemoveAll(rule => msgs.RemovedMessages.Any(msg => msg.name == rule.from));
+
 		foreach (var rule in toml.rule)
 		{
 			rule.properties ??= new List<M2BPropMove>();
 			
 			// Add implicit move operations
-			var msg = msgs.GetOrderedMsg().First(x => x.name == rule.from);
+			var msg = msgs.OrderedMessages.FirstOrDefault(x => x.name == rule.from) ?? throw new Exception($"Rule {rule.from}->{rule.to} has no matching message");
 			var msgProps = msg.attributes.Select(x => msgs.GetField(x).fld);
-			var bookItem = book.@struct.First(x => x.name == rule.to);
+			var bookItem = book.@struct.FirstOrDefault(x => x.name == rule.to) ?? throw new Exception($"Rule {rule.from}->{rule.to} has no matching book");
 			var funcResults = new HashSet<string>(rule.properties.Where(x => x.tolist != null).SelectMany(x => x.tolist));
 
 			foreach (var prop in msgProps)
@@ -36,7 +39,7 @@ public class M2BDeclarations
 		return toml;
 	}
 
-	public M2BRule[] rule { get; set; }
+	public List<M2BRule> rule { get; set; }
 
 	public class M2BRule
 	{

@@ -15,10 +15,10 @@ namespace TSLib.Helper
 	{
 		public static string NewUtf8String(this ReadOnlySpan<byte> span)
 		{
-#if NETSTANDARD2_1 || NETCOREAPP3_1
-			return Tools.Utf8Encoder.GetString(span);
-#else
+#if NETSTANDARD2_0
 			return Tools.Utf8Encoder.GetString(span.ToArray());
+#else
+			return Tools.Utf8Encoder.GetString(span);
 #endif
 		}
 

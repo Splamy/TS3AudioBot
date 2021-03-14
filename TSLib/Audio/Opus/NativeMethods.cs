@@ -61,7 +61,7 @@ namespace TSLib.Audio.Opus
 		// ReSharper disable EnumUnderlyingTypeIsInt, InconsistentNaming
 #pragma warning disable IDE1006
 		[DllImport("libopus", CallingConvention = CallingConvention.Cdecl)]
-		internal static extern IntPtr opus_encoder_create(int sampleRate, int channels, Application application, out IntPtr error);
+		internal static extern IntPtr opus_encoder_create(int sampleRate, int channels, Application application, out int error);
 
 		[DllImport("libopus", CallingConvention = CallingConvention.Cdecl)]
 		internal static extern void opus_encoder_destroy(IntPtr encoder);
@@ -70,7 +70,7 @@ namespace TSLib.Audio.Opus
 		internal static extern int opus_encode(IntPtr st, in byte pcm, int frameSize, out byte data, int maxDataBytes);
 
 		[DllImport("libopus", CallingConvention = CallingConvention.Cdecl)]
-		internal static extern IntPtr opus_decoder_create(int sampleRate, int channels, out IntPtr error);
+		internal static extern IntPtr opus_decoder_create(int sampleRate, int channels, out int error);
 
 		[DllImport("libopus", CallingConvention = CallingConvention.Cdecl)]
 		internal static extern void opus_decoder_destroy(IntPtr decoder);

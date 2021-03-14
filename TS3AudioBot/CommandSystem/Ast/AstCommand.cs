@@ -30,7 +30,7 @@ namespace TS3AudioBot.CommandSystem.Ast
 			else
 			{
 				if (Parameter[0] is AstValue comName)
-					strb.Append("!").Append(comName.Value);
+					strb.Append('!').Append(comName.Value);
 				else
 					strb.Append("<Invalid command name>");
 

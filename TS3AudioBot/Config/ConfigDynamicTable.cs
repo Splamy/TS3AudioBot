@@ -33,7 +33,7 @@ namespace TS3AudioBot.Config
 
 			if (tomlObject != null)
 			{
-				if (!(tomlObject is TomlTable tomlTable))
+				if (tomlObject is not TomlTable tomlTable)
 					throw new InvalidCastException();
 
 				foreach (var child in tomlTable.Rows)

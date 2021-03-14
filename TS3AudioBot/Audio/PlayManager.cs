@@ -313,7 +313,7 @@ namespace TS3AudioBot.Audio
 			{
 				if (attr.StartsWith("@"))
 				{
-					meta.StartOffset = TextUtil.ParseTime(attr.Substring(1));
+					meta.StartOffset = TextUtil.ParseTime(attr[1..]);
 				}
 			}
 			return meta;

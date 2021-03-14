@@ -330,7 +330,8 @@ namespace TSLib.Full
 
 		private static void FetchPacketEvent(object? selfObj, SocketAsyncEventArgs args)
 		{
-			var self = (PacketHandler<TIn, TOut>)args.UserToken;
+			var self = (PacketHandler<TIn, TOut>?)args.UserToken;
+			if (self is null) { Trace.Fail("SocketEvent self is null"); return; }
 
 			bool isAsync;
 			using (MappedDiagnosticsLogicalContext.SetScoped("BotId", self.id))
@@ -754,7 +755,7 @@ namespace TSLib.Full
 			try
 			{
 				var sw = Stopwatch.StartNew();
-				socket!.SendTo(packet.Raw, packet.Raw.Length, SocketFlags.None, remoteAddress);
+				socket!.SendTo(packet.Raw, packet.Raw.Length, SocketFlags.None, remoteAddress!);
 				var elap = sw.ElapsedMilliseconds;
 				if (elap > 100)
 				{

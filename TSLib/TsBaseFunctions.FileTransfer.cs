@@ -204,20 +204,20 @@ namespace TSLib
 				var result = await FileTransferInitUpload(token.ChannelId, token.Path, token.ChannelPassword, token.ClientTransferId, token.Size, false, true);
 				if (!result.Get(out var request, out var error))
 					return error;
-				token.ServerTransferId = request.ServerFileTransferId;
+				token.ServerTransferId = request.ServerFiletransferId;
 				token.SeekPosition = (long)request.SeekPosition;
 				token.Port = request.Port;
-				token.TransferKey = request.FileTransferKey;
+				token.TransferKey = request.FiletransferKey;
 			}
 			else // Download
 			{
 				var result = await FileTransferInitDownload(token.ChannelId, token.Path, token.ChannelPassword, token.ClientTransferId, token.LocalStream.Position);
 				if (!result.Get(out var request, out var error))
 					return error;
-				token.ServerTransferId = request.ServerFileTransferId;
+				token.ServerTransferId = request.ServerFiletransferId;
 				token.SeekPosition = -1;
 				token.Port = request.Port;
-				token.TransferKey = request.FileTransferKey;
+				token.TransferKey = request.FiletransferKey;
 			}
 
 			token.Status = TransferStatus.Waiting;
@@ -248,14 +248,14 @@ namespace TSLib
 		/// <summary>Gets information about the current transfer status.</summary>
 		/// <param name="token">The transfer to check.</param>
 		/// <returns>Returns an information object or <code>null</code> when not available.</returns>
-		public async Task<R<FileTransfer, CommandError>> GetStats(FileTransferToken token)
+		public async Task<R<Filetransfer, CommandError>> GetStats(FileTransferToken token)
 		{
 			if (token.Status != TransferStatus.Transfering)
 				return CommandError.Custom("No transfer found");
 
 			var result = await FileTransferList();
 			if (result.Ok)
-				return result.Value.Where(x => x.ServerFileTransferId == token.ServerTransferId).MapToSingle();
+				return result.Value.Where(x => x.ServerFiletransferId == token.ServerTransferId).MapToSingle();
 			return result.Error;
 		}
 	}
@@ -282,14 +282,14 @@ namespace TSLib
 
 		public FileTransferToken(Stream localStream, FileUpload upload, ChannelId channelId,
 			string path, string channelPassword, long size, bool createMd5)
-			: this(localStream, upload.ClientFileTransferId, upload.ServerFileTransferId, TransferDirection.Upload,
-				channelId, path, channelPassword, upload.Port, (long)upload.SeekPosition, upload.FileTransferKey, size, createMd5)
+			: this(localStream, upload.ClientFiletransferId, upload.ServerFiletransferId, TransferDirection.Upload,
+				channelId, path, channelPassword, upload.Port, (long)upload.SeekPosition, upload.FiletransferKey, size, createMd5)
 		{ }
 
 		public FileTransferToken(Stream localStream, FileDownload download, ChannelId channelId,
 			string path, string channelPassword, long seekPos)
-			: this(localStream, download.ClientFileTransferId, download.ServerFileTransferId, TransferDirection.Download,
-				channelId, path, channelPassword, download.Port, seekPos, download.FileTransferKey, (long)download.Size, false)
+			: this(localStream, download.ClientFiletransferId, download.ServerFiletransferId, TransferDirection.Download,
+				channelId, path, channelPassword, download.Port, seekPos, download.FiletransferKey, (long)download.Size, false)
 		{ }
 
 		public FileTransferToken(Stream localStream, ushort cftid, ushort sftid,

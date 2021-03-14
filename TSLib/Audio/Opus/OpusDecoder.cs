@@ -50,7 +50,7 @@ namespace TSLib.Audio.Opus
 			if (outputChannels != 1 && outputChannels != 2)
 				throw new ArgumentOutOfRangeException(nameof(outputChannels));
 
-			var decoderPtr = NativeMethods.opus_decoder_create(outputSampleRate, outputChannels, out IntPtr error);
+			var decoderPtr = NativeMethods.opus_decoder_create(outputSampleRate, outputChannels, out var error);
 			if ((Errors)error != Errors.Ok)
 			{
 				throw new Exception("Exception occured while creating decoder");

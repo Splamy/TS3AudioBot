@@ -86,6 +86,7 @@ namespace TSLib.Full
 			PacketType = packetType;
 			PacketId = packetId;
 			GenerationId = generationId;
+			HeaderExt = default!;
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]

@@ -29,37 +29,37 @@ namespace TSLib.Commands
 		// Common Definitions
 
 		//limited length, measured in characters
-		public int MaxSizeChannelName { get; private set; } = 40;
-		public int MaxSizeVirtualserverName { get; private set; } = 64;
-		public int MaxSizeClientNicknameSdk { get; private set; } = 64;
-		public int MinSizeClientNicknameSdk { get; private set; } = 3;
-		public int MaxSizeReasonMessage { get; private set; } = 80;
+		public int MaxSizeChannelName { get; init; } = 40;
+		public int MaxSizeVirtualserverName { get; init; } = 64;
+		public int MaxSizeClientNicknameSdk { get; init; } = 64;
+		public int MinSizeClientNicknameSdk { get; init; } = 3;
+		public int MaxSizeReasonMessage { get; init; } = 80;
 
 		//limited length, measured in bytes (utf8 encoded)
-		public int MaxSizeTextMessage { get; private set; } = 1024;
-		public int MaxSizeChannelTopic { get; private set; } = 255;
-		public int MaxSizeChannelDescription { get; private set; } = 8192;
-		public int MaxSizeVirtualserverWelcomeMessage { get; private set; } = 1024;
+		public int MaxSizeTextMessage { get; init; } = 1024;
+		public int MaxSizeChannelTopic { get; init; } = 255;
+		public int MaxSizeChannelDescription { get; init; } = 8192;
+		public int MaxSizeVirtualserverWelcomeMessage { get; init; } = 1024;
 
 		// Rare Definitions
 
 		//limited length, measured in characters
-		public int MaxSizeClientNickname { get; private set; } = 30;
-		public int MinSizeClientNickname { get; private set; } = 3;
-		public int MaxSizeAwayMessage { get; private set; } = 80;
-		public int MaxSizeGroupName { get; private set; } = 30;
-		public int MaxSizeTalkRequestMessage { get; private set; } = 50;
-		public int MaxSizeComplainMessage { get; private set; } = 200;
-		public int MaxSizeClientDescription { get; private set; } = 200;
-		public int MaxSizeHostMessage { get; private set; } = 200;
-		public int MaxSizeHostbuttonTooltip { get; private set; } = 50;
-		public int MaxSizepokeMessage { get; private set; } = 100;
-		public int MaxSizeOfflineMessage { get; private set; } = 4096;
-		public int MaxSizeOfflineMessageSubject { get; private set; } = 200;
+		public int MaxSizeClientNickname { get; init; } = 30;
+		public int MinSizeClientNickname { get; init; } = 3;
+		public int MaxSizeAwayMessage { get; init; } = 80;
+		public int MaxSizeGroupName { get; init; } = 30;
+		public int MaxSizeTalkRequestMessage { get; init; } = 50;
+		public int MaxSizeComplainMessage { get; init; } = 200;
+		public int MaxSizeClientDescription { get; init; } = 200;
+		public int MaxSizeHostMessage { get; init; } = 200;
+		public int MaxSizeHostbuttonTooltip { get; init; } = 50;
+		public int MaxSizepokeMessage { get; init; } = 100;
+		public int MaxSizeOfflineMessage { get; init; } = 4096;
+		public int MaxSizeOfflineMessageSubject { get; init; } = 200;
 
 		//limited length, measured in bytes (utf8 encoded)
-		public int MaxSizePluginCommand { get; private set; } = 1024 * 8;
-		public int MaxSizeVirtualserverHostbannerGfxUrl { get; private set; } = 2000;
+		public int MaxSizePluginCommand { get; init; } = 1024 * 8;
+		public int MaxSizeVirtualserverHostbannerGfxUrl { get; init; } = 2000;
 
 		public TsConst() { }
 	}

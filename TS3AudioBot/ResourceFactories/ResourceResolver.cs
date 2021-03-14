@@ -266,7 +266,7 @@ namespace TS3AudioBot.ResourceFactories
 			if (reason is null)
 				return Error.LocalStr(strings.error_resfac_could_not_load);
 			var strb = new StringBuilder(strings.error_resfac_could_not_load);
-			strb.Append(" (").Append(reason).Append(")");
+			strb.Append(" (").Append(reason).Append(')');
 			return Error.LocalStr(strb.ToString());
 		}
 

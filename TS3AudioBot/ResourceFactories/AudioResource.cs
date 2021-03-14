@@ -62,7 +62,7 @@ namespace TS3AudioBot.ResourceFactories
 
 		public override bool Equals(object? obj)
 		{
-			if (!(obj is AudioResource other))
+			if (obj is not AudioResource other)
 				return false;
 
 			return AudioType == other.AudioType

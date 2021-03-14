@@ -9,11 +9,10 @@ public class BookDeclarations
 		// transfer all optional get/set confs
 		foreach (var struc in toml.@struct)
 		{
+			struc.opt ??= false;
 			foreach (var prop in struc.properties)
 			{
-				prop.get ??= struc.accessor.get;
-				prop.set ??= struc.accessor.set;
-
+				prop.opt ??= false;
 				if (struc.name == "Connection" && prop.name == "OwnClient") prop.name = "OwnClientId";
 			}
 		}
@@ -28,7 +27,7 @@ public class BookDeclarations
 		public string name { get; set; }
 		public Id[] id { get; set; }
 		public string doc { get; set; }
-		public Accessor accessor { get; set; }
+		public bool? opt { get; set; }
 		public Property[] properties { get; set; }
 	}
 
@@ -48,8 +47,6 @@ public class BookDeclarations
 	{
 		public string name { get; set; }
 		public string type { get; set; }
-		public bool? get { get; set; }
-		public bool? set { get; set; }
 		public bool? opt { get; set; }
 		public string mod { get; set; }
 		public string key { get; set; }

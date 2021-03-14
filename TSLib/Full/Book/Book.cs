@@ -23,24 +23,23 @@ namespace TSLib.Full.Book
 		public Client? OwnClient { get; set; }
 		public Channel? OwnChannel { get; set; }
 
-		private void SetServer(Server server)
-		{
-			Server = server;
-		}
+		// Server
+		private Server GetServer() => Server;
+		private void SetServer(Server server) => Server = server;
 
+		// OptionalServerData
+		private OptionalServerData GetOptionalServerData() => Server.OptionalData ??= new();
+		private void RemoveOptionalServerData() => Server.OptionalData = null;
+		private ConnectionServerData GetConnectionServerData() => Server.ConnectionData ??= new();
+
+		// Channel
 		private Channel? GetChannel(ChannelId id)
-		{
-			if (Channels.TryGetValue(id, out var channel))
-				return channel;
-			return null;
-		}
-
+			=> Channels.TryGetValue(id, out var channel) ? channel : null;
 		private void SetChannel(Channel channel, ChannelId id)
 		{
 			channel.Id = id;
 			Channels[id] = channel;
 		}
-
 		private void RemoveChannel(ChannelId id)
 		{
 			var cur = Channels[id];
@@ -48,24 +47,44 @@ namespace TSLib.Full.Book
 			ChannelOrderRemove(id, cur.Order);
 		}
 
-		private Client? GetClient(ClientId id)
+		// OptionalChannelData
+		private OptionalChannelData? GetOptionalChannelData(ChannelId id)
 		{
-			if (Clients.TryGetValue(id, out var client))
-				return client;
+			if (Channels.TryGetValue(id, out var channel))
+				return channel.OptionalData ??= new();
 			return null;
 		}
+		private void RemoveOptionalChannelData(ChannelId id)
+		{
+			if (Channels.TryGetValue(id, out var channel))
+				channel.OptionalData = null;
+		}
 
+		// Client
+		private Client? GetClient(ClientId id)
+			=> Clients.TryGetValue(id, out var client) ? client : null;
 		private void SetClient(Client client, ClientId id)
 		{
 			client.Id = id;
 			Clients[id] = client;
 		}
+		private void RemoveClient(ClientId id) => Clients.Remove(id);
 
-		private void RemoveClient(ClientId id)
+		// OptionalClientData
+		private OptionalClientData? GetOptionalClientData(ClientId id)
 		{
-			Clients.Remove(id);
+			if (Clients.TryGetValue(id, out var client))
+				return client.OptionalData ??= new();
+			return null;
 		}
 
+		// ConnectionClientData
+		private ConnectionClientData? GetConnectionClientData(ClientId id)
+		{
+			if (Clients.TryGetValue(id, out var client))
+				return client.ConnectionData ??= new();
+			return null;
+		}
 		private void SetConnectionClientData(ConnectionClientData connectionClientData, ClientId id)
 		{
 			if (!Clients.TryGetValue(id, out var client))
@@ -73,15 +92,11 @@ namespace TSLib.Full.Book
 			client.ConnectionData = connectionClientData;
 		}
 
-		private void SetServerGroup(ServerGroup serverGroup, ServerGroupId id)
-		{
-			Groups[id] = serverGroup;
-		}
+		// ServerGroup
+		private void SetServerGroup(ServerGroup serverGroup, ServerGroupId id) => ServerGroups[id] = serverGroup;
 
-		private Server GetServer()
-		{
-			return Server;
-		}
+		// ChannelGroup
+		private void SetChannelGroup(ChannelGroup channelGroup, ChannelGroupId id) => ChannelGroups[id] = channelGroup;
 
 		public void Reset()
 		{
@@ -131,24 +146,22 @@ namespace TSLib.Full.Book
 		private static (MaxClients?, MaxClients?) MaxClientsCcFun(ChannelCreated msg) => MaxClientsFun(msg.MaxClients, msg.IsMaxClientsUnlimited, msg.MaxFamilyClients, msg.IsMaxFamilyClientsUnlimited, msg.InheritsMaxFamilyClients);
 		private static (MaxClients?, MaxClients?) MaxClientsCeFun(ChannelEdited msg) => MaxClientsFun(msg.MaxClients, msg.IsMaxClientsUnlimited, msg.MaxFamilyClients, msg.IsMaxFamilyClientsUnlimited, msg.InheritsMaxFamilyClients);
 		private static (MaxClients?, MaxClients?) MaxClientsClFun(ChannelList msg) => MaxClientsFun(msg.MaxClients, msg.IsMaxClientsUnlimited, msg.MaxFamilyClients, msg.IsMaxFamilyClientsUnlimited, msg.InheritsMaxFamilyClients);
-		private static (MaxClients?, MaxClients?) MaxClientsFun(int? MaxClients, bool? IsMaxClientsUnlimited, int? MaxFamilyClients, bool? IsMaxFamilyClientsUnlimited, bool? InheritsMaxFamilyClients)
+		private static (MaxClients?, MaxClients?) MaxClientsFun(int? maxClients, bool? isMaxClientsUnlimited, int? maxFamilyClients, bool? isMaxFamilyClientsUnlimited, bool? inheritsMaxFamilyClients)
 		{
-			var chn = new MaxClients();
-			if (IsMaxClientsUnlimited == true) chn.LimitKind = MaxClientsKind.Unlimited;
-			else
-			{
-				chn.LimitKind = MaxClientsKind.Limited;
-				chn.Count = (ushort)Math.Max(Math.Min(ushort.MaxValue, MaxClients ?? ushort.MaxValue), 0);
-			}
+			var chn = isMaxClientsUnlimited == true
+				? MaxClients.Unlimited
+				: new MaxClients(
+					MaxClientsKind.Limited,
+					(ushort)Math.Max(Math.Min(ushort.MaxValue, maxClients ?? ushort.MaxValue), 0));
 
-			var fam = new MaxClients();
-			if (IsMaxFamilyClientsUnlimited == true) fam.LimitKind = MaxClientsKind.Unlimited;
-			else if (InheritsMaxFamilyClients == true) fam.LimitKind = MaxClientsKind.Inherited;
-			else
-			{
-				fam.LimitKind = MaxClientsKind.Limited;
-				fam.Count = (ushort)Math.Max(Math.Min(ushort.MaxValue, MaxFamilyClients ?? ushort.MaxValue), 0);
-			}
+			var fam = isMaxFamilyClientsUnlimited == true
+				? MaxClients.Unlimited
+				: inheritsMaxFamilyClients == true
+				? MaxClients.Inherited
+				: new MaxClients(
+					MaxClientsKind.Limited,
+					(ushort)Math.Max(Math.Min(ushort.MaxValue, maxFamilyClients ?? ushort.MaxValue), 0));
+
 			return (chn, fam);
 		}
 
@@ -245,7 +258,9 @@ namespace TSLib.Full.Book
 			if (chan != null) chan.Order = id;
 		}
 
-		private static SocketAddr AddressFun(ClientConnectionInfo msg) => msg.Ip;
+		private static Codec ChannelCodecCcFun(ChannelCreated msg) => msg.Codec ?? Codec.OpusVoice;
+
+		private static SocketAddr? AddressFun(ClientConnectionInfo msg) => msg.Ip;
 
 		private void SetClientDataFun(InitServer initServer)
 		{
@@ -253,7 +268,6 @@ namespace TSLib.Full.Book
 		}
 
 		private bool ChannelSubscribeFun(ChannelSubscribed _) => true;
-
 		private bool ChannelUnsubscribeFun(ChannelUnsubscribed msg)
 		{
 			var goneClients = Clients.Values.Where(client => client.Channel == msg.ChannelId).ToArray();
@@ -262,6 +276,13 @@ namespace TSLib.Full.Book
 			return false;
 		}
 
+		private void SubscribeChannelFun(ClientMoved msg)
+		{
+			if (msg.ClientId == OwnClient && Channels.TryGetValue(msg.TargetChannelId, out var channel))
+				channel.Subscribed = true;
+		}
+
 		private static bool ReturnFalse<T>(T _) => false;
+		private static object? ReturnSomeNone<T>(T _) => null;
 	}
 }

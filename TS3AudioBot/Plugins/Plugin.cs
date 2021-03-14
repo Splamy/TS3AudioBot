@@ -122,23 +122,12 @@ namespace TS3AudioBot.Plugins
 				}
 
 				Unload();
-
-				PluginResponse result;
-				switch (File.Extension)
+				var result = File.Extension switch
 				{
-				case ".cs":
-					result = PrepareSource();
-					break;
-
-				case ".dll":
-				case ".exe":
-					result = PrepareBinary();
-					break;
-
-				default:
-					throw new InvalidProgramException();
-				}
-
+					".cs" => PrepareSource(),
+					".dll" or ".exe" => PrepareBinary(),
+					_ => throw new InvalidProgramException(),
+				};
 				status = result == PluginResponse.Ok ? PluginStatus.Ready : PluginStatus.Error;
 				return result;
 			}
@@ -338,7 +327,7 @@ namespace TS3AudioBot.Plugins
 				return PluginResponse.MissingContext;
 
 			default:
-				throw new ArgumentOutOfRangeException();
+				throw Tools.UnhandledDefault(Type);
 			}
 		}
 

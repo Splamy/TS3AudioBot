@@ -30,17 +30,24 @@ namespace TSLib.Full.Book
 {
 	public partial class Connection
 	{
-#pragma warning disable IDE0017, CS0472 // Ignore "Object initialization can be simplified", "Something with == and null..."
-	<# foreach (var rule in genm2b.rule) {
-		var msg = genmsg.NotifiesSorted.First(x => x.name == rule.from);
-		var bookItem = genbook.@struct.First(x => x.name == rule.to);
-	#>
-		public void Update<#= msg.name #>(<#= msg.name #> msg)
-		{
-			<# var idStr = string.Join(", ", rule.id.Select(x => $"msg.{x}"));
+#pragma warning disable IDE0017, CS0472, CS8073 // Ignore "Object initialization can be simplified", "Something with == and null..."
+	<#
+foreach (var rulegroup in genm2b.rule.GroupBy(rule => rule.from))
+{
+	ClearIndent();
+	PushIndent("\t");
+	var rulegroupList = rulegroup.ToArray();
+	var msg = genmsg.NotifiesSorted.First(x => x.name == rulegroup.Key);
+	WriteLine("public void Apply{0}({0} msg)", msg.name);
+	WriteLine("{");
+	PushIndent("\t");
 
-		ClearIndent();
-		PushIndent("\t\t\t");
+	foreach (var rule in rulegroupList)
+	{
+		var bookTo = genbook.@struct.First(x => x.name == rule.to);
+		var idStr = string.Join(", ", rule.id.Select(x => $"msg.{x}"));
+		if (rulegroupList.Length > 1) { WriteLine("{"); PushIndent("\t"); }
+
 		switch (rule.operation)
 		{
 		case "add":
@@ -54,49 +61,71 @@ namespace TSLib.Full.Book
 				return;
 			}}");
 
-			foreach (var prop in rule.properties.OrderBy(x => x.to)) {
-				void WriteMove(string from, string to) {
-					var bookProp = bookItem.properties.FirstOrDefault(x => x.name == to);
-					if(bookProp is null) {
+			foreach (var prop in rule.properties.OrderBy(x => x.to))
+			{
+				void WriteMove(string from, string to)
+				{
+					var bookProp = bookTo.properties.FirstOrDefault(x => x.name == to);
+					if (bookProp is null)
+					{
 						Warn($"No property found: '{to}'");
 						return;
 					}
 
-					if (prop.operation is null) {
-						if (bookProp.mod is null) {
+					if (prop.operation is null)
+					{
+						switch (bookProp.mod)
+						{
+						case null:
 							if (from == "null")
 								WriteLine($"obj.{to} = null;");
 							else
 								WriteLine($"{{ var tmpv = {from}; if (tmpv != null) obj.{to} = ({bookProp.type})tmpv; }}");
-						} else if (bookProp.mod == "array") {
-							//WriteLine($"obj.{to}.Add({from});");
-							if (prop.operation == "add")
-								WriteLine($"{{ var tmpa = {from}; if (tmpa != null) obj.{to}.UnionWith(tmpa); }}");
-							else
-								WriteLine($"{{ var tmpa = {from}; if (tmpa != null) {{ obj.{to}.Clear(); obj.{to}.UnionWith(tmpa); }} }}");
-						} else {
+							break;
+
+						case "set":
+							WriteLine($"{{ var tmpa = {from}; if (tmpa != null) {{ obj.{to}.Clear(); obj.{to}.UnionWith(tmpa); }} }}");
+							break;
+
+						case "array":
+							WriteLine($"{{ var tmpa = {from}; if (tmpa != null) {{ obj.{to} = tmpa; }} }}");
+							break;
+
+						case "map":
+							WriteLine($"// map update to {bookTo.name}.{bookProp.name}");
+							break;
+
+						default:
 							throw new Exception("Unknown mod type: " + bookProp.mod);
 						}
-					} else if (prop.operation == "add") {
+					}
+					else if (prop.operation == "add")
+					{
 						// Currently hacky; Better check:
 						//  [update:single->single]
 						//  [add/remove/update:single->array]
 						//  [update:array->array]
 						WriteLine($"obj.{to}.Add({from});");
-					} else if (prop.operation == "remove") {
+					}
+					else if (prop.operation == "remove")
+					{
 						// Same here
 						WriteLine($"obj.{to}.Remove({from});");
-					} else
+					}
+					else
 						throw new Exception("Unknown operation: " + prop.operation);
 				}
 
-				if (prop.from != null) {
+				if (prop.from != null)
+				{
 					WriteMove($"msg.{prop.from}", prop.to);
-				} else { /* function */
+				}
+				else
+				{ /* function */
 					if (prop.function == "ReturnNone")
 						WriteMove($"null", prop.tolist[0]);
 					else if (prop.function == "VoidFun") { /* Do Nothing */ }
-					else if(prop.tolist.Length == 0)
+					else if (prop.tolist.Length == 0)
 						WriteLine($"{prop.function}(msg);");
 					else if (prop.tolist.Length == 1)
 						WriteMove($"{prop.function}(msg)", prop.tolist[0]);
@@ -110,20 +139,27 @@ namespace TSLib.Full.Book
 					}
 				}
 			}
-			if (rule.operation == "add") {
+			if (rule.operation == "add")
+			{
 				WriteLine($"Set{rule.to}(obj{(string.IsNullOrEmpty(idStr) ? "" : (", " + idStr))});");
 			}
 			break;
 
-		case "remove":#>
-			Remove<#=rule.to#>(<#=idStr#>);<#
+		case "remove":
+			WriteLine($"Remove{bookTo.name}({idStr});");
 			break;
-		} #>
-			Post<#= msg.name #>(msg);
 		}
+		if (rulegroupList.Length > 1) { PopIndent(); WriteLine("}"); }
+	}
+	WriteLine($"Post{msg.name}(msg);");
+	PopIndent();
+	WriteLine("}");
+	WriteLine("");
 
-		partial void Post<#= msg.name #>(<#= msg.name #> msg);
-	<# } #>
-#pragma warning restore IDE0017, CS0472
+	WriteLine($"partial void Post{msg.name}({msg.name} msg);");
+	WriteLine("");
+}
+#>
+#pragma warning restore IDE0017, CS0472, CS8073
 	}
 }

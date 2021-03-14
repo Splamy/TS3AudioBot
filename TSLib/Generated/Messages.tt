@@ -81,6 +81,7 @@ string GenerateSingleDeserializer(Messages.Field fld, string input, string outpu
 	case "DurationSeconds":
 		return $"{{ if(Utf8Parser.TryParse({input}, out f64 oval, out _)) {output} = TimeSpan.FromSeconds(oval); }}";
 	case "DurationMilliseconds":
+	case "DurationMillisecondsFloat":
 		return $"{{ if(Utf8Parser.TryParse({input}, out f64 oval, out _)) {output} = TimeSpan.FromMilliseconds(oval); }}";
 	case "DateTime":
 		return $"{{ if(Utf8Parser.TryParse({input}, out u32 oval, out _)) {output} = Tools.FromUnix(oval); }}";
@@ -108,7 +109,7 @@ string GenerateSingleDeserializer(Messages.Field fld, string input, string outpu
 		if(!BackingTypes.TryGetValue(fld.type, out backType))
 			backType = "i32";
 		return $"{{ if(Utf8Parser.TryParse({input}, out {backType} oval, out _)) {output} = ({fld.type})oval; }}";
-	case "IconHash":
+	case "IconId":
 		return $"{{ if(!{input}.IsEmpty && {input}[0] == (u8)'-') {{ if(Utf8Parser.TryParse({input}, out i32 oval, out _)) {output} = oval; }} else {{ if(Utf8Parser.TryParse({input}, out u64 oval, out _)) {output} = unchecked((i32)oval); }} }}";
 	case "PermissionId":
 		return $"{{ if(Utf8Parser.TryParse({input}, out u16 oval, out _)) {output} = ser.PermissionTransform.GetName(oval); }}";
@@ -118,7 +119,7 @@ string GenerateSingleDeserializer(Messages.Field fld, string input, string outpu
 	}
 }
 
-foreach(var msg in gen.GetOrderedMsg())
+foreach(var msg in gen.OrderedMessages)
 {
 	//if(!msg.s2c.Value) continue;
 #>
@@ -229,7 +230,7 @@ foreach(var msg in gen.GetOrderedMsg())
 			}
 		}
 
-		public static INotification[] InstatiateNotificationArray(NotificationType name, int len)
+		public static INotification[] InstantiateNotificationArray(NotificationType name, int len)
 		{
 			switch(name)
 			{<#

@@ -8,6 +8,7 @@
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
 using System;
+using System.Runtime.Intrinsics.X86;
 using TSLib.Helper;
 
 namespace TS3AudioBot.Playlists.Shuffle
@@ -143,10 +144,9 @@ namespace TS3AudioBot.Playlists.Shuffle
 
 		private static int NumberOfSetBits(int i)
 		{
-#if NETCOREAPP3_1
-			if (System.Runtime.Intrinsics.X86.Popcnt.IsSupported)
-				return unchecked((int)System.Runtime.Intrinsics.X86.Popcnt.PopCount((uint)i));
-#endif
+			if (Popcnt.IsSupported)
+				return unchecked((int)Popcnt.PopCount((uint)i));
+
 			i -= ((i >> 1) & 0x55555555);
 			i = (i & 0x33333333) + ((i >> 2) & 0x33333333);
 			return (((i + (i >> 4)) & 0x0F0F0F0F) * 0x01010101) >> 24;

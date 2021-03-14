@@ -83,7 +83,7 @@ namespace TS3AudioBot.ResourceFactories.Youtube
 			}
 		}
 
-		private async Task<PlayResource> ResolveResourceInternal(AudioResource resource)
+		private static async Task<PlayResource> ResolveResourceInternal(AudioResource resource)
 		{
 			var resulthtml = await WebWrapper.Request($"https://www.youtube.com/get_video_info?video_id={resource.ResourceId}").AsString();
 

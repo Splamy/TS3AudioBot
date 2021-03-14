@@ -16,7 +16,7 @@ namespace TSLibAutogen
 			src.AppendLine("using TSLib.Messages;");
 			src.AppendLine(Util.ConversionSet);
 
-			src.AppendLine("#pragma warning disable CS0472, CS8073");
+			src.AppendLine("#pragma warning disable IDE0017, CS0472, CS8073");
 			src.AppendLine("namespace TSLib.Full.Book {");
 			src.AppendLine("partial class Connection {");
 			src.AppendLine("internal const byte __DummyGenM2B = 0;");

@@ -29,7 +29,7 @@ namespace TSLib.Messages
 				throw new ArgumentException("The NotificationType must not be unknown", nameof(ntfyType));
 
 			var pipes = PipeList(line);
-			var arr = MessageHelper.InstatiateNotificationArray(ntfyType, (pipes?.Count ?? 0) + 1);
+			var arr = MessageHelper.InstantiateNotificationArray(ntfyType, (pipes?.Count ?? 0) + 1);
 			return Dersialize(arr, line, pipes);
 		}
 
@@ -53,7 +53,7 @@ namespace TSLib.Messages
 			return pipes;
 		}
 
-		private T[]? Dersialize<T>(T[] arr, ReadOnlySpan<byte> line, List<int>? pipes) where T : IMessage
+		private T[]? Dersialize<T>(T[] arr, ReadOnlySpan<byte> line, List<int>? pipes) where T : notnull, IMessage
 		{
 			if (pipes is null || pipes.Count == 0)
 			{

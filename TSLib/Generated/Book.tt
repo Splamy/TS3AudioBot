@@ -40,8 +40,10 @@ foreach (var struc in gen.@struct)
 			PushIndent("\t\t\t");
 			foreach(var prop in struc.properties) {
 				switch(prop.mod) {
-				case "array":
+				case "set":
 					WriteLine($"{prop.name} = new HashSet<{prop.type}>();");
+					break;
+				case "array":
 					break;
 				case "map":
 					WriteLine($"{prop.name} = new Dictionary<{prop.key},{prop.type}>();");
@@ -51,12 +53,14 @@ foreach (var struc in gen.@struct)
 		}
 
 	<# foreach(var prop in struc.properties.OrderBy(x => x.name)) {
-			if (!prop.get.Value && !prop.set.Value) continue;
 		#>
 		public <#
 			switch(prop.mod) {
-			case "array":
+			case "set":
 				Write($"HashSet<{prop.type}>");
+				break;
+			case "array":
+				Write($"{prop.type}[]");
 				break;
 			case "map":
 				Write($"Dictionary<{prop.key},{prop.type}>");
@@ -65,7 +69,7 @@ foreach (var struc in gen.@struct)
 				Write($"{prop.type}{(prop.opt == true ? "?" : "")}");
 				break;
 			}
-		#> <#= prop.name #> { <#= prop.get.Value?"":"internal " #>get; <#= prop.set.Value?"":"internal " #>set; }<# } #>
+		#> <#= prop.name #> { get; internal set; }<# } #>
 	}
 <#
 }

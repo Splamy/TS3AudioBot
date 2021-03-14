@@ -92,7 +92,7 @@ namespace TSLib.Full
 		public override async CmdR Connect(ConnectionData conData)
 		{
 			scheduler.VerifyOwnThread();
-			if (!(conData is ConnectionDataFull conDataFull)) throw new ArgumentException($"Use the {nameof(ConnectionDataFull)} derivative to connect with the full client.", nameof(conData));
+			if (conData is not ConnectionDataFull conDataFull) throw new ArgumentException($"Use the {nameof(ConnectionDataFull)} derivative to connect with the full client.", nameof(conData));
 			if (conDataFull.Identity is null) throw new ArgumentNullException(nameof(conDataFull.Identity));
 			if (conDataFull.VersionSign is null) throw new ArgumentNullException(nameof(conDataFull.VersionSign));
 
@@ -307,7 +307,7 @@ namespace TSLib.Full
 			if (ctx is null) throw new InvalidOperationException("context should be set");
 
 			ctx.PacketHandler.ClientId = initServer.ClientId;
-			var serverVersion = TsVersion.TryParse(initServer.ServerVersion, initServer.ServerPlatform);
+			var serverVersion = TsVersion.TryParse(initServer.Version, initServer.Platform);
 			if (serverVersion != null)
 				ServerConstants = TsConst.GetByServerBuildNum(serverVersion.Build);
 
@@ -585,7 +585,7 @@ namespace TSLib.Full
 			// > Y is the codec byte (see Enum)
 			Span<byte> tmpBuffer = stackalloc byte[data.Length + 3];
 			tmpBuffer[2] = (byte)codec;
-			data.CopyTo(tmpBuffer.Slice(3));
+			data.CopyTo(tmpBuffer[3..]);
 
 			bool unencrypted = Book.OwnChannel?.IsUnencrypted ?? false;
 			ctx.PacketHandler.AddOutgoingPacket(tmpBuffer, PacketType.Voice, unencrypted ? PacketFlags.Unencrypted : PacketFlags.None);
@@ -613,7 +613,7 @@ namespace TSLib.Full
 				BinaryPrimitives.WriteUInt64BigEndian(tmpBuffer.Slice(5 + (i * 8)), channelIds[i].Value);
 			for (int i = 0; i < clientIds.Count; i++)
 				BinaryPrimitives.WriteUInt16BigEndian(tmpBuffer.Slice(5 + channelIds.Count * 8 + (i * 2)), clientIds[i].Value);
-			data.CopyTo(tmpBuffer.Slice(offset));
+			data.CopyTo(tmpBuffer[offset..]);
 
 			bool unencrypted = Book.OwnChannel?.IsUnencrypted ?? false;
 			ctx.PacketHandler.AddOutgoingPacket(tmpBuffer, PacketType.VoiceWhisper, unencrypted ? PacketFlags.Unencrypted : PacketFlags.None);
@@ -635,8 +635,8 @@ namespace TSLib.Full
 			tmpBuffer[2] = (byte)codec;
 			tmpBuffer[3] = (byte)type;
 			tmpBuffer[4] = (byte)target;
-			BinaryPrimitives.WriteUInt64BigEndian(tmpBuffer.Slice(5), targetId);
-			data.CopyTo(tmpBuffer.Slice(13));
+			BinaryPrimitives.WriteUInt64BigEndian(tmpBuffer[5..], targetId);
+			data.CopyTo(tmpBuffer[13..]);
 
 			bool unencrypted = Book.OwnChannel?.IsUnencrypted ?? false;
 			ctx.PacketHandler.AddOutgoingPacket(tmpBuffer, PacketType.VoiceWhisper, unencrypted ? PacketFlags.Unencrypted : PacketFlags.None);
@@ -718,14 +718,14 @@ namespace TSLib.Full
 				{ "size", fileSize },
 				{ "overwrite", overwrite },
 				{ "resume", resume }
-			}, NotificationType.FileUpload, NotificationType.FileTransferStatus);
+			}, NotificationType.FileUpload, NotificationType.FiletransferStatus);
 			if (!result.Ok)
 				return result.Error;
 			if (result.Value.NotifyType == NotificationType.FileUpload)
 				return result.MapToSingle<FileUpload>();
 			else
 			{
-				var ftresult = result.MapToSingle<FileTransferStatus>();
+				var ftresult = result.MapToSingle<FiletransferStatus>();
 				if (!ftresult)
 					return ftresult.Error;
 				return new CommandError() { Id = ftresult.Value.Status, Message = ftresult.Value.Message };
@@ -740,14 +740,14 @@ namespace TSLib.Full
 				{ "name", path },
 				{ "cpw", channelPassword },
 				{ "clientftfid", clientTransferId },
-				{ "seekpos", seek } }, NotificationType.FileDownload, NotificationType.FileTransferStatus);
+				{ "seekpos", seek } }, NotificationType.FileDownload, NotificationType.FiletransferStatus);
 			if (!result.Ok)
 				return result.Error;
 			if (result.Value.NotifyType == NotificationType.FileDownload)
 				return result.MapToSingle<FileDownload>();
 			else
 			{
-				var ftresult = result.MapToSingle<FileTransferStatus>();
+				var ftresult = result.MapToSingle<FiletransferStatus>();
 				if (!ftresult)
 					return ftresult.Error;
 				return new CommandError() { Id = ftresult.Value.Status, Message = ftresult.Value.Message };

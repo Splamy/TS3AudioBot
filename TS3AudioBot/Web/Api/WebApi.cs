@@ -128,7 +128,7 @@ namespace TS3AudioBot.Web.Api
 				}
 				else
 				{
-					if (!(res is JsonObject json))
+					if (res is not JsonObject json)
 						json = JsonValue.Create(res);
 
 					var returnString = json.Serialize();
@@ -143,7 +143,7 @@ namespace TS3AudioBot.Web.Api
 			}
 		}
 
-		private ICommand BuildCommand(Uri requestUrl)
+		private static ICommand BuildCommand(Uri requestUrl)
 		{
 			string apirequest = requestUrl.OriginalString.Substring(requestUrl.GetLeftPart(UriPartial.Authority).Length + "/api".Length);
 			var ast = CommandParser.ParseCommandRequest(apirequest, '/', '/');
@@ -167,7 +167,7 @@ namespace TS3AudioBot.Web.Api
 			return execInfo;
 		}
 
-		private async Task<E<Exception>> ProcessBodyData(HttpRequest request, ApiCall apiCallData)
+		private static async Task<E<Exception>> ProcessBodyData(HttpRequest request, ApiCall apiCallData)
 		{
 			if (request.ContentType != "application/json")
 				return R.Ok;

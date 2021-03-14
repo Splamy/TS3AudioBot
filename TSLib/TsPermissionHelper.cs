@@ -64,80 +64,37 @@ namespace TSLib
 				}
 
 			case PermissionType.GlobalClient:
-				switch (other.PermissionType)
+				return other.PermissionType switch
 				{
-				case PermissionType.ServerGroup:
-					return Combine(other, perm);
-
-				case PermissionType.GlobalClient:
-					return perm.PermissionValue > other.PermissionValue ? perm : other;
-
-				case PermissionType.Channel:
-				case PermissionType.ChannelGroup:
-					if (perm.PermissionSkip)
-						return perm;
-					else
-						return other;
-
-				case PermissionType.ChannelClient:
-					return other;
-
-				default:
-					throw Tools.UnhandledDefault(perm.PermissionType);
-				}
-
+					PermissionType.ServerGroup => Combine(other, perm),
+					PermissionType.GlobalClient => perm.PermissionValue > other.PermissionValue ? perm : other,
+					PermissionType.Channel or PermissionType.ChannelGroup => perm.PermissionSkip ? perm : other,
+					PermissionType.ChannelClient => other,
+					_ => throw Tools.UnhandledDefault(perm.PermissionType),
+				};
 			case PermissionType.Channel:
-				switch (other.PermissionType)
+				return other.PermissionType switch
 				{
-				case PermissionType.ServerGroup:
-				case PermissionType.GlobalClient:
-					return Combine(other, perm);
-
-				case PermissionType.Channel:
-					return perm.PermissionValue > other.PermissionValue ? perm : other;
-
-				case PermissionType.ChannelGroup:
-				case PermissionType.ChannelClient:
-					return other;
-
-				default:
-					throw Tools.UnhandledDefault(perm.PermissionType);
-				}
-
+					PermissionType.ServerGroup or PermissionType.GlobalClient => Combine(other, perm),
+					PermissionType.Channel => perm.PermissionValue > other.PermissionValue ? perm : other,
+					PermissionType.ChannelGroup or PermissionType.ChannelClient => other,
+					_ => throw Tools.UnhandledDefault(perm.PermissionType),
+				};
 			case PermissionType.ChannelGroup:
-				switch (other.PermissionType)
+				return other.PermissionType switch
 				{
-				case PermissionType.ServerGroup:
-				case PermissionType.GlobalClient:
-				case PermissionType.Channel:
-					return perm;
-
-				case PermissionType.ChannelGroup:
-					return perm.PermissionValue > other.PermissionValue ? perm : other;
-
-				case PermissionType.ChannelClient:
-					return other;
-
-				default:
-					throw Tools.UnhandledDefault(perm.PermissionType);
-				}
-
+					PermissionType.ServerGroup or PermissionType.GlobalClient or PermissionType.Channel => perm,
+					PermissionType.ChannelGroup => perm.PermissionValue > other.PermissionValue ? perm : other,
+					PermissionType.ChannelClient => other,
+					_ => throw Tools.UnhandledDefault(perm.PermissionType),
+				};
 			case PermissionType.ChannelClient:
-				switch (other.PermissionType)
+				return other.PermissionType switch
 				{
-				case PermissionType.ServerGroup:
-				case PermissionType.GlobalClient:
-				case PermissionType.Channel:
-				case PermissionType.ChannelGroup:
-					return perm;
-
-				case PermissionType.ChannelClient:
-					return perm.PermissionValue > other.PermissionValue ? perm : other;
-
-				default:
-					throw Tools.UnhandledDefault(perm.PermissionType);
-				}
-
+					PermissionType.ServerGroup or PermissionType.GlobalClient or PermissionType.Channel or PermissionType.ChannelGroup => perm,
+					PermissionType.ChannelClient => perm.PermissionValue > other.PermissionValue ? perm : other,
+					_ => throw Tools.UnhandledDefault(perm.PermissionType),
+				};
 			default:
 				throw Tools.UnhandledDefault(perm.PermissionType);
 			}

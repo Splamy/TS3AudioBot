@@ -9,21 +9,12 @@ public class Messages
 	public static Messages Parse(string file)
 	{
 		var toml = Nett.Toml.ReadFile<Messages>(file);
-
-		// transfer all optional get/set confs
-		/*foreach (var struc in toml.@struct)
-		{
-			foreach (var prop in struc.properties)
-			{
-				prop.get ??= struc.accessor.get;
-				prop.set ??= struc.accessor.set;
-			}
-		}*/
+		toml.BuildMsgs();
 
 		return toml;
 	}
 
-	public IEnumerable<Msg> GetOrderedMsg()
+	private void BuildMsgs()
 	{
 		foreach(var (grp, msg) in msg_group.SelectMany(group => group.msg.Select(msg => (group:group, msg:msg))).OrderBy(x => x.msg.name))
 		{
@@ -34,11 +25,19 @@ public class Messages
 			msg.low      ??= grp.@default.low;
 			msg.np       ??= grp.@default.np;
 
-			yield return msg;
+			orderedMessages.Add(msg);
+		}
+
+		var lows = orderedMessages.Where(m => m.low.Value).ToArray();
+		foreach (var low in lows)
+		{
+			if (orderedMessages.Any(m => m.name == low.name))
+			{
+				orderedMessages.Remove(low);
+				removedMessages.Add(low);
+			}
 		}
 	}
-
-	public IEnumerable<Msg> NotifiesSorted => GetOrderedMsg().Where(x => x.notify != null);
 
 	public (Field fld, bool optional) GetField(string name)
 	{
@@ -47,6 +46,12 @@ public class Messages
 			throw new Exception($"Field declaration for \"{name}\" not found");
 		return ret;
 	}
+
+	private List<Msg> removedMessages = new List<Msg>();
+	public IEnumerable<Msg> RemovedMessages => removedMessages;
+	private List<Msg> orderedMessages = new List<Msg>();
+	public IEnumerable<Msg> OrderedMessages => orderedMessages;
+	public IEnumerable<Msg> NotifiesSorted => OrderedMessages.Where(x => x.notify != null);
 
 	public Field[] fields { get; set; }
 	public MsgGroup[] msg_group { get; set; }

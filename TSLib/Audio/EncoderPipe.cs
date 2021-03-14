@@ -12,7 +12,7 @@ using TSLib.Audio.Opus;
 
 namespace TSLib.Audio
 {
-	public class EncoderPipe : IAudioPipe, IDisposable
+	public sealed class EncoderPipe : IAudioPipe, IDisposable
 	{
 		public bool Active => OutStream?.Active ?? false;
 		public IAudioPassiveConsumer? OutStream { get; set; }

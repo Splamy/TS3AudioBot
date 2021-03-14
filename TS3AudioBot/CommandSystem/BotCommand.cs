@@ -44,9 +44,9 @@ namespace TS3AudioBot.CommandSystem
 					strb.Append(InvokeName);
 					strb.Append(" (");
 					strb.Append(string.Join(", ", CommandParameter.Where(p => !p.Kind.IsNormal()).Select(p => p.Type.FullName).OrderBy(p => p)));
-					strb.Append("|");
+					strb.Append('|');
 					strb.Append(string.Join(", ", CommandParameter.Where(p => p.Kind.IsNormal()).Select(p => p.Type.FullName)));
-					strb.Append(")");
+					strb.Append(')');
 					cachedFullQualifiedName = strb.ToString();
 				}
 				return cachedFullQualifiedName;
@@ -113,7 +113,7 @@ namespace TS3AudioBot.CommandSystem
 			{
 				int longest = UsageList.Max(p => p.UsageSyntax.Length) + 1;
 				foreach (var para in UsageList)
-					strb.Append("\n!").Append(InvokeName).Append(" ").Append(para.UsageSyntax)
+					strb.Append("\n!").Append(InvokeName).Append(' ').Append(para.UsageSyntax)
 						.Append(' ', longest - para.UsageSyntax.Length).Append(para.UsageHelp);
 			}
 			return strb.ToString();

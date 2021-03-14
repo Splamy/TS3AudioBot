@@ -257,7 +257,7 @@ namespace TSLib
 			if (!match.Success)
 				return null;
 
-			IPAddress ipAddr;
+			IPAddress? ipAddr;
 			if (match.Groups["ip"].Value == "localhost")
 				ipAddr = IPAddress.Loopback;
 			else if (!IPAddress.TryParse(match.Groups["ip"].Value, out ipAddr))

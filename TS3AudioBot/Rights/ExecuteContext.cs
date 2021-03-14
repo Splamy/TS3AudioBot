@@ -20,7 +20,7 @@ namespace TS3AudioBot.Rights
 		public string? Host { get; set; }
 		public ServerGroupId[]? ServerGroups { get; set; } = Array.Empty<ServerGroupId>();
 		public ChannelGroupId? ChannelGroupId { get; set; }
-		public Uid ClientUid { get; set; }
+		public Uid? ClientUid { get; set; }
 		public bool IsApi { get; set; }
 		public IPAddress? ApiCallerIp { get; set; }
 		public string? ApiToken { get; set; }

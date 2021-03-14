@@ -11,10 +11,16 @@ using System;
 
 namespace TSLib.Full.Book
 {
-	public struct MaxClients
+	public readonly struct MaxClients
 	{
-		public ushort Count { get; internal set; }
-		public MaxClientsKind LimitKind { get; internal set; }
+		public MaxClientsKind LimitKind { get; init; }
+		public ushort Count { get; init; }
+
+		public MaxClients(MaxClientsKind limitKind, ushort count) =>
+			(LimitKind, Count) = (limitKind, count);
+
+		public static readonly MaxClients Unlimited = new MaxClients(MaxClientsKind.Unlimited, 0);
+		public static readonly MaxClients Inherited = new MaxClients(MaxClientsKind.Inherited, 0);
 	}
 
 	public enum MaxClientsKind
@@ -31,9 +37,9 @@ namespace TSLib.Full.Book
 		Permanent,
 	}
 
-	public struct TalkPowerRequest
+	public readonly struct TalkPowerRequest
 	{
-		public DateTime Time { get; internal set; }
-		public string Message { get; internal set; }
+		public DateTime Time { get; init; }
+		public string Message { get; init; }
 	}
 }

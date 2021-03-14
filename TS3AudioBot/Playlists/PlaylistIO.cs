@@ -166,7 +166,7 @@ namespace TS3AudioBot.Playlists
 			return plist;
 		}
 
-		private R<PlaylistMeta, LocalStr> ReadHeadStream(StreamReader sr)
+		private static R<PlaylistMeta, LocalStr> ReadHeadStream(StreamReader sr)
 		{
 			string? line;
 			int version = -1;

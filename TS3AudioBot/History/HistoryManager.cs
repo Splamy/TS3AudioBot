@@ -284,7 +284,7 @@ namespace TS3AudioBot.History
 		/// </summary>
 		/// <param name="list">The list to iterate.</param>
 		/// <returns>A new list with all working items.</returns>
-		private async Task<List<AudioLogEntry>> FilterList(ResolveContext resourceFactory, IReadOnlyCollection<AudioLogEntry> list)
+		private static async Task<List<AudioLogEntry>> FilterList(ResolveContext resourceFactory, IReadOnlyCollection<AudioLogEntry> list)
 		{
 			int userNotifyCnt = 0;
 			var nextIter = new List<AudioLogEntry>(list.Count);
@@ -313,7 +313,7 @@ namespace TS3AudioBot.History
 
 			foreach (var audioLogEntry in audioLogEntries.FindAll())
 			{
-#pragma warning disable CS0612
+#pragma warning disable CS0618
 				if (audioLogEntry.UserInvokeId is null)
 					continue;
 
@@ -345,7 +345,7 @@ namespace TS3AudioBot.History
 				audioLogEntry.UserInvokeId = null;
 				audioLogEntry.UserUid = data.uid.Value;
 				upgradedEntries.Add(audioLogEntry);
-#pragma warning restore CS0612
+#pragma warning restore CS0618
 			}
 
 			if (upgradedEntries.Count > 0)

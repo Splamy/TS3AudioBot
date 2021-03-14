@@ -22,7 +22,7 @@ var types = new (string alias, string backing)[] {
 	("ChannelId", "UInt64"),
 	("ServerGroupId", "UInt64"),
 	("ChannelGroupId", "UInt64"),
-	//("IconHash", "Int32"),
+	//("IconId", "Int32"),
 	//("ConnectionId", "UInt32"),
 };
 #>

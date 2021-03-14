@@ -18,6 +18,6 @@ namespace TS3AudioBot.Rights.Matchers
 
 		public MatchClientUid(IEnumerable<Uid> clientUids) => this.clientUids = new HashSet<Uid>(clientUids);
 
-		public override bool Matches(ExecuteContext ctx) => ctx.ClientUid != null && clientUids.Contains(ctx.ClientUid);
+		public override bool Matches(ExecuteContext ctx) => ctx.ClientUid.HasValue && clientUids.Contains(ctx.ClientUid.Value);
 	}
 }

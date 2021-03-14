@@ -52,7 +52,7 @@ namespace TSLib.Full
 					var bookitem = genm2b.rule.FirstOrDefault(x => x.from == ntfy.name);
 					if(bookitem != null) {
 					#>
-					book?.Update<#= ntfy.name #>(that);<# } #>
+					book?.Apply<#= ntfy.name #>(that);<# } #>
 					ProcessEach<#= ntfy.name #>(that);
 					ev?.Invoke(this, that);
 				}

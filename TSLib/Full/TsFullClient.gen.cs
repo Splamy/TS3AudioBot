@@ -104,8 +104,6 @@ namespace TSLib.Full
 		public event EventHandler<ClientPermissionHints>? OnEachClientPermissionHints;
 		public event NotifyEventHandler<ClientPermList>? OnClientPermList;
 		public event EventHandler<ClientPermList>? OnEachClientPermList;
-		public event NotifyEventHandler<ClientPoke>? OnClientPoke;
-		public event EventHandler<ClientPoke>? OnEachClientPoke;
 		public event NotifyEventHandler<ClientServerGroupAdded>? OnClientServerGroupAdded;
 		public event EventHandler<ClientServerGroupAdded>? OnEachClientServerGroupAdded;
 		public event NotifyEventHandler<ClientServerGroupRemoved>? OnClientServerGroupRemoved;
@@ -128,10 +126,10 @@ namespace TSLib.Full
 		public event EventHandler<FileList>? OnEachFileList;
 		public event NotifyEventHandler<FileListFinished>? OnFileListFinished;
 		public event EventHandler<FileListFinished>? OnEachFileListFinished;
-		public event NotifyEventHandler<FileTransfer>? OnFileTransfer;
-		public event EventHandler<FileTransfer>? OnEachFileTransfer;
-		public event NotifyEventHandler<FileTransferStatus>? OnFileTransferStatus;
-		public event EventHandler<FileTransferStatus>? OnEachFileTransferStatus;
+		public event NotifyEventHandler<Filetransfer>? OnFiletransfer;
+		public event EventHandler<Filetransfer>? OnEachFiletransfer;
+		public event NotifyEventHandler<FiletransferStatus>? OnFiletransferStatus;
+		public event EventHandler<FiletransferStatus>? OnEachFiletransferStatus;
 		public event NotifyEventHandler<FileUpload>? OnFileUpload;
 		public event EventHandler<FileUpload>? OnEachFileUpload;
 		public event NotifyEventHandler<InitIvExpand>? OnInitIvExpand;
@@ -232,7 +230,7 @@ namespace TSLib.Full
 				var ev = OnEachChannelCreated;
 				var book = Book;
 				foreach(var that in ntfc) {
-					book?.UpdateChannelCreated(that);
+					book?.ApplyChannelCreated(that);
 					ProcessEachChannelCreated(that);
 					ev?.Invoke(this, that);
 				}
@@ -246,7 +244,7 @@ namespace TSLib.Full
 				var ev = OnEachChannelDeleted;
 				var book = Book;
 				foreach(var that in ntfc) {
-					book?.UpdateChannelDeleted(that);
+					book?.ApplyChannelDeleted(that);
 					ProcessEachChannelDeleted(that);
 					ev?.Invoke(this, that);
 				}
@@ -260,6 +258,7 @@ namespace TSLib.Full
 				var ev = OnEachChannelDescriptionChanged;
 				var book = Book;
 				foreach(var that in ntfc) {
+					book?.ApplyChannelDescriptionChanged(that);
 					ProcessEachChannelDescriptionChanged(that);
 					ev?.Invoke(this, that);
 				}
@@ -273,7 +272,7 @@ namespace TSLib.Full
 				var ev = OnEachChannelEdited;
 				var book = Book;
 				foreach(var that in ntfc) {
-					book?.UpdateChannelEdited(that);
+					book?.ApplyChannelEdited(that);
 					ProcessEachChannelEdited(that);
 					ev?.Invoke(this, that);
 				}
@@ -300,6 +299,7 @@ namespace TSLib.Full
 				var ev = OnEachChannelGroupList;
 				var book = Book;
 				foreach(var that in ntfc) {
+					book?.ApplyChannelGroupList(that);
 					ProcessEachChannelGroupList(that);
 					ev?.Invoke(this, that);
 				}
@@ -326,7 +326,7 @@ namespace TSLib.Full
 				var ev = OnEachChannelList;
 				var book = Book;
 				foreach(var that in ntfc) {
-					book?.UpdateChannelList(that);
+					book?.ApplyChannelList(that);
 					ProcessEachChannelList(that);
 					ev?.Invoke(this, that);
 				}
@@ -353,7 +353,7 @@ namespace TSLib.Full
 				var ev = OnEachChannelMoved;
 				var book = Book;
 				foreach(var that in ntfc) {
-					book?.UpdateChannelMoved(that);
+					book?.ApplyChannelMoved(that);
 					ProcessEachChannelMoved(that);
 					ev?.Invoke(this, that);
 				}
@@ -380,7 +380,7 @@ namespace TSLib.Full
 				var ev = OnEachChannelPermissionHints;
 				var book = Book;
 				foreach(var that in ntfc) {
-					book?.UpdateChannelPermissionHints(that);
+					book?.ApplyChannelPermissionHints(that);
 					ProcessEachChannelPermissionHints(that);
 					ev?.Invoke(this, that);
 				}
@@ -407,7 +407,7 @@ namespace TSLib.Full
 				var ev = OnEachChannelSubscribed;
 				var book = Book;
 				foreach(var that in ntfc) {
-					book?.UpdateChannelSubscribed(that);
+					book?.ApplyChannelSubscribed(that);
 					ProcessEachChannelSubscribed(that);
 					ev?.Invoke(this, that);
 				}
@@ -421,7 +421,7 @@ namespace TSLib.Full
 				var ev = OnEachChannelUnsubscribed;
 				var book = Book;
 				foreach(var that in ntfc) {
-					book?.UpdateChannelUnsubscribed(that);
+					book?.ApplyChannelUnsubscribed(that);
 					ProcessEachChannelUnsubscribed(that);
 					ev?.Invoke(this, that);
 				}
@@ -435,7 +435,7 @@ namespace TSLib.Full
 				var ev = OnEachClientChannelGroupChanged;
 				var book = Book;
 				foreach(var that in ntfc) {
-					book?.UpdateClientChannelGroupChanged(that);
+					book?.ApplyClientChannelGroupChanged(that);
 					ProcessEachClientChannelGroupChanged(that);
 					ev?.Invoke(this, that);
 				}
@@ -475,7 +475,7 @@ namespace TSLib.Full
 				var ev = OnEachClientConnectionInfo;
 				var book = Book;
 				foreach(var that in ntfc) {
-					book?.UpdateClientConnectionInfo(that);
+					book?.ApplyClientConnectionInfo(that);
 					ProcessEachClientConnectionInfo(that);
 					ev?.Invoke(this, that);
 				}
@@ -541,7 +541,7 @@ namespace TSLib.Full
 				var ev = OnEachClientEnterView;
 				var book = Book;
 				foreach(var that in ntfc) {
-					book?.UpdateClientEnterView(that);
+					book?.ApplyClientEnterView(that);
 					ProcessEachClientEnterView(that);
 					ev?.Invoke(this, that);
 				}
@@ -568,7 +568,7 @@ namespace TSLib.Full
 				var ev = OnEachClientLeftView;
 				var book = Book;
 				foreach(var that in ntfc) {
-					book?.UpdateClientLeftView(that);
+					book?.ApplyClientLeftView(that);
 					ProcessEachClientLeftView(that);
 					ev?.Invoke(this, that);
 				}
@@ -582,7 +582,7 @@ namespace TSLib.Full
 				var ev = OnEachClientMoved;
 				var book = Book;
 				foreach(var that in ntfc) {
-					book?.UpdateClientMoved(that);
+					book?.ApplyClientMoved(that);
 					ProcessEachClientMoved(that);
 					ev?.Invoke(this, that);
 				}
@@ -635,7 +635,7 @@ namespace TSLib.Full
 				var ev = OnEachClientPermissionHints;
 				var book = Book;
 				foreach(var that in ntfc) {
-					book?.UpdateClientPermissionHints(that);
+					book?.ApplyClientPermissionHints(that);
 					ProcessEachClientPermissionHints(that);
 					ev?.Invoke(this, that);
 				}
@@ -655,19 +655,6 @@ namespace TSLib.Full
 				break;
 			}
 			
-			case NotificationType.ClientPoke: {
-				var ntfc = (ClientPoke[])ntf;
-				ProcessClientPoke(ntfc);
-				OnClientPoke?.Invoke(this, ntfc);
-				var ev = OnEachClientPoke;
-				var book = Book;
-				foreach(var that in ntfc) {
-					ProcessEachClientPoke(that);
-					ev?.Invoke(this, that);
-				}
-				break;
-			}
-			
 			case NotificationType.ClientServerGroupAdded: {
 				var ntfc = (ClientServerGroupAdded[])ntf;
 				ProcessClientServerGroupAdded(ntfc);
@@ -675,7 +662,7 @@ namespace TSLib.Full
 				var ev = OnEachClientServerGroupAdded;
 				var book = Book;
 				foreach(var that in ntfc) {
-					book?.UpdateClientServerGroupAdded(that);
+					book?.ApplyClientServerGroupAdded(that);
 					ProcessEachClientServerGroupAdded(that);
 					ev?.Invoke(this, that);
 				}
@@ -689,7 +676,7 @@ namespace TSLib.Full
 				var ev = OnEachClientServerGroupRemoved;
 				var book = Book;
 				foreach(var that in ntfc) {
-					book?.UpdateClientServerGroupRemoved(that);
+					book?.ApplyClientServerGroupRemoved(that);
 					ProcessEachClientServerGroupRemoved(that);
 					ev?.Invoke(this, that);
 				}
@@ -729,7 +716,7 @@ namespace TSLib.Full
 				var ev = OnEachClientUpdated;
 				var book = Book;
 				foreach(var that in ntfc) {
-					book?.UpdateClientUpdated(that);
+					book?.ApplyClientUpdated(that);
 					ProcessEachClientUpdated(that);
 					ev?.Invoke(this, that);
 				}
@@ -814,27 +801,27 @@ namespace TSLib.Full
 				break;
 			}
 			
-			case NotificationType.FileTransfer: {
-				var ntfc = (FileTransfer[])ntf;
-				ProcessFileTransfer(ntfc);
-				OnFileTransfer?.Invoke(this, ntfc);
-				var ev = OnEachFileTransfer;
+			case NotificationType.Filetransfer: {
+				var ntfc = (Filetransfer[])ntf;
+				ProcessFiletransfer(ntfc);
+				OnFiletransfer?.Invoke(this, ntfc);
+				var ev = OnEachFiletransfer;
 				var book = Book;
 				foreach(var that in ntfc) {
-					ProcessEachFileTransfer(that);
+					ProcessEachFiletransfer(that);
 					ev?.Invoke(this, that);
 				}
 				break;
 			}
 			
-			case NotificationType.FileTransferStatus: {
-				var ntfc = (FileTransferStatus[])ntf;
-				ProcessFileTransferStatus(ntfc);
-				OnFileTransferStatus?.Invoke(this, ntfc);
-				var ev = OnEachFileTransferStatus;
+			case NotificationType.FiletransferStatus: {
+				var ntfc = (FiletransferStatus[])ntf;
+				ProcessFiletransferStatus(ntfc);
+				OnFiletransferStatus?.Invoke(this, ntfc);
+				var ev = OnEachFiletransferStatus;
 				var book = Book;
 				foreach(var that in ntfc) {
-					ProcessEachFileTransferStatus(that);
+					ProcessEachFiletransferStatus(that);
 					ev?.Invoke(this, that);
 				}
 				break;
@@ -886,7 +873,7 @@ namespace TSLib.Full
 				var ev = OnEachInitServer;
 				var book = Book;
 				foreach(var that in ntfc) {
-					book?.UpdateInitServer(that);
+					book?.ApplyInitServer(that);
 					ProcessEachInitServer(that);
 					ev?.Invoke(this, that);
 				}
@@ -978,6 +965,7 @@ namespace TSLib.Full
 				var ev = OnEachServerConnectionInfo;
 				var book = Book;
 				foreach(var that in ntfc) {
+					book?.ApplyServerConnectionInfo(that);
 					ProcessEachServerConnectionInfo(that);
 					ev?.Invoke(this, that);
 				}
@@ -991,7 +979,7 @@ namespace TSLib.Full
 				var ev = OnEachServerEdited;
 				var book = Book;
 				foreach(var that in ntfc) {
-					book?.UpdateServerEdited(that);
+					book?.ApplyServerEdited(that);
 					ProcessEachServerEdited(that);
 					ev?.Invoke(this, that);
 				}
@@ -1018,7 +1006,7 @@ namespace TSLib.Full
 				var ev = OnEachServerGroupList;
 				var book = Book;
 				foreach(var that in ntfc) {
-					book?.UpdateServerGroupList(that);
+					book?.ApplyServerGroupList(that);
 					ProcessEachServerGroupList(that);
 					ev?.Invoke(this, that);
 				}
@@ -1084,6 +1072,7 @@ namespace TSLib.Full
 				var ev = OnEachServerUpdated;
 				var book = Book;
 				foreach(var that in ntfc) {
+					book?.ApplyServerUpdated(that);
 					ProcessEachServerUpdated(that);
 					ev?.Invoke(this, that);
 				}
@@ -1218,8 +1207,6 @@ namespace TSLib.Full
 		partial void ProcessEachClientPermissionHints(ClientPermissionHints notifies);
 		partial void ProcessClientPermList(ClientPermList[] notifies);
 		partial void ProcessEachClientPermList(ClientPermList notifies);
-		partial void ProcessClientPoke(ClientPoke[] notifies);
-		partial void ProcessEachClientPoke(ClientPoke notifies);
 		partial void ProcessClientServerGroupAdded(ClientServerGroupAdded[] notifies);
 		partial void ProcessEachClientServerGroupAdded(ClientServerGroupAdded notifies);
 		partial void ProcessClientServerGroupRemoved(ClientServerGroupRemoved[] notifies);
@@ -1242,10 +1229,10 @@ namespace TSLib.Full
 		partial void ProcessEachFileList(FileList notifies);
 		partial void ProcessFileListFinished(FileListFinished[] notifies);
 		partial void ProcessEachFileListFinished(FileListFinished notifies);
-		partial void ProcessFileTransfer(FileTransfer[] notifies);
-		partial void ProcessEachFileTransfer(FileTransfer notifies);
-		partial void ProcessFileTransferStatus(FileTransferStatus[] notifies);
-		partial void ProcessEachFileTransferStatus(FileTransferStatus notifies);
+		partial void ProcessFiletransfer(Filetransfer[] notifies);
+		partial void ProcessEachFiletransfer(Filetransfer notifies);
+		partial void ProcessFiletransferStatus(FiletransferStatus[] notifies);
+		partial void ProcessEachFiletransferStatus(FiletransferStatus notifies);
 		partial void ProcessFileUpload(FileUpload[] notifies);
 		partial void ProcessEachFileUpload(FileUpload notifies);
 		partial void ProcessInitIvExpand(InitIvExpand[] notifies);

@@ -1,8 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Library</OutputType>
-    <TargetFrameworks>netcoreapp3.1;netstandard2.0;netstandard2.1</TargetFrameworks>
-    <LangVersion>8.0</LangVersion>
+    <TargetFrameworks>net5.0;netstandard2.0;netstandard2.1</TargetFrameworks>
+    <LangVersion>9.0</LangVersion>
     <RootNamespace>TSLib</RootNamespace>
     <AssemblyName>TSLib</AssemblyName>
 
@@ -98,6 +98,18 @@
     </None>
   </ItemGroup>
   <ItemGroup>
+    <CompilerVisibleItemMetadata Include="AdditionalFiles" MetadataName="TsDeclType" />
+    <AdditionalFiles Include="Declarations/Book.toml" TsDeclType="Book" />
+    <AdditionalFiles Include="Declarations/Messages.toml" TsDeclType="Messages"/>
+    <AdditionalFiles Include="Declarations/MessagesToBook.toml" TsDeclType="M2B"/>
+    <AdditionalFiles Include="Declarations/Errors.csv" TsDeclType="Errors"/>
+    <AdditionalFiles Include="Declarations/Permissions.csv" TsDeclType="Permissions"/>
+    <AdditionalFiles Include="Declarations/Versions.csv" TsDeclType="Versions"/>
+  </ItemGroup>
+  
+  <ItemGroup>
+    <!--<ProjectReference Include="../TSLibAutogen/TSLibAutogen.csproj" SetTargetFramework="TargetFramework=netstandard2.0" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />-->
+
     <Compile Update="Commands\TsCommand.gen.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>

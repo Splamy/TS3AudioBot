@@ -147,11 +147,11 @@ namespace TS3AudioBot.Helper
 				time -= TimeSpan.FromDays(time.Days);
 			}
 			if (time.Hours > 0)
-				strb.Append(time.Hours).Append("h");
+				strb.Append(time.Hours).Append('h');
 			if (time.Minutes > 0)
-				strb.Append(time.Minutes).Append("m");
+				strb.Append(time.Minutes).Append('m');
 			if (time.Seconds > 0)
-				strb.Append(time.Seconds).Append("s");
+				strb.Append(time.Seconds).Append('s');
 			if (time.Milliseconds > 0)
 				strb.Append(time.Milliseconds).Append("ms");
 			return strb.ToString();

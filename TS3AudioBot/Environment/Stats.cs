@@ -105,7 +105,7 @@ namespace TS3AudioBot.Environment
 			ticker.Enable();
 		}
 
-		private async Task SendStats(StatsPing sendPacket)
+		private async static Task SendStats(StatsPing sendPacket)
 		{
 			try
 			{
