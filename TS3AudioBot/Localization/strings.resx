@@ -461,9 +461,6 @@ Here are all possible commands:</value>
   <data name="cmd_history_clean_confirm_clean" xml:space="preserve">
     <value>Do want to clean the history file now? </value>
   </data>
-  <data name="cmd_history_clean_removedefective_confirm_clean" xml:space="preserve">
-    <value>Do want to remove all defective links file now?</value>
-  </data>
   <data name="cmd_history_delete_confirm" xml:space="preserve">
     <value>Do you really want to delete the entry "{0}"
 with the id {1}?</value>
@@ -845,9 +842,6 @@ with the id {1}?</value>
   </data>
   <data name="cmd_bot_save_help" xml:space="preserve">
     <value>Saves the configuration for the newly connected bot.</value>
-  </data>
-  <data name="cmd_history_clean_removedefective_help" xml:space="preserve">
-    <value>Checks for all links in the history which cannot be opened anymore and removes them.</value>
   </data>
   <data name="cmd_if_help" xml:space="preserve">
     <value>Conditionally executes subcommands.</value>

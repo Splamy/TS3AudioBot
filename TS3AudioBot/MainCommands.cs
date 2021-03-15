@@ -130,11 +130,11 @@ namespace TS3AudioBot
 		public static async Task CommandBotAvatarSet(Ts3Client ts3Client, string url)
 		{
 			url = TextUtil.ExtractUrlFromBb(url);
-			await WebWrapper.Request(url).ToAction(async x =>
+			await WebWrapper.Request(url).ToAction(async (x, ct) =>
 			{
-				using var stream = await x.Content.ReadAsStreamAsync();
-				using var image = await ImageUtil.ResizeImageSave(stream);
-				await ts3Client.UploadAvatar(image.Stream);
+				using var stream = await x.Content.ReadAsStreamAsync(ct);
+				using var image = await ImageUtil.ResizeImageSave(stream, ct);
+				await ts3Client.UploadAvatar(image.Stream, ct);
 			});
 		}
 
@@ -390,12 +390,12 @@ namespace TS3AudioBot
 				var cur = playManager.CurrentPlayData;
 				if (cur is null)
 					throw Error.LocalStr(strings.info_currently_not_playing);
-				await resourceFactory.GetThumbnail(cur.PlayResource, async stream =>
+				await resourceFactory.GetThumbnail(cur.PlayResource, async (stream, ct) =>
 				{
-					using var image = await ImageUtil.ResizeImageSave(stream);
+					using var image = await ImageUtil.ResizeImageSave(stream, ct);
 					response.ContentType = image.Mime;
-					await image.Stream.CopyToAsync(response.Body);
-				});
+					await image.Stream.CopyToAsync(response.Body, ct);
+				}, CancellationToken.None); // TODO: consider passing ct here?
 			});
 
 		[Command("eval")]
@@ -601,28 +601,6 @@ namespace TS3AudioBot
 			}
 			session.SetResponse(ResponseHistoryClean);
 			return new JsonEmpty($"{strings.cmd_history_clean_confirm_clean} {strings.info_bot_might_be_unresponsive} {YesNoOption}");
-		}
-
-		[Command("history clean removedefective")]
-		public static async Task<JsonEmpty> CommandHistoryCleanRemove(HistoryManager historyManager, ResolveContext resourceFactory, CallerInfo caller, UserSession? session = null)
-		{
-			if (caller.ApiCall)
-			{
-				await historyManager.RemoveBrokenLinks(resourceFactory);
-				return new JsonEmpty(string.Empty);
-			}
-
-			async Task<string?> ResponseHistoryCleanRemove(string message)
-			{
-				if (TextUtil.GetAnswer(message) == Answer.Yes)
-				{
-					await historyManager.RemoveBrokenLinks(resourceFactory);
-					return strings.info_cleanup_done;
-				}
-				return null;
-			}
-			session.SetResponse(ResponseHistoryCleanRemove);
-			return new JsonEmpty($"{strings.cmd_history_clean_removedefective_confirm_clean} {strings.info_bot_might_be_unresponsive} {YesNoOption}");
 		}
 
 		[Command("history clean upgrade", "_undocumented")]
@@ -927,7 +905,7 @@ namespace TS3AudioBot
 		public static async Task<JsonValue<PlaylistItemGetData>> CommandListAdd(ResolveContext resourceFactory, PlaylistManager playlistManager, string listId, string link /* TODO param */)
 		{
 			PlaylistItemGetData? getData = null;
-			var playResource = await resourceFactory.Load(link);
+			var playResource = await resourceFactory.Load(link, CancellationToken.None);
 			playlistManager.ModifyPlaylist(listId, plist =>
 			{
 				var item = PlaylistItem.From(playResource);
@@ -969,14 +947,14 @@ namespace TS3AudioBot
 		[Command("list from", "_undocumented")]
 		public static async Task<JsonValue<PlaylistInfo>> PropagiateLoad(PlaylistManager playlistManager, ResolveContext resolver, string resolverName, string listId, string url)
 		{
-			var getList = await resolver.LoadPlaylistFrom(url, resolverName);
+			var getList = await resolver.LoadPlaylistFrom(url, CancellationToken.None, resolverName);
 			return ImportMerge(playlistManager, resolver, getList, listId);
 		}
 
 		[Command("list import", "cmd_list_get_help")] // TODO readjust help texts
 		public static async Task<JsonValue<PlaylistInfo>> CommandListImport(PlaylistManager playlistManager, ResolveContext resolver, string listId, string link)
 		{
-			var getList = await resolver.LoadPlaylistFrom(link);
+			var getList = await resolver.LoadPlaylistFrom(link, CancellationToken.None);
 			return ImportMerge(playlistManager, resolver, getList, listId);
 		}
 
@@ -997,7 +975,7 @@ namespace TS3AudioBot
 		public static async Task<JsonValue<PlaylistItemGetData>> CommandListAdd(PlaylistManager playlistManager, ResolveContext resourceFactory, string listId, int index, string link /* TODO param */)
 		{
 			PlaylistItemGetData? getData = null;
-			var playResource = await resourceFactory.Load(link);
+			var playResource = await resourceFactory.Load(link, CancellationToken.None);
 			playlistManager.ModifyPlaylist(listId, plist =>
 			{
 				if (index < 0 || index >= plist.Items.Count)
@@ -1384,7 +1362,7 @@ namespace TS3AudioBot
 		[Command("search from", "_undocumented")] // TODO Doc
 		public static async Task<JsonArray<AudioResource>> PropagiateSearch(UserSession session, CallerInfo callerInfo, ResolveContext resolver, string resolverName, string query)
 		{
-			var list = await resolver.Search(resolverName, query);
+			var list = await resolver.Search(resolverName, query, CancellationToken.None);
 			session.Set(SessionConst.SearchResult, list);
 			return FormatSearchResult(list, callerInfo);
 		}

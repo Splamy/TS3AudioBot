@@ -12,6 +12,7 @@ using Newtonsoft.Json.Linq;
 using System;
 using System.IO;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using TS3AudioBot.Helper;
 using TS3AudioBot.Localization;
@@ -33,7 +34,7 @@ namespace TS3AudioBot.ResourceFactories
 
 		public MatchCertainty MatchResource(ResolveContext _, string uri) => BandcampUrlRegex.IsMatch(uri).ToMatchCertainty();
 
-		public async Task<PlayResource> GetResource(ResolveContext _, string url)
+		public async Task<PlayResource> GetResource(ResolveContext _, string url, CancellationToken cancellationToken)
 		{
 			var match = BandcampUrlRegex.Match(url);
 			if (!match.Success)
@@ -42,7 +43,7 @@ namespace TS3AudioBot.ResourceFactories
 			var artistName = match.Groups[1].Value;
 			var trackName = match.Groups[2].Value;
 
-			var webSite = await WebWrapper.Request($"https://{artistName}.bandcamp.com/track/{trackName}").AsString();
+			var webSite = await WebWrapper.Request($"https://{artistName}.bandcamp.com/track/{trackName}").AsString(cancellationToken);
 
 			match = TrackMainJsonRegex.Match(webSite);
 			if (!match.Success)
@@ -70,9 +71,9 @@ namespace TS3AudioBot.ResourceFactories
 				GetTrackArtId(webSite));
 		}
 
-		public async Task<PlayResource> GetResourceById(ResolveContext _, AudioResource resource)
+		public async Task<PlayResource> GetResourceById(ResolveContext _, AudioResource resource, CancellationToken cancellationToken)
 		{
-			var webSite = await DownloadEmbeddedSite(resource.ResourceId);
+			var webSite = await DownloadEmbeddedSite(resource.ResourceId, cancellationToken);
 
 			if (string.IsNullOrEmpty(resource.ResourceTitle))
 			{
@@ -101,10 +102,10 @@ namespace TS3AudioBot.ResourceFactories
 			return $"https://bandcamp.com/EmbeddedPlayer/v=2/track={resource.ResourceId}";
 		}
 
-		private static Task<string> DownloadEmbeddedSite(string id)
-			=> WebWrapper.Request($"https://bandcamp.com/EmbeddedPlayer/v=2/track={id}").AsString();
+		private static Task<string> DownloadEmbeddedSite(string id, CancellationToken cancellationToken)
+			=> WebWrapper.Request($"https://bandcamp.com/EmbeddedPlayer/v=2/track={id}").AsString(cancellationToken);
 
-		public async Task GetThumbnail(ResolveContext _, PlayResource playResource, Func<Stream, Task> action)
+		public async Task GetThumbnail(ResolveContext _, PlayResource playResource, AsyncStreamAction action, CancellationToken cancellationToken)
 		{
 			string? artId = null;
 			if (playResource is BandcampPlayResource bandcampPlayResource)
@@ -113,7 +114,7 @@ namespace TS3AudioBot.ResourceFactories
 			}
 			if (artId is null)
 			{
-				var webSite = await DownloadEmbeddedSite(playResource.AudioResource.ResourceId);
+				var webSite = await DownloadEmbeddedSite(playResource.AudioResource.ResourceId, cancellationToken);
 				artId = GetTrackArtId(webSite);
 			}
 
@@ -137,7 +138,7 @@ namespace TS3AudioBot.ResourceFactories
 			// 15 :  135px/ 135px
 			// 16 :  700px/ 700px
 			// 42 :   50px/  50px / supporter
-			await WebWrapper.Request($"https://f4.bcbits.com/img/a{artId}_4.jpg").ToStream(action);
+			await WebWrapper.Request($"https://f4.bcbits.com/img/a{artId}_4.jpg").ToStream(action, cancellationToken);
 		}
 
 		private static string? GetTrackArtId(string site)

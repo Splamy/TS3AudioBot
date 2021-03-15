@@ -88,7 +88,7 @@ namespace TS3AudioBot.Helper
 				using (request)
 				{
 					using var response = await httpClient.SendDefaultAsync(request, token);
-					return await response.Content.ReadAsStringAsync();
+					return await response.Content.ReadAsStringAsync(token);
 				}
 			}
 			catch (Exception ex) when (ex is HttpRequestException || ex is OperationCanceledException)
@@ -104,7 +104,7 @@ namespace TS3AudioBot.Helper
 				using (request)
 				{
 					using var response = await httpClient.SendDefaultAsync(request, token);
-					using var stream = await response.Content.ReadAsStreamAsync();
+					using var stream = await response.Content.ReadAsStreamAsync(token);
 					var obj = await JsonSerializer.DeserializeAsync<T>(stream, cancellationToken: token);
 					if (obj is null) throw Error.LocalStr(strings.error_net_empty_response);
 					return obj;
@@ -121,14 +121,14 @@ namespace TS3AudioBot.Helper
 			}
 		}
 
-		public static async Task ToAction(this HttpRequestMessage request, Func<HttpResponseMessage, Task> body, CancellationToken token = default)
+		public static async Task ToAction(this HttpRequestMessage request, AsyncHttpAction body, CancellationToken token = default)
 		{
 			try
 			{
 				using (request)
 				{
 					using var response = await httpClient.SendDefaultAsync(request, token);
-					await body.Invoke(response); // TODO add token ?
+					await body.Invoke(response, token);
 				}
 			}
 			catch (Exception ex) when (ex is HttpRequestException || ex is OperationCanceledException)
@@ -137,14 +137,14 @@ namespace TS3AudioBot.Helper
 			}
 		}
 
-		public static async Task<T> ToAction<T>(this HttpRequestMessage request, Func<HttpResponseMessage, Task<T>> body, CancellationToken token = default)
+		public static async Task<T> ToAction<T>(this HttpRequestMessage request, AsyncHttpAction<T> body, CancellationToken token = default)
 		{
 			try
 			{
 				using (request)
 				{
 					using var response = await httpClient.SendDefaultAsync(request, token);
-					return await body.Invoke(response); // TODO add token ?
+					return await body.Invoke(response, token); // TODO add token ?
 				}
 			}
 			catch (Exception ex) when (ex is HttpRequestException || ex is OperationCanceledException)
@@ -153,8 +153,8 @@ namespace TS3AudioBot.Helper
 			}
 		}
 
-		public static Task ToStream(this HttpRequestMessage request, Func<Stream, Task> body)
-			=> request.ToAction(async response => await body(await response.Content.ReadAsStreamAsync()));
+		public static Task ToStream(this HttpRequestMessage request, AsyncStreamAction body, CancellationToken cancellationToken)
+			=> request.ToAction(async (response, ct) => await body(await response.Content.ReadAsStreamAsync(ct), ct), cancellationToken);
 
 		public static async Task<HttpResponseMessage> UnsafeResponse(this HttpRequestMessage request, CancellationToken token = default)
 		{
@@ -213,6 +213,10 @@ namespace TS3AudioBot.Helper
 			}
 		}
 	}
+
+	public delegate Task AsyncStreamAction(Stream stream, CancellationToken ct);
+	public delegate Task AsyncHttpAction(HttpResponseMessage stream, CancellationToken ct);
+	public delegate Task<T> AsyncHttpAction<T>(HttpResponseMessage stream, CancellationToken ct);
 
 	// HttpClient does not allow unsafe HTTPS->HTTP redirects.
 	// But we don't care because audio streaming is not security critical

@@ -7,12 +7,11 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
-using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using TS3AudioBot.Config;
+using TS3AudioBot.Helper;
 using TS3AudioBot.Playlists;
 
 namespace TS3AudioBot.ResourceFactories
@@ -28,11 +27,11 @@ namespace TS3AudioBot.ResourceFactories
 			Config = config;
 		}
 
-		public Task<PlayResource> Load(AudioResource resource, CancellationToken token = default) => Resolver.Load(this, resource);
-		public Task<PlayResource> Load(string message, string? audioType = null, CancellationToken token = default) => Resolver.Load(this, message, audioType);
-		public Task<Playlist> LoadPlaylistFrom(string message, string? audioType = null) => Resolver.LoadPlaylistFrom(this, message, audioType);
+		public Task<PlayResource> Load(AudioResource resource, CancellationToken cancellationToken) => Resolver.Load(this, resource, cancellationToken);
+		public Task<PlayResource> Load(string message, CancellationToken cancellationToken, string? audioType = null) => Resolver.Load(this, message, audioType, cancellationToken);
+		public Task<Playlist> LoadPlaylistFrom(string message, CancellationToken cancellationToken, string? audioType = null) => Resolver.LoadPlaylistFrom(this, message, audioType, cancellationToken);
 		public string? RestoreLink(AudioResource res) => Resolver.RestoreLink(this, res);
-		public Task GetThumbnail(PlayResource playResource, Func<Stream, Task> action) => Resolver.GetThumbnail(this, playResource, action);
-		public Task<IList<AudioResource>> Search(string resolverName, string query) => Resolver.Search(this, resolverName, query);
+		public Task GetThumbnail(PlayResource playResource, AsyncStreamAction action, CancellationToken cancellationToken) => Resolver.GetThumbnail(this, playResource, action, cancellationToken);
+		public Task<IList<AudioResource>> Search(string resolverName, string query, CancellationToken cancellationToken) => Resolver.Search(this, resolverName, query, cancellationToken);
 	}
 }

@@ -10,6 +10,7 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using TS3AudioBot.Algorithm;
 using TS3AudioBot.Audio;
@@ -40,6 +41,7 @@ namespace TS3AudioBot
 
 		private readonly ConfBot config;
 		private readonly TickWorker idleTickWorker;
+		private CancellationTokenSource? avatarRequest;
 
 		private bool isClosed;
 		internal BotInjector Injector { get; }
@@ -439,6 +441,10 @@ namespace TS3AudioBot
 				}
 			}
 
+			using var cts = new CancellationTokenSource();
+			avatarRequest?.Cancel();
+			avatarRequest = cts;
+
 			Stream? setStream = null;
 			if (playing)
 			{
@@ -447,9 +453,10 @@ namespace TS3AudioBot
 					try
 					{
 						await resourceResolver.GetThumbnail(startEvent.PlayResource,
-							async thumbStream => setStream = (await ImageUtil.ResizeImageSave(thumbStream)).Stream);
+							async (thumbStream, ct) => setStream = (await ImageUtil.ResizeImageSave(thumbStream, ct)).Stream, cts.Token);
 					}
 					catch (AudioBotException ex) { Log.Debug(ex, "Failed to fetch thumbnail image"); }
+					catch (OperationCanceledException) { return; }
 				}
 				setStream ??= GetRandomFile(config.LocalConfigDir, "play*");
 			}
@@ -465,7 +472,7 @@ namespace TS3AudioBot
 				{
 					using (setStream)
 					{
-						var result = await ts3FullClient.UploadAvatar(setStream);
+						var result = await ts3FullClient.UploadAvatar(setStream, cts.Token);
 						result.UnwrapToLog(Log);
 					}
 				}
@@ -479,6 +486,8 @@ namespace TS3AudioBot
 				var result = await ts3FullClient.DeleteAvatar();
 				result.UnwrapToLog(Log);
 			}
+
+			if (avatarRequest == cts) avatarRequest = null;
 		}
 
 		#endregion

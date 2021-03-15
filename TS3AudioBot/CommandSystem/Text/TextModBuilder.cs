@@ -57,6 +57,7 @@ namespace TS3AudioBot.CommandSystem.Text
 
 		public TextModBuilder AppendFormat(AppliedTextMod format, params AppliedTextMod[] para)
 		{
+			if (format.Text is null) throw new ArgumentNullException(nameof(format));
 			if (para.Length == 0)
 			{
 				Append(format);

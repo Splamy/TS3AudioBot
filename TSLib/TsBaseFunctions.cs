@@ -11,6 +11,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Threading;
 using System.Threading.Tasks;
 using TSLib.Commands;
 using TSLib.Full.Book;
@@ -321,7 +322,7 @@ namespace TSLib
 				{ "tcpw", targetChannel.HasValue ? targetChannelPassword : null },
 			});
 
-		public async CmdR UploadAvatar(System.IO.Stream image)
+		public async CmdR UploadAvatar(System.IO.Stream image, CancellationToken cancellationToken) // TODO pass ct forward to upload
 		{
 			var result = await UploadFile(image, ChannelId.Null, "/avatar", overwrite: true, createMd5: true);
 			if (!result.Get(out var token, out var error))

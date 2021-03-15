@@ -10,6 +10,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 using TSLib.Helper;
 
@@ -24,11 +25,12 @@ namespace TS3AudioBot.ResourceFactories.AudioTags
 		private static readonly byte[] ExtInfLine = Tools.Utf8Encoder.GetBytes("#EXTINF");
 		private static readonly byte[] ExtXStreamInfLine = Tools.Utf8Encoder.GetBytes("#EXT-X-STREAM-INF");
 
-		public static async Task<List<M3uEntry>> TryGetData(Stream stream)
+		public static async Task<List<M3uEntry>> TryGetData(Stream stream, CancellationToken cancellationToken)
 		{
 			int read = 1;
 			int bufferLen = 0;
-			var buffer = new byte[MaxLineLength];
+			var bufferArr = new byte[MaxLineLength];
+			var buffer = bufferArr.AsMemory();
 			var data = new List<M3uEntry>();
 			string? trackTitle = null;
 			string? trackStreamMeta = null;
@@ -40,16 +42,17 @@ namespace TS3AudioBot.ResourceFactories.AudioTags
 				{
 					if (read > 0)
 					{
-						read = await stream.ReadAsync(buffer, bufferLen, MaxLineLength - bufferLen);
+						read = await stream.ReadAsync(buffer[bufferLen..], cancellationToken);
 						bufferLen += read;
 					}
 
 					// find linebreak index
-					int index = Array.IndexOf(buffer, (byte)'\n', 0, bufferLen);
+					var filledBuffer = buffer[..bufferLen];
+					int index = filledBuffer.Span.IndexOf((byte)'\n');
 					int lb = 1;
 					if (index == -1)
-						index = Array.IndexOf(buffer, (byte)'\r', 0, bufferLen);
-					else if (index > 0 && buffer[index - 1] == (byte)'\r')
+						index = filledBuffer.Span.IndexOf((byte)'\r');
+					else if (index > 0 && filledBuffer.Span[index - 1] == (byte)'\r')
 					{
 						index--;
 						lb = 2;
@@ -61,12 +64,12 @@ namespace TS3AudioBot.ResourceFactories.AudioTags
 					{
 						if (bufferLen == MaxLineLength)
 							throw Error.Str("Max read buffer exceeded");
-						line = buffer.AsMemory(0, bufferLen);
+						line = buffer[..bufferLen];
 						bufferLen = 0;
 					}
 					else
 					{
-						line = buffer.AsMemory(0, index);
+						line = buffer[..index];
 					}
 
 					if (!line.IsEmpty)
@@ -113,7 +116,7 @@ namespace TS3AudioBot.ResourceFactories.AudioTags
 					if (!atEnd)
 					{
 						index += lb;
-						Array.Copy(buffer, index, buffer, 0, MaxLineLength - index);
+						buffer[index..].CopyTo(buffer);
 						bufferLen -= index;
 					}
 

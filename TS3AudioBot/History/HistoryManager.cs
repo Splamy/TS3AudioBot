@@ -258,54 +258,6 @@ namespace TS3AudioBot.History
 			audioLogEntries.Update(ale);
 		}
 
-		public async Task RemoveBrokenLinks(ResolveContext resourceFactory)
-		{
-			const int iterations = 3;
-			var currentIter = audioLogEntries.FindAll().ToList();
-
-			for (int i = 0; i < iterations; i++)
-			{
-				Log.Info("Filter iteration {0}", i);
-				currentIter = await FilterList(resourceFactory, currentIter);
-			}
-
-			foreach (var entry in currentIter)
-			{
-				if (RemoveEntry(entry))
-				{
-					Log.Info("Removed: {0} - {1}", entry.Id, entry.AudioResource.ResourceTitle);
-				}
-			}
-		}
-
-		/// <summary>
-		/// Goes through a list of <see cref="AudioLogEntry"/> and checks if the contained <see cref="AudioResource"/>
-		/// is playable/resolvable.
-		/// </summary>
-		/// <param name="list">The list to iterate.</param>
-		/// <returns>A new list with all working items.</returns>
-		private static async Task<List<AudioLogEntry>> FilterList(ResolveContext resourceFactory, IReadOnlyCollection<AudioLogEntry> list)
-		{
-			int userNotifyCnt = 0;
-			var nextIter = new List<AudioLogEntry>(list.Count);
-			foreach (var entry in list)
-			{
-				try
-				{
-					await resourceFactory.Load(entry.AudioResource);
-				}
-				catch (AudioBotException ex)
-				{
-					Log.Debug("Cleaning: ({0}) Reason: {1}", entry.AudioResource.UniqueId, ex.Message);
-					nextIter.Add(entry);
-				}
-
-				if (++userNotifyCnt % 100 == 0)
-					Log.Debug("Clean in progress {0}", new string('.', userNotifyCnt / 100 % 10));
-			}
-			return nextIter;
-		}
-
 		public async Task UpdadeDbIdToUid(Ts3Client ts3Client)
 		{
 			var upgradedEntries = new List<AudioLogEntry>();

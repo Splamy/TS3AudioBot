@@ -23,7 +23,7 @@ using TSLib.Scheduler;
 
 namespace TS3AudioBot.Audio
 {
-	public class FfmpegProducer : IPlayerSource, IDisposable
+	public sealed class FfmpegProducer : IPlayerSource, IDisposable
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private readonly Id id;

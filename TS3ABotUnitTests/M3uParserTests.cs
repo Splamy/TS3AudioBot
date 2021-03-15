@@ -1,6 +1,7 @@
 using NUnit.Framework;
 using System.IO;
 using System.Text;
+using System.Threading;
 using TS3AudioBot.ResourceFactories.AudioTags;
 
 namespace TS3ABotUnitTests
@@ -18,7 +19,7 @@ namespace TS3ABotUnitTests
 /opt/music/bad/MONO.mp3
 #EXTINF:223,Deathstars - Deathstars - Opium
 /opt/music/bad/Opium.mp3"
-				))).Result;
+				)), CancellationToken.None).Result;
 
 			Assert.AreEqual(3, result.Count);
 
@@ -40,7 +41,7 @@ namespace TS3ABotUnitTests
 C:\Windows\System32\firewall32.cpl
 #EXTINF:1337,Never gonna let you down
 C:\Windows\System32\firewall64.cpl"
-				))).Result;
+				)), CancellationToken.None).Result;
 
 			Assert.AreEqual(2, result.Count);
 
@@ -59,7 +60,7 @@ C:\Windows\System32\firewall64.cpl"
 C:\PepeHands.jpg
 ./do/I/look/like/I/know/what/a/Jaypeg/is
 "
-				))).Result;
+				)), CancellationToken.None).Result;
 
 			Assert.AreEqual(2, result.Count);
 

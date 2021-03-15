@@ -11,6 +11,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using TS3AudioBot.Helper;
 using TS3AudioBot.Localization;
@@ -29,15 +30,15 @@ namespace TS3AudioBot.ResourceFactories
 
 		public MatchCertainty MatchResource(ResolveContext _, string uri) => TwitchMatch.IsMatch(uri).ToMatchCertainty();
 
-		public async Task<PlayResource> GetResource(ResolveContext _, string uri)
+		public async Task<PlayResource> GetResource(ResolveContext _, string uri, CancellationToken cancellationToken)
 		{
 			var match = TwitchMatch.Match(uri);
 			if (!match.Success)
 				throw Error.LocalStr(strings.error_media_invalid_uri);
-			return await GetResourceById(null, new AudioResource(match.Groups[3].Value, null, ResolverFor));
+			return await GetResourceById(null, new AudioResource(match.Groups[3].Value, null, ResolverFor), cancellationToken);
 		}
 
-		public async Task<PlayResource> GetResourceById(ResolveContext? _, AudioResource resource)
+		public async Task<PlayResource> GetResourceById(ResolveContext? _, AudioResource resource, CancellationToken cancellationToken)
 		{
 			var channel = resource.ResourceId;
 
@@ -45,7 +46,7 @@ namespace TS3AudioBot.ResourceFactories
 			var access = await WebWrapper
 				.Request($"https://api.twitch.tv/api/channels/{channel}/access_token")
 				.WithHeader("Client-ID", TwitchClientIdPrivate)
-				.AsJson<JsonAccessToken>();
+				.AsJson<JsonAccessToken>(cancellationToken);
 
 			// request m3u8 file
 			if (access is null || access.token is null || access.sig is null)
@@ -56,7 +57,7 @@ namespace TS3AudioBot.ResourceFactories
 			const int random = 4;
 			var m3u8 = await WebWrapper
 				.Request($"http://usher.twitch.tv/api/channel/hls/{channel}.m3u8?player=twitchweb&&token={token}&sig={sig}&allow_audio_only=true&allow_source=true&type=any&p={random}")
-				.AsString();
+				.AsString(cancellationToken);
 
 			// parse m3u8 file
 			var dataList = new List<StreamData>();

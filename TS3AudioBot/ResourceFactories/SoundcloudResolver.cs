@@ -12,6 +12,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using TS3AudioBot.Helper;
 using TS3AudioBot.Localization;
@@ -35,14 +36,14 @@ namespace TS3AudioBot.ResourceFactories
 
 		public MatchCertainty MatchPlaylist(ResolveContext? _, string uri) => MatchResource(null, uri);
 
-		public async Task<PlayResource> GetResource(ResolveContext? _, string uri)
+		public async Task<PlayResource> GetResource(ResolveContext? _, string uri, CancellationToken cancellationToken)
 		{
 			JsonTrackInfo? track = null;
 			try
 			{
 				track = await WebWrapper
 					.Request($"https://api.soundcloud.com/resolve.json?url={Uri.EscapeUriString(uri)}&client_id={SoundcloudClientId}")
-					.AsJson<JsonTrackInfo>();
+					.AsJson<JsonTrackInfo>(cancellationToken);
 			}
 			catch (Exception ex) { Log.Debug(ex, "Failed to get via api"); }
 
@@ -50,27 +51,27 @@ namespace TS3AudioBot.ResourceFactories
 			{
 				if (!SoundcloudLink.IsMatch(uri))
 					throw Error.LocalStr(strings.error_media_invalid_uri);
-				return await YoutubeDlWrappedAsync(uri);
+				return await YoutubeDlWrappedAsync(uri, cancellationToken);
 			}
 			var resource = CheckAndGet(track);
 			if (resource is null)
 				throw Error.LocalStr(strings.error_media_internal_missing + " (parsedDict)");
-			return await GetResourceById(resource, false);
+			return await GetResourceById(resource, false, cancellationToken);
 		}
 
-		public Task<PlayResource> GetResourceById(ResolveContext _, AudioResource resource) => GetResourceById(resource, true);
+		public Task<PlayResource> GetResourceById(ResolveContext _, AudioResource resource, CancellationToken cancellationToken) => GetResourceById(resource, true, cancellationToken);
 
-		private async Task<PlayResource> GetResourceById(AudioResource resource, bool allowNullName)
+		private async Task<PlayResource> GetResourceById(AudioResource resource, bool allowNullName, CancellationToken cancellationToken)
 		{
 			if (SoundcloudLink.IsMatch(resource.ResourceId))
-				return await GetResource(null, resource.ResourceId);
+				return await GetResource(null, resource.ResourceId, cancellationToken);
 
 			if (resource.ResourceTitle is null)
 			{
 				if (!allowNullName) throw Error.LocalStr(strings.error_media_internal_missing + " (title)");
 				string link = RestoreLink(null, resource);
 				if (link is null) throw Error.LocalStr(strings.error_media_internal_missing + " (link)");
-				return await GetResource(null, link);
+				return await GetResource(null, link, cancellationToken);
 			}
 
 			string finalRequest = $"https://api.soundcloud.com/tracks/{resource.ResourceId}/stream?client_id={SoundcloudClientId}";
@@ -114,11 +115,11 @@ namespace TS3AudioBot.ResourceFactories
 				.Add(AddTrack, permaTrack);
 		}
 
-		private async Task<PlayResource> YoutubeDlWrappedAsync(string link)
+		private async Task<PlayResource> YoutubeDlWrappedAsync(string link, CancellationToken cancellationToken)
 		{
 			Log.Debug("Falling back to youtube-dl!");
 
-			var response = await YoutubeDlHelper.GetSingleVideo(link);
+			var response = await YoutubeDlHelper.GetSingleVideo(link, cancellationToken);
 			var title = response.title ?? $"Soundcloud-{link}";
 			var format = YoutubeDlHelper.FilterBest(response.formats);
 			var url = format?.url;
@@ -131,11 +132,11 @@ namespace TS3AudioBot.ResourceFactories
 			return new PlayResource(url, new AudioResource(link, title, ResolverFor));
 		}
 
-		public async Task<Playlist> GetPlaylist(ResolveContext _, string url)
+		public async Task<Playlist> GetPlaylist(ResolveContext _, string url, CancellationToken cancellationToken)
 		{
 			var playlist = await WebWrapper
 				.Request($"https://api.soundcloud.com/resolve.json?url={Uri.EscapeUriString(url)}&client_id={SoundcloudClientId}")
-				.AsJson<JsonPlaylist>();
+				.AsJson<JsonPlaylist>(cancellationToken);
 
 			if (playlist is null || playlist.title is null || playlist.tracks is null)
 			{
@@ -158,11 +159,11 @@ namespace TS3AudioBot.ResourceFactories
 			return plist;
 		}
 
-		public async Task GetThumbnail(ResolveContext _, PlayResource playResource, Func<Stream, Task> action)
+		public async Task GetThumbnail(ResolveContext _, PlayResource playResource, AsyncStreamAction action, CancellationToken cancellationToken)
 		{
 			var thumb = await WebWrapper
 				.Request($"https://api.soundcloud.com/tracks/{playResource.AudioResource.ResourceId}?client_id={SoundcloudClientId}")
-				.AsJson<JsonTumbnailMinimal>();
+				.AsJson<JsonTumbnailMinimal>(cancellationToken);
 			if (thumb is null)
 				throw Error.LocalStr(strings.error_media_internal_missing + " (thumb)");
 			if (thumb.artwork_url is null)
@@ -172,7 +173,7 @@ namespace TS3AudioBot.ResourceFactories
 			// crop    : 400px×400px
 			// t300x300: 300px×300px
 			// large   : 100px×100px 
-			await WebWrapper.Request(thumb.artwork_url.Replace("-large", "-t300x300")).ToStream(action);
+			await WebWrapper.Request(thumb.artwork_url.Replace("-large", "-t300x300")).ToStream(action, cancellationToken);
 		}
 
 		public void Dispose() { }

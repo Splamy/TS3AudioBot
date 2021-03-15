@@ -13,6 +13,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using TS3AudioBot.Config;
 using TS3AudioBot.Helper;
@@ -80,7 +81,7 @@ namespace TS3AudioBot.ResourceFactories
 		/// <param name="resource">An <see cref="AudioResource"/> with at least
 		/// <see cref="AudioResource.AudioType"/> and<see cref="AudioResource.ResourceId"/> set.</param>
 		/// <returns>The playable resource if successful, or an error message otherwise.</returns>
-		public async Task<PlayResource> Load(ResolveContext ctx, AudioResource resource)
+		public async Task<PlayResource> Load(ResolveContext ctx, AudioResource resource, CancellationToken cancellationToken)
 		{
 			if (resource is null)
 				throw new ArgumentNullException(nameof(resource));
@@ -92,7 +93,7 @@ namespace TS3AudioBot.ResourceFactories
 			try
 			{
 				var sw = Stopwatch.StartNew();
-				var result = await resolver.GetResourceById(ctx, resource);
+				var result = await resolver.GetResourceById(ctx, resource, cancellationToken);
 				Log.Debug("Took {0}ms to resolve resource.", sw.ElapsedMilliseconds);
 				return result;
 			}
@@ -115,7 +116,7 @@ namespace TS3AudioBot.ResourceFactories
 		/// <param name="audioType">The associated resource type string to a resolver.
 		/// Leave null to let it detect automatically.</param>
 		/// <returns>The playable resource if successful, or an error message otherwise.</returns>
-		public async Task<PlayResource> Load(ResolveContext ctx, string message, string? audioType = null)
+		public async Task<PlayResource> Load(ResolveContext ctx, string message, string? audioType, CancellationToken cancellationToken)
 		{
 			if (string.IsNullOrWhiteSpace(message))
 				throw new ArgumentNullException(nameof(message));
@@ -128,7 +129,7 @@ namespace TS3AudioBot.ResourceFactories
 				if (resolver is null)
 					throw CouldNotLoad(string.Format(strings.error_resfac_no_registered_factory, audioType));
 
-				return await resolver.GetResource(ctx, netlinkurl);
+				return await resolver.GetResource(ctx, netlinkurl, cancellationToken);
 			}
 
 			var resolvers = FilterUsable(GetResResolverByLink(ctx, netlinkurl));
@@ -138,7 +139,7 @@ namespace TS3AudioBot.ResourceFactories
 				try
 				{
 					var sw = Stopwatch.StartNew();
-					var result = await resolver.GetResource(ctx, netlinkurl);
+					var result = await resolver.GetResource(ctx, netlinkurl, cancellationToken);
 					Log.Debug("Took {0}ms to resolve resource.", sw.ElapsedMilliseconds);
 					return result;
 				}
@@ -152,7 +153,7 @@ namespace TS3AudioBot.ResourceFactories
 			throw ToErrorString(errors);
 		}
 
-		public async Task<Playlist> LoadPlaylistFrom(ResolveContext ctx, string message, string? audioType = null)
+		public async Task<Playlist> LoadPlaylistFrom(ResolveContext ctx, string message, string? audioType, CancellationToken cancellationToken)
 		{
 			if (string.IsNullOrWhiteSpace(message))
 				throw new ArgumentNullException(nameof(message));
@@ -165,7 +166,7 @@ namespace TS3AudioBot.ResourceFactories
 				if (resolver is null)
 					throw CouldNotLoad(string.Format(strings.error_resfac_no_registered_factory, audioType));
 
-				try { return await resolver.GetPlaylist(ctx, netlinkurl); }
+				try { return await resolver.GetPlaylist(ctx, netlinkurl, cancellationToken); }
 				catch (AudioBotException ex) { throw CouldNotLoad(ex.Message); }
 			}
 
@@ -175,7 +176,7 @@ namespace TS3AudioBot.ResourceFactories
 			{
 				try
 				{
-					return await resolver.GetPlaylist(ctx, netlinkurl);
+					return await resolver.GetPlaylist(ctx, netlinkurl, cancellationToken);
 				}
 				catch (AudioBotException ex)
 				{
@@ -206,23 +207,23 @@ namespace TS3AudioBot.ResourceFactories
 			}
 		}
 
-		public async Task GetThumbnail(ResolveContext ctx, PlayResource playResource, Func<Stream, Task> action)
+		public async Task GetThumbnail(ResolveContext ctx, PlayResource playResource, AsyncStreamAction action, CancellationToken cancellationToken)
 		{
 			var resolver = GetResolverByType<IThumbnailResolver>(playResource.AudioResource.AudioType);
 			if (resolver is null)
 				throw Error.LocalStr(string.Format(strings.error_resfac_no_registered_factory, playResource.AudioResource.AudioType));
 
 			var sw = Stopwatch.StartNew();
-			await resolver.GetThumbnail(ctx, playResource, action);
+			await resolver.GetThumbnail(ctx, playResource, action, cancellationToken);
 			Log.Debug("Took {0}ms to load thumbnail.", sw.ElapsedMilliseconds);
 		}
 
-		public async Task<IList<AudioResource>> Search(ResolveContext ctx, string resolverName, string query)
+		public async Task<IList<AudioResource>> Search(ResolveContext ctx, string resolverName, string query, CancellationToken cancellationToken)
 		{
 			var resolver = GetResolverByType<ISearchResolver>(resolverName);
 			if (resolver is null)
 				throw CouldNotLoad(string.Format(strings.error_resfac_no_registered_factory, resolverName));
-			return await resolver.Search(ctx, query);
+			return await resolver.Search(ctx, query, cancellationToken);
 		}
 
 		public void AddResolver(IResolver resolver)

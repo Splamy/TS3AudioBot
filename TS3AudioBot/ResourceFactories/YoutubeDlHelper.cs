@@ -32,34 +32,34 @@ namespace TS3AudioBot.ResourceFactories
 		private const string ParamGetPlaylist = "--no-warnings --yes-playlist --flat-playlist --dump-single-json --id --";
 		private const string ParamGetSearch = "--no-warnings --flat-playlist --dump-single-json -- ytsearch10:";
 
-		public static async Task<JsonYtdlDump> GetSingleVideo(string id)
+		public static async Task<JsonYtdlDump> GetSingleVideo(string id, CancellationToken cancellationToken)
 		{
 			var ytdlPath = FindYoutubeDl();
 			if (ytdlPath is null)
 				throw Error.LocalStr(strings.error_ytdl_not_found);
 
 			var param = $"{ytdlPath.Value.param}{ParamGetSingleVideo} {id}";
-			return await RunYoutubeDl<JsonYtdlDump>(ytdlPath.Value.ytdlpath, param);
+			return await RunYoutubeDl<JsonYtdlDump>(ytdlPath.Value.ytdlpath, param, cancellationToken);
 		}
 
-		public static async Task<JsonYtdlPlaylistDump> GetPlaylistAsync(string url)
+		public static async Task<JsonYtdlPlaylistDump> GetPlaylistAsync(string url, CancellationToken cancellationToken)
 		{
 			var ytdlPath = FindYoutubeDl();
 			if (ytdlPath is null)
 				throw Error.LocalStr(strings.error_ytdl_not_found);
 
 			var param = $"{ytdlPath.Value.param}{ParamGetPlaylist} {url}";
-			return await RunYoutubeDl<JsonYtdlPlaylistDump>(ytdlPath.Value.ytdlpath, param);
+			return await RunYoutubeDl<JsonYtdlPlaylistDump>(ytdlPath.Value.ytdlpath, param, cancellationToken);
 		}
 
-		public static async Task<JsonYtdlPlaylistDump> GetSearchAsync(string text)
+		public static async Task<JsonYtdlPlaylistDump> GetSearchAsync(string text, CancellationToken cancellationToken)
 		{
 			var ytdlPath = FindYoutubeDl();
 			if (ytdlPath is null)
 				throw Error.LocalStr(strings.error_ytdl_not_found);
 
 			var param = $"{ytdlPath.Value.param}{ParamGetSearch}\"{text}\"";
-			return await RunYoutubeDl<JsonYtdlPlaylistDump>(ytdlPath.Value.ytdlpath, param);
+			return await RunYoutubeDl<JsonYtdlPlaylistDump>(ytdlPath.Value.ytdlpath, param, cancellationToken);
 		}
 
 		public static (string ytdlpath, string param)? FindYoutubeDl()
@@ -105,7 +105,7 @@ namespace TS3AudioBot.ResourceFactories
 			return null;
 		}
 
-		public static async Task<T> RunYoutubeDl<T>(string path, string args) where T : notnull
+		public static async Task<T> RunYoutubeDl<T>(string path, string args, CancellationToken cancellationToken) where T : notnull
 		{
 			try
 			{
@@ -132,7 +132,7 @@ namespace TS3AudioBot.ResourceFactories
 				tmproc.ErrorDataReceived += (s, e) => stdErr.Append(e.Data);
 				tmproc.BeginOutputReadLine();
 				tmproc.BeginErrorReadLine();
-				await tmproc.WaitForExitAsync(TimeSpan.FromSeconds(20));
+				await tmproc.WaitForExitAsync(TimeSpan.FromSeconds(20), cancellationToken);
 
 				if (!tmproc.HasExitedSafe())
 				{
@@ -148,7 +148,7 @@ namespace TS3AudioBot.ResourceFactories
 						stdErr.Append(strings.error_ytdl_empty_response).Append(" (timeout)");
 						break;
 					}
-					await Task.Delay(50);
+					await Task.Delay(50, cancellationToken);
 				}
 
 				if (stdErr.Length > 0)

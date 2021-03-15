@@ -12,6 +12,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using TS3AudioBot.Config;
 using TS3AudioBot.Helper;
@@ -37,14 +38,14 @@ namespace TS3AudioBot.ResourceFactories
 			File.Exists(uri) ? MatchCertainty.Always
 			: MatchCertainty.OnlyIfLast;
 
-		public Task<PlayResource> GetResource(ResolveContext ctx, string uri)
+		public Task<PlayResource> GetResource(ResolveContext ctx, string uri, CancellationToken cancellationToken)
 		{
-			return GetResourceById(ctx, new AudioResource(uri, null, ResolverFor));
+			return GetResourceById(ctx, new AudioResource(uri, null, ResolverFor), cancellationToken);
 		}
 
-		public async Task<PlayResource> GetResourceById(ResolveContext ctx, AudioResource resource)
+		public async Task<PlayResource> GetResourceById(ResolveContext ctx, AudioResource resource, CancellationToken cancellationToken)
 		{
-			var resData = await ValidateFromString(ctx.Config, resource.ResourceId);
+			var resData = await ValidateFromString(ctx.Config, resource.ResourceId, cancellationToken);
 
 			if (resData.IsIcyStream)
 			{
@@ -64,18 +65,18 @@ namespace TS3AudioBot.ResourceFactories
 
 		public string RestoreLink(ResolveContext _, AudioResource resource) => resource.ResourceId;
 
-		private Task<ResData> ValidateFromString(ConfBot config, string uriStr)
+		private static Task<ResData> ValidateFromString(ConfBot config, string uriStr, CancellationToken cancellationToken)
 		{
 			var uri = GetUri(config, uriStr);
-			return ValidateUri(uri);
+			return ValidateUri(uri, cancellationToken);
 		}
 
-		private Task<ResData> ValidateUri(Uri uri)
+		private static Task<ResData> ValidateUri(Uri uri, CancellationToken cancellationToken)
 		{
 			if (uri.IsWeb())
-				return ValidateWeb(uri);
+				return ValidateWeb(uri, cancellationToken);
 			if (uri.IsFile())
-				return Task.Run(() => ValidateFile(uri));
+				return Task.Run(() => ValidateFile(uri), cancellationToken);
 
 			throw Error.LocalStr(strings.error_media_invalid_uri);
 		}
@@ -87,29 +88,27 @@ namespace TS3AudioBot.ResourceFactories
 			return headerData;
 		}
 
-		private static async Task<ResData> ValidateWeb(Uri link)
+		private static async Task<ResData> ValidateWeb(Uri link, CancellationToken cancellationToken)
 		{
 			try
 			{
-				return await WebWrapper.Request(link).WithHeader("Icy-MetaData", "1").ToAction(async response =>
+				return await WebWrapper.Request(link).WithHeader("Icy-MetaData", "1").ToAction(async (response, ct) =>
 				{
 					if (response.Headers.GetSingle("icy-metaint") != null)
 					{
 						return new ResData(link.AbsoluteUri, null) { IsIcyStream = true };
 					}
-					var contentType = response.Headers.GetSingle("ContentType");
-					if (contentType == "application/vnd.apple.mpegurl"
-						|| contentType == "application/vnd.apple.mpegurl.audio")
+					if (response.Headers.GetSingle("ContentType") is "application/vnd.apple.mpegurl" or "application/vnd.apple.mpegurl.audio")
 					{
 						return new ResData(link.AbsoluteUri, null); // No title meta info
 					}
 					else
 					{
-						using var stream = await response.Content.ReadAsStreamAsync();
+						using var stream = await response.Content.ReadAsStreamAsync(ct);
 						var headerData = GetStreamHeaderData(stream);
 						return new ResData(link.AbsoluteUri, headerData.Title) { Image = headerData.Picture };
 					}
-				});
+				}, cancellationToken);
 			}
 			catch (Exception ex)
 			{
@@ -118,7 +117,8 @@ namespace TS3AudioBot.ResourceFactories
 			}
 		}
 
-		private ResData ValidateFile(Uri foundPath)
+		// TODO try to make async
+		private static ResData ValidateFile(Uri foundPath)
 		{
 			try
 			{
@@ -175,7 +175,7 @@ namespace TS3AudioBot.ResourceFactories
 			return null;
 		}
 
-		public async Task<Playlist> GetPlaylist(ResolveContext ctx, string url)
+		public async Task<Playlist> GetPlaylist(ResolveContext ctx, string url, CancellationToken cancellationToken)
 		{
 			if (Directory.Exists(url)) // TODO rework for security
 			{
@@ -187,7 +187,7 @@ namespace TS3AudioBot.ResourceFactories
 					{
 						try
 						{
-							var val = await ValidateFromString(ctx.Config, file.FullName);
+							var val = await ValidateFromString(ctx.Config, file.FullName, cancellationToken);
 							var res = new AudioResource(val.FullUri, string.IsNullOrWhiteSpace(val.Title) ? val.FullUri : val.Title, ResolverFor);
 							var addResult = plist.Add(new PlaylistItem(res));
 							if (!addResult) break;
@@ -210,19 +210,19 @@ namespace TS3AudioBot.ResourceFactories
 				if (uri.IsFile())
 				{
 					using var stream = File.OpenRead(uri.AbsolutePath);
-					return await GetPlaylistContentAsync(stream, url);
+					return await GetPlaylistContentAsync(stream, url, null, cancellationToken);
 				}
 				else if (uri.IsWeb())
 				{
-					return await WebWrapper.Request(uri).ToAction(async response =>
+					return await WebWrapper.Request(uri).ToAction(async (response, ct) =>
 					{
 						var contentType = response.Headers.GetSingle("Content-Type");
 						int index = url.LastIndexOf('.');
 						string anyId = index >= 0 ? url[index..] : url;
 
-						using var stream = await response.Content.ReadAsStreamAsync();
-						return await GetPlaylistContentAsync(stream, url, contentType);
-					});
+						using var stream = await response.Content.ReadAsStreamAsync(ct);
+						return await GetPlaylistContentAsync(stream, url, contentType, ct);
+					}, cancellationToken);
 				}
 				throw Error.LocalStr(strings.error_media_invalid_uri);
 			}
@@ -233,9 +233,10 @@ namespace TS3AudioBot.ResourceFactories
 			}
 		}
 
-		private Task<Playlist> GetPlaylistContentAsync(Stream stream, string url, string? mime = null)
-			=> Task.Run(() => GetPlaylistContent(stream, url, mime));
+		private Task<Playlist> GetPlaylistContentAsync(Stream stream, string url, string? mime, CancellationToken cancellationToken)
+			=> Task.Run(() => GetPlaylistContent(stream, url, mime), cancellationToken);
 
+		// TODO try to make async
 		private Playlist GetPlaylistContent(Stream stream, string url, string? mime = null)
 		{
 			string? name = null;
@@ -315,7 +316,7 @@ namespace TS3AudioBot.ResourceFactories
 			return new Playlist(items).SetTitle(name);
 		}
 
-		public async Task GetThumbnail(ResolveContext _, PlayResource playResource, Func<Stream, Task> action)
+		public async Task GetThumbnail(ResolveContext _, PlayResource playResource, AsyncStreamAction action, CancellationToken cancellationToken)
 		{
 			byte[]? rawImgData;
 
@@ -330,7 +331,7 @@ namespace TS3AudioBot.ResourceFactories
 				if (uri.IsWeb())
 				{
 					rawImgData = await WebWrapper.Request(uri)
-						.ToAction(async response => AudioTagReader.GetData(await response.Content.ReadAsStreamAsync())?.Picture);
+						.ToAction(async (response, ct) => AudioTagReader.GetData(await response.Content.ReadAsStreamAsync(ct))?.Picture, cancellationToken);
 				}
 				else if (uri.IsFile())
 				{
@@ -346,7 +347,7 @@ namespace TS3AudioBot.ResourceFactories
 			if (rawImgData is null)
 				throw Error.LocalStr(strings.error_media_image_not_found);
 
-			await action(new MemoryStream(rawImgData));
+			await action(new MemoryStream(rawImgData), cancellationToken);
 		}
 
 		public void Dispose() { }

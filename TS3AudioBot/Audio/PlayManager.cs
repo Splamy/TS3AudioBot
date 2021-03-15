@@ -10,6 +10,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using TS3AudioBot.Config;
 using TS3AudioBot.Environment;
@@ -34,6 +35,7 @@ namespace TS3AudioBot.Audio
 
 		public PlayInfoEventArgs? CurrentPlayData { get; private set; }
 		public bool IsPlaying => CurrentPlayData != null;
+		private CancellationTokenSource? playRequest = null;
 
 		public event AsyncEventHandler<PlayInfoEventArgs>? OnResourceUpdated;
 		public event AsyncEventHandler<PlayInfoEventArgs>? BeforeResourceStarted;
@@ -54,7 +56,7 @@ namespace TS3AudioBot.Audio
 		public async Task Enqueue(InvokerData invoker, string message, string? audioType = null, PlayInfo? meta = null)
 		{
 			PlayResource playResource;
-			try { playResource = await resourceResolver.Load(message, audioType); }
+			try { playResource = await resourceResolver.Load(message, CancellationToken.None, audioType); }
 			catch
 			{
 				stats.TrackSongLoad(audioType, false, true);
@@ -101,7 +103,10 @@ namespace TS3AudioBot.Audio
 				throw new ArgumentNullException(nameof(ar));
 
 			PlayResource playResource;
-			try { playResource = await resourceResolver.Load(ar); }
+			try
+			{
+				playResource = await WithPlayRequestCancelToken(async ct => await resourceResolver.Load(ar, ct));
+			}
 			catch
 			{
 				stats.TrackSongLoad(ar.AudioType, false, true);
@@ -119,7 +124,10 @@ namespace TS3AudioBot.Audio
 		public async Task Play(InvokerData invoker, string link, string? audioType = null, PlayInfo? meta = null)
 		{
 			PlayResource playResource;
-			try { playResource = await resourceResolver.Load(link, audioType); }
+			try
+			{
+				playResource = await WithPlayRequestCancelToken(async ct => await resourceResolver.Load(link, ct, audioType));
+			}
 			catch
 			{
 				stats.TrackSongLoad(audioType, false, true);
@@ -184,7 +192,10 @@ namespace TS3AudioBot.Audio
 		private async Task StartResource(InvokerData invoker, PlaylistItem item)
 		{
 			PlayResource playResource;
-			try { playResource = await resourceResolver.Load(item.AudioResource); }
+			try
+			{
+				playResource = await WithPlayRequestCancelToken(async ct => await resourceResolver.Load(item.AudioResource, ct));
+			}
 			catch
 			{
 				stats.TrackSongLoad(item.AudioResource.AudioType, false, false);
@@ -317,6 +328,22 @@ namespace TS3AudioBot.Audio
 				}
 			}
 			return meta;
+		}
+
+		private async Task<T> WithPlayRequestCancelToken<T>(Func<CancellationToken, Task<T>> request)
+		{
+			using var cts = new CancellationTokenSource();
+			try
+			{
+				playRequest?.Cancel();
+				playRequest = cts;
+				T res = await request(cts.Token);
+				return res;
+			}
+			finally
+			{
+				if (playRequest == cts) playRequest = null;
+			}
 		}
 	}
 }

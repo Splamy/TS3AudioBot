@@ -14,6 +14,7 @@ using SixLabors.ImageSharp.Formats.Jpeg;
 using SixLabors.ImageSharp.Processing;
 using System;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace TS3AudioBot.Helper
@@ -24,13 +25,13 @@ namespace TS3AudioBot.Helper
 
 		public const int ResizeMaxWidthDefault = 320;
 
-		public static async Task<ImageHolder> ResizeImageSave(Stream imgStream, int resizeMaxWidth = ResizeMaxWidthDefault)
+		public static async Task<ImageHolder> ResizeImageSave(Stream imgStream, CancellationToken cancellationToken, int resizeMaxWidth = ResizeMaxWidthDefault)
 		{
 			try
 			{
 				using var limitStream = new LimitStream(imgStream, Limits.MaxImageStreamSize);
 				using var mem = new MemoryStream();
-				await limitStream.CopyToAsync(mem);
+				await limitStream.CopyToAsync(mem, cancellationToken);
 				mem.Seek(0, SeekOrigin.Begin);
 				return ResizeImage(mem, resizeMaxWidth);
 			}

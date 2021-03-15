@@ -9,12 +9,14 @@
 
 using System;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
+using TS3AudioBot.Helper;
 
 namespace TS3AudioBot.ResourceFactories
 {
 	public interface IThumbnailResolver : IResolver
 	{
-		Task GetThumbnail(ResolveContext ctx, PlayResource playResource, Func<Stream, Task> action);
+		Task GetThumbnail(ResolveContext ctx, PlayResource playResource, AsyncStreamAction action, CancellationToken cancellationToken);
 	}
 }

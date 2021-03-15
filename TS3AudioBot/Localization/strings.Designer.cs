@@ -549,24 +549,6 @@ namespace TS3AudioBot.Localization {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Do want to remove all defective links file now?.
-        /// </summary>
-        internal static string cmd_history_clean_removedefective_confirm_clean {
-            get {
-                return ResourceManager.GetString("cmd_history_clean_removedefective_confirm_clean", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Checks for all links in the history which cannot be opened anymore and removes them..
-        /// </summary>
-        internal static string cmd_history_clean_removedefective_help {
-            get {
-                return ResourceManager.GetString("cmd_history_clean_removedefective_help", resourceCulture);
-            }
-        }
-        
-        /// <summary>
         ///   Looks up a localized string similar to Do you really want to delete the entry &quot;{0}&quot;
         ///with the id {1}?.
         /// </summary>

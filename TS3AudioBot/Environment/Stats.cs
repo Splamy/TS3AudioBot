@@ -114,7 +114,7 @@ namespace TS3AudioBot.Environment
 					.Request("https://splamy.de/api/tab/stats")
 					.WithMethod(HttpMethod.Post);
 				request.Content = new StringContent(JsonConvert.SerializeObject(sendPacket), Tools.Utf8Encoder, "application/json");
-				await request.ToAction(response =>
+				await request.ToAction((response, ct) =>
 				{
 					Log.Debug("Stats response {0}", response.StatusCode);
 					return Task.CompletedTask;
