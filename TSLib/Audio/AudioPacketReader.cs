@@ -22,7 +22,9 @@ namespace TSLib.Audio
 			if (OutStream is null || meta is null)
 				return;
 
-			if (data.Length < 5) // Invalid packet
+			// End of stream is signalled with no data or a single byte.
+			// The header has 5 bytes, so check for 6.
+			if (data.Length < 6)
 				return;
 
 			// Skip [0,2) Voice Packet Id for now
