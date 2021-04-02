@@ -30,6 +30,7 @@ namespace TSLib.Scheduler
 		// The TimeSpan class is used for calculation convenience
 		// The values is used as a cache so we don't need to recheck the list on each loop
 		private TimeSpan nextTimerDue = TimeSpan.MaxValue;
+		private readonly Stopwatch monotoneClock = Stopwatch.StartNew();
 		private bool IsOwnThread => Thread.CurrentThread == thread;
 #if DEBUG
 		private readonly Stack<Task> taskStack = new Stack<Task>();
@@ -234,7 +235,7 @@ namespace TSLib.Scheduler
 
 		internal void BumpTimer() => QueueTaskInternal(Task.CompletedTask);
 
-		private TimeSpan GetTimestamp() => new TimeSpan(Stopwatch.GetTimestamp());
+		private TimeSpan GetTimestamp() => monotoneClock.Elapsed;
 
 		public void VerifyOwnThread()
 		{
