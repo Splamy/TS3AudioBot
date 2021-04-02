@@ -221,6 +221,7 @@ namespace TSLib.Scheduler
 		internal void EnableTimer(TickWorker timer)
 		{
 			VerifyOwnThread();
+			timer.Timestamp = GetTimestamp();
 			timers.Add(timer);
 			BumpTimer();
 		}
