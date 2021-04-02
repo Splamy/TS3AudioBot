@@ -15,7 +15,7 @@ using System.Runtime.InteropServices;
 
 namespace TSLib.Audio
 {
-	public class PassiveMergePipe : IAudioPassiveProducer, IEnumerable<IAudioPassiveProducer>, ICollection<IAudioPassiveProducer>
+	public class PassiveMergePipe : IAudioPassiveProducer, ICollection<IAudioPassiveProducer>
 	{
 		private IAudioPassiveProducer[] safeProducerList = Array.Empty<IAudioPassiveProducer>();
 		private readonly List<IAudioPassiveProducer> producerList = new List<IAudioPassiveProducer>();
@@ -64,7 +64,7 @@ namespace TSLib.Audio
 			}
 		}
 
-		public int Read(byte[] buffer, int offset, int length, out Meta meta)
+		public int Read(byte[] buffer, int offset, int length, out Meta? meta)
 		{
 			if (changed)
 			{
@@ -113,7 +113,7 @@ namespace TSLib.Audio
 
 		IEnumerator IEnumerable.GetEnumerator() => safeProducerList.GetEnumerator();
 
-		public bool Contains(IAudioPassiveProducer item) => Enumerable.Contains(safeProducerList, item);
+		public bool Contains(IAudioPassiveProducer item) => safeProducerList.Contains(item);
 
 		public void CopyTo(IAudioPassiveProducer[] array, int arrayIndex) => Array.Copy(safeProducerList, 0, array, arrayIndex, array.Length);
 

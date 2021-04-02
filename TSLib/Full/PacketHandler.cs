@@ -42,7 +42,7 @@ namespace TSLib.Full
 		// Out Packets
 		private readonly ushort[] packetCounter;
 		private readonly uint[] generationCounter;
-		private ResendPacket<TOut> initPacketCheck;
+		private ResendPacket<TOut>? initPacketCheck;
 		private readonly Dictionary<ushort, ResendPacket<TOut>> packetAckManager = new Dictionary<ushort, ResendPacket<TOut>>();
 		// In Packets
 		private readonly GenerationWindow receiveWindowVoice;
@@ -52,8 +52,8 @@ namespace TSLib.Full
 		// ====
 		private readonly object sendLoopLock = new object();
 		private readonly TsCrypt tsCrypt;
-		private Socket socket;
-		private Timer resendTimer;
+		private Socket? socket;
+		private Timer? resendTimer;
 		private DateTime pingCheck;
 		private int pingCheckRunning; // bool
 		private readonly Id id; // Log id
@@ -61,11 +61,11 @@ namespace TSLib.Full
 		public NetworkStats NetworkStats { get; }
 
 		public ClientId ClientId { get; set; }
-		private IPEndPoint remoteAddress;
+		private IPEndPoint? remoteAddress;
 		private int closed; // bool
 
-		public PacketEvent<TIn> PacketEvent;
-		public Action<Reason?> StopEvent;
+		public PacketEvent<TIn>? PacketEvent;
+		public Action<Reason?>? StopEvent;
 
 		public PacketHandler(TsCrypt ts3Crypt, Id id)
 		{
@@ -82,9 +82,10 @@ namespace TSLib.Full
 			this.id = id;
 		}
 
-		public void Connect(IPEndPoint address)
+		public E<string> Connect(IPEndPoint address)
 		{
-			Initialize(address, true);
+			if (!Initialize(address, true).GetOk(out var error))
+				return "Failed to initialize: " + error.Message;
 			// The old client used to send 'clientinitiv' as the first message.
 			// All newer servers still ack it but do not require it anymore.
 			// Therefore there is no use in sending it.
@@ -92,14 +93,14 @@ namespace TSLib.Full
 			//  it because the packed-ids the server expects are fixed.
 			IncPacketCounter(PacketType.Command);
 			// Send the actual new init packet.
-			AddOutgoingPacket(tsCrypt.ProcessInit1<TIn>(null).Value, PacketType.Init1);
+			return AddOutgoingPacket(tsCrypt.ProcessInit1<TIn>(null).Value, PacketType.Init1);
 		}
 
 		public void Listen(IPEndPoint address)
 		{
 			lock (sendLoopLock)
 			{
-				Initialize(address, false);
+				Initialize(address, false).Unwrap();
 				// dummy
 				initPacketCheck = new ResendPacket<TOut>(new Packet<TOut>(Array.Empty<byte>(), 0, 0, 0))
 				{
@@ -109,8 +110,10 @@ namespace TSLib.Full
 			}
 		}
 
-		private void Initialize(IPEndPoint address, bool connect)
+		private E<Exception> Initialize(IPEndPoint address, bool connect)
 		{
+			if (address is null) throw new ArgumentNullException(nameof(address));
+
 			lock (sendLoopLock)
 			{
 				ClientId = default;
@@ -156,12 +159,13 @@ namespace TSLib.Full
 						// TODO init socketevargs stuff
 					}
 				}
-				catch (SocketException ex) { throw new TsException("Could not connect", ex); }
+				catch (SocketException ex) { return ex; }
 
 				pingCheckRunning = 0;
 				pingCheck = Tools.Now;
 				if (resendTimer == null)
-					resendTimer = new Timer((_) => { using (MappedDiagnosticsContext.SetScoped("BotId", id)) ResendLoop(); }, null, ClockResolution, ClockResolution);
+					resendTimer = new Timer((_) => { using (MappedDiagnosticsLogicalContext.SetScoped("BotId", id)) ResendLoop(); }, null, ClockResolution, ClockResolution);
+				return R.Ok;
 			}
 		}
 
@@ -234,6 +238,7 @@ namespace TSLib.Full
 					first = false;
 				}
 
+				Debug.Assert(!NeedsSplitting(blockSize));
 				var sendResult = SendOutgoingData(rawData.Slice(pos, blockSize), packetType, flags);
 				if (!sendResult.Ok)
 					return sendResult;
@@ -253,7 +258,7 @@ namespace TSLib.Full
 			var packet = new Packet<TOut>(data, packetType, ids.Id, ids.Generation) { PacketType = packetType };
 			if (typeof(TOut) == typeof(C2S)) // TODO: XXX
 			{
-				var meta = (C2S)(object)packet.HeaderExt;
+				var meta = (C2S)(object)packet.HeaderExt!;
 				meta.ClientId = ClientId.Value;
 				packet.HeaderExt = (TOut)(object)meta;
 			}
@@ -325,12 +330,12 @@ namespace TSLib.Full
 
 		private static bool NeedsSplitting(int dataSize) => dataSize + OutHeaderSize > MaxOutPacketSize;
 
-		private static void FetchPacketEvent(object selfObj, SocketAsyncEventArgs args)
+		private static void FetchPacketEvent(object? selfObj, SocketAsyncEventArgs args)
 		{
 			var self = (PacketHandler<TIn, TOut>)args.UserToken;
 
 			bool isAsync;
-			using (MappedDiagnosticsContext.SetScoped("BotId", self.id))
+			using (MappedDiagnosticsLogicalContext.SetScoped("BotId", self.id))
 			{
 				do
 				{
@@ -355,7 +360,8 @@ namespace TSLib.Full
 						if (self.closed != 0)
 							return;
 
-						try { isAsync = self.socket.ReceiveFromAsync(args); }
+						Trace.Assert(self.socket != null, nameof(self.socket) + " is null");
+						try { isAsync = self.socket!.ReceiveFromAsync(args); }
 						catch (Exception ex) { Log.Debug(ex, "Error starting socket receive"); return; }
 					}
 				} while (!isAsync);
@@ -464,7 +470,7 @@ namespace TSLib.Full
 			SendAck(packet.PacketId, ackType);
 
 			// Check if we already have this packet and only need to ack it.
-			if (setStatus == ItemSetStatus.InWindowSet || setStatus == ItemSetStatus.OutOfWindowSet)
+			if (setStatus.HasFlag(ItemSetStatus.Set))
 				return false;
 
 			packetQueue.Set(packet.PacketId, packet);
@@ -508,7 +514,7 @@ namespace TSLib.Full
 
 			// GET
 			if (!packetQueue.TryDequeue(out packet))
-				throw new InvalidOperationException("Packet in queue got missing (?)");
+				Trace.Fail("Packet in queue got missing (?)");
 
 			// MERGE
 			if (take > 1)
@@ -522,7 +528,7 @@ namespace TSLib.Full
 				for (int i = 1; i < take; i++)
 				{
 					if (!packetQueue.TryDequeue(out var nextPacket))
-						throw new InvalidOperationException("Packet in queue got missing (?)");
+						Trace.Fail("Packet in queue got missing (?)");
 
 					nextPacket.Data.CopyTo(preFinalArray.AsSpan(curCopyPos, nextPacket.Size));
 					curCopyPos += nextPacket.Size;
@@ -550,10 +556,8 @@ namespace TSLib.Full
 		{
 			Span<byte> ackData = stackalloc byte[2];
 			BinaryPrimitives.WriteUInt16BigEndian(ackData, ackId);
-			if (ackType == PacketType.Ack || ackType == PacketType.AckLow)
-				AddOutgoingPacket(ackData, ackType);
-			else
-				throw new InvalidOperationException("Packet type is not an Ack-type");
+			Trace.Assert(ackType == PacketType.Ack || ackType == PacketType.AckLow, "Packet type is not an Ack-type");
+			AddOutgoingPacket(ackData, ackType);
 		}
 
 		private bool ReceiveAck(ref Packet<TIn> packet)
@@ -740,6 +744,10 @@ namespace TSLib.Full
 
 		private E<string> SendRaw(ref Packet<TOut> packet)
 		{
+			Trace.Assert(socket != null, nameof(socket) + " is null");
+			Trace.Assert(packet.Raw != null, nameof(packet.Raw) + " is null");
+			Trace.Assert(remoteAddress != null, nameof(remoteAddress) + " is null");
+
 			NetworkStats.LogOutPacket(ref packet);
 
 			// DebugToHex is costly and allocates, precheck before logging
@@ -748,7 +756,13 @@ namespace TSLib.Full
 
 			try
 			{
-				socket.SendTo(packet.Raw, packet.Raw.Length, SocketFlags.None, remoteAddress);
+				var sw = Stopwatch.StartNew();
+				socket!.SendTo(packet.Raw, packet.Raw.Length, SocketFlags.None, remoteAddress);
+				var elap = sw.ElapsedMilliseconds;
+				if (elap > 100)
+				{
+					LogRaw.Warn("Raw LONG: {0}ms", elap);
+				}
 				return R.Ok;
 			}
 			catch (SocketException ex)

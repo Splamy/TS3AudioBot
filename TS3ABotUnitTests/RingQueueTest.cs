@@ -5,9 +5,8 @@ using TSLib.Full;
 namespace TS3ABotUnitTests
 {
 	[TestFixture]
-	internal class RingQueueTest
+	public class RingQueueTest
 	{
-
 		[Test]
 		public void RingQueueTest1()
 		{
@@ -16,7 +15,7 @@ namespace TS3ABotUnitTests
 			q.Set(0, 42);
 
 			Assert.True(q.TryPeekStart(0, out int ov));
-			Assert.AreEqual(ov, 42);
+			Assert.AreEqual(42, ov);
 
 			q.Set(1, 43);
 
@@ -24,15 +23,15 @@ namespace TS3ABotUnitTests
 			Assert.Throws<ArgumentOutOfRangeException>(() => q.Set(1, 99));
 
 			Assert.True(q.TryPeekStart(0, out ov));
-			Assert.AreEqual(ov, 42);
+			Assert.AreEqual(42, ov);
 			Assert.True(q.TryPeekStart(1, out ov));
-			Assert.AreEqual(ov, 43);
+			Assert.AreEqual(43, ov);
 
 			Assert.True(q.TryDequeue(out ov));
-			Assert.AreEqual(ov, 42);
+			Assert.AreEqual(42, ov);
 
 			Assert.True(q.TryPeekStart(0, out ov));
-			Assert.AreEqual(ov, 43);
+			Assert.AreEqual(43, ov);
 			Assert.False(q.TryPeekStart(1, out ov));
 
 			q.Set(3, 45);
@@ -42,9 +41,9 @@ namespace TS3ABotUnitTests
 			Assert.Throws<ArgumentOutOfRangeException>(() => q.Set(4, 99));
 
 			Assert.True(q.TryDequeue(out ov));
-			Assert.AreEqual(ov, 43);
+			Assert.AreEqual(43, ov);
 			Assert.True(q.TryDequeue(out ov));
-			Assert.AreEqual(ov, 44);
+			Assert.AreEqual(44, ov);
 
 			q.Set(4, 46);
 
@@ -54,11 +53,11 @@ namespace TS3ABotUnitTests
 			q.Set(0, 47);
 
 			Assert.True(q.TryDequeue(out ov));
-			Assert.AreEqual(ov, 45);
+			Assert.AreEqual(45, ov);
 			Assert.True(q.TryDequeue(out ov));
-			Assert.AreEqual(ov, 46);
+			Assert.AreEqual(46, ov);
 			Assert.True(q.TryDequeue(out ov));
-			Assert.AreEqual(ov, 47);
+			Assert.AreEqual(47, ov);
 
 			q.Set(2, 49);
 
@@ -67,9 +66,9 @@ namespace TS3ABotUnitTests
 			q.Set(1, 48);
 
 			Assert.True(q.TryDequeue(out ov));
-			Assert.AreEqual(ov, 48);
+			Assert.AreEqual(48, ov);
 			Assert.True(q.TryDequeue(out ov));
-			Assert.AreEqual(ov, 49);
+			Assert.AreEqual(49, ov);
 		}
 
 		[Test]
@@ -81,7 +80,7 @@ namespace TS3ABotUnitTests
 			{
 				q.Set(i, i);
 				Assert.True(q.TryDequeue(out var iCheck));
-				Assert.AreEqual(iCheck, i);
+				Assert.AreEqual(i, iCheck);
 			}
 
 			var setStatus = q.IsSet(ushort.MaxValue - 20);

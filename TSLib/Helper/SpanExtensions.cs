@@ -8,7 +8,6 @@
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
 using System;
-using System.Text;
 
 namespace TSLib.Helper
 {
@@ -16,10 +15,10 @@ namespace TSLib.Helper
 	{
 		public static string NewUtf8String(this ReadOnlySpan<byte> span)
 		{
-#if NETCOREAPP2_2 || NETCOREAPP3_0
-			return Encoding.UTF8.GetString(span);
+#if NETSTANDARD2_1 || NETCOREAPP3_1
+			return Tools.Utf8Encoder.GetString(span);
 #else
-			return Encoding.UTF8.GetString(span.ToArray());
+			return Tools.Utf8Encoder.GetString(span.ToArray());
 #endif
 		}
 

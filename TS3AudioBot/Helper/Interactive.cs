@@ -8,6 +8,7 @@
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
 using System;
+using System.Threading.Tasks;
 
 namespace TS3AudioBot.Helper
 {
@@ -25,7 +26,7 @@ namespace TS3AudioBot.Helper
 			}
 		}
 
-		public static string LoopAction(string question, Func<string, bool> action)
+		public static string? LoopAction(string question, Func<string, bool> action)
 		{
 			string text;
 			do
@@ -36,6 +37,20 @@ namespace TS3AudioBot.Helper
 					return null;
 			}
 			while (!action(text));
+			return text;
+		}
+
+		public static async Task<string?> LoopActionAsync(string question, Func<string, Task<bool>> action)
+		{
+			string text;
+			do
+			{
+				Console.WriteLine(question);
+				text = Console.ReadLine();
+				if (text is null)
+					return null;
+			}
+			while (!await action(text));
 			return text;
 		}
 	}

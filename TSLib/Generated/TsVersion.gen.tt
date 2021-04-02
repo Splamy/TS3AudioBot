@@ -41,47 +41,12 @@ string BuildToFld(string build)
 	return string.Join("_", m.Groups[1].Value.Split('.').Select(x => x.Replace("?", "X")));
 }
 #>
-using System.Collections.Generic;
 
-namespace TSLib.Full
+namespace TSLib
 {
-	/// <summary>
-	/// Describes a triple of version, platform and a cryptographical signature (usually distributed by "TeamSpeak Systems").
-	/// Each triple has to match and is not interchangeable with other triple parts.
-	/// </summary>
-	public sealed class VersionSign
+	partial class TsVersionSigned
 	{
-		private static readonly Dictionary<string, ClientPlatform> Platforms = new Dictionary<string, ClientPlatform> {
-			{ "Windows", ClientPlatform.Windows },
-			{ "Linux", ClientPlatform.Linux },
-			{ "OS X", ClientPlatform.MacOs },
-			{ "macOS", ClientPlatform.MacOs },
-			{ "Android", ClientPlatform.Android },
-			{ "iOS", ClientPlatform.Ios },
-		};
-
-		public string Sign { get; }
-		public string Name { get; }
-		public ClientPlatform Platform { get; }
-		public string PlatformName { get; }
-
-		private static ClientPlatform GetPlatform(string platform)
-			=> Platforms.TryGetValue(platform, out var enu) ? enu : ClientPlatform.Other;
-
-		public VersionSign(string name, string platform, string sign)
-			: this(name, platform, GetPlatform(platform), sign) { }
-
-		public VersionSign(string name, string platform, ClientPlatform platformType, string sign)
-		{
-			Name = name;
-			Sign = sign;
-			Platform = platformType;
-			PlatformName = platform;
-		}
-
-		public bool CheckValid() => TsCrypt.EdCheck(this);
-
-		// ReSharper disable InconsistentNaming, UnusedMember.Global<# 
+		// ReSharper disable InconsistentNaming, UnusedMember.Global<#
 		var header = data[0];
 		int ichan = Array.IndexOf(header, "channel");
 		int iname = Array.IndexOf(header, "version");
@@ -95,20 +60,17 @@ namespace TSLib.Full
 			if (duplicates.Contains(fldName))
 				continue;
 			duplicates.Add(fldName);
+			Regex VersionPattern = new Regex(@"([^ ])* \[Build: (\d+)\]");
+			var build = VersionPattern.Match(line[iname]).Groups[2].Value;
 		#>
-		public static VersionSign <#= fldName #> { get; } = new VersionSign("<#= line[iname] #>", "<#= line[iplat] #>", ClientPlatform.<#= ver.enu #>, "<#= line[ihash] #>");<#
+		public static TsVersionSigned <#= fldName #> { get; } = new TsVersionSigned("<#=
+			line[iname] #>", "<#=
+			line[iplat] #>", ClientPlatform.<#=
+			ver.enu #>, <#= 
+			build #>UL, "<#=
+			line[ihash] #>");<#
 		} #>
 		// ReSharper restore InconsistentNaming, UnusedMember.Global
-	}
-
-	public enum ClientPlatform
-	{
-		Other = 0,
-		Windows,
-		Linux,
-		MacOs,
-		Android,
-		Ios,
 	}
 }
 <#+ class Ver

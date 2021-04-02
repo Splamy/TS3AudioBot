@@ -11,11 +11,20 @@ namespace TS3AudioBot.ResourceFactories.Youtube
 {
 	public sealed class VideoData
 	{
-		public string Link { get; set; }
-		public string Qualitydesciption { get; set; }
-		public VideoCodec Codec { get; set; }
-		public bool AudioOnly { get; set; }
-		public bool VideoOnly { get; set; }
+		public VideoData(string link, string qualitydesciption, VideoCodec codec, bool audioOnly = false, bool videoOnly = false)
+		{
+			Link = link;
+			Qualitydesciption = qualitydesciption;
+			Codec = codec;
+			AudioOnly = audioOnly;
+			VideoOnly = videoOnly;
+		}
+
+		public string Link { get; }
+		public string Qualitydesciption { get; }
+		public VideoCodec Codec { get; }
+		public bool AudioOnly { get; }
+		public bool VideoOnly { get; }
 
 		public override string ToString() => $"{Qualitydesciption} @ {Codec} - {Link}";
 	}

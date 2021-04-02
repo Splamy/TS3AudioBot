@@ -12,6 +12,7 @@
 <#@ include file="../Generated/M2BParser.ttinclude" once="true" #>
 <#@ include file="../Generated/MessageParser.ttinclude" once="true" #>
 <#@ include file="../Generated/BookParser.ttinclude" once="true" #>
+<#@ include file="../Generated/NotificationUtil.ttinclude" once="true" #>
 <#@ output extension=".cs" #>
 <#@ import namespace="System.Collections.Generic" #>
 
@@ -19,36 +20,17 @@ using System;
 using TSLib.Helper;
 using TSLib.Messages;
 
+#nullable enable
 namespace TSLib.Full
 {
-	public sealed partial class TsFullClient
+	partial class TsFullClient
 	{
 		<#
 		var genbook = BookDeclarations.Parse(Host.ResolvePath("../Declarations/Book.toml"));
 		var genmsg = Messages.Parse(Host.ResolvePath("../Declarations/Messages.toml"));
 		var genm2b = M2BDeclarations.Parse(Host.ResolvePath("../Declarations/MessagesToBook.toml"), genmsg, genbook);
-		var shared = new HashSet<string> {
-			"TextMessage",
-			"ClientEnterView",
-			"ClientLeftView",
-		};
-		
-		PushIndent("\t\t");
-		WriteLine("");
 
-		foreach(var ntfy in OnlyS2C(genmsg.NotifiesSorted))
-		{
-			Write("public");
-			if(shared.Contains(ntfy.name))
-				Write(" override");
-			WriteLine($" event NotifyEventHandler<{ntfy.name}> On{ntfy.name};");
-
-			Write("public");
-			//if(shared.Contains(ntfy.name))
-			//	Write(" override");
-			WriteLine($" event EventHandler<{ntfy.name}> OnEach{ntfy.name};");
-		}
-		PopIndent();
+		GenNtfyDecls(OnlyS2C(genmsg.NotifiesSorted));
 		#>
 
 		private void InvokeEvent(LazyNotification lazyNotification)

@@ -1,22 +1,24 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <TargetFrameworks>net472;netcoreapp2.2;netcoreapp3.1;netstandard2.0</TargetFrameworks>
-    <LangVersion>7.3</LangVersion>
     <RootNamespace>TS3AudioBot</RootNamespace>
     <AssemblyName>TS3AudioBot</AssemblyName>
+    <OutputType>Exe</OutputType>
+    <LangVersion>8.0</LangVersion>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <TargetLatestRuntimePatch>true</TargetLatestRuntimePatch>
+    <RollForward>Major</RollForward>
 
+    <Nullable>enable</Nullable>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <Prefer32Bit>false</Prefer32Bit>
     <DebugType>portable</DebugType>
-    <CodeAnalysisRuleSet>../TS3AudioBot.ruleset</CodeAnalysisRuleSet>
 
     <ApplicationIcon>Media\favicon.ico</ApplicationIcon>
 
     <NeutralLanguage>en</NeutralLanguage>
 
-    <StartupObject>TS3AudioBot.Core</StartupObject>
+    <StartupObject>TS3AudioBot.Setup</StartupObject>
 
     <ServerGarbageCollection>true</ServerGarbageCollection>
     <ConcurrentGarbageCollection>true</ConcurrentGarbageCollection>
@@ -25,44 +27,49 @@
     <RepositoryType>git</RepositoryType>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
 
-    <UpdateAssemblyInfo>true</UpdateAssemblyInfo>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
     <GenerateAssemblyFileVersionAttribute>false</GenerateAssemblyFileVersionAttribute>
     <GenerateAssemblyInformationalVersionAttribute>false</GenerateAssemblyInformationalVersionAttribute>
     <GenerateAssemblyVersionAttribute>false</GenerateAssemblyVersionAttribute>
-    <WriteVersionInfoToBuildLog>false</WriteVersionInfoToBuildLog>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="CliWrap" Version="3.1.0" />
+    <PackageReference Include="CommandLineParser" Version="2.8.0" />
+    <PackageReference Include="NLog" Version="4.7.3" />
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
     <PackageReference Include="LiteDB" Version="4.1.4" />
     <PackageReference Include="Microsoft.AspNetCore.Cors" Version="2.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.Server.Kestrel" Version="2.2.0" />
     <PackageReference Include="Microsoft.AspNetCore.StaticFiles" Version="2.2.0" />
-    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="3.4.0">
+    <PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="3.7.0">
       <ExcludeAssets>analyzers</ExcludeAssets>
     </PackageReference>
     <PackageReference Include="Nett" Version="0.15.0" />
-    <PackageReference Include="PlaylistsNET" Version="1.0.5" />
-    <PackageReference Include="SixLabors.ImageSharp" Version="1.0.0-beta0007" />
+    <PackageReference Include="PlaylistsNET" Version="1.1.2" />
+    <PackageReference Include="SixLabors.ImageSharp" Version="1.0.0" />
+    <TrimmerRootAssembly Include="System.Text.Json" />
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="NLog.config">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <SubType>Designer</SubType>
-    </None>
-    <EmbeddedResource Include="Rights\DefaultRights.toml" />
-    <None Include="Media\SleepingKitty.svg" />
+    <EmbeddedResource Include="Resources\DefaultRights.toml" />
     <EmbeddedResource Include="Media\SleepingKitty.png" />
+    <EmbeddedResource Include="Resources\NLog.config">
+      <SubType>Designer</SubType>
+    </EmbeddedResource>
   </ItemGroup>
 
   <ItemGroup>
     <Content Include="lib\x64\libopus.dll">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <PackagePath>.</PackagePath>
+      <Pack>true</Pack>
     </Content>
     <Content Include="lib\x86\libopus.dll">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      <PackagePath>.</PackagePath>
+      <Pack>true</Pack>
     </Content>
   </ItemGroup>
 

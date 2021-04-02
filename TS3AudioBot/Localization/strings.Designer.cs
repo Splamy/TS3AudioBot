@@ -748,6 +748,15 @@ namespace TS3AudioBot.Localization {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Jumps to the requested index in the current queue and starts playing..
+        /// </summary>
+        internal static string cmd_jump_help {
+            get {
+                return ResourceManager.GetString("cmd_jump_help", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Guess what?.
         /// </summary>
         internal static string cmd_kickme_help {
@@ -784,7 +793,7 @@ namespace TS3AudioBot.Localization {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Clears your private playlist..
+        ///   Looks up a localized string similar to Clears a playlist..
         /// </summary>
         internal static string cmd_list_clear_help {
             get {
@@ -1486,6 +1495,15 @@ namespace TS3AudioBot.Localization {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Subscribes the specified client to listen from anywhere.
+        /// </summary>
+        internal static string cmd_subscribe_client_help {
+            get {
+                return ResourceManager.GetString("cmd_subscribe_client_help", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to Lets you hear the music independent from the channel you are in..
         /// </summary>
         internal static string cmd_subscribe_help {
@@ -1527,6 +1545,15 @@ namespace TS3AudioBot.Localization {
         internal static string cmd_unsubscribe_channel_help {
             get {
                 return ResourceManager.GetString("cmd_unsubscribe_channel_help", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Unsubscribes the specified client to listen from anywhere..
+        /// </summary>
+        internal static string cmd_unsubscribe_client_help {
+            get {
+                return ResourceManager.GetString("cmd_unsubscribe_client_help", resourceCulture);
             }
         }
         
@@ -1756,7 +1783,7 @@ namespace TS3AudioBot.Localization {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to An unexpected error occured: {0}.
+        ///   Looks up a localized string similar to An unexpected error occurred: {0}.
         /// </summary>
         internal static string error_call_unexpected_error {
             get {

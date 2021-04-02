@@ -10,7 +10,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using TS3AudioBot.CommandSystem.CommandResults;
+using System.Threading.Tasks;
 using TS3AudioBot.Localization;
 
 namespace TS3AudioBot.CommandSystem.Commands
@@ -20,7 +20,7 @@ namespace TS3AudioBot.CommandSystem.Commands
 		private readonly IDictionary<string, ICommand> commands = new Dictionary<string, ICommand>();
 
 		public void AddCommand(string name, ICommand command) => commands.Add(name, command ?? throw new ArgumentNullException(nameof(command)));
-		public void RemoveCommand(string name) => commands.Remove(name);
+		public bool RemoveCommand(string name) => commands.Remove(name);
 		public bool RemoveCommand(ICommand command)
 		{
 			var com = commands.FirstOrDefault(kvp => kvp.Value == command);
@@ -29,24 +29,17 @@ namespace TS3AudioBot.CommandSystem.Commands
 			return commands.Remove(com.Key);
 		}
 		public bool ContainsCommand(string name) => commands.ContainsKey(name);
-		public ICommand GetCommand(string name) => commands.TryGetValue(name, out var com) ? com : null;
+		public ICommand? GetCommand(string name) => commands.TryGetValue(name, out var com) ? com : null;
 		public bool IsEmpty => commands.Count == 0;
 		public IEnumerable<KeyValuePair<string, ICommand>> Commands => commands;
 
-		public virtual object Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<Type> returnTypes)
+		public virtual async ValueTask<object?> Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments)
 		{
 			string result;
 			if (arguments.Count == 0)
-			{
-				if (returnTypes.Contains(typeof(ICommand)))
-					return this;
 				result = string.Empty;
-			}
 			else
-			{
-				var comResult = arguments[0].Execute(info, Array.Empty<ICommand>(), CommandSystemTypes.ReturnString);
-				result = ((IPrimitiveResult<string>)comResult).Get();
-			}
+				result = await arguments[0].ExecuteToString(info, Array.Empty<ICommand>());
 
 			var filter = info.GetFilter();
 			var commandResults = filter.Filter(commands, result).ToArray();
@@ -67,7 +60,7 @@ namespace TS3AudioBot.CommandSystem.Commands
 				throw new CommandException(string.Format(strings.cmd_help_info_contains_subfunctions, SuggestionsJoinTrim(commands.Keys)), CommandExceptionReason.AmbiguousCall);
 
 			var argSubList = arguments.TrySegment(1);
-			return commandResults[0].Value.Execute(info, argSubList, returnTypes);
+			return await commandResults[0].Value.Execute(info, argSubList);
 		}
 
 		private static string SuggestionsJoinTrim(IEnumerable<string> commands)

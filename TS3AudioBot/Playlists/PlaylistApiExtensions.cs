@@ -19,7 +19,7 @@ namespace TS3AudioBot.Playlists
 			var resource = item.AudioResource;
 			return new PlaylistItemGetData
 			{
-				Link = resourceFactory.RestoreLink(resource).OkOr(null),
+				Link = resourceFactory.RestoreLink(resource),
 				Title = resource.ResourceTitle,
 				AudioType = resource.AudioType,
 			};

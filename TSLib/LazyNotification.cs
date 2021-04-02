@@ -7,8 +7,6 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
-using System;
-using System.Linq;
 using TSLib.Messages;
 
 namespace TSLib
@@ -22,14 +20,6 @@ namespace TSLib
 		{
 			Notifications = notifications;
 			NotifyType = notifyType;
-		}
-
-		public R<T> WrapSingle<T>() where T : INotification
-		{
-			var first = Notifications.FirstOrDefault();
-			if (first is null)
-				return R<T>.ErrR;
-			return R<T>.OkR((T)first);
 		}
 	}
 }

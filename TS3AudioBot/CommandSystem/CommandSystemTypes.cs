@@ -9,20 +9,11 @@
 using System;
 using System.Collections.Generic;
 using TS3AudioBot.CommandSystem.CommandResults;
-using TS3AudioBot.CommandSystem.Commands;
-using TS3AudioBot.Web.Api;
 
 namespace TS3AudioBot.CommandSystem
 {
 	public static class CommandSystemTypes
 	{
-		public static readonly Type[] ReturnJson = { typeof(JsonObject) };
-		public static readonly Type[] ReturnJsonOrDataOrNothing = { typeof(JsonObject), typeof(DataStream), null };
-		public static readonly Type[] ReturnString = { typeof(string) };
-		public static readonly Type[] ReturnStringOrNothing = { typeof(string), null };
-		public static readonly Type[] ReturnCommandOrString = { typeof(ICommand), typeof(string) };
-		public static readonly Type[] ReturnAnyPreferNothing = { null, typeof(string), typeof(JsonObject), typeof(ICommand) };
-
 		/// <summary>
 		/// The order of types, the first item has the highest priority,
 		/// items not in the list have higher priority as they are special types.

@@ -26,14 +26,14 @@ namespace TS3AudioBot.Audio
 		IReadOnlyCollection<ChannelId> WhisperChannel { get; }
 
 		/// <summary>Adds a channel to the audio streaming list.</summary>
-		/// <param name="channel">The id of the channel.</param>
 		/// <param name="temp">When set to true this channel will be cleared with
 		/// the next <see cref="ClearTemporary"/> call (unless overwritten with false).</param>
+		/// <param name="channel">The id of the channel.</param>
 		void WhisperChannelSubscribe(bool temp, params ChannelId[] channel);
 		/// <summary>Removes a channel from the audio streaming list.</summary>
-		/// <param name="channel">The id of the channel.</param>
 		/// <param name="temp">When set to true this channel will be cleared with
 		/// the next <see cref="ClearTemporary"/> call (unless overwritten with false).</param>
+		/// <param name="channel">The id of the channel.</param>
 		void WhisperChannelUnsubscribe(bool temp, params ChannelId[] channel);
 		void ClearTemporary();
 		void WhisperClientSubscribe(params ClientId[] userId);

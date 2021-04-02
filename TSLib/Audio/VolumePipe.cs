@@ -28,7 +28,7 @@ namespace TSLib.Audio
 				else volume = value;
 			}
 		}
-		public IAudioPassiveConsumer OutStream { get; set; }
+		public IAudioPassiveConsumer? OutStream { get; set; }
 
 		public static void AdjustVolume(Span<byte> audioSamples, float volume)
 		{
@@ -53,7 +53,7 @@ namespace TSLib.Audio
 
 		private static bool IsAbout(float value, float compare) => Math.Abs(value - compare) < 1E-04f;
 
-		public void Write(Span<byte> data, Meta meta)
+		public void Write(Span<byte> data, Meta? meta)
 		{
 			if (OutStream is null) return;
 

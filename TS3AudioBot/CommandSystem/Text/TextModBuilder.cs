@@ -32,7 +32,7 @@ namespace TS3AudioBot.CommandSystem.Text
 
 		public TextModBuilder Append(AppliedTextMod atm) => Append(atm.Text, atm.Mod);
 
-		public TextModBuilder Append(string text, TextMod mod)
+		public TextModBuilder Append(string? text, TextMod mod)
 		{
 			if (color)
 				StartText(strb, text, ref cur, mod);
@@ -48,7 +48,7 @@ namespace TS3AudioBot.CommandSystem.Text
 			return this;
 		}
 
-		public TextModBuilder AppendLine(string text, TextMod mod)
+		public TextModBuilder AppendLine(string? text, TextMod mod)
 		{
 			Append(text, mod);
 			strb.Append('\n');
@@ -70,13 +70,13 @@ namespace TS3AudioBot.CommandSystem.Text
 					Append(parts[i], format.Mod);
 					Append(para[i]);
 				}
-				Append(parts[parts.Length - 1], format.Mod);
+				Append(parts[^1], format.Mod);
 			}
 
 			return this;
 		}
 
-		private static void StartText(StringBuilder strb, string text, ref TextMod cur, TextMod mod)
+		private static void StartText(StringBuilder strb, string? text, ref TextMod cur, TextMod mod)
 		{
 			if (string.IsNullOrEmpty(text))
 				return;
@@ -104,7 +104,7 @@ namespace TS3AudioBot.CommandSystem.Text
 			if (flag.HasFlag(TextModFlag.Underline))
 				strb.Append("[U]");
 			if (flag.HasFlag(TextModFlag.Color))
-				mod.HasColor.Value.GetL(strb);
+				mod.HasColor!.Value.GetL(strb);
 			return cur | mod.Flags;
 		}
 
@@ -120,7 +120,7 @@ namespace TS3AudioBot.CommandSystem.Text
 			if (flag.HasFlag(TextModFlag.Underline))
 				strb.Append("[/U]");
 			if (flag.HasFlag(TextModFlag.Color))
-				strb.Append($"[/COLOR]");
+				strb.Append("[/COLOR]");
 			return cur & ~mod;
 		}
 

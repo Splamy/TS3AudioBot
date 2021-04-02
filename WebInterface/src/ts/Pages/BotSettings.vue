@@ -126,8 +126,8 @@
 					v-model="model.commands.long_message"
 					placeholder="Select how the bot treats long messages"
 				>
-					<option value="0">Drop (Message will not be sent)</option>
-					<option value="1">Split (Message will be split up into multiple messages)</option>
+					<option value="2">Drop (Message will not be sent)</option>
+					<option value="0">Split (Message will be split up into multiple messages)</option>
 				</b-select>
 			</settings-field>
 			<settings-field
@@ -139,7 +139,7 @@
 				<b-numberinput
 					v-model="model.commands.long_message_split_limit"
 					controls-position="compact"
-					:disabled="model.commands.long_message == 0"
+					:disabled="model.commands.long_message == 2"
 				/>
 			</settings-field>
 			<settings-field

@@ -14,34 +14,37 @@ using System.IO;
 using System.Reflection;
 using System.Resources;
 using System.Threading;
+using System.Threading.Tasks;
 using TS3AudioBot.Helper;
 
 namespace TS3AudioBot.Localization
 {
-	public static class LocalizationManager
+	public class LocalizationManager
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private static readonly Dictionary<string, LanguageData> loadedLanguage = new Dictionary<string, LanguageData>();
 		private static readonly DynamicResourceManager dynResMan;
 
+		private CultureInfo? culture;
+		public bool LanguageLoaded => culture != null;
+
 		static LocalizationManager()
 		{
 			loadedLanguage.Add("en", new LanguageData
 			{
-				IsIntenal = true,
+				IsInternal = true,
 				LoadedSuccessfully = true,
 			});
 
-			var resManField = typeof(strings).GetField("resourceMan", BindingFlags.NonPublic | BindingFlags.Static);
+			var resManField = typeof(strings).GetField("resourceMan", BindingFlags.NonPublic | BindingFlags.Static)!;
 			var currentResMan = resManField.GetValue(null);
 			(currentResMan as ResourceManager)?.ReleaseAllResources();
 			dynResMan = new DynamicResourceManager("TS3AudioBot.Localization.strings", typeof(strings).Assembly);
 			resManField.SetValue(null, dynResMan);
 		}
 
-		public static E<string> LoadLanguage(string lang, bool forceDownload)
+		public async ValueTask<E<string>> LoadLanguage(string lang, bool forceDownload)
 		{
-			CultureInfo culture;
 			try { culture = CultureInfo.GetCultureInfo(lang); }
 			catch (CultureNotFoundException) { return "Language not found"; }
 
@@ -49,26 +52,31 @@ namespace TS3AudioBot.Localization
 
 			if (!languageDataInfo.LoadedSuccessfully)
 			{
-				var result = LoadLanguageAssembly(languageDataInfo, culture, forceDownload);
+				var result = await LoadLanguageAssembly(languageDataInfo, culture, forceDownload);
 				if (!result.Ok)
 				{
-					Thread.CurrentThread.CurrentUICulture = CultureInfo.InvariantCulture;
+					culture = CultureInfo.InvariantCulture;
 					return result.Error;
 				}
 				languageDataInfo.LoadedSuccessfully = true;
 			}
 
-			Thread.CurrentThread.CurrentUICulture = culture;
 			return R.Ok;
 		}
 
-		private static E<string> LoadLanguageAssembly(LanguageData languageDataInfo, CultureInfo culture, bool forceDownload)
+		public void ApplyLanguage()
 		{
-			var avaliableToDownload = new Lazy<HashSet<string>>(() =>
-			{
-				var arr = DownloadAvaliableLanguages();
-				return arr != null ? new HashSet<string>(arr) : null;
-			});
+			var applyCulture = culture ?? CultureInfo.InvariantCulture;
+
+			Thread.CurrentThread.CurrentCulture =
+			Thread.CurrentThread.CurrentUICulture =
+			CultureInfo.CurrentCulture =
+			CultureInfo.CurrentUICulture = applyCulture;
+		}
+
+		private static async Task<E<string>> LoadLanguageAssembly(LanguageData languageDataInfo, CultureInfo culture, bool forceDownload)
+		{
+			Task<HashSet<string>?>? avaliableToDownload = null;
 			var triedDownloading = languageDataInfo.TriedDownloading;
 
 			foreach (var currentResolveCulture in GetWithFallbackCultures(culture))
@@ -78,7 +86,7 @@ namespace TS3AudioBot.Localization
 					return R.Ok;
 
 				// Do not attempt to download or load integrated languages
-				if (languageDataInfo.IsIntenal)
+				if (languageDataInfo.IsInternal)
 					continue;
 
 				var tryFile = GetCultureFileInfo(currentResolveCulture);
@@ -86,7 +94,11 @@ namespace TS3AudioBot.Localization
 				// Check if we need to download the resource
 				if (forceDownload || (!tryFile.Exists && !triedDownloading))
 				{
-					var list = avaliableToDownload.Value;
+					if (avaliableToDownload is null)
+					{
+						avaliableToDownload = DownloadAvaliableLanguages();
+					}
+					var list = await avaliableToDownload;
 					if (list is null || !list.Contains(currentResolveCulture.Name))
 					{
 						if (list != null)
@@ -99,14 +111,11 @@ namespace TS3AudioBot.Localization
 						languageDataInfo.TriedDownloading = true;
 						Directory.CreateDirectory(tryFile.DirectoryName);
 						Log.Info("Downloading the resource pack for the language '{0}'", currentResolveCulture.Name);
-						WebWrapper.GetResponse(new Uri($"https://splamy.de/api/language/project/ts3ab/language/{currentResolveCulture.Name}/dll"), response =>
+						await WebWrapper.Request($"https://splamy.de/api/language/project/ts3ab/language/{currentResolveCulture.Name}/dll").ToAction(async response =>
 						{
-							using (var dataStream = response.GetResponseStream())
-							using (var fs = File.Open(tryFile.FullName, FileMode.Create, FileAccess.Write, FileShare.None))
-							{
-								dataStream.CopyTo(fs);
-							}
-						}).UnwrapToLog(Log);
+							using var fs = File.Open(tryFile.FullName, FileMode.Create, FileAccess.Write, FileShare.None);
+							await response.Content.CopyToAsync(fs);
+						});
 					}
 					catch (Exception ex)
 					{
@@ -118,7 +127,7 @@ namespace TS3AudioBot.Localization
 				try
 				{
 					var asm = Assembly.LoadFrom(tryFile.FullName);
-					var resStream = asm.GetManifestResourceStream($"TS3AudioBot.Localization.strings.{currentResolveCulture.Name}.resources");
+					var resStream = asm.GetManifestResourceStream($"TS3AudioBot.Localization.strings.{currentResolveCulture.Name}.resources") ?? throw new NullReferenceException("No stream found");
 					var rr = new ResourceReader(resStream);
 					var set = new ResourceSet(rr);
 					dynResMan.SetResourceSet(currentResolveCulture, set);
@@ -150,13 +159,13 @@ namespace TS3AudioBot.Localization
 		private static FileInfo GetCultureFileInfo(CultureInfo culture)
 			=> new FileInfo(Path.Combine(Directory.GetCurrentDirectory(), culture.Name, "TS3AudioBot.resources.dll"));
 
-		private static string[] DownloadAvaliableLanguages()
+		private static async Task<HashSet<string>?> DownloadAvaliableLanguages()
 		{
 			try
 			{
 				Log.Info("Checking for requested language online");
-				if (WebWrapper.DownloadString(new Uri("https://splamy.de/api/language/project/ts3ab/languages")).GetOk(out var data))
-					return Newtonsoft.Json.JsonConvert.DeserializeObject<string[]>(data);
+				var arr = await WebWrapper.Request("https://splamy.de/api/language/project/ts3ab/languages").AsJson<string[]>();
+				return new HashSet<string>(arr);
 			}
 			catch (Exception ex)
 			{
@@ -165,14 +174,14 @@ namespace TS3AudioBot.Localization
 			return null;
 		}
 
-		public static string GetString(string name)
+		public static string? GetString(string name)
 		{
 			return strings.ResourceManager.GetString(name);
 		}
 
 		private class LanguageData
 		{
-			public bool IsIntenal { get; set; } = false;
+			public bool IsInternal { get; set; } = false;
 			public bool LoadedSuccessfully { get; set; } = false;
 			public bool TriedDownloading { get; set; } = false;
 		}

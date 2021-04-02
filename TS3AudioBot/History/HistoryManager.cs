@@ -11,6 +11,7 @@ using LiteDB;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using TS3AudioBot.Config;
 using TS3AudioBot.Localization;
 using TS3AudioBot.ResourceFactories;
@@ -27,11 +28,10 @@ namespace TS3AudioBot.History
 		private const string AudioLogEntriesTable = "audioLogEntries";
 		private const string ResourceTitleQueryColumn = "lowTitle";
 
-		private LiteCollection<AudioLogEntry> audioLogEntries;
+		private readonly LiteCollection<AudioLogEntry> audioLogEntries;
 		private readonly LinkedList<int> unusedIds = new LinkedList<int>();
 		private readonly object dbLock = new object();
 		private readonly ConfHistory config;
-		private readonly DbStore database;
 
 		public IHistoryFormatter Formatter { get; private set; }
 		public uint HighestId => (uint)audioLogEntries.Max().AsInt32;
@@ -47,20 +47,14 @@ namespace TS3AudioBot.History
 			Formatter = new SmartHistoryFormatter();
 
 			this.config = config;
-			this.database = database;
 
-			Initialize();
-		}
-
-		private void Initialize()
-		{
 			var meta = database.GetMetaData(AudioLogEntriesTable);
 
 			if (meta.Version > CurrentHistoryVersion)
 			{
 				Log.Error("Database table \"{0}\" is higher than the current version. (table:{1}, app:{2}). " +
 					"Please download the latest TS3AudioBot to read the history.", AudioLogEntriesTable, meta.Version, CurrentHistoryVersion);
-				return;
+				throw new NotSupportedException();
 			}
 
 			audioLogEntries = database.GetCollection<AudioLogEntry>(AudioLogEntriesTable);
@@ -111,7 +105,7 @@ namespace TS3AudioBot.History
 			// TODO load unused id list
 		}
 
-		public R<AudioLogEntry> LogAudioResource(HistorySaveData saveData)
+		public AudioLogEntry? LogAudioResource(HistorySaveData saveData)
 		{
 			if (saveData is null)
 				throw new ArgumentNullException(nameof(saveData));
@@ -125,7 +119,7 @@ namespace TS3AudioBot.History
 					if (!createResult.Ok)
 					{
 						Log.Warn(createResult.Error, "AudioLogEntry could not be created!");
-						return R.Err;
+						return null;
 					}
 					ale = createResult.Value;
 				}
@@ -159,19 +153,20 @@ namespace TS3AudioBot.History
 				return new Exception("Track name is empty");
 
 			int nextHid;
-			if (config.FillDeletedIds && unusedIds.Count > 0)
+			var first = unusedIds.First;
+			if (config.FillDeletedIds && first != null)
 			{
-				nextHid = unusedIds.First.Value;
-				unusedIds.RemoveFirst();
+				nextHid = first.Value;
+				unusedIds.Remove(first);
 			}
 			else
 			{
 				nextHid = 0;
 			}
 
-			var ale = new AudioLogEntry(nextHid, saveData.Resource)
+			var userUid = (saveData.InvokerUid ?? Uid.Anonymous).Value ?? Uid.Anonymous.Value!;
+			var ale = new AudioLogEntry(nextHid, saveData.Resource, userUid)
 			{
-				UserUid = saveData.InvokerUid.Value,
 				Timestamp = Tools.Now,
 				PlayCount = 1,
 			};
@@ -184,7 +179,7 @@ namespace TS3AudioBot.History
 			catch (Exception ex) { return ex; }
 		}
 
-		private AudioLogEntry FindByUniqueId(string uniqueId) => audioLogEntries.FindOne(x => x.AudioResource.UniqueId == uniqueId);
+		private AudioLogEntry? FindByUniqueId(string uniqueId) => audioLogEntries.FindOne(x => x.AudioResource.UniqueId == uniqueId);
 
 		/// <summary>Gets all Entries matching the search criteria.
 		/// The entries are sorted by last playtime descending.</summary>
@@ -210,7 +205,7 @@ namespace TS3AudioBot.History
 			if (search.UserUid != null)
 				query = Query.And(query, Query.EQ(nameof(AudioLogEntry.UserUid), search.UserUid));
 
-			if (search.LastInvokedAfter.HasValue)
+			if (search.LastInvokedAfter != null)
 				query = Query.And(query, Query.GTE(nameof(AudioLogEntry.Timestamp), search.LastInvokedAfter.Value));
 
 			return audioLogEntries.Find(query, 0, search.MaxResults);
@@ -223,7 +218,7 @@ namespace TS3AudioBot.History
 		public string Format(IEnumerable<AudioLogEntry> aleList)
 			=> Formatter.ProcessQuery(aleList, SmartHistoryFormatter.DefaultAleFormat);
 
-		public AudioLogEntry FindEntryByResource(AudioResource resource)
+		public AudioLogEntry? FindEntryByResource(AudioResource resource)
 		{
 			if (resource is null)
 				throw new ArgumentNullException(nameof(resource));
@@ -263,7 +258,7 @@ namespace TS3AudioBot.History
 			audioLogEntries.Update(ale);
 		}
 
-		public void RemoveBrokenLinks(ResolveContext resourceFactory)
+		public async Task RemoveBrokenLinks(ResolveContext resourceFactory)
 		{
 			const int iterations = 3;
 			var currentIter = audioLogEntries.FindAll().ToList();
@@ -271,7 +266,7 @@ namespace TS3AudioBot.History
 			for (int i = 0; i < iterations; i++)
 			{
 				Log.Info("Filter iteration {0}", i);
-				currentIter = FilterList(resourceFactory, currentIter);
+				currentIter = await FilterList(resourceFactory, currentIter);
 			}
 
 			foreach (var entry in currentIter)
@@ -289,16 +284,19 @@ namespace TS3AudioBot.History
 		/// </summary>
 		/// <param name="list">The list to iterate.</param>
 		/// <returns>A new list with all working items.</returns>
-		private List<AudioLogEntry> FilterList(ResolveContext resourceFactory, IReadOnlyCollection<AudioLogEntry> list)
+		private async Task<List<AudioLogEntry>> FilterList(ResolveContext resourceFactory, IReadOnlyCollection<AudioLogEntry> list)
 		{
 			int userNotifyCnt = 0;
 			var nextIter = new List<AudioLogEntry>(list.Count);
 			foreach (var entry in list)
 			{
-				var result = resourceFactory.Load(entry.AudioResource);
-				if (!result)
+				try
 				{
-					Log.Debug("Cleaning: ({0}) Reason: {1}", entry.AudioResource.UniqueId, result.Error);
+					await resourceFactory.Load(entry.AudioResource);
+				}
+				catch (AudioBotException ex)
+				{
+					Log.Debug("Cleaning: ({0}) Reason: {1}", entry.AudioResource.UniqueId, ex.Message);
 					nextIter.Add(entry);
 				}
 
@@ -308,7 +306,7 @@ namespace TS3AudioBot.History
 			return nextIter;
 		}
 
-		public void UpdadeDbIdToUid(Ts3Client ts3Client)
+		public async Task UpdadeDbIdToUid(Ts3Client ts3Client)
 		{
 			var upgradedEntries = new List<AudioLogEntry>();
 			var dbIdCache = new Dictionary<uint, (bool valid, Uid uid)>();
@@ -316,7 +314,7 @@ namespace TS3AudioBot.History
 			foreach (var audioLogEntry in audioLogEntries.FindAll())
 			{
 #pragma warning disable CS0612
-				if (!audioLogEntry.UserInvokeId.HasValue)
+				if (audioLogEntry.UserInvokeId is null)
 					continue;
 
 				if (audioLogEntry.UserUid != null || audioLogEntry.UserInvokeId.Value == 0)
@@ -328,11 +326,15 @@ namespace TS3AudioBot.History
 
 				if (!dbIdCache.TryGetValue(audioLogEntry.UserInvokeId.Value, out var data))
 				{
-					var result = ts3Client.GetDbClientByDbId((ClientDbId)audioLogEntry.UserInvokeId.Value);
-					data.uid = (data.valid = result.Ok) ? result.Value.Uid : Uid.Null;
-					if (!data.valid)
+					try
+					{
+						var dbData = await ts3Client.GetDbClientByDbId((ClientDbId)audioLogEntry.UserInvokeId.Value);
+						data = (true, dbData.Uid);
+					}
+					catch (AudioBotException)
 					{
 						Log.Warn("Client DbId {0} could not be found.", audioLogEntry.UserInvokeId.Value);
+						data = (false, Uid.Null);
 					}
 					dbIdCache.Add(audioLogEntry.UserInvokeId.Value, data);
 				}

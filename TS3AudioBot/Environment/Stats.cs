@@ -12,10 +12,12 @@ using Newtonsoft.Json;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.IO;
+using System.Net.Http;
+using System.Threading.Tasks;
 using TS3AudioBot.Config;
 using TS3AudioBot.Helper;
 using TSLib.Helper;
+using TSLib.Scheduler;
 
 namespace TS3AudioBot.Environment
 {
@@ -23,6 +25,8 @@ namespace TS3AudioBot.Environment
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private const string StatsTable = "stats";
+		private const string StatsTableAcc = "stats_acc";
+		private const int OverallId = 1;
 		private const int StatsVersion = 1;
 		private static readonly TimeSpan CheckInterval = TimeSpan.FromMinutes(1);
 		private static readonly TimeSpan SendInterval = TimeSpan.FromDays(1);
@@ -31,19 +35,19 @@ namespace TS3AudioBot.Environment
 			NullValueHandling = NullValueHandling.Ignore,
 			Formatting = Formatting.None,
 		};
-		private static readonly Newtonsoft.Json.JsonSerializer JsonSer = Newtonsoft.Json.JsonSerializer.Create(JsonSettings);
 
 		private readonly ConfRoot conf;
 		private readonly DbStore database;
 		private readonly BotManager botManager;
-		private TickWorker ticker;
+		private readonly TickWorker ticker;
 		private bool uploadParamEnabled;
 		private bool UploadEnabled => uploadParamEnabled && conf.Configs.SendStats;
 
-		private DbMetaData meta;
-		private StatsData overallStats;
-		private StatsMeta statsPoints;
-		private LiteCollection<StatsData> trackEntries;
+		private readonly DbMetaData meta;
+		private readonly StatsData overallStats;
+		private readonly StatsMeta statsPoints;
+		private readonly LiteCollection<StatsData> trackEntries;
+		private readonly LiteCollection<StatsData> accEntries;
 		private readonly StatsData CurrentStatsData = new StatsData()
 		{
 			SongStats = new ConcurrentDictionary<string, StatsFactory>()
@@ -52,24 +56,23 @@ namespace TS3AudioBot.Environment
 		// bot id -> factory
 		private readonly ConcurrentDictionary<Id, string> runningSongsPerFactory = new ConcurrentDictionary<Id, string>();
 
-		public Stats(ConfRoot conf, DbStore database, BotManager botManager)
+		public Stats(ConfRoot conf, DbStore database, BotManager botManager, DedicatedTaskScheduler scheduler)
 		{
 			this.conf = conf;
 			this.database = database;
 			this.botManager = botManager;
 			uploadParamEnabled = true;
 			runtimeLastTrack = Tools.Now;
+			ticker = scheduler.CreateTimer(TrackPoint, CheckInterval, false);
 
-			ReadAndUpgradeStats();
-		}
-
-		private void ReadAndUpgradeStats()
-		{
 			meta = database.GetMetaData(StatsTable);
 			trackEntries = database.GetCollection<StatsData>(StatsTable);
+			trackEntries.EnsureIndex(x => x.Id, true);
 			trackEntries.EnsureIndex(x => x.Time);
+			accEntries = database.GetCollection<StatsData>(StatsTableAcc);
+			accEntries.EnsureIndex(x => x.Id, true);
 
-			if (meta.Version != StatsVersion)
+			if (meta.Version != StatsVersion || meta.CustomData is null)
 			{
 				statsPoints = new StatsMeta
 				{
@@ -80,18 +83,14 @@ namespace TS3AudioBot.Environment
 			}
 			else
 			{
-				statsPoints = JsonConvert.DeserializeObject<StatsMeta>(meta.CustomData, JsonSettings);
+				statsPoints = JsonConvert.DeserializeObject<StatsMeta>(meta.CustomData, JsonSettings) ?? new StatsMeta();
 				// Upgrade steps here
 			}
 
-			overallStats = trackEntries.FindById(0);
-			if (overallStats is null)
+			overallStats = accEntries.FindById(OverallId) ?? new StatsData
 			{
-				overallStats = new StatsData
-				{
-					Id = 0
-				};
-			}
+				Id = OverallId
+			};
 		}
 
 		private void UpdateMeta()
@@ -103,26 +102,23 @@ namespace TS3AudioBot.Environment
 		public void StartTimer(bool upload)
 		{
 			uploadParamEnabled = upload;
-			if (ticker != null)
-				throw new InvalidOperationException();
-			ticker = TickPool.RegisterTick(() => TrackPoint(), CheckInterval, true);
+			ticker.Enable();
 		}
 
-		private void SendStats(StatsPing sendPacket)
+		private async Task SendStats(StatsPing sendPacket)
 		{
 			try
 			{
 				Log.Debug("Send: {@data}", sendPacket);
-				var request = WebWrapper.CreateRequest(new Uri("https://splamy.de/api/tab/stats")).Unwrap();
-				request.Timeout = 2000; // ms
-				request.Method = "POST";
-				request.ContentType = "application/json";
-				using (var rStream = request.GetRequestStream())
-				using (var sw = new StreamWriter(rStream, Tools.Utf8Encoder))
+				var request = WebWrapper
+					.Request("https://splamy.de/api/tab/stats")
+					.WithMethod(HttpMethod.Post);
+				request.Content = new StringContent(JsonConvert.SerializeObject(sendPacket), Tools.Utf8Encoder, "application/json");
+				await request.ToAction(response =>
 				{
-					JsonSer.Serialize(sw, sendPacket);
-				}
-				request.GetResponse().Dispose();
+					Log.Debug("Stats response {0}", response.StatusCode);
+					return Task.CompletedTask;
+				});
 			}
 			catch (Exception ex) { Log.Debug(ex, "Could not upload stats"); }
 		}
@@ -140,11 +136,11 @@ namespace TS3AudioBot.Environment
 				sendPacket.Add(entry);
 				avgBots += entry.RunningBots;
 			}
-			sendPacket.RunningBots = avgBots / count;
+			sendPacket.RunningBots = count == 0 ? 0 : (uint)(avgBots / (float)count + .5f);
 			return sendPacket;
 		}
 
-		private void TrackPoint()
+		private async void TrackPoint()
 		{
 			var nextId = statsPoints.GenNextIndex();
 
@@ -162,13 +158,13 @@ namespace TS3AudioBot.Environment
 			Log.Debug("Track: {@data}", CurrentStatsData);
 			trackEntries.Upsert(CurrentStatsData);
 			overallStats.Add(CurrentStatsData);
-			trackEntries.Upsert(overallStats);
+			accEntries.Upsert(overallStats);
 			CurrentStatsData.Reset();
 
 			if (UploadEnabled && statsPoints.LastSend + SendInterval < now)
 			{
 				var sendData = GetStatsTill(statsPoints.LastSend);
-				SendStats(sendData);
+				await SendStats(sendData);
 				statsPoints.LastSend = now;
 			}
 
@@ -177,7 +173,7 @@ namespace TS3AudioBot.Environment
 
 		// Track operations
 
-		public void TrackSongLoad(string factory, bool successful, bool fromUser)
+		public void TrackSongLoad(string? factory, bool successful, bool fromUser)
 		{
 			var statsFactory = CurrentStatsData.SongStats.GetOrNew(factory ?? "");
 			statsFactory.PlayRequests++;
@@ -199,7 +195,7 @@ namespace TS3AudioBot.Environment
 
 		public void TrackSongStart(Id bot, string factory)
 		{
-			factory = factory ?? "";
+			factory ??= "";
 			runningSongsPerFactory[bot] = factory;
 			var statsFactory = CurrentStatsData.SongStats.GetOrNew(factory);
 			statsFactory.Playtime -= (Tools.Now - runtimeLastTrack);
@@ -234,7 +230,7 @@ namespace TS3AudioBot.Environment
 			sendData.RunningBots = 3;
 			sendData.SongStats = new Dictionary<string, StatsFactory>()
 			{
-				{"youtube", new StatsFactory{
+				{ "youtube", new StatsFactory {
 					PlayRequests = 100,
 					PlayFromUser = 42,
 					Playtime = TimeSpan.FromMinutes(12.34),
@@ -249,9 +245,9 @@ namespace TS3AudioBot.Environment
 	internal class StatsPing : StatsData
 	{
 		// Meta
-		public string BotVersion { get; set; }
-		public string Platform { get; set; }
-		public string Runtime { get; set; }
+		public string? BotVersion { get; set; }
+		public string? Platform { get; set; }
+		public string? Runtime { get; set; }
 	}
 
 	internal class StatsMeta

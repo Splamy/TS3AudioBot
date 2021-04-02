@@ -19,11 +19,11 @@ namespace TSLib.Full.Book
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 
-		public Client Self() => GetClient(OwnClient);
-		public Channel CurrentChannel()
+		public Client? Self() => GetClient(OwnClient);
+		public Channel? CurrentChannel()
 		{
 			var self = Self();
-			if (self == null)
+			if (self is null)
 				return null;
 			return GetChannel(self.Channel);
 		}
@@ -33,7 +33,7 @@ namespace TSLib.Full.Book
 			Server = server;
 		}
 
-		private Channel GetChannel(ChannelId id)
+		private Channel? GetChannel(ChannelId id)
 		{
 			if (Channels.TryGetValue(id, out var channel))
 				return channel;
@@ -53,7 +53,7 @@ namespace TSLib.Full.Book
 			ChannelOrderRemove(id, cur.Order);
 		}
 
-		private Client GetClient(ClientId id)
+		private Client? GetClient(ClientId id)
 		{
 			if (Clients.TryGetValue(id, out var client))
 				return client;
@@ -86,6 +86,15 @@ namespace TSLib.Full.Book
 		private Server GetServer()
 		{
 			return Server;
+		}
+
+		public void Reset()
+		{
+			Channels.Clear();
+			Clients.Clear();
+			Groups.Clear();
+			OwnClient = ClientId.Null;
+			Server = new Server();
 		}
 
 		// Manual post event functions
@@ -140,16 +149,14 @@ namespace TSLib.Full.Book
 			else return ChannelType.Temporary;
 		}
 
-		private static string AwayCevFun(ClientEnterView msg) => AwayFun(msg.IsAway, msg.AwayMessage);
-		private static string AwayCuFun(ClientUpdated msg) => AwayFun(msg.IsAway, msg.AwayMessage);
-		private static string AwayFun(bool? away, string msg)
-		{
-			if (away == true)
-				return msg ?? "";
-			if (away == false)
-				return "";
-			return null;
-		}
+		private static string? AwayCevFun(ClientEnterView msg) => AwayFun(msg.IsAway, msg.AwayMessage);
+		private static string? AwayCuFun(ClientUpdated msg) => AwayFun(msg.IsAway, msg.AwayMessage);
+		private static string? AwayFun(bool? away, string? msg)
+			=> away switch
+			{
+				true => msg ?? "",
+				_ => null,
+			};
 
 		private static TalkPowerRequest? TalkPowerCevFun(ClientEnterView msg)
 		{
@@ -158,7 +165,7 @@ namespace TSLib.Full.Book
 			return null;
 		}
 		private static TalkPowerRequest? TalkPowerCuFun(ClientUpdated msg) => TalkPowerFun(msg.TalkPowerRequestTime, msg.TalkPowerRequestMessage);
-		private static TalkPowerRequest? TalkPowerFun(DateTime? time, string message)
+		private static TalkPowerRequest? TalkPowerFun(DateTime? time, string? message)
 		{
 			if (time != null && time != Tools.UnixTimeStart) // TODO
 				return new TalkPowerRequest() { Time = time.Value, Message = message ?? "" };

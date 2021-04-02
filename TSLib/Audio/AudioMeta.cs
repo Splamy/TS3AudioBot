@@ -15,7 +15,7 @@ namespace TSLib.Audio
 	{
 		public Codec? Codec { get; set; }
 		public MetaIn In;
-		public MetaOut Out { get; set; }
+		public MetaOut? Out { get; set; }
 		//public PipeControl Control { get; set; }
 	}
 
@@ -31,8 +31,8 @@ namespace TSLib.Audio
 		public ulong TargetId { get; set; }
 		public GroupWhisperTarget GroupWhisperTarget { get; set; }
 		public GroupWhisperType GroupWhisperType { get; set; }
-		public IReadOnlyList<ChannelId> ChannelIds { get; set; }
-		public IReadOnlyList<ClientId> ClientIds { get; set; }
+		public IReadOnlyList<ChannelId>? ChannelIds { get; set; }
+		public IReadOnlyList<ClientId>? ClientIds { get; set; }
 	}
 
 	public enum TargetSendMode

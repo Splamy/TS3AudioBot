@@ -3,39 +3,6 @@
 <#+
 public void Warn(string _warn) { WriteLine($"#warning {_warn}"); }
 
-public static bool NullType(string type) {
-	return type == "i8"
-		|| type == "u8"
-		|| type == "i16"
-		|| type == "u16"
-		|| type == "i32"
-		|| type == "u32"
-		|| type == "i64"
-		|| type == "u64"
-		|| type == "f32"
-		|| type == "f64"
-		|| type == "bool"
-		|| type == "ClientDbId"
-		|| type == "ClientId"
-		|| type == "ChannelId"
-		|| type == "ServerGroupId"
-		|| type == "ChannelGroupId"
-		|| type == "IconHash"
-		|| type == "ConnectionId"
-		|| type == "DateTime"
-		|| type == "Duration"
-		|| type == "DurationSeconds"
-		|| type == "DurationMilliseconds"
-		|| type == "Codec"
-		|| type == "HostMessageMode"
-		|| type == "CodecEncryptionMode"
-		|| type == "HostBannerMode"
-		|| type == "TalkPowerRequest"
-		|| type == "ChannelPermissionHint"
-		|| type == "ClientPermissionHint"
-		;
-}
-
 const string ConversionSet = 
 @"#pragma warning disable CS8019 // Ignore unused imports
 using i8  = System.SByte;
@@ -61,5 +28,6 @@ using Ts3Permission = TSLib.TsPermission;
 
 using IconHash = System.Int32;
 using ConnectionId = System.UInt32;
+using EccKeyPubP256 = TSLib.Uid;
 #pragma warning restore CS8019";
 #>

@@ -23,7 +23,7 @@ namespace TSLib.Messages
 		private const byte AsciiEquals = (byte)'=';
 
 		// data to notification
-		public R<INotification[]> GenerateNotification(ReadOnlySpan<byte> line, NotificationType ntfyType)
+		public INotification[]? GenerateNotification(ReadOnlySpan<byte> line, NotificationType ntfyType)
 		{
 			if (ntfyType == NotificationType.Unknown)
 				throw new ArgumentException("The NotificationType must not be unknown", nameof(ntfyType));
@@ -33,50 +33,50 @@ namespace TSLib.Messages
 			return Dersialize(arr, line, pipes);
 		}
 
-		public R<INotification> GenerateSingleNotification(ReadOnlySpan<byte> line, NotificationType ntfyType)
+		public INotification? GenerateSingleNotification(ReadOnlySpan<byte> line, NotificationType ntfyType)
 		{
 			if (line.IsEmpty)
 				throw new ArgumentNullException(nameof(line));
 
 			var result = GenerateNotification(line, ntfyType);
-			if (!result.Ok || result.Value.Length == 0)
-				return R.Err;
-			return R<INotification>.OkR(result.Value[0]);
+			if (result is null || result.Length == 0)
+				return null;
+			return result[0];
 		}
 
-		private static List<int> PipeList(ReadOnlySpan<byte> line)
+		private static List<int>? PipeList(ReadOnlySpan<byte> line)
 		{
-			List<int> pipes = null;
+			List<int>? pipes = null;
 			for (int i = 0; i < line.Length; i++)
 				if (line[i] == AsciiPipe)
-					(pipes = pipes ?? new List<int>()).Add(i);
+					(pipes ??= new List<int>()).Add(i);
 			return pipes;
 		}
 
-		private R<T[]> Dersialize<T>(T[] arr, ReadOnlySpan<byte> line, List<int> pipes) where T : IMessage
+		private T[]? Dersialize<T>(T[] arr, ReadOnlySpan<byte> line, List<int>? pipes) where T : IMessage
 		{
 			if (pipes is null || pipes.Count == 0)
 			{
 				if (!ParseKeyValueLine(arr[0], line, null, null))
-					return R.Err;
+					return null;
 				return arr;
 			}
 
 			var arrItems = new HashSet<string>();
 			var single = new List<string>();
 
-			if (!ParseKeyValueLine(arr[arr.Length - 1], line.Slice(pipes[pipes.Count - 1] + 1).Trim(AsciiSpace), arrItems, null))
-				return R.Err;
+			if (!ParseKeyValueLine(arr[^1], line.Slice(pipes[^1] + 1).Trim(AsciiSpace), arrItems, null))
+				return null;
 
 			for (int i = 0; i < pipes.Count - 1; i++)
 			{
 				if (!ParseKeyValueLine(arr[i + 1], line.Slice(pipes[i] + 1, pipes[i + 1] - pipes[i] - 1), arrItems, null))
-					return R.Err;
+					return null;
 			}
 
 			// trim with the first one
 			if (!ParseKeyValueLine(arr[0], line.Slice(0, pipes[0]), arrItems, single))
-				return R.Err;
+				return null;
 
 			if (arrItems.Count > 0)
 			{
@@ -86,7 +86,7 @@ namespace TSLib.Messages
 		}
 
 		// data to response
-		public R<T[]> GenerateResponse<T>(ReadOnlySpan<byte> line) where T : IResponse, new()
+		public T[]? GenerateResponse<T>(ReadOnlySpan<byte> line) where T : IResponse, new()
 		{
 			if (line.IsEmpty)
 				return Array.Empty<T>();
@@ -98,7 +98,7 @@ namespace TSLib.Messages
 			return Dersialize(arr, line, pipes);
 		}
 
-		private bool ParseKeyValueLine(IMessage qm, ReadOnlySpan<byte> line, HashSet<string> indexing, List<string> single)
+		private bool ParseKeyValueLine(IMessage qm, ReadOnlySpan<byte> line, HashSet<string>? indexing, List<string>? single)
 		{
 			if (line.IsEmpty)
 				return true;

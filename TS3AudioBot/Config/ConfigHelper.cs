@@ -40,13 +40,20 @@ namespace TS3AudioBot.Config
 				|| reader.TokenType == JsonToken.Integer
 				|| reader.TokenType == JsonToken.String))
 			{
+				var jValue = reader.Value;
+				if (jValue is null)
+				{
+					value = default!;
+					return "Read null";
+				}
+
 				try
 				{
 					if (typeof(T) == typeof(TimeSpan))
 					{
 						if (reader.TokenType == JsonToken.String)
 						{
-							var timeStr = ((string)reader.Value).ToUpperInvariant();
+							var timeStr = ((string)jValue).ToUpperInvariant();
 							if (!timeStr.StartsWith("P"))
 							{
 								if (!timeStr.Contains("T"))
@@ -62,13 +69,13 @@ namespace TS3AudioBot.Config
 					{
 						if (reader.TokenType == JsonToken.String)
 						{
-							value = (T)Enum.Parse(typeof(T), (string)reader.Value, true);
+							value = (T)Enum.Parse(typeof(T), (string)jValue, true);
 							return R.Ok;
 						}
 					}
 					else
 					{
-						value = (T)Convert.ChangeType(reader.Value, typeof(T));
+						value = (T)Convert.ChangeType(jValue, typeof(T));
 						return R.Ok;
 					}
 				}
@@ -78,7 +85,7 @@ namespace TS3AudioBot.Config
 					|| ex is FormatException)
 				{ }
 			}
-			value = default;
+			value = default!;
 			return $"Wrong type, expected {typeof(T).Name}, got {reader.TokenType}";
 		}
 	}

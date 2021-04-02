@@ -18,24 +18,24 @@ namespace TS3AudioBot.Config
 {
 	public partial class ConfRoot
 	{
-		private string fileName;
+		private string? fileName;
 		private readonly Dictionary<string, ConfBot> botConfCache = new Dictionary<string, ConfBot>();
 
-		public static R<ConfRoot> Open(string file)
+		public static ConfRoot? Open(string file)
 		{
 			var loadResult = Load<ConfRoot>(file);
 			if (!loadResult.Ok)
 			{
 				Log.Error(loadResult.Error, "Could not load core config.");
-				return R.Err;
+				return null;
 			}
 
 			if (!loadResult.Value.CheckAndSet(file))
-				return R.Err;
+				return null;
 			return loadResult.Value;
 		}
 
-		public static R<ConfRoot> Create(string file)
+		public static ConfRoot? Create(string file)
 		{
 			var newFile = CreateRoot<ConfRoot>();
 			if (!newFile.CheckAndSet(file))
@@ -44,12 +44,12 @@ namespace TS3AudioBot.Config
 			if (!saveResult.Ok)
 			{
 				Log.Error(saveResult.Error, "Failed to save config file '{0}'.", file);
-				return R.Err;
+				return null;
 			}
 			return newFile;
 		}
 
-		public static R<ConfRoot> OpenOrCreate(string file) => File.Exists(file) ? Open(file) : Create(file);
+		public static ConfRoot? OpenOrCreate(string file) => File.Exists(file) ? Open(file) : Create(file);
 
 		private bool CheckAndSet(string file)
 		{
@@ -75,7 +75,7 @@ namespace TS3AudioBot.Config
 			return true;
 		}
 
-		public bool Save() => Save(fileName, true);
+		public bool Save() => Save(fileName!, true);
 
 		// apply root_path to input path
 		public string GetFilePath(string _)
@@ -98,7 +98,7 @@ namespace TS3AudioBot.Config
 			return config;
 		}
 
-		public ConfBot[] GetAllBots()
+		public ConfBot[]? GetAllBots()
 		{
 			try
 			{
@@ -183,9 +183,8 @@ namespace TS3AudioBot.Config
 			var file = NameToPath(name);
 			if (!file.Ok)
 				return file.Error;
-			if (botConfCache.TryGetValue(name, out var conf))
+			if (botConfCache.Remove(name, out var conf))
 				conf.Name = null;
-			botConfCache.Remove(name);
 			if (!file.Value.Exists)
 				return R.Ok;
 			try
@@ -217,12 +216,13 @@ namespace TS3AudioBot.Config
 
 			try
 			{
+				fileTo.Value.Directory.Create();
 				File.Copy(fileFrom.Value.FullName, fileTo.Value.FullName, false);
 				return R.Ok;
 			}
 			catch (Exception ex)
 			{
-				Log.Debug(ex, "Config file could not be copied");
+				Log.Error(ex, "Config file could not be copied");
 				return new LocalStr("Could not copy config."); // LOC: TODO
 			}
 		}
@@ -230,9 +230,9 @@ namespace TS3AudioBot.Config
 
 	public partial class ConfBot
 	{
-		public string Name { get; set; }
+		public string? Name { get; set; }
 
-		public string LocalConfigDir => Name is null ? null : Path.Combine(GetParent().Configs.BotsPath.Value, Name);
+		public string? LocalConfigDir => Name is null ? null : Path.Combine(GetParent().Configs.BotsPath.Value, Name);
 
 		public E<LocalStr> SaveNew(string name)
 		{
@@ -274,6 +274,6 @@ namespace TS3AudioBot.Config
 			return R.Ok;
 		}
 
-		public ConfRoot GetParent() => Parent as ConfRoot;
+		internal ConfRoot GetParent() => (Parent as ConfRoot) ?? throw new InvalidOperationException("Bot is not under root");
 	}
 }

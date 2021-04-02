@@ -23,7 +23,7 @@ namespace TSLib.Full
 			0x9d, 0xcc, 0xec, 0x73, 0xcd, 0x18, 0x75, 0x0f, 0x99, 0x38, 0x12, 0x40, 0x8a
 		};
 
-		public List<LicenseBlock> Blocks { get; set; }
+		public List<LicenseBlock> Blocks { get; } = new List<LicenseBlock>();
 
 		public static R<Licenses, string> Parse(ReadOnlySpan<byte> data)
 		{
@@ -34,7 +34,7 @@ namespace TSLib.Full
 				return "Unsupported version";
 
 			// Read licenses
-			var res = new Licenses { Blocks = new List<LicenseBlock>() };
+			var res = new Licenses();
 			data = data.Slice(1);
 			while (data.Length > 0)
 			{
@@ -66,10 +66,12 @@ namespace TSLib.Full
 		private const int MinBlockLen = 42;
 
 		public abstract ChainBlockType Type { get; }
-		public byte[] Key { get; set; }
 		public DateTime NotValidBefore { get; set; }
 		public DateTime NotValidAfter { get; set; }
+#pragma warning disable CS8618
+		public byte[] Key { get; set; }
 		public byte[] Hash { get; set; }
+#pragma warning restore CS8618
 
 		public static R<(LicenseBlock block, int read), string> Parse(ReadOnlySpan<byte> data)
 		{
@@ -90,7 +92,7 @@ namespace TSLib.Full
 				var result = ReadNullString(data.Slice(46));
 				if (!result.Ok) return result.Error;
 				var nullStr = result.Value;
-				block = new IntermediateLicenseBlock { Issuer = nullStr.str };
+				block = new IntermediateLicenseBlock(nullStr.str);
 				read = 5 + nullStr.read;
 				break;
 
@@ -100,7 +102,7 @@ namespace TSLib.Full
 				result = ReadNullString(data.Slice(47));
 				if (!result.Ok) return result.Error;
 				nullStr = result.Value;
-				block = new ServerLicenseBlock { Issuer = result.Value.str, LicenseType = (ServerLicenseType)data[42] };
+				block = new ServerLicenseBlock(result.Value.str, (ServerLicenseType)data[42]);
 				read = 6 + nullStr.read;
 				break;
 
@@ -121,7 +123,7 @@ namespace TSLib.Full
 			block.Key = data.Slice(1, 32).ToArray();
 
 			var allLen = MinBlockLen + read;
-			var hash = TsCrypt.Hash512It(data.Slice(1, allLen - 1).ToArray());
+			var hash = TsCrypt.Hash512It(data[1..allLen].ToArray());
 			block.Hash = hash.AsSpan(0, 32).ToArray();
 
 			return (block, allLen);
@@ -167,26 +169,47 @@ namespace TSLib.Full
 	public class IntermediateLicenseBlock : LicenseBlock
 	{
 		public override ChainBlockType Type => ChainBlockType.Intermediate;
-		public string Issuer { get; set; }
+		public string Issuer { get; }
+
+		public IntermediateLicenseBlock(string issuer)
+		{
+			Issuer = issuer;
+		}
 	}
 
 	public class WebsiteLicenseBlock : LicenseBlock
 	{
 		public override ChainBlockType Type => ChainBlockType.Website;
-		public string Issuer { get; set; }
+		public string Issuer { get; }
+
+		public WebsiteLicenseBlock(string issuer)
+		{
+			Issuer = issuer;
+		}
 	}
 
 	public class CodeLicenseBlock : LicenseBlock
 	{
 		public override ChainBlockType Type => ChainBlockType.Code;
-		public string Issuer { get; set; }
+		public string Issuer { get; }
+
+		public CodeLicenseBlock(string issuer)
+		{
+			Issuer = issuer;
+		}
 	}
 
 	public class ServerLicenseBlock : LicenseBlock
 	{
 		public override ChainBlockType Type => ChainBlockType.Server;
-		public string Issuer { get; set; }
-		public ServerLicenseType LicenseType { get; set; }
+		public string Issuer { get; }
+		public ServerLicenseType LicenseType { get; }
+
+		public ServerLicenseBlock(string issuer, ServerLicenseType licenseType)
+		{
+			Issuer = issuer;
+			LicenseType = licenseType;
+		}
 	}
 
 	public class EphemeralLicenseBlock : LicenseBlock
@@ -219,5 +242,8 @@ namespace TSLib.Full
 		Athp,
 		Aal,
 		Default,
+		Gamer,
+		Sponsorship,
+		Commercial,
 	}
 }

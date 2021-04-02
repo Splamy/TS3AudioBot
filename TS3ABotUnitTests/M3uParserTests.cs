@@ -6,7 +6,7 @@ using TS3AudioBot.ResourceFactories.AudioTags;
 namespace TS3ABotUnitTests
 {
 	[TestFixture]
-	internal class M3uParserTests
+	public class M3uParserTests
 	{
 		[Test]
 		public void SimpleListTest()
@@ -18,17 +18,17 @@ namespace TS3ABotUnitTests
 /opt/music/bad/MONO.mp3
 #EXTINF:223,Deathstars - Deathstars - Opium
 /opt/music/bad/Opium.mp3"
-				)));
-			Assert.That(result.Ok);
-			Assert.AreEqual(3, result.Value.Count);
+				))).Result;
 
-			Assert.AreEqual("Delain - Delain - We Are The Others", result.Value[0].Title);
-			Assert.AreEqual("MONO - MONO - The Hand That Holds the Truth", result.Value[1].Title);
-			Assert.AreEqual("Deathstars - Deathstars - Opium", result.Value[2].Title);
+			Assert.AreEqual(3, result.Count);
 
-			Assert.AreEqual("/opt/music/bad/Delain.mp3", result.Value[0].TrackUrl);
-			Assert.AreEqual("/opt/music/bad/MONO.mp3", result.Value[1].TrackUrl);
-			Assert.AreEqual("/opt/music/bad/Opium.mp3", result.Value[2].TrackUrl);
+			Assert.AreEqual("Delain - Delain - We Are The Others", result[0].Title);
+			Assert.AreEqual("MONO - MONO - The Hand That Holds the Truth", result[1].Title);
+			Assert.AreEqual("Deathstars - Deathstars - Opium", result[2].Title);
+
+			Assert.AreEqual("/opt/music/bad/Delain.mp3", result[0].TrackUrl);
+			Assert.AreEqual("/opt/music/bad/MONO.mp3", result[1].TrackUrl);
+			Assert.AreEqual("/opt/music/bad/Opium.mp3", result[2].TrackUrl);
 		}
 
 		[Test]
@@ -40,17 +40,16 @@ namespace TS3ABotUnitTests
 C:\Windows\System32\firewall32.cpl
 #EXTINF:1337,Never gonna let you down
 C:\Windows\System32\firewall64.cpl"
-				)));
-			Assert.That(result.Ok);
-			Assert.AreEqual(2, result.Value.Count);
+				))).Result;
 
-			Assert.AreEqual("Never gonna give you up", result.Value[0].Title);
-			Assert.AreEqual("Never gonna let you down", result.Value[1].Title);
+			Assert.AreEqual(2, result.Count);
 
-			Assert.AreEqual(@"C:\Windows\System32\firewall32.cpl", result.Value[0].TrackUrl);
-			Assert.AreEqual(@"C:\Windows\System32\firewall64.cpl", result.Value[1].TrackUrl);
+			Assert.AreEqual("Never gonna give you up", result[0].Title);
+			Assert.AreEqual("Never gonna let you down", result[1].Title);
+
+			Assert.AreEqual(@"C:\Windows\System32\firewall32.cpl", result[0].TrackUrl);
+			Assert.AreEqual(@"C:\Windows\System32\firewall64.cpl", result[1].TrackUrl);
 		}
-
 
 		[Test]
 		public void ListWithoutMetaTagsTest()
@@ -60,15 +59,15 @@ C:\Windows\System32\firewall64.cpl"
 C:\PepeHands.jpg
 ./do/I/look/like/I/know/what/a/Jaypeg/is
 "
-				)));
-			Assert.That(result.Ok);
-			Assert.AreEqual(2, result.Value.Count);
+				))).Result;
 
-			Assert.AreEqual(null, result.Value[0].Title);
-			Assert.AreEqual(null, result.Value[1].Title);
+			Assert.AreEqual(2, result.Count);
 
-			Assert.AreEqual(@"C:\PepeHands.jpg", result.Value[0].TrackUrl);
-			Assert.AreEqual(@"./do/I/look/like/I/know/what/a/Jaypeg/is", result.Value[1].TrackUrl);
+			Assert.AreEqual(null, result[0].Title);
+			Assert.AreEqual(null, result[1].Title);
+
+			Assert.AreEqual(@"C:\PepeHands.jpg", result[0].TrackUrl);
+			Assert.AreEqual("./do/I/look/like/I/know/what/a/Jaypeg/is", result[1].TrackUrl);
 		}
 	}
 }

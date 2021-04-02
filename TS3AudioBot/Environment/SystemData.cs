@@ -15,7 +15,6 @@ using System.Reflection;
 using System.Text.RegularExpressions;
 using TS3AudioBot.Helper;
 using TSLib.Helper;
-//using PlatformVersion = System.ValueTuple<TS3AudioBot.Environment.Runtime, string, System.Version>;
 
 namespace TS3AudioBot.Environment
 {
@@ -24,26 +23,13 @@ namespace TS3AudioBot.Environment
 		private static readonly Regex PlatformRegex = new Regex(@"(\w+)=(.*)", RegexOptions.IgnoreCase | RegexOptions.ECMAScript | RegexOptions.Multiline);
 		private static readonly Regex SemVerRegex = new Regex(@"(\d+)(?:\.(\d+)){1,3}", RegexOptions.IgnoreCase | RegexOptions.ECMAScript | RegexOptions.Multiline);
 
-		public static BuildData AssemblyData { get; } = GenAssemblyData();
-		private static BuildData GenAssemblyData()
-		{
-			var gitInfoType = Assembly.GetExecutingAssembly().GetType("GitVersionInformation");
-			if (gitInfoType is null)
-				return new BuildData();
-
-			return new BuildData
-			{
-				Version = (string)gitInfoType.GetField("FullSemVer", BindingFlags.Static | BindingFlags.Public)?.GetValue(null),
-				Branch = (string)gitInfoType.GetField("BranchName", BindingFlags.Static | BindingFlags.Public)?.GetValue(null),
-				CommitSha = (string)gitInfoType.GetField("Sha", BindingFlags.Static | BindingFlags.Public)?.GetValue(null),
-			};
-		}
+		public static BuildData AssemblyData { get; } = new BuildData();
 
 		public static string PlatformData { get; } = GenPlatformDat();
 		private static string GenPlatformDat()
 		{
-			string platform = null;
-			string version = null;
+			string? platform = null;
+			string? version = null;
 			string bitness = System.Environment.Is64BitProcess ? "64bit" : "32bit";
 
 			if (Tools.IsLinux)
@@ -64,8 +50,7 @@ namespace TS3AudioBot.Environment
 
 					if (values.Count > 0)
 					{
-						string value;
-						platform = values.TryGetValue("NAME", out value) ? value
+						platform = values.TryGetValue("NAME", out string? value) ? value
 								: values.TryGetValue("ID", out value) ? value
 								: values.TryGetValue("DISTRIB_ID", out value) ? value
 								: values.TryGetValue("PRETTY_NAME", out value) ? value
@@ -90,8 +75,8 @@ namespace TS3AudioBot.Environment
 						}
 					}
 
-					platform = platform ?? "Linux";
-					version = version ?? "<?>";
+					platform ??= "Linux";
+					version ??= "<?>";
 				});
 			}
 			else
@@ -107,7 +92,7 @@ namespace TS3AudioBot.Environment
 		{
 			try
 			{
-				using (var p = new Process
+				using var p = new Process
 				{
 					StartInfo = new ProcessStartInfo
 					{
@@ -118,13 +103,11 @@ namespace TS3AudioBot.Environment
 						RedirectStandardOutput = true,
 					},
 					EnableRaisingEvents = true,
-				})
-				{
-					p.Start();
-					p.WaitForExit(200);
+				};
+				p.Start();
+				p.WaitForExit(200);
 
-					action.Invoke(p.StandardOutput);
-				}
+				action.Invoke(p.StandardOutput);
 			}
 			catch { }
 		}
@@ -147,10 +130,12 @@ namespace TS3AudioBot.Environment
 			return new PlatformVersion(Runtime.Unknown, "? (?)", null);
 		}
 
-		private static PlatformVersion GetNetCoreVersion()
+		private static PlatformVersion? GetNetCoreVersion()
 		{
 			var assembly = typeof(System.Runtime.GCSettings).GetTypeInfo().Assembly;
-			var assemblyPath = assembly.CodeBase.Split(new[] { '/', '\\' }, StringSplitOptions.RemoveEmptyEntries);
+			var assemblyPath = assembly.CodeBase?.Split(new[] { '/', '\\' }, StringSplitOptions.RemoveEmptyEntries);
+			if (assemblyPath is null)
+				return null;
 			int netCoreAppIndex = Array.IndexOf(assemblyPath, "Microsoft.NETCore.App");
 			if (netCoreAppIndex <= 0 || netCoreAppIndex >= assemblyPath.Length - 2)
 				return null;
@@ -159,7 +144,7 @@ namespace TS3AudioBot.Environment
 			return new PlatformVersion(Runtime.Core, $".NET Core ({version})", semVer);
 		}
 
-		private static PlatformVersion GetMonoVersion()
+		private static PlatformVersion? GetMonoVersion()
 		{
 			var type = Type.GetType("Mono.Runtime");
 			if (type is null)
@@ -179,8 +164,10 @@ namespace TS3AudioBot.Environment
 			return new PlatformVersion(Runtime.Net, $".NET Framework {version}", semVer);
 		}
 
-		private static Version ParseToSemVer(string version)
+		private static Version? ParseToSemVer(string? version)
 		{
+			if (version is null)
+				return null;
 			var semMatch = SemVerRegex.Match(version);
 			if (!semMatch.Success)
 				return null;
@@ -226,9 +213,9 @@ namespace TS3AudioBot.Environment
 	{
 		public Runtime Runtime;
 		public string FullName;
-		public Version SemVer;
+		public Version? SemVer;
 
-		public PlatformVersion(Runtime runtime, string fullName, Version semVer)
+		public PlatformVersion(Runtime runtime, string fullName, Version? semVer)
 		{
 			Runtime = runtime;
 			FullName = fullName;

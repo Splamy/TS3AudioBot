@@ -12,7 +12,7 @@ using System;
 
 namespace TS3AudioBot.Web.Model
 {
-	public class SongInfo : PlaylistItemGetData
+	public class CurrentSongInfo : PlaylistItemGetData
 	{
 		[JsonProperty(PropertyName = "Position")]
 		public TimeSpan Position { get; set; }

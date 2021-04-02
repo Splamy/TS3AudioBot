@@ -7,14 +7,16 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
-using System;
+using TSLib.Helper;
 
-namespace TSLib
+namespace TSLib.Scheduler
 {
-	/// <summary>Generel exeption when methods within the client fail.</summary>
-	public class TsException : Exception
+	internal static class DispatcherHelper
 	{
-		public TsException(string message) : base(message) { }
-		public TsException(string message, Exception innerException) : base(message, innerException) { }
+		public const string DispatcherTitle = "TS Dispatcher";
+
+		internal static string CreateLogThreadName(string threadName, Id id) => threadName + (id == Id.Null ? "" : $"[{id}]");
+
+		internal static string CreateDispatcherTitle(Id id) => CreateLogThreadName(DispatcherTitle, id);
 	}
 }

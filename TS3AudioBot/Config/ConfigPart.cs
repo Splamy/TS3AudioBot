@@ -23,19 +23,21 @@ namespace TS3AudioBot.Config
 	{
 		protected static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 
-		public string Documentation { get; protected set; }
+		public string? Documentation { get; protected set; }
 		public string Key { get; protected set; }
 		// must be a field otherwise it will be found as a child for ConfigTable
-		public ConfigEnumerable Parent;
+		public ConfigEnumerable? Parent;
 
+#pragma warning disable CS8618 // !NRT, all ConfigParts are create via Create<T>
 		protected ConfigPart() { }
+#pragma warning restore CS8618
 		protected ConfigPart(string key)
 		{
 			Key = key;
 		}
 
 		public abstract bool ExpectsString { get; }
-		public abstract void FromToml(TomlObject tomlObject);
+		public abstract void FromToml(TomlObject? tomlObject);
 		public abstract void ToToml(bool writeDefaults, bool writeDocumentation);
 		public abstract void Derive(ConfigPart derived);
 		public abstract E<string> FromJson(JsonReader reader);
@@ -74,7 +76,7 @@ namespace TS3AudioBot.Config
 			{
 			case '*':
 				{
-					var rest = pathM.Slice(1);
+					var rest = pathM[1..];
 					if (rest.IsEmpty)
 						return GetAllSubItems();
 
@@ -104,12 +106,12 @@ namespace TS3AudioBot.Config
 						if (path[i] == '*')
 							throw new ArgumentException("Invalid wildcard position", nameof(pathM));
 
-						var currentSub = path.Slice(i);
+						var currentSub = path[i..];
 						if (!IsIdentifier(currentSub)) // if (!IsName)
 						{
 							cont = true;
-							subItemName = path.Slice(0, i);
-							rest = pathM.Slice(i);
+							subItemName = path[..i];
+							rest = pathM[i..];
 							break;
 						}
 					}
@@ -142,7 +144,7 @@ namespace TS3AudioBot.Config
 				{
 					if (i == 0)
 						throw new ArgumentException("Empty array indexer", nameof(pathM));
-					var indexer = path.Slice(1, i - 1);
+					var indexer = path[1..i];
 					var rest = pathM.Slice(i + 1);
 					bool cont = rest.Length > 0;
 
@@ -190,14 +192,14 @@ namespace TS3AudioBot.Config
 			if (!IsDot(path))
 				throw new ArgumentException("Expected dot", nameof(pathM));
 
-			var rest = pathM.Slice(1);
+			var rest = pathM[1..];
 			if (!IsIdentifier(rest.Span))
 				throw new ArgumentException("Expected identifier after dot", nameof(pathM));
 
 			return ProcessIdentifier(rest);
 		}
 
-		private ConfigPart GetArrayItemByIndex(ReadOnlySpan<char> index)
+		private ConfigPart? GetArrayItemByIndex(ReadOnlySpan<char> index)
 		{
 			var indexNum = new string(index.ToArray());
 
@@ -221,7 +223,7 @@ namespace TS3AudioBot.Config
 			return Enumerable.Empty<ConfigPart>();
 		}
 
-		private ConfigPart GetSubItemByName(ReadOnlySpan<char> name)
+		private ConfigPart? GetSubItemByName(ReadOnlySpan<char> name)
 		{
 			var indexNum = new string(name.ToArray());
 			if (this is ConfigEnumerable table)

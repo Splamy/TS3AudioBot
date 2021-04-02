@@ -18,14 +18,14 @@ namespace TS3AudioBot.CommandSystem
 	[AttributeUsage(AttributeTargets.Method, Inherited = false)]
 	public sealed class CommandAttribute : Attribute
 	{
-		public CommandAttribute(string commandNameSpace, string overrideHelpName = null)
+		public string CommandNameSpace { get; }
+		public string? OverrideHelpName { get; }
+
+		public CommandAttribute(string commandNameSpace, string? overrideHelpName = null)
 		{
 			CommandNameSpace = commandNameSpace;
 			OverrideHelpName = overrideHelpName;
 		}
-
-		public string CommandNameSpace { get; }
-		public string OverrideHelpName { get; }
 	}
 
 	/// <summary>
@@ -35,13 +35,13 @@ namespace TS3AudioBot.CommandSystem
 	[AttributeUsage(AttributeTargets.Method, Inherited = false, AllowMultiple = true)]
 	public sealed class UsageAttribute : Attribute
 	{
+		public string UsageSyntax { get; }
+		public string UsageHelp { get; }
+
 		public UsageAttribute(string syntax, string help)
 		{
 			UsageSyntax = syntax;
 			UsageHelp = help;
 		}
-
-		public string UsageSyntax { get; }
-		public string UsageHelp { get; }
 	}
 }

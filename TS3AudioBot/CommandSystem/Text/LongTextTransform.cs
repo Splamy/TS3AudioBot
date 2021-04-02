@@ -10,7 +10,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using TSLib.Commands;
 using TSLib.Helper;
 
@@ -20,20 +19,20 @@ namespace TS3AudioBot.CommandSystem.Text
 	{
 		private static readonly byte[] SeparatorWeight = new byte[] { (byte)'\n', (byte)',', (byte)' ' };
 
-		public static IEnumerable<string> Transform(string text, LongTextBehaviour behaviour, int limit = int.MaxValue, int maxMessageSize = TsConst.MaxSizeTextMessage)
+		public static IEnumerable<string> Split(string text, LongTextBehaviour behaviour, int maxMessageSize, int limit = int.MaxValue)
 		{
 			if (maxMessageSize < 4)
 				throw new ArgumentOutOfRangeException(nameof(maxMessageSize), "The minimum split length must be at least 4 bytes to fit all utf8 characters");
 
 			// Assuming worst case that each UTF-8 character which epands to 4 bytes.
 			// If the message is still shorter we can safely return in 1 block.
-			if (text.Length * 4 <= TsConst.MaxSizeTextMessage)
+			if (text.Length * 4 <= maxMessageSize)
 				return new[] { text };
 
-			var bytes = Encoding.UTF8.GetBytes(text);
+			var bytes = Tools.Utf8Encoder.GetBytes(text);
 
 			// If the entire text UTF-8 encoded fits in one message we can return early.
-			if (bytes.Length * 2 < TsConst.MaxSizeTextMessage)
+			if (bytes.Length * 2 < maxMessageSize)
 				return new[] { text };
 
 			var list = new List<string>();
@@ -116,7 +115,7 @@ namespace TS3AudioBot.CommandSystem.Text
 				this.tok = tok;
 			}
 
-			public override string ToString() => $"i:{i} tok:{tok}";
+			public override readonly string ToString() => $"i:{i} tok:{tok}";
 		}
 	}
 }

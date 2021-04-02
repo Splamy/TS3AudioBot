@@ -17,7 +17,7 @@
 <#
 // "TimeSpan" (Currently removed, as it is too ambiguous)
 var types = new [] {"bool", "sbyte", "byte", "short", "ushort", "int", "uint", "long", "ulong", "float", "double", "string", "DateTime" };
-var aliasTypes = new [] { "Uid",  "ClientDbId", "ClientId", "ChannelId", "ServerGroupId", "ChannelGroupId"};
+var aliasTypes = new [] { "Uid",  "ClientDbId", "ClientId", "ChannelId", "ServerGroupId", "ChannelGroupId" };
 var classTypes = new [] { "string" };
 #>
 
@@ -35,7 +35,7 @@ foreach (var type in types.Concat(aliasTypes)) {
 	if (classTypes.Contains(type)) { #>
 		[DebuggerStepThrough] public TsCommand Add(string key, <#= type #> value) { if(value != null) Add(new CommandParameter(key, value)); return this; }
 <# } else { #>
-		[DebuggerStepThrough] public TsCommand Add(string key, <#= type #>? value) { if(value.HasValue) return Add(key, value.Value); return this; }
+		[DebuggerStepThrough] public TsCommand Add(string key, <#= type #>? value) { if(value != null) return Add(key, value.Value); return this; }
 		[DebuggerStepThrough] public TsCommand Add(string key, <#= type #> value) => Add(new CommandParameter(key, value));
 <# } #>
 		[DebuggerStepThrough] public TsCommand Add(string key, IEnumerable<<#= type #>> value) => Add(new CommandMultiParameter(key, value));

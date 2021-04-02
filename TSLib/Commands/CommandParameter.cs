@@ -33,6 +33,6 @@ namespace TSLib.Commands
 		[DebuggerStepThrough] public static string Serialize(float value) => value.ToString(CultureInfo.InvariantCulture);
 		[DebuggerStepThrough] public static string Serialize(double value) => value.ToString(CultureInfo.InvariantCulture);
 		[DebuggerStepThrough] public static string Serialize(string value) => TsString.Escape(value);
-		[DebuggerStepThrough] public static string Serialize(DateTime value) => Tools.ToUnix(value).ToString(CultureInfo.InvariantCulture);
+		[DebuggerStepThrough] public static string Serialize(DateTime value) => value.ToUnix().ToString(CultureInfo.InvariantCulture);
 	}
 }

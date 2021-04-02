@@ -7,8 +7,8 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
-using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace TS3AudioBot.CommandSystem.Commands
 {
@@ -23,12 +23,12 @@ namespace TS3AudioBot.CommandSystem.Commands
 			internArguments = arguments;
 		}
 
-		public virtual object Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<Type> returnTypes)
+		public virtual async ValueTask<object?> Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments)
 		{
 			var merged = new ICommand[internArguments.Count + arguments.Count];
 			internArguments.CopyTo(0, merged, 0);
 			arguments.CopyTo(0, merged, internArguments.Count);
-			return internCommand.Execute(info, merged, returnTypes);
+			return await internCommand.Execute(info, merged);
 		}
 
 		public override string ToString() => $"F\"{internCommand}\"({string.Join(", ", internArguments)})";

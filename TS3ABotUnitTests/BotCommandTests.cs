@@ -9,11 +9,12 @@ using TS3AudioBot;
 using TS3AudioBot.Algorithm;
 using TS3AudioBot.CommandSystem;
 using TS3AudioBot.CommandSystem.Ast;
-using TS3AudioBot.CommandSystem.CommandResults;
 using TS3AudioBot.CommandSystem.Commands;
 using TS3AudioBot.Dependency;
+using TS3AudioBot.Web.Api;
 using TSLib;
 
+#nullable enable
 namespace TS3ABotUnitTests
 {
 	[TestFixture]
@@ -23,23 +24,17 @@ namespace TS3ABotUnitTests
 		public void BotCommandTest()
 		{
 			var execInfo = Utils.GetExecInfo("ic3");
-			string CallCommand(string command)
-			{
-				return CommandManager.ExecuteCommand(execInfo, command);
-			}
+			string? CallCommand(string command) => CommandManager.Execute(execInfo, command).GetAwaiter().GetResult().AsString();
 
 			var output = CallCommand("!help");
 			Assert.AreEqual(output, CallCommand("!h"));
 			Assert.AreEqual(output, CallCommand("!eval !h"));
-			Assert.AreEqual(output, CallCommand("!(!h)"));
-			output = CallCommand("!h help");
-			Assert.AreEqual(output, CallCommand("!(!h) help"));
 			Assert.Throws<CommandException>(() => CallCommand("!"));
 
 			// Test random
 			for (int i = 0; i < 1000; i++)
 			{
-				var r = int.Parse(CallCommand("!rng -10 100"));
+				var r = int.Parse(CallCommand("!rng -10 100")!);
 				Assert.GreaterOrEqual(r, -10);
 				Assert.Less(r, 100);
 			}
@@ -80,12 +75,9 @@ namespace TS3ABotUnitTests
 		public void TailStringTest()
 		{
 			var execInfo = Utils.GetExecInfo("ic3");
-			var group = execInfo.GetModule<CommandManager>().RootGroup;
+			string? CallCommand(string command) => CommandManager.Execute(execInfo, command).Result.AsString();
+			var group = execInfo.GetModule<CommandManager>()!.RootGroup;
 			group.AddCommand("cmd", new FunctionCommand(s => s));
-			string CallCommand(string command)
-			{
-				return CommandManager.ExecuteCommand(execInfo, command);
-			}
 
 			Assert.AreEqual("a", CallCommand("!cmd a"));
 			Assert.AreEqual("a b", CallCommand("!cmd a b"));
@@ -96,7 +88,7 @@ namespace TS3ABotUnitTests
 		[Test]
 		public void XCommandSystemFilterTest()
 		{
-			var filterList = new Dictionary<string, object>
+			var filterList = new Dictionary<string, object?>
 			{
 				{ "help", null },
 				{ "quit", null },
@@ -104,7 +96,7 @@ namespace TS3ABotUnitTests
 				{ "ply", null }
 			};
 
-			var filter = Filter.GetFilterByName("ic3");
+			var filter = Filter.GetFilterByName("ic3")!;
 
 			// Exact match
 			var result = filter.Filter(filterList, "help");
@@ -140,35 +132,37 @@ namespace TS3ABotUnitTests
 			Assert.IsTrue(result.Any(r => r.Key == "pla"));
 		}
 
-		private static string OptionalFunc(string s = null) => s is null ? "NULL" : "NOT NULL";
+		private static string OptionalFunc(string? s = null) => s is null ? "NULL" : "NOT NULL";
 
 		[Test]
 		public void XCommandSystemTest()
 		{
 			var execInfo = Utils.GetExecInfo("ic3", false);
-			var group = execInfo.GetModule<CommandManager>().RootGroup;
+			string? CallCommand(string command) => CommandManager.Execute(execInfo, command).GetAwaiter().GetResult().AsString();
+
+			var group = execInfo.GetModule<CommandManager>()!.RootGroup;
 			group.AddCommand("one", new FunctionCommand(() => "ONE"));
 			group.AddCommand("two", new FunctionCommand(() => "TWO"));
 			group.AddCommand("echo", new FunctionCommand(s => s));
-			group.AddCommand("optional", new FunctionCommand(GetType().GetMethod(nameof(OptionalFunc), BindingFlags.NonPublic | BindingFlags.Static)));
+			group.AddCommand("optional", new FunctionCommand(GetType().GetMethod(nameof(OptionalFunc), BindingFlags.NonPublic | BindingFlags.Static)!));
 
 			// Basic tests
-			Assert.AreEqual("ONE", CommandManager.ExecuteCommand(execInfo, new ICommand[] { new ResultCommand(new PrimitiveResult<string>("one")) }));
-			Assert.AreEqual("ONE", CommandManager.ExecuteCommand(execInfo, "!one"));
-			Assert.AreEqual("TWO", CommandManager.ExecuteCommand(execInfo, "!t"));
-			Assert.AreEqual("TEST", CommandManager.ExecuteCommand(execInfo, "!e TEST"));
-			Assert.AreEqual("ONE", CommandManager.ExecuteCommand(execInfo, "!o"));
+			Assert.AreEqual("ONE", CommandManager.Execute(execInfo, new ICommand[] { new ResultCommand("one") }).Result.AsString());
+			Assert.AreEqual("ONE", CallCommand("!one"));
+			Assert.AreEqual("TWO", CallCommand("!t"));
+			Assert.AreEqual("TEST", CallCommand("!e TEST"));
+			Assert.AreEqual("ONE", CallCommand("!o"));
 
 			// Optional parameters
-			Assert.Throws<CommandException>(() => CommandManager.ExecuteCommand(execInfo, "!e"));
-			Assert.AreEqual("NULL", CommandManager.ExecuteCommand(execInfo, "!op"));
-			Assert.AreEqual("NOT NULL", CommandManager.ExecuteCommand(execInfo, "!op 1"));
+			Assert.Throws<CommandException>(() => CallCommand("!e"));
+			Assert.AreEqual("NULL", CallCommand("!op"));
+			Assert.AreEqual("NOT NULL", CallCommand("!op 1"));
 
 			// Command chaining
-			Assert.AreEqual("TEST", CommandManager.ExecuteCommand(execInfo, "!e (!e TEST)"));
-			Assert.AreEqual("TWO", CommandManager.ExecuteCommand(execInfo, "!e (!t)"));
-			Assert.AreEqual("NOT NULL", CommandManager.ExecuteCommand(execInfo, "!op (!e TEST)"));
-			Assert.AreEqual("ONE", CommandManager.ExecuteCommand(execInfo, "!(!e on)"));
+			Assert.AreEqual("TEST", CallCommand("!e (!e TEST)"));
+			Assert.AreEqual("TWO", CallCommand("!e (!t)"));
+			Assert.AreEqual("NOT NULL", CallCommand("!op (!e TEST)"));
+			Assert.AreEqual("ONE", CallCommand("!(!e on)"));
 
 			// Command overloading
 			var intCom = new Func<int, string>(_ => "INT");
@@ -178,16 +172,24 @@ namespace TS3ABotUnitTests
 				new FunctionCommand(strCom.Method, strCom.Target)
 			}));
 
-			Assert.AreEqual("INT", CommandManager.ExecuteCommand(execInfo, "!overlord 1"));
-			Assert.AreEqual("STRING", CommandManager.ExecuteCommand(execInfo, "!overlord a"));
-			Assert.Throws<CommandException>(() => CommandManager.ExecuteCommand(execInfo, "!overlord"));
+			Assert.AreEqual("INT", CallCommand("!overlord 1"));
+			Assert.AreEqual("STRING", CallCommand("!overlord a"));
+			Assert.Throws<CommandException>(() => CallCommand("!overlord"));
+
+			// Return unwrap
+			var json = JsonValue.Create("WRAP");
+			group.AddCommand("wrapjson", new FunctionCommand(new Func<JsonValue>(() => json)));
+			Assert.AreEqual(json, CommandManager.Execute(execInfo, "!wrapjson").Result.AsRaw());
+			Assert.AreEqual("WRAP", CallCommand("!wrapjson")); // AsString()
+			Assert.AreEqual("WRAP", CallCommand("!echo (!wrapjson)"));
 		}
 
 		[Test]
 		public void XCommandSystemTest2()
 		{
 			var execInfo = Utils.GetExecInfo("exact");
-			var group = execInfo.GetModule<CommandManager>().RootGroup;
+			string? CallCommand(string command) => CommandManager.Execute(execInfo!, command).GetAwaiter().GetResult().AsString();
+			var group = execInfo.GetModule<CommandManager>()!.RootGroup;
 
 			var o1 = new OverloadedFunctionCommand();
 			o1.AddCommand(new FunctionCommand(new Action<int>((_) => { })));
@@ -201,25 +203,25 @@ namespace TS3ABotUnitTests
 			o2.AddCommand("b", new FunctionCommand(new Action(() => { })));
 			group.AddCommand("three", o2);
 
-			Assert.Throws<CommandException>(() => CommandManager.ExecuteCommand(execInfo, "!one"));
-			Assert.Throws<CommandException>(() => CommandManager.ExecuteCommand(execInfo, "!one \"\""));
-			Assert.Throws<CommandException>(() => CommandManager.ExecuteCommand(execInfo, "!one (!print \"\")"));
-			Assert.Throws<CommandException>(() => CommandManager.ExecuteCommand(execInfo, "!one string"));
-			Assert.DoesNotThrow(() => CommandManager.ExecuteCommand(execInfo, "!one 42"));
-			Assert.DoesNotThrow(() => CommandManager.ExecuteCommand(execInfo, "!one 4200000000000"));
+			Assert.Throws<CommandException>(() => CallCommand("!one"));
+			Assert.Throws<CommandException>(() => CallCommand("!one \"\""));
+			Assert.Throws<CommandException>(() => CallCommand("!one (!print \"\")"));
+			Assert.Throws<CommandException>(() => CallCommand("!one string"));
+			Assert.DoesNotThrow(() => CallCommand("!one 42"));
+			Assert.DoesNotThrow(() => CallCommand("!one 4200000000000"));
 
-			Assert.Throws<CommandException>(() => CommandManager.ExecuteCommand(execInfo, "!two"));
-			Assert.Throws<CommandException>(() => CommandManager.ExecuteCommand(execInfo, "!two \"\""));
-			Assert.Throws<CommandException>(() => CommandManager.ExecuteCommand(execInfo, "!two (!print \"\")"));
-			Assert.Throws<CommandException>(() => CommandManager.ExecuteCommand(execInfo, "!two 42"));
-			Assert.DoesNotThrow(() => CommandManager.ExecuteCommand(execInfo, "!two None"));
+			Assert.Throws<CommandException>(() => CallCommand("!two"));
+			Assert.Throws<CommandException>(() => CallCommand("!two \"\""));
+			Assert.Throws<CommandException>(() => CallCommand("!two (!print \"\")"));
+			Assert.Throws<CommandException>(() => CallCommand("!two 42"));
+			Assert.DoesNotThrow(() => CallCommand("!two None"));
 
-			Assert.Throws<CommandException>(() => CommandManager.ExecuteCommand(execInfo, "!three"));
-			Assert.Throws<CommandException>(() => CommandManager.ExecuteCommand(execInfo, "!three \"\""));
-			Assert.Throws<CommandException>(() => CommandManager.ExecuteCommand(execInfo, "!three (!print \"\")"));
-			Assert.Throws<CommandException>(() => CommandManager.ExecuteCommand(execInfo, "!three c"));
-			Assert.DoesNotThrow(() => CommandManager.ExecuteCommand(execInfo, "!three a"));
-			Assert.DoesNotThrow(() => CommandManager.ExecuteCommand(execInfo, "!three b"));
+			Assert.Throws<CommandException>(() => CallCommand("!three"));
+			Assert.Throws<CommandException>(() => CallCommand("!three \"\""));
+			Assert.Throws<CommandException>(() => CallCommand("!three (!print \"\")"));
+			Assert.Throws<CommandException>(() => CallCommand("!three c"));
+			Assert.DoesNotThrow(() => CallCommand("!three a"));
+			Assert.DoesNotThrow(() => CallCommand("!three b"));
 		}
 
 		[Test]
@@ -229,7 +231,7 @@ namespace TS3ABotUnitTests
 			Thread.CurrentThread.CurrentUICulture = CultureInfo.GetCultureInfo("en");
 
 			var execInfo = Utils.GetExecInfo("exact");
-			var cmdMgr = execInfo.GetModule<CommandManager>();
+			var cmdMgr = execInfo.GetModule<CommandManager>()!;
 			var errors = new List<string>();
 			foreach (var cmd in cmdMgr.AllCommands)
 			{
@@ -274,14 +276,14 @@ namespace TS3ABotUnitTests
 	{
 		public static ExecutionInformation GetExecInfo(string matcher, bool addMainCommands = true)
 		{
-			var cmdMgr = new CommandManager(null);
+			var cmdMgr = new CommandManager(null!);
 			if (addMainCommands)
 				cmdMgr.RegisterCollection(MainCommands.Bag);
 
 			var execInfo = new ExecutionInformation();
 			execInfo.AddModule(new CallerInfo(false) { SkipRightsChecks = true, CommandComplexityMax = int.MaxValue });
 			execInfo.AddModule(new InvokerData((Uid)"InvokerUid"));
-			execInfo.AddModule(Filter.GetFilterByName(matcher));
+			execInfo.AddModule(Filter.GetFilterByName(matcher) ?? throw new Exception("Test filter not found"));
 			execInfo.AddModule(cmdMgr);
 			return execInfo;
 		}

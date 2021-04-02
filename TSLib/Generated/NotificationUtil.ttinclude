@@ -1,0 +1,37 @@
+<#+
+HashSet<string> sharedNotifications = new HashSet<string> {
+	"ChannelCreated",
+	"ChannelDeleted",
+	"ChannelChanged",
+	"ChannelEdited",
+	"ChannelMoved",
+	"ChannelPasswordChanged",
+	"ClientEnterView",
+	"ClientLeftView",
+	"ClientMoved",
+	"ServerEdited",
+	"TextMessage",
+	"TokenUsed",
+};
+
+public void GenNtfyDecls(IEnumerable<Messages.Msg> enu, bool root = false) {
+	PushIndent("\t\t");
+	WriteLine("");
+	var modifier = root ? " abstract" : " override";
+
+	foreach(var ntfy in enu)
+	{
+		Write("public");
+		if(sharedNotifications.Contains(ntfy.name))
+			Write(modifier);
+		WriteLine($" event NotifyEventHandler<{ntfy.name}>? On{ntfy.name};");
+
+		Write("public");
+		if(sharedNotifications.Contains(ntfy.name))
+			Write(modifier);
+		WriteLine($" event EventHandler<{ntfy.name}>? OnEach{ntfy.name};");
+	}
+
+	PopIndent();
+}
+#>

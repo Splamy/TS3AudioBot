@@ -21,16 +21,16 @@ namespace TS3AudioBot.Algorithm
 	{
 		public static IFilter DefaultFilter { get; } = Ic3Filter.Instance;
 
-		public static IFilter GetFilterByName(string filter)
+		public static IFilter? GetFilterByName(string filter)
 		{
-			switch (filter)
+			return filter switch
 			{
-			case "exact": return ExactFilter.Instance;
-			case "substring": return SubstringFilter.Instance;
-			case "ic3": return Ic3Filter.Instance;
-			case "hamming": return HammingFilter.Instance;
-			default: return null;
-			}
+				"exact" => ExactFilter.Instance,
+				"substring" => SubstringFilter.Instance,
+				"ic3" => Ic3Filter.Instance,
+				"hamming" => HammingFilter.Instance,
+				_ => null,
+			};
 		}
 
 		public static IFilter GetFilterByNameOrDefault(string filter) => GetFilterByName(filter) ?? DefaultFilter;
@@ -46,14 +46,14 @@ namespace TS3AudioBot.Algorithm
 		IEnumerable<KeyValuePair<string, T>> IFilter.Filter<T>(IEnumerable<KeyValuePair<string, T>> list, string filter)
 		{
 			// Convert result to list because it can be enumerated multiple times
-			var possibilities = list.Select(t => (Name: t.Key, Value: t.Value, Index: 0)).ToList();
+			var possibilities = list.Select(t => (Name: t.Key, t.Value, Index: 0)).ToList();
 			// Filter matching commands
 			foreach (var c in filter.ToLowerInvariant())
 			{
 				var newPossibilities = (from p in possibilities
 										let pos = p.Name.ToLowerInvariant().IndexOf(c, p.Index)
 										where pos != -1
-										select (p.Name, p.Value, pos + 1)).ToList();
+										select (p.Name, p.Value, Index: pos + 1)).ToList();
 				if (newPossibilities.Count > 0)
 					possibilities = newPossibilities;
 			}
@@ -100,16 +100,14 @@ namespace TS3AudioBot.Algorithm
 		IEnumerable<KeyValuePair<string, T>> IFilter.Filter<T>(IEnumerable<KeyValuePair<string, T>> list, string filter)
 		{
 			var result = list.Where(x => x.Key.StartsWith(filter));
-			using (var enu = result.GetEnumerator())
-			{
-				if (!enu.MoveNext())
-					yield break;
+			using var enu = result.GetEnumerator();
+			if (!enu.MoveNext())
+				yield break;
+			yield return enu.Current;
+			if (enu.Current.Key == filter)
+				yield break;
+			while (enu.MoveNext())
 				yield return enu.Current;
-				if (enu.Current.Key == filter)
-					yield break;
-				while (enu.MoveNext())
-					yield return enu.Current;
-			}
 		}
 	}
 }

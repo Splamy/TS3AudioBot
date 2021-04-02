@@ -10,6 +10,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using TS3AudioBot.Dependency;
 
 namespace TS3AudioBot.CommandSystem.Commands
@@ -26,11 +27,11 @@ namespace TS3AudioBot.CommandSystem.Commands
 			AliasString = command;
 		}
 
-		public object Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<Type> returnTypes)
+		public async ValueTask<object?> Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments)
 		{
 			info.UseComplexityTokens(1);
 
-			IReadOnlyList<ICommand> backupArguments = null;
+			IReadOnlyList<ICommand>? backupArguments = null;
 			if (!info.TryGet<AliasContext>(out var aliasContext))
 			{
 				aliasContext = new AliasContext();
@@ -42,7 +43,7 @@ namespace TS3AudioBot.CommandSystem.Commands
 			}
 
 			aliasContext.Arguments = arguments.Select(c => new LazyCommand(c)).ToArray();
-			var ret = aliasCommand.Execute(info, Array.Empty<ICommand>(), returnTypes);
+			var ret = await aliasCommand.Execute(info, Array.Empty<ICommand>());
 			aliasContext.Arguments = backupArguments;
 			return ret;
 		}
@@ -50,6 +51,6 @@ namespace TS3AudioBot.CommandSystem.Commands
 
 	public class AliasContext
 	{
-		public IReadOnlyList<ICommand> Arguments { get; set; }
+		public IReadOnlyList<ICommand>? Arguments { get; set; }
 	}
 }

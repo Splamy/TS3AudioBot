@@ -12,6 +12,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using TS3AudioBot.CommandSystem.Ast;
 using TS3AudioBot.CommandSystem.CommandResults;
 using TS3AudioBot.CommandSystem.Commands;
@@ -21,7 +22,6 @@ using TS3AudioBot.Helper;
 using TS3AudioBot.Localization;
 using TS3AudioBot.Rights;
 using TSLib.Helper;
-using static TS3AudioBot.CommandSystem.CommandSystemTypes;
 
 namespace TS3AudioBot.CommandSystem
 {
@@ -35,11 +35,11 @@ namespace TS3AudioBot.CommandSystem
 		private readonly Dictionary<string, AliasCommand> aliasPaths = new Dictionary<string, AliasCommand>();
 		private readonly HashSet<string> commandPaths = new HashSet<string>();
 		private readonly HashSet<ICommandBag> baggedCommands = new HashSet<ICommandBag>();
-		private readonly RightsManager rightsManager;
+		private readonly RightsManager? rightsManager;
 
-		public RootGroup RootGroup { get; } = new RootGroup();
+		public CommandGroup RootGroup { get; } = new CommandGroup();
 
-		public CommandManager(RightsManager rightsManager)
+		public CommandManager(RightsManager? rightsManager)
 		{
 			this.rightsManager = rightsManager;
 		}
@@ -111,9 +111,9 @@ namespace TS3AudioBot.CommandSystem
 
 		public IEnumerable<string> AllAlias => aliasPaths.Keys;
 
-		public AliasCommand GetAlias(string path) => aliasPaths.TryGetValue(path, out var ali) ? ali : null;
+		public AliasCommand? GetAlias(string path) => aliasPaths.TryGetValue(path, out var ali) ? ali : null;
 
-		public static IEnumerable<BotCommand> GetBotCommands(object obj, Type type = null) => GetBotCommands(GetCommandMethods(obj, type));
+		public static IEnumerable<BotCommand> GetBotCommands(object? obj, Type? type = null) => GetBotCommands(GetCommandMethods(obj, type));
 
 		public static IEnumerable<BotCommand> GetBotCommands(IEnumerable<CommandBuildInfo> methods)
 		{
@@ -124,14 +124,14 @@ namespace TS3AudioBot.CommandSystem
 			}
 		}
 
-		public static IEnumerable<CommandBuildInfo> GetCommandMethods(object obj, Type type = null)
+		public static IEnumerable<CommandBuildInfo> GetCommandMethods(object? obj, Type? type = null)
 		{
 			if (obj is null && type is null)
 				throw new ArgumentNullException(nameof(type), "No type information given.");
 			return GetCommandMethodsIterator();
 			IEnumerable<CommandBuildInfo> GetCommandMethodsIterator()
 			{
-				var objType = type ?? obj.GetType();
+				var objType = type ?? obj!.GetType();
 
 				foreach (var method in objType.GetMethods(BindingFlags.Public | BindingFlags.Static | BindingFlags.Instance))
 				{
@@ -279,7 +279,7 @@ namespace TS3AudioBot.CommandSystem
 			return R.Ok;
 		}
 
-		private static E<string> GenerateError(string msg, BotCommand involvedCom)
+		private static E<string> GenerateError(string msg, BotCommand? involvedCom)
 		{
 			return $"Command error path: {involvedCom?.InvokeName}"
 				+ $"Command: {involvedCom?.FullQualifiedName}"
@@ -298,11 +298,7 @@ namespace TS3AudioBot.CommandSystem
 		{
 			var comPath = path.Split(' ');
 
-			var node = new CommandUnloadNode
-			{
-				ParentNode = null,
-				Self = RootGroup,
-			};
+			var node = new CommandUnloadNode(null, RootGroup);
 
 			// build up the list to our desired node
 			for (int i = 0; i < comPath.Length - 1; i++)
@@ -310,11 +306,7 @@ namespace TS3AudioBot.CommandSystem
 				if (!(node.Self.GetCommand(comPath[i]) is CommandGroup nextGroup))
 					break;
 
-				node = new CommandUnloadNode
-				{
-					ParentNode = node,
-					Self = nextGroup,
-				};
+				node = new CommandUnloadNode(node, nextGroup);
 			}
 
 			var subGroup = node.Self.GetCommand(comPath.Last());
@@ -342,11 +334,7 @@ namespace TS3AudioBot.CommandSystem
 				// can be added with an empty string, wen can delete it safely this way
 				insertGroup.RemoveCommand(string.Empty);
 				// add the node for cleanup
-				node = new CommandUnloadNode
-				{
-					ParentNode = node,
-					Self = insertGroup,
-				};
+				node = new CommandUnloadNode(node, insertGroup);
 				break;
 			}
 
@@ -355,14 +343,21 @@ namespace TS3AudioBot.CommandSystem
 			{
 				if (node.Self.IsEmpty)
 					node.ParentNode?.Self.RemoveCommand(node.Self);
+				if (node.ParentNode is null)
+					break;
 				node = node.ParentNode;
 			}
 		}
 
 		private class CommandUnloadNode
 		{
-			public CommandUnloadNode ParentNode { get; set; }
+			public CommandUnloadNode? ParentNode { get; set; }
 			public CommandGroup Self { get; set; }
+			public CommandUnloadNode(CommandUnloadNode? parentNode, CommandGroup self)
+			{
+				ParentNode = parentNode;
+				Self = self;
+			}
 		}
 
 		#endregion
@@ -385,7 +380,7 @@ namespace TS3AudioBot.CommandSystem
 					if (!(para is AstValue astVal) || astVal.StringType != StringType.FreeString)
 						break;
 
-					arguments[i] = new TailStringAutoConvertCommand(new TailString(astVal.Value, astVal.TailString));
+					arguments[i] = new ResultCommand(new TailString(astVal.Value, astVal.TailString));
 					tailCandidates++;
 				}
 				for (int i = 0; i < cmd.Parameter.Count - tailCandidates; i++)
@@ -393,52 +388,21 @@ namespace TS3AudioBot.CommandSystem
 				return new RootCommand(arguments);
 			case AstType.Value:
 				var astNode = (AstValue)node;
-				// Quoted strings are always strings, the rest gets automatically converted
-				if (astNode.StringType == StringType.FreeString)
-					return new AutoConvertResultCommand(astNode.Value);
-				else
-					return new ResultCommand(new PrimitiveResult<string>(astNode.Value));
+				return new ResultCommand(astNode.Value);
 			default:
 				throw Tools.UnhandledDefault(node.Type);
 			}
 		}
 
-		public static object Execute(ExecutionInformation info, string command, IReadOnlyList<Type> returnTypes)
+		public static async Task<ICmdResult> Execute(ExecutionInformation info, string command)
 		{
 			var ast = CommandParser.ParseCommandRequest(command);
 			var cmd = AstToCommandResult(ast);
-			return cmd.Execute(info, Array.Empty<ICommand>(), returnTypes);
+			return new ICmdResult(await cmd.Execute(info, Array.Empty<ICommand>()));
 		}
 
-		public static object Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<Type> returnTypes)
-			=> info.GetModule<CommandManager>().RootGroup.Execute(info, arguments, returnTypes);
-
-		public static string ExecuteCommand(ExecutionInformation info, string command)
-			=> CastResult(Execute(info, command, ReturnStringOrNothing));
-
-		public static string ExecuteCommand(ExecutionInformation info, IReadOnlyList<ICommand> arguments)
-			=> CastResult(Execute(info, arguments, ReturnStringOrNothing));
-
-		private static string CastResult(object result)
-		{
-			if (result is IPrimitiveResult<string> s)
-				return s.Get();
-			if (result == null)
-				return null;
-			throw new CommandException("Expected a string or nothing as result", CommandExceptionReason.NoReturnMatch);
-		}
-
-		public static object GetEmpty(IReadOnlyList<Type> resultTypes)
-		{
-			foreach (var item in resultTypes)
-			{
-				if (item == null)
-					return null;
-				else if (item == typeof(string))
-					return string.Empty;
-			}
-			throw new CommandException("No empty return type available", CommandExceptionReason.NoReturnMatch);
-		}
+		public static async Task<ICmdResult> Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments)
+			=> new ICmdResult(await info.GetModuleOrThrow<CommandManager>().RootGroup.Execute(info, arguments));
 
 		public static string GetTree(ICommand com)
 		{
@@ -479,5 +443,19 @@ namespace TS3AudioBot.CommandSystem
 		}
 
 		#endregion
+	}
+
+	public readonly struct ICmdResult
+	{
+		private readonly object? result;
+
+		public ICmdResult(object? result)
+		{
+			this.result = result;
+		}
+
+		public object? AsRaw() => result;
+
+		public string? AsString() => result?.ToString();
 	}
 }

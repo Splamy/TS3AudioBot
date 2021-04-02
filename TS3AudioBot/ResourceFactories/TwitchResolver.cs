@@ -7,11 +7,11 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using TS3AudioBot.Helper;
 using TS3AudioBot.Localization;
 
@@ -19,10 +19,9 @@ namespace TS3AudioBot.ResourceFactories
 {
 	public sealed class TwitchResolver : IResourceResolver
 	{
-		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private static readonly Regex TwitchMatch = new Regex(@"^(https?://)?(www\.)?twitch\.tv/(\w+)", Util.DefaultRegexConfig);
 		private static readonly Regex M3U8ExtMatch = new Regex(@"#([\w-]+)(:(([\w-]+)=(""[^""]*""|[^,]+),?)*)?", Util.DefaultRegexConfig);
-		private const string TwitchClientId = "t9nlhlxnfux3gk2d6z1p093rj2c71i3";
+		//private const string TwitchClientId = "t9nlhlxnfux3gk2d6z1p093rj2c71i3";
 		// See: https://github.com/streamlink/streamlink/issues/2680
 		private const string TwitchClientIdPrivate = "kimne78kx3ncx6brgo4mv6wki5h1ko";
 
@@ -30,42 +29,34 @@ namespace TS3AudioBot.ResourceFactories
 
 		public MatchCertainty MatchResource(ResolveContext _, string uri) => TwitchMatch.IsMatch(uri).ToMatchCertainty();
 
-		public R<PlayResource, LocalStr> GetResource(ResolveContext _, string uri)
+		public async Task<PlayResource> GetResource(ResolveContext _, string uri)
 		{
 			var match = TwitchMatch.Match(uri);
 			if (!match.Success)
-				return new LocalStr(strings.error_media_invalid_uri);
-			return GetResourceById(null, new AudioResource(match.Groups[3].Value, null, ResolverFor));
+				throw Error.LocalStr(strings.error_media_invalid_uri);
+			return await GetResourceById(null, new AudioResource(match.Groups[3].Value, null, ResolverFor));
 		}
 
-		public R<PlayResource, LocalStr> GetResourceById(ResolveContext _, AudioResource resource)
+		public async Task<PlayResource> GetResourceById(ResolveContext? _, AudioResource resource)
 		{
 			var channel = resource.ResourceId;
 
 			// request api token
-			if (!WebWrapper.DownloadString(out string jsonResponse, new Uri($"https://api.twitch.tv/api/channels/{channel}/access_token"), ("Client-ID", TwitchClientIdPrivate)))
-				return new LocalStr(strings.error_net_no_connection);
-
-			JsonAccessToken access;
-			try
-			{
-				access = JsonConvert.DeserializeObject<JsonAccessToken>(jsonResponse);
-			}
-			catch (Exception ex)
-			{
-				Log.Debug(ex, "Failed to parse jsonResponse. (Data: {0})", jsonResponse);
-				return new LocalStr(strings.error_media_internal_invalid + " (jsonResponse)");
-			}
+			var access = await WebWrapper
+				.Request($"https://api.twitch.tv/api/channels/{channel}/access_token")
+				.WithHeader("Client-ID", TwitchClientIdPrivate)
+				.AsJson<JsonAccessToken>();
 
 			// request m3u8 file
-			if (access.token is null || access.sig is null)
-				return new LocalStr(strings.error_media_internal_invalid + " (tokenResult|sigResult)");
+			if (access is null || access.token is null || access.sig is null)
+				throw Error.LocalStr(strings.error_media_internal_invalid + " (tokenResult|sigResult)");
 			var token = Uri.EscapeUriString(access.token);
 			var sig = access.sig;
 			// guaranteed to be random, chosen by fair dice roll.
 			const int random = 4;
-			if (!WebWrapper.DownloadString(out string m3u8, new Uri($"http://usher.twitch.tv/api/channel/hls/{channel}.m3u8?player=twitchweb&&token={token}&sig={sig}&allow_audio_only=true&allow_source=true&type=any&p={random}")))
-				return new LocalStr(strings.error_net_no_connection);
+			var m3u8 = await WebWrapper
+				.Request($"http://usher.twitch.tv/api/channel/hls/{channel}.m3u8?player=twitchweb&&token={token}&sig={sig}&allow_audio_only=true&allow_source=true&type=any&p={random}")
+				.AsString();
 
 			// parse m3u8 file
 			var dataList = new List<StreamData>();
@@ -73,7 +64,7 @@ namespace TS3AudioBot.ResourceFactories
 			{
 				var header = reader.ReadLine();
 				if (string.IsNullOrEmpty(header) || header != "#EXTM3U")
-					return new LocalStr(strings.error_media_internal_missing + " (m3uHeader)");
+					throw Error.LocalStr(strings.error_media_internal_missing + " (m3uHeader)");
 
 				while (true)
 				{
@@ -89,13 +80,13 @@ namespace TS3AudioBot.ResourceFactories
 					{
 					case "EXT-X-TWITCH-INFO": break; // Ignore twitch info line
 					case "EXT-X-MEDIA":
-						string streamInfo = reader.ReadLine();
+						string? streamInfo = reader.ReadLine();
 						Match infoMatch;
 						if (string.IsNullOrEmpty(streamInfo)
 							|| !(infoMatch = M3U8ExtMatch.Match(streamInfo)).Success
 							|| infoMatch.Groups[1].Value != "EXT-X-STREAM-INF")
 						{
-							return new LocalStr(strings.error_media_internal_missing + " (m3uStream)");
+							throw Error.LocalStr(strings.error_media_internal_missing + " (m3uStream)");
 						}
 
 						var streamData = new StreamData();
@@ -126,15 +117,18 @@ namespace TS3AudioBot.ResourceFactories
 			// Validation Process
 
 			if (dataList.Count <= 0)
-				return new LocalStr(strings.error_media_no_stream_extracted);
+				throw Error.LocalStr(strings.error_media_no_stream_extracted);
 
 			int codec = SelectStream(dataList);
 			if (codec < 0)
-				return new LocalStr(strings.error_media_no_stream_extracted);
+				throw Error.LocalStr(strings.error_media_no_stream_extracted);
+			var selectedStream = dataList[codec];
+			if (selectedStream.Url == null)
+				throw Error.LocalStr(strings.error_media_no_stream_extracted);
 
 			if (resource.ResourceTitle == null)
 				resource.ResourceTitle = $"Twitch channel: {channel}";
-			return new PlayResource(dataList[codec].Url, resource);
+			return new PlayResource(selectedStream.Url, resource);
 		}
 
 		private static int SelectStream(List<StreamData> list) => list.FindIndex(s => s.QualityType == StreamQuality.audio_only);
@@ -146,8 +140,8 @@ namespace TS3AudioBot.ResourceFactories
 #pragma warning disable IDE1006 // Naming Styles
 		private class JsonAccessToken
 		{
-			public string token { get; set; }
-			public string sig { get; set; }
+			public string? token { get; set; }
+			public string? sig { get; set; }
 			public DateTime expires_at { get; set; }
 		}
 #pragma warning restore IDE1006 // Naming Styles
@@ -157,8 +151,8 @@ namespace TS3AudioBot.ResourceFactories
 	{
 		public StreamQuality QualityType { get; set; }
 		public int Bandwidth { get; set; }
-		public string Codec { get; set; }
-		public string Url { get; set; }
+		public string? Codec { get; set; }
+		public string? Url { get; set; }
 	}
 
 	public enum StreamQuality

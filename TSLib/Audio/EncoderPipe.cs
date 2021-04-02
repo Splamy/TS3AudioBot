@@ -15,7 +15,7 @@ namespace TSLib.Audio
 	public class EncoderPipe : IAudioPipe, IDisposable, ISampleInfo
 	{
 		public bool Active => OutStream?.Active ?? false;
-		public IAudioPassiveConsumer OutStream { get; set; }
+		public IAudioPassiveConsumer? OutStream { get; set; }
 
 		public Codec Codec { get; }
 		public int SampleRate { get; }
@@ -75,7 +75,7 @@ namespace TSLib.Audio
 			PacketSize = opusEncoder.FrameByteCount(SegmentFrames);
 		}
 
-		public void Write(Span<byte> data, Meta meta)
+		public void Write(Span<byte> data, Meta? meta)
 		{
 			if (OutStream is null)
 				return;
@@ -98,7 +98,7 @@ namespace TSLib.Audio
 			for (int i = 0; i < segmentCount; i++)
 			{
 				var encodedData = opusEncoder.Encode(soundBuffer.Slice(i * PacketSize, PacketSize), PacketSize, encodedBuffer);
-				meta = meta ?? new Meta();
+				meta ??= new Meta();
 				meta.Codec = Codec; // TODO copy ?
 				OutStream?.Write(encodedData, meta);
 			}

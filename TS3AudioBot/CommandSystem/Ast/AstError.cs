@@ -18,16 +18,10 @@ namespace TS3AudioBot.CommandSystem.Ast
 		public string Description { get; }
 
 		public AstError(AstNode referenceNode, string description)
-		{
-			FullRequest = referenceNode.FullRequest;
-			Position = referenceNode.Position;
-			Length = referenceNode.Length;
-			Description = description;
-		}
+			: this(referenceNode.FullRequest, referenceNode.Position, referenceNode.Length, description) { }
 
-		public AstError(string request, int pos, int len, string description)
+		public AstError(string request, int pos, int len, string description) : base(request)
 		{
-			FullRequest = request;
 			Position = pos;
 			Length = len;
 			Description = description;

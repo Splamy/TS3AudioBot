@@ -9,15 +9,16 @@
 
 using System;
 using System.Collections.Generic;
+using TSLib.Helper;
 
 namespace TSLib.Audio
 {
 	public class StaticMetaPipe : IAudioPipe
 	{
 		public bool Active => OutStream?.Active ?? false;
-		public IAudioPassiveConsumer OutStream { get; set; }
+		public IAudioPassiveConsumer? OutStream { get; set; }
 
-		private MetaOut setMeta = new MetaOut();
+		private readonly MetaOut setMeta = new MetaOut();
 		public TargetSendMode SendMode { get; private set; }
 
 		private void ClearData()
@@ -55,13 +56,13 @@ namespace TSLib.Audio
 			setMeta.TargetId = targetId;
 		}
 
-		public void Write(Span<byte> data, Meta meta)
+		public void Write(Span<byte> data, Meta? meta)
 		{
 			if (OutStream is null || SendMode == TargetSendMode.None)
 				return;
 
-			meta = meta ?? new Meta();
-			meta.Out = meta.Out ?? new MetaOut();
+			meta ??= new Meta();
+			meta.Out ??= new MetaOut();
 			meta.Out.SendMode = SendMode;
 			switch (SendMode)
 			{
@@ -76,7 +77,7 @@ namespace TSLib.Audio
 				meta.Out.GroupWhisperType = setMeta.GroupWhisperType;
 				meta.Out.TargetId = setMeta.TargetId;
 				break;
-			default: throw new ArgumentOutOfRangeException(nameof(SendMode), SendMode, "SendMode not handled");
+			default: throw Tools.UnhandledDefault(SendMode);
 			}
 			OutStream?.Write(data, meta);
 		}

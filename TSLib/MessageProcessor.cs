@@ -22,8 +22,7 @@ namespace TSLib
 		private readonly Func<string, NotificationType> findTypeOfNotification;
 		public Deserializer Deserializer { get; } = new Deserializer();
 
-		protected ReadOnlyMemory<byte> cmdLineBuffer;
-		protected readonly object waitBlockLock = new object();
+		protected ReadOnlyMemory<byte>? cmdLineBuffer;
 		private const byte AsciiSpace = (byte)' ';
 
 		protected BaseMessageProcessor(Func<string, NotificationType> findTypeOfNotification)
@@ -42,10 +41,9 @@ namespace TSLib
 			else
 				notifyname = msgSpan.Slice(0, splitindex).NewUtf8String();
 
-			bool hasEqual;
+			bool hasEqual = notifyname.IndexOf('=') >= 0;
 			NotificationType ntfyType;
-			if ((hasEqual = notifyname.IndexOf('=') >= 0)
-				|| (ntfyType = findTypeOfNotification(notifyname)) == NotificationType.Unknown)
+			if (hasEqual || (ntfyType = findTypeOfNotification(notifyname)) == NotificationType.Unknown)
 			{
 				if (!hasEqual)
 					Log.Debug("Maybe unknown notification: {0}", notifyname);
@@ -59,40 +57,37 @@ namespace TSLib
 			if (ntfyType != NotificationType.CommandError)
 			{
 				var notification = Deserializer.GenerateNotification(lineDataPart, ntfyType);
-				if (!notification.Ok)
+				if (notification is null)
 				{
 					Log.Warn("Got unparsable message. ({0})", msgSpan.NewUtf8String());
 					return null;
 				}
 
-				var lazyNotification = new LazyNotification(notification.Value, ntfyType);
-				lock (waitBlockLock)
+				var lazyNotification = new LazyNotification(notification, ntfyType);
+				var dependantList = dependingBlocks[(int)ntfyType];
+				if (dependantList != null)
 				{
-					var dependantList = dependingBlocks[(int)ntfyType];
-					if (dependantList != null)
+					foreach (var item in dependantList)
 					{
-						foreach (var item in dependantList)
+						item.SetNotification(lazyNotification);
+						if (item.DependsOn != null)
 						{
-							item.SetNotification(lazyNotification);
-							if (item.DependsOn != null)
+							foreach (var otherDepType in item.DependsOn)
 							{
-								foreach (var otherDepType in item.DependsOn)
-								{
-									if (otherDepType == ntfyType)
-										continue;
-									dependingBlocks[(int)otherDepType]?.Remove(item);
-								}
+								if (otherDepType == ntfyType)
+									continue;
+								dependingBlocks[(int)otherDepType]?.Remove(item);
 							}
 						}
-						dependantList.Clear();
 					}
+					dependantList.Clear();
 				}
 
 				return lazyNotification;
 			}
 
 			var result = Deserializer.GenerateSingleNotification(lineDataPart, NotificationType.CommandError);
-			var errorStatus = result.Ok ? (CommandError)result.Value : CommandError.Custom("Invalid Error code");
+			var errorStatus = result is null ? CommandError.Custom("Invalid Error code") : (CommandError)result;
 
 			return PushMessageInternal(errorStatus, ntfyType);
 		}
@@ -104,67 +99,57 @@ namespace TSLib
 
 	internal sealed class AsyncMessageProcessor : BaseMessageProcessor
 	{
-		private readonly ConcurrentDictionary<string, WaitBlock> requestDict;
+		private readonly Dictionary<string, WaitBlock> requestDict;
 
 		public AsyncMessageProcessor(Func<string, NotificationType> findTypeOfNotification) : base(findTypeOfNotification)
 		{
-			requestDict = new ConcurrentDictionary<string, WaitBlock>();
+			requestDict = new Dictionary<string, WaitBlock>();
 		}
 
 		protected override LazyNotification? PushMessageInternal(CommandError errorStatus, NotificationType ntfyType)
 		{
-			if (string.IsNullOrEmpty(errorStatus.ReturnCode))
+			if (errorStatus.ReturnCode is null)
 			{
 				return new LazyNotification(new[] { errorStatus }, ntfyType);
 			}
 
 			// otherwise it is the result status code to a request
-			lock (waitBlockLock)
+			if (requestDict.Remove(errorStatus.ReturnCode, out var waitBlock))
 			{
-				if (requestDict.TryRemove(errorStatus.ReturnCode, out var waitBlock))
-				{
-					waitBlock.SetAnswer(errorStatus, cmdLineBuffer);
-					cmdLineBuffer = null;
-				}
-				else { /* ??? */ }
+				waitBlock.SetAnswerAuto(errorStatus, cmdLineBuffer);
+				cmdLineBuffer = null;
 			}
+			else { /* ??? */ }
 
 			return null;
 		}
 
 		public void EnqueueRequest(string returnCode, WaitBlock waitBlock)
 		{
-			lock (waitBlockLock)
+			requestDict.Add(returnCode, waitBlock);
+			if (waitBlock.DependsOn != null)
 			{
-				if (!requestDict.TryAdd(returnCode, waitBlock))
-					throw new InvalidOperationException("Trying to add already existing WaitBlock returnCode");
-				if (waitBlock.DependsOn != null)
+				foreach (var dependantType in waitBlock.DependsOn)
 				{
-					foreach (var dependantType in waitBlock.DependsOn)
-					{
-						var depentantList = dependingBlocks[(int)dependantType];
-						if (depentantList is null)
-							dependingBlocks[(int)dependantType] = depentantList = new List<WaitBlock>();
+					var depentantList = dependingBlocks[(int)dependantType];
+					if (depentantList is null)
+						dependingBlocks[(int)dependantType] = depentantList = new List<WaitBlock>();
 
-						depentantList.Add(waitBlock);
-					}
+					depentantList.Add(waitBlock);
 				}
 			}
 		}
 
 		public override void DropQueue()
 		{
-			lock (waitBlockLock)
-			{
-				foreach (var wb in requestDict.Values)
-					wb.SetAnswer(CommandError.TimeOut);
-				requestDict.Clear();
+			foreach (var wb in requestDict.Values)
+				wb.SetError(CommandError.ConnectionClosed);
+			requestDict.Clear();
 
-				foreach (var block in dependingBlocks)
-				{
-					block?.ForEach((Action<WaitBlock>)(wb => wb.SetAnswer(CommandError.TimeOut)));
-					block?.Clear();
-				}
+			foreach (var block in dependingBlocks)
+			{
+				block?.ForEach(wb => wb.SetError(CommandError.ConnectionClosed));
+				block?.Clear();
 			}
 		}
 	}
@@ -182,7 +167,7 @@ namespace TSLib
 		{
 			if (!requestQueue.IsEmpty && requestQueue.TryDequeue(out var waitBlock))
 			{
-				waitBlock.SetAnswer(errorStatus, cmdLineBuffer);
+				waitBlock.SetAnswerAuto(errorStatus, cmdLineBuffer);
 				cmdLineBuffer = null;
 			}
 			else { /* ??? */ }
@@ -198,7 +183,7 @@ namespace TSLib
 		public override void DropQueue()
 		{
 			while (!requestQueue.IsEmpty && requestQueue.TryDequeue(out var waitBlock))
-				waitBlock.SetAnswer(CommandError.TimeOut);
+				waitBlock.SetError(CommandError.ConnectionClosed);
 		}
 	}
 }

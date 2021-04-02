@@ -9,6 +9,7 @@
 
 using System;
 using System.Buffers.Binary;
+using System.Diagnostics;
 using System.IO;
 using System.Runtime.CompilerServices;
 
@@ -27,11 +28,11 @@ namespace TSLib.Full
 		public static int GetDecompressedSize(ReadOnlySpan<byte> data) => (data[0] & 0x02) != 0 ? BinaryPrimitives.ReadInt32LittleEndian(data.Slice(5)) : data[2];
 
 		[ThreadStatic]
-		private static int[] hashtable;
+		private static int[]? hashtable;
 		[ThreadStatic]
-		private static bool[] hashCounter;
+		private static bool[]? hashCounter;
 		[ThreadStatic]
-		private static int[] cachetable;
+		private static int[]? cachetable;
 
 		public static Span<byte> Compress(ReadOnlySpan<byte> data, int level)
 		{
@@ -257,7 +258,7 @@ namespace TSLib.Full
 			}
 			else
 			{
-				throw new NotSupportedException();
+				Trace.Fail($"Invalid headerlen: {headerlen}");
 			}
 		}
 
@@ -306,7 +307,7 @@ namespace TSLib.Full
 			if (start >= end)
 				return;
 			int next = Read24(dest, start);
-			hashtable[Hash(next)] = start;
+			hashtable![Hash(next)] = start;
 			for (int i = start + 1; i < end; i++)
 			{
 				next = (next >> 8) | (dest[i + 2] << 16);

@@ -10,11 +10,11 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using TS3AudioBot.Localization;
 
 namespace TS3AudioBot.CommandSystem.Commands
 {
-
 	public class OverloadedFunctionCommand : ICommand
 	{
 		public List<FunctionCommand> Functions { get; }
@@ -30,7 +30,7 @@ namespace TS3AudioBot.CommandSystem.Commands
 			Functions.Add(command);
 			SortList();
 		}
-		public void RemoveCommand(FunctionCommand command) => Functions.Remove(command);
+		public bool RemoveCommand(FunctionCommand command) => Functions.Remove(command);
 
 		private void SortList()
 		{
@@ -71,23 +71,21 @@ namespace TS3AudioBot.CommandSystem.Commands
 			});
 		}
 
-		public virtual object Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<Type> returnTypes)
+		public virtual async ValueTask<object?> Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments)
 		{
 			// Make arguments lazy, we only want to execute them once
 			arguments = arguments.Select(c => new LazyCommand(c)).ToArray();
-
-			CommandException contextException = null;
+			CommandException? contextException = null;
 			foreach (var f in Functions)
 			{
 				// Try to call each overload
 				try
 				{
-					return f.Execute(info, arguments, returnTypes);
+					return await f.Execute(info, arguments);
 				}
 				catch (CommandException cmdEx)
 					when (cmdEx.Reason == CommandExceptionReason.MissingParameter
-						|| cmdEx.Reason == CommandExceptionReason.MissingContext
-						|| cmdEx.Reason == CommandExceptionReason.NoReturnMatch)
+						|| cmdEx.Reason == CommandExceptionReason.MissingContext)
 				{
 					// When we encounter a missing module problem we store it for later, as it is more helpful
 					// im most cases to know that some commands *could* have matched if the module were there.

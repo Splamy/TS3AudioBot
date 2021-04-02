@@ -8,12 +8,13 @@
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
 using System;
+using System.Diagnostics.CodeAnalysis;
 
 namespace TSLib.Full
 {
 	/// <summary>Provides a ring queue with packet offset and direct item access functionality.</summary>
 	/// <typeparam name="T">Item type</typeparam>
-	public sealed class RingQueue<T>
+	public sealed class RingQueue<T> where T : notnull
 	{
 		private const int InitialBufferSize = 16;
 
@@ -66,7 +67,7 @@ namespace TSLib.Full
 		private void BufferPop()
 		{
 			ringBufferSet[currentStart] = false;
-			ringBuffer[currentStart] = default;
+			ringBuffer[currentStart] = default!;
 			currentStart = (currentStart + 1) % ringBuffer.Length;
 			Count--;
 		}
@@ -121,7 +122,7 @@ namespace TSLib.Full
 			return StateGet(index) ? ItemSetStatus.InWindowSet : ItemSetStatus.InWindowNotSet;
 		}
 
-		public bool TryDequeue(out T value)
+		public bool TryDequeue([MaybeNullWhen(false)] out T value)
 		{
 			if (!TryPeekStart(0, out value)) return false;
 			BufferPop();
@@ -129,14 +130,14 @@ namespace TSLib.Full
 			return true;
 		}
 
-		public bool TryPeekStart(int index, out T value)
+		public bool TryPeekStart(int index, [MaybeNullWhen(false)] out T value)
 		{
 			if (index < 0)
 				throw new ArgumentOutOfRangeException(nameof(index));
 
 			if (index >= Count || Count <= 0 || !StateGet(index))
 			{
-				value = default;
+				value = default!;
 				return false;
 			}
 			else

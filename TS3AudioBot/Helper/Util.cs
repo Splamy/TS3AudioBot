@@ -12,13 +12,16 @@ using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using TS3AudioBot.CommandSystem;
 using TS3AudioBot.Localization;
+using TSLib.Messages;
 
 namespace TS3AudioBot.Helper
 {
@@ -34,7 +37,7 @@ namespace TS3AudioBot.Helper
 		{
 			if (bytes == 0)
 				return "0B";
-			int order = (int)Math.Log(Math.Abs(bytes), 1024);
+			var order = (int)Math.Log(Math.Abs(bytes), 1024);
 			return (bytes >> (10 * order)) + byteSuffix[order];
 		}
 
@@ -86,47 +89,15 @@ namespace TS3AudioBot.Helper
 			return ret;
 		}
 
-		public static void UnwrapThrow(this E<LocalStr> r)
-		{
-			if (!r.Ok)
-				throw new CommandException(r.Error.Str, CommandExceptionReason.CommandError);
-		}
-
-		public static T UnwrapThrow<T>(this R<T, LocalStr> r)
-		{
-			if (r.Ok)
-				return r.Value;
-			else
-				throw new CommandException(r.Error.Str, CommandExceptionReason.CommandError);
-		}
-
-		public static bool UnwrapToLog(this E<LocalStr> r, NLog.Logger logger, NLog.LogLevel level = null)
-		{
-			if (!r.Ok)
-				logger.Log(level ?? NLog.LogLevel.Warn, r.Error.Str);
-			return r.Ok;
-		}
-
-		public static string UnrollException(this Exception ex)
-		{
-			var strb = new StringBuilder();
-			while (ex != null)
-			{
-				strb.AppendFormat("MSG: {0}\nTYPE:{1}\nSTACK:{2}\n", ex.Message, ex.GetType().Name, ex.StackTrace);
-				ex = ex.InnerException;
-			}
-			return strb.ToString();
-		}
-
-		public static Stream GetEmbeddedFile(string name)
+		public static Stream? GetEmbeddedFile(string name)
 		{
 			var assembly = Assembly.GetExecutingAssembly();
 			return assembly.GetManifestResourceStream(name);
 		}
 
-		public static bool TryCast<T>(this JToken token, string key, out T value)
+		public static bool TryCast<T>(this JToken token, string key, [MaybeNullWhen(false)] out T value) where T : notnull
 		{
-			value = default;
+			value = default!;
 			if (token is null)
 				return false;
 			var jValue = token.SelectToken(key);
@@ -135,7 +106,7 @@ namespace TS3AudioBot.Helper
 			try
 			{
 				var t = jValue.ToObject<T>();
-				if ((object)t is null)
+				if (t is null)
 					return false;
 				value = t;
 				return true;
@@ -154,7 +125,7 @@ namespace TS3AudioBot.Helper
 			return R.Ok;
 		}
 
-		public static IEnumerable<TResult> SelectOk<TSource, TResult, TErr>(this IEnumerable<TSource> source, Func<TSource, R<TResult, TErr>> selector)
+		public static IEnumerable<TResult> SelectOk<TSource, TResult, TErr>(this IEnumerable<TSource> source, Func<TSource, R<TResult, TErr>> selector) where TSource : notnull where TResult : notnull where TErr : notnull
 			=> source.Select(selector).Where(x => x.Ok).Select(x => x.Value);
 
 		public static bool HasExitedSafe(this Process process)
@@ -163,7 +134,7 @@ namespace TS3AudioBot.Helper
 			catch { return true; }
 		}
 
-		public static V GetOrNew<K, V>(this IDictionary<K, V> dict, K key) where V : new()
+		public static V GetOrNew<K, V>(this IDictionary<K, V> dict, K key) where K : notnull where V : new()
 		{
 			if (!dict.TryGetValue(key, out var val))
 			{
@@ -171,6 +142,58 @@ namespace TS3AudioBot.Helper
 				dict[key] = val;
 			}
 			return val;
+		}
+
+		public static async Task CatchToLog(this Task t, NLog.Logger logger, NLog.LogLevel? level = null)
+		{
+			try
+			{
+				await t;
+			}
+			catch (AudioBotException ex)
+			{
+				logger.Log(level ?? NLog.LogLevel.Warn, ex, ex.Message);
+			}
+		}
+
+		public static async Task<T?> Try<T>(this Task<T> t) where T : class
+		{
+			try { return await t; }
+			catch { return null; }
+		}
+
+		public static T? Try<T>(Func<T> t) where T : class
+		{
+			try { return t(); }
+			catch { return null; }
+		}
+
+		public static void UnwrapThrow(this E<LocalStr> r)
+		{
+			if (!r.Ok)
+				throw new CommandException(r.Error.Str, CommandExceptionReason.CommandError);
+		}
+
+		public static T UnwrapThrow<T>(this R<T, LocalStr> r) where T : notnull
+		{
+			if (r.Ok)
+				return r.Value;
+			else
+				throw new CommandException(r.Error.Str, CommandExceptionReason.CommandError);
+		}
+
+		public static bool UnwrapToLog(this E<LocalStr> r, NLog.Logger logger, NLog.LogLevel? level = null)
+		{
+			if (!r.Ok)
+				logger.Log(level ?? NLog.LogLevel.Warn, r.Error.Str);
+			return r.Ok;
+		}
+
+		public static bool UnwrapToLog(this E<CommandError> r, NLog.Logger logger, NLog.LogLevel? level = null)
+		{
+			if (!r.Ok)
+				logger.Log(level ?? NLog.LogLevel.Warn, r.Error.ErrorFormat());
+			return r.Ok;
 		}
 	}
 }

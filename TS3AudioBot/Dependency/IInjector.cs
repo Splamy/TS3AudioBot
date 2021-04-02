@@ -11,9 +11,13 @@ using System;
 
 namespace TS3AudioBot.Dependency
 {
+	/// <summary>
+	/// This provides the base contract for 'injector' classes.
+	/// An injector is basically a dictionary to look up objects by type.
+	/// </summary>
 	public interface IInjector
 	{
-		object GetModule(Type type);
+		object? GetModule(Type type);
 		void AddModule(Type type, object obj);
 	}
 }

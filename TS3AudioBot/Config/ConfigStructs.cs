@@ -55,7 +55,7 @@ namespace TS3AudioBot.Config
 	{
 		public ConfPath Media { get; } = Create<ConfPath>("media",
 			"The default path to look for local resources.");
-		public ConfResolverYoutube Youtube = Create<ConfResolverYoutube>("youtube");
+		public ConfResolverYoutube Youtube { get; } = Create<ConfResolverYoutube>("youtube");
 	}
 
 	public class ConfResolverYoutube : ConfigTable
@@ -291,6 +291,8 @@ namespace TS3AudioBot.Config
 		public ConfigValue<TimeSpan> PartyDelay { get; } = new ConfigValue<TimeSpan>("party_delay", TimeSpan.Zero,
 			"Specifies how long the bot has to be alone until the 'onalone' event gets fired.\n" +
 			"You can specify the time in the ISO-8601 format \"PT30S\" or like: 15s, 1h, 3m30s");
+		public ConfigValue<string> OnSongStart { get; } = new ConfigValue<string>("onsongstart", "",
+			"Called when a new song starts.");
 	}
 
 	// Utility config structs
@@ -342,7 +344,7 @@ namespace TS3AudioBot.Config
 			var value = conf.Value;
 			if (value.Count == 0)
 				return null;
-			var last = value[value.Count - 1];
+			var last = value[^1];
 			var repeat = last == "repeat" || last == "repeat last"; // "repeat" might get removed for other loops, but for now keep as hidden alternative
 			var max = repeat ? value.Count - 2 : value.Count - 1;
 			if (index <= max)
@@ -355,7 +357,7 @@ namespace TS3AudioBot.Config
 		{
 			if (value.Count == 0)
 				return R.Ok;
-			var last = value[value.Count - 1];
+			var last = value[^1];
 			var repeat = last == "repeat" || last == "repeat last";
 			if (repeat && value.Count == 1)
 				return $"Specified 'repeat' without any previous value.";

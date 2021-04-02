@@ -9,9 +9,12 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
+using System.Threading.Tasks;
 using TS3AudioBot.CommandSystem.CommandResults;
 using TS3AudioBot.Dependency;
 using TS3AudioBot.Helper;
@@ -27,9 +30,11 @@ namespace TS3AudioBot.CommandSystem.Commands
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 
 		// Needed for non-static member methods
-		private readonly object callee;
+		private readonly object? callee;
 		/// <summary>The method that will be called internally by this command.</summary>
 		private readonly MethodInfo internCommand;
+		private readonly bool isPlainTask;
+		private readonly PropertyInfo? taskValueProp;
 
 		/// <summary>All parameter types, including special types.</summary>
 		public ParamInfo[] CommandParameter { get; }
@@ -43,12 +48,14 @@ namespace TS3AudioBot.CommandSystem.Commands
 		/// </summary>
 		private int RequiredParameters { get; }
 
-		public FunctionCommand(MethodInfo command, object obj = null, int? requiredParameters = null)
+		public FunctionCommand(MethodInfo command, object? obj = null, int? requiredParameters = null)
 		{
 			internCommand = command;
-			CommandParameter = command.GetParameters().Select(p => new ParamInfo(p, ParamKind.Unknown, p.IsOptional || p.GetCustomAttribute<ParamArrayAttribute>() != null)).ToArray();
-			PrecomputeTypes();
+			CommandParameter = PrecomputeTypes(command.GetParameters());
 			CommandReturn = command.ReturnType;
+			if (CommandReturn.IsConstructedGenericType && CommandReturn.GetGenericTypeDefinition() == typeof(Task<>))
+				taskValueProp = CommandReturn.GetProperty(nameof(Task<object>.Result));
+			isPlainTask = CommandReturn == typeof(Task);
 
 			callee = obj;
 
@@ -63,13 +70,38 @@ namespace TS3AudioBot.CommandSystem.Commands
 		public FunctionCommand(Action<string> command) : this(command.Method, command.Target) { }
 		public FunctionCommand(Func<string, string> command) : this(command.Method, command.Target) { }
 
-		protected virtual object ExecuteFunction(object[] parameters)
+		protected virtual async ValueTask<object?> ExecuteFunction(object?[] parameters)
 		{
 			try
 			{
-				return internCommand.Invoke(callee, parameters);
+				var ret = internCommand.Invoke(callee, parameters);
+				if (ret is Task task)
+				{
+					await task;
+					if (isPlainTask)
+						return null;
+
+					var taskProp = taskValueProp;
+					if (taskValueProp is null)
+					{
+						Log.Warn("Performing really slow Task get, declare your command better to prevent this");
+						var taskType = task.GetType();
+						if (taskType.IsConstructedGenericType && taskType.GetGenericTypeDefinition() == typeof(Task<>))
+						{
+							taskProp = taskType.GetProperty(nameof(Task<object>.Result)) ?? throw new Exception("Result not found on Task");
+						}
+					}
+					if (taskProp is null)
+						return null;
+
+					return taskProp.GetValue(task);
+				}
+				else
+				{
+					return ret;
+				}
 			}
-			catch (TargetInvocationException ex)
+			catch (TargetInvocationException ex) when (!(ex.InnerException is null))
 			{
 				System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(ex.InnerException).Throw();
 				throw ex.InnerException;
@@ -85,68 +117,61 @@ namespace TS3AudioBot.CommandSystem.Commands
 		/// <param name="arguments">The arguments that are applied to this function.</param>
 		/// <param name="returnTypes">The possible return types.</param>
 		/// <param name="takenArguments">How many arguments could be set.</param>
-		private object[] FitArguments(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<Type> returnTypes, out int takenArguments)
+		private async ValueTask<(object?[] paramObjs, int takenArguments)> FitArguments(ExecutionInformation info, IReadOnlyList<ICommand> arguments)
 		{
-			var parameters = new object[CommandParameter.Length];
+			var parameters = new object?[CommandParameter.Length];
 			var filterLazy = info.GetFilterLazy();
 
 			// takenArguments: Index through arguments which have been moved into a parameter
 			// p: Iterate through parameters
-			takenArguments = 0;
+			var takenArguments = 0;
 			for (int p = 0; p < parameters.Length; p++)
 			{
-				var arg = CommandParameter[p].Type;
-				switch (CommandParameter[p].Kind)
+				var arg = CommandParameter[p];
+				var argType = arg.Type;
+				switch (arg.Kind)
 				{
 				case ParamKind.SpecialArguments:
 					parameters[p] = arguments;
 					break;
 
-				case ParamKind.SpecialReturns:
-					parameters[p] = returnTypes;
-					break;
-
 				case ParamKind.Dependency:
-					if (info.TryGet(arg, out var obj))
+					if (info.TryGet(argType, out var obj))
 						parameters[p] = obj;
-					else if (CommandParameter[p].Optional)
+					else if (arg.Optional)
 						parameters[p] = null;
 					else
-						throw new MissingContextCommandException($"Command '{internCommand.Name}' missing execution context '{arg.Name}'", arg);
+						throw new MissingContextCommandException($"Command '{internCommand.Name}' missing execution context '{argType.Name}'", argType);
 					break;
 
 				case ParamKind.NormalCommand:
-					if (takenArguments >= arguments.Count) { parameters[p] = GetDefault(arg); break; }
+					if (takenArguments >= arguments.Count) { parameters[p] = GetDefault(argType); break; }
 					parameters[p] = arguments[takenArguments];
 					takenArguments++;
 					break;
 
 				case ParamKind.NormalParam:
 				case ParamKind.NormalTailString:
-					if (takenArguments >= arguments.Count) { parameters[p] = GetDefault(arg); break; }
+					if (takenArguments >= arguments.Count) { parameters[p] = GetDefault(argType); break; }
 
-					var types = GetTypes(arg);
-					if (CommandParameter[p].Kind == ParamKind.NormalTailString)
-						types.Insert(0, typeof(TailString));
-
-					var argResultP = arguments[takenArguments].Execute(info, Array.Empty<ICommand>(), types);
-					if (CommandParameter[p].Kind == ParamKind.NormalTailString && argResultP is TailString tailString)
+					var argResultP = await arguments[takenArguments].Execute(info, Array.Empty<ICommand>());
+					if (arg.Kind == ParamKind.NormalTailString && argResultP is TailString tailString)
 						parameters[p] = tailString.Tail;
 					else
-						parameters[p] = ConvertParam(UnwrapPrimitive(argResultP), arg, filterLazy);
+						parameters[p] = ConvertParam(argResultP, argType, filterLazy);
 
 					takenArguments++;
 					break;
 
 				case ParamKind.NormalArray:
-					if (takenArguments >= arguments.Count) { parameters[p] = GetDefault(arg); break; }
+					if (takenArguments >= arguments.Count) { parameters[p] = GetDefault(argType); break; }
 
-					var typeArr = arg.GetElementType();
+					var typeArr = argType.GetElementType()!;
 					var args = Array.CreateInstance(typeArr, arguments.Count - takenArguments);
 					for (int i = 0; i < args.Length; i++, takenArguments++)
 					{
-						var argResultA = arguments[takenArguments].Execute(info, Array.Empty<ICommand>(), GetTypes(typeArr));
-						var convResult = ConvertParam(UnwrapPrimitive(argResultA), typeArr, filterLazy);
+						var argResultA = await arguments[takenArguments].Execute(info, Array.Empty<ICommand>());
+						var convResult = ConvertParam(argResultA, typeArr, filterLazy);
 						args.SetValue(convResult, i);
 					}
 
@@ -154,138 +179,75 @@ namespace TS3AudioBot.CommandSystem.Commands
 					break;
 
 				default:
-					throw Tools.UnhandledDefault(CommandParameter[p].Kind);
+					throw Tools.UnhandledDefault(arg.Kind);
 				}
 			}
 
 			// Check if we were able to set enough arguments
 			int wantArgumentCount = Math.Min(parameters.Length, RequiredParameters);
-			if (takenArguments < wantArgumentCount && !returnTypes.Contains(typeof(ICommand)))
+			if (takenArguments < wantArgumentCount)
 				throw ThrowAtLeastNArguments(wantArgumentCount);
 
-			return parameters;
+			return (parameters, takenArguments);
 		}
 
-		public virtual object Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<Type> returnTypes)
+		public virtual async ValueTask<object?> Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments)
 		{
-			// Make arguments lazy, we only want to execute them once
-			arguments = arguments.Select(c => new LazyCommand(c)).ToArray();
-			var parameters = FitArguments(info, arguments, returnTypes, out int availableArguments);
+			var (parameters, availableArguments) = await FitArguments(info, arguments);
 
 			// Check if we were able to set enough arguments
 			int wantArgumentCount = Math.Min(parameters.Length, RequiredParameters);
 			if (availableArguments < wantArgumentCount)
-			{
-				if (returnTypes.Contains(typeof(ICommand)))
-				{
-					return arguments.Count > 0
-						? (object)new AppliedCommand(this, arguments)
-						: this;
-				}
 				throw ThrowAtLeastNArguments(wantArgumentCount);
-			}
 
-			if (returnTypes[0] == null)
-			{
-				// Evaluate
-				ExecuteFunction(parameters);
-				return null;
-			}
-
-			if (returnTypes[0] == typeof(ICommand))
-			{
-				// Return a command if we can take more arguments
-				if (CommandParameter.Any(p => p.Type == typeof(string[])) || availableArguments < NormalParameters)
-					return new AppliedCommand(this, arguments);
-			}
-
-			Log.Debug("Iterating over return types [{@returnTypes}]", returnTypes);
-
-			var result = ExecuteFunction(parameters);
-			if (ResultHelper.IsValidResult(result, returnTypes))
-			{
-				Log.Debug("{0} can be directly returned", result);
-				return result;
-			}
-
-			if (result == null)
-				throw new CommandException("Couldn't find a proper command result for function " + internCommand.Name, CommandExceptionReason.NoReturnMatch);
-			var unwrapedResult = UnwrapReturn(result);
-			var resultType = result.GetType();
-			var unwrapedResultType = unwrapedResult.GetType();
-
-			// Take first fitting command result
-			foreach (var returnType in returnTypes)
-			{
-				if (returnType == null)
-					return null;
-
-				if (returnType.IsAssignableFrom(resultType))
-					return ResultHelper.ToResult(returnType, result);
-				else if (returnType.IsAssignableFrom(unwrapedResultType))
-					return ResultHelper.ToResult(returnType, unwrapedResult);
-				else if (returnType == typeof(string))
-				{
-					Log.Debug("Convert {0} to a string", result);
-					var resultStr = result.ToString();
-					if (!string.IsNullOrEmpty(resultStr))
-						return new PrimitiveResult<string>(resultStr);
-				}
-				else if (BasicTypes.Contains(returnType))
-				{
-					if (BasicTypes.Contains(unwrapedResultType) && unwrapedResultType != typeof(string))
-					{
-						// Automatically try to convert between primitive types
-						try
-						{
-							return ResultHelper.ToResult(resultType,
-								Convert.ChangeType(unwrapedResult, returnType, CultureInfo.InvariantCulture));
-						}
-						catch
-						{
-						}
-					}
-				}
-				else if (returnType == typeof(JsonObject))
-				{
-					if (result is JsonObject jsonResult)
-						return jsonResult;
-					else
-						return Activator.CreateInstance(typeof(JsonValue<>).MakeGenericType(result.GetType()), result);
-				}
-				// Ignore unknown types
-			}
-			throw new CommandException("Couldn't find a proper command result for function " + internCommand.Name, CommandExceptionReason.NoReturnMatch);
+			return await ExecuteFunction(parameters);
 		}
 
-		private void PrecomputeTypes()
+		private static ParamInfo[] PrecomputeTypes(ParameterInfo[] parameterInfos)
 		{
-			for (int i = 0; i < CommandParameter.Length; i++)
+			var precomputed = new ParamInfo[parameterInfos.Length];
+			bool foundTail = false;
+
+			for (int i = parameterInfos.Length - 1; i >= 0; i--)
 			{
-				ref var paramInfo = ref CommandParameter[i];
-				var arg = paramInfo.Type;
+				var parameterInfo = parameterInfos[i];
+				var arg = parameterInfo.ParameterType;
+				ParamKind kind;
+
 				if (arg == typeof(IReadOnlyList<ICommand>))
-					paramInfo.Kind = ParamKind.SpecialArguments;
-				else if (arg == typeof(IReadOnlyList<Type>))
-					paramInfo.Kind = ParamKind.SpecialReturns;
+					kind = ParamKind.SpecialArguments;
 				else if (arg == typeof(ICommand))
-					paramInfo.Kind = ParamKind.NormalCommand;
+					kind = ParamKind.NormalCommand;
 				else if (arg.IsArray)
-					paramInfo.Kind = ParamKind.NormalArray;
+					kind = ParamKind.NormalArray;
 				else if (arg.IsEnum
 					|| BasicTypes.Contains(arg)
 					|| BasicTypes.Contains(UnwrapParamType(arg)))
-					paramInfo.Kind = ParamKind.NormalParam;
+					kind = ParamKind.NormalParam;
 				// TODO How to distinguish between special type and dependency?
 				else if (AdvancedTypes.Contains(arg))
-					paramInfo.Kind = ParamKind.NormalParam;
+					kind = ParamKind.NormalParam;
 				else
-					paramInfo.Kind = ParamKind.Dependency;
+					kind = ParamKind.Dependency;
+
+				if (kind.IsNormal())
+				{
+					// If we have the last normal parameter, check if it fits the criteria
+					// to be extened to a tail string.
+					// If it does not, we set foundTail to true anyway, since no other
+					// fitting parameter would be a tail anymore
+					if (!foundTail && arg == typeof(string))
+						kind = ParamKind.NormalTailString;
+					foundTail = true;
+				}
+
+				precomputed[i] = new ParamInfo(
+					parameterInfo,
+					kind,
+					parameterInfo.IsOptional || parameterInfo.GetCustomAttribute<ParamArrayAttribute>() != null);
 			}
 
-			var tailStringIndex = Array.FindLastIndex(CommandParameter, c => c.Kind.IsNormal());
-			if (tailStringIndex >= 0 && CommandParameter[tailStringIndex].Type == typeof(string))
-				CommandParameter[tailStringIndex].Kind = ParamKind.NormalTailString;
+			return precomputed;
 		}
 
 		public static Type UnwrapParamType(Type type)
@@ -310,21 +272,21 @@ namespace TS3AudioBot.CommandSystem.Commands
 			return type;
 		}
 
-		private static object UnwrapReturn(object value)
+		[return: NotNullIfNotNull("value")]
+		private static object? UnwrapReturn(object? value)
 		{
-			if (value == null)
-				return value;
+			if (value is null)
+				return null;
+
+			if (value is IWrappedResult wrapped)
+				return wrapped.Content;
 
 			var type = value.GetType();
 			if (type.IsConstructedGenericType)
 			{
 				var genDef = type.GetGenericTypeDefinition();
 				if (genDef == typeof(Nullable<>))
-					return type.GetProperty("Value").GetValue(value);
-				if (genDef == typeof(JsonValue<>))
-					return type.GetProperty("Value").GetValue(value);
-				if (genDef == typeof(JsonArray<>))
-					return type.GetProperty("Value").GetValue(value);
+					return type.GetProperty("Value")!.GetValue(value);
 			}
 			return value;
 		}
@@ -333,27 +295,36 @@ namespace TS3AudioBot.CommandSystem.Commands
 		{
 			if (count <= 0)
 				throw new ArgumentOutOfRangeException(nameof(count), count, "The count must be at least 1");
-
-			string throwString;
-			switch (count)
+			var throwString = count switch
 			{
-			case 1: throwString = strings.error_cmd_at_least_one_argument; break;
-			case 2: throwString = strings.error_cmd_at_least_two_argument; break;
-			case 3: throwString = strings.error_cmd_at_least_three_argument; break;
-			case 4: throwString = strings.error_cmd_at_least_four_argument; break;
-			default: throwString = string.Format(strings.error_cmd_at_least_n_arguments, count); break;
-			}
+				1 => strings.error_cmd_at_least_one_argument,
+				2 => strings.error_cmd_at_least_two_argument,
+				3 => strings.error_cmd_at_least_three_argument,
+				4 => strings.error_cmd_at_least_four_argument,
+				_ => string.Format(strings.error_cmd_at_least_n_arguments, count),
+			};
 			return new CommandException(throwString, CommandExceptionReason.MissingParameter);
 		}
 
-		public static object ConvertParam(object value, Type targetType, Lazy<Algorithm.IFilter> filter)
+		[return: NotNullIfNotNull("value")]
+		public static object? ConvertParam(object? value, Type targetType, Lazy<Algorithm.IFilter> filter)
 		{
+			if (value is null)
+				return null;
+			if (targetType == typeof(string))
+				return value.ToString();
+
 			var valueType = value.GetType();
-			if (targetType.IsAssignableFrom(valueType))
+			if (targetType == valueType || targetType.IsAssignableFrom(valueType))
 				return value;
+			value = UnwrapReturn(value);
+			valueType = value.GetType();
+			if (targetType == valueType || targetType.IsAssignableFrom(valueType))
+				return value;
+
 			if (targetType.IsEnum)
 			{
-				var strValue = value.ToString();
+				var strValue = value.ToString() ?? throw new ArgumentNullException(nameof(value));
 				var enumVals = Enum.GetValues(targetType).Cast<Enum>();
 				var result = filter.Value.Filter(enumVals.Select(x => new KeyValuePair<string, Enum>(x.ToString(), x)), strValue).Select(x => x.Value).FirstOrDefault();
 				if (result is null)
@@ -363,7 +334,10 @@ namespace TS3AudioBot.CommandSystem.Commands
 			var unwrappedTargetType = UnwrapParamType(targetType);
 			if (valueType == typeof(string) && unwrappedTargetType == typeof(TimeSpan))
 			{
-				return TextUtil.ParseTime((string)value);
+				var time = TextUtil.ParseTime((string)value);
+				if (time is null)
+					throw new CommandException(string.Format(strings.error_cmd_could_not_convert_to, value, nameof(TimeSpan)), CommandExceptionReason.MissingParameter);
+				return time.Value;
 			}
 
 			// Autoconvert
@@ -373,33 +347,11 @@ namespace TS3AudioBot.CommandSystem.Commands
 			catch (InvalidCastException ex) { throw new CommandException(string.Format(strings.error_cmd_could_not_convert_to, value, unwrappedTargetType.Name), ex, CommandExceptionReason.MissingParameter); }
 		}
 
-		private static List<Type> GetTypes(Type targetType)
-		{
-			var types = new List<Type>();
-			types.Add(targetType);
-			var unwrappedTargetType = UnwrapParamType(targetType);
-			if (unwrappedTargetType != targetType)
-				types.Add(unwrappedTargetType);
-
-			// Allow fallbacks to string
-			if (!types.Contains(typeof(string)))
-				types.Add(typeof(string));
-			return types;
-		}
-
-		private static object UnwrapPrimitive(object o)
-		{
-			if (o is IPrimitiveResult prim)
-				return prim.Get();
-			else
-				return o;
-		}
-
-		private static object GetDefault(Type type)
+		private static object? GetDefault(Type type)
 		{
 			if (type.IsArray)
 			{
-				var typeArr = type.GetElementType();
+				var typeArr = type.GetElementType()!;
 				return Array.CreateInstance(typeArr, 0);
 			}
 			if (type.IsValueType)
@@ -414,7 +366,6 @@ namespace TS3AudioBot.CommandSystem.Commands
 	{
 		Unknown,
 		SpecialArguments,
-		SpecialReturns,
 		Dependency,
 		NormalCommand,
 		NormalParam,
@@ -422,13 +373,14 @@ namespace TS3AudioBot.CommandSystem.Commands
 		NormalTailString,
 	}
 
-	public struct ParamInfo
+	[DebuggerDisplay("{Kind} {Name,nq}{Optional ? \"?\" : \"\",nq} ({Type.Name,nq})")]
+	public readonly struct ParamInfo
 	{
-		public ParameterInfo Param { get; set; }
-		public Type Type => Param.ParameterType;
-		public string Name => Param.Name;
-		public ParamKind Kind;
-		public bool Optional;
+		public ParamKind Kind { get; }
+		public bool Optional { get; }
+		public ParameterInfo Param { get; }
+		public readonly Type Type => Param.ParameterType;
+		public readonly string Name => Param.Name ?? "<no name>";
 
 		public ParamInfo(ParameterInfo param, ParamKind kind, bool optional)
 		{

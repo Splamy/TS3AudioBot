@@ -13,7 +13,7 @@ namespace TS3AudioBot.CommandSystem.Text
 	{
 		/// <summary>Splits the message preferably at line breaks.</summary>
 		Split,
-		/// <summary>Splits at exact maxium length per message.</summary>
+		/// <summary>Splits at exact maximum length per message.</summary>
 		SplitHard,
 		/// <summary>Discards the message.</summary>
 		Drop,

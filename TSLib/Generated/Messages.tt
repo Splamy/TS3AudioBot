@@ -23,6 +23,7 @@ using TSLib.Helper;
 
 <#= ConversionSet #>
 
+#nullable enable
 namespace TSLib.Messages
 {
 <#
@@ -129,11 +130,13 @@ foreach(var msg in gen.GetOrderedMsg())
 		else if (isResponse) Write(" : IResponse");
 	#>
 	{
+		#pragma warning disable CS8618
 		<#= isNotify ? "public NotificationType NotifyType { get; } = NotificationType." + msg.name + ";" : "" #>
-		<#= isResponse ? "public string ReturnCode { get; set; }" : "" #>
+		<#= isResponse ? "public string? ReturnCode { get; set; }" : "" #>
 <#
-	foreach (var (genField, optional) in msg.attributes.Select(f => gen.GetField(f))) { #>
+	foreach (var (genField, optional) in msg.attributes.Select(f => gen.GetField(f)).OrderBy(x => x.fld.pretty)) { #>
 		public <#= genField.TypeFin(optional) #> <#= genField.pretty #> { get; set; }<# } #>
+		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{<#
@@ -141,7 +144,7 @@ foreach(var msg in gen.GetOrderedMsg())
 			switch(name)
 			{
 <#
-		foreach (var (genField, optional) in msg.attributes.Select(f => gen.GetField(f))) {
+		foreach (var (genField, optional) in msg.attributes.Select(f => gen.GetField(f)).OrderBy(x => x.fld.ts)) {
 #>
 			case "<#= genField.ts #>": <#= GenerateDeserializer(genField) #> break;<#
 			}
@@ -161,7 +164,7 @@ foreach(var msg in gen.GetOrderedMsg())
 				switch(fld)
 				{
 <#
-		foreach (var (genField, optional) in msg.attributes.Select(f => gen.GetField(f))) {
+		foreach (var (genField, optional) in msg.attributes.Select(f => gen.GetField(f)).OrderBy(x => x.fld.ts)) {
 #>
 				case "<#= genField.ts #>": foreach(var toi in toc) { toi.<#= genField.pretty #> = <#= genField.pretty #>; } break;<#
 				}

@@ -1,15 +1,15 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Library</OutputType>
-    <TargetFrameworks>net472;netcoreapp2.2;netcoreapp3.0;netstandard2.0</TargetFrameworks>
-    <LangVersion>7.3</LangVersion>
+    <TargetFrameworks>netcoreapp3.1;netstandard2.0;netstandard2.1</TargetFrameworks>
+    <LangVersion>8.0</LangVersion>
     <RootNamespace>TSLib</RootNamespace>
     <AssemblyName>TSLib</AssemblyName>
 
+    <Nullable>enable</Nullable>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <Prefer32Bit>false</Prefer32Bit>
     <DebugType>portable</DebugType>
-    <CodeAnalysisRuleSet>../TS3AudioBot.ruleset</CodeAnalysisRuleSet>
 
     <RepositoryUrl>https://github.com/Splamy/TS3AudioBot.git</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
@@ -26,17 +26,24 @@
     <PackageLicenseExpression>OSL-3.0</PackageLicenseExpression>
     <PackageProjectUrl>https://github.com/Splamy/TS3AudioBot</PackageProjectUrl>
     <PackageTags>TeamSpeak, TS3, TS5, Voice, Client, Query, Normal, Communication</PackageTags>
-    <Version>1.0.1</Version>
+    <Version>1.1.0</Version>
     <PackageIcon>ReSpeak.png</PackageIcon>
     <!-- PackageIconUrl is deprecated, but doc says it might be good for backwards compatibility -->
     <PackageIconUrl>https://splamy.de/static/ReSpeak.png</PackageIconUrl>
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="NLog" Version="4.7.3" />
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
     <PackageReference Include="Heijden.Dns.Portable" Version="2.0.19" />
-    <PackageReference Include="Portable.BouncyCastle" Version="1.8.6" />
+    <PackageReference Include="Nullable" Version="1.2.1">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Portable.BouncyCastle" Version="1.8.6.7" />
     <PackageReference Include="Splamy.Ed25519.Toolkit" Version="1.0.3" />
-    <PackageReference Include="System.IO.Pipelines" Version="4.7.0" />
+    <PackageReference Include="System.IO.Pipelines" Version="4.7.2" />
+    <PackageReference Condition="'$(TargetFramework)' == 'netstandard2.0'" Include="System.Memory" Version="4.5.4" />
   </ItemGroup>
   <ItemGroup>
     <None Include="ReSpeak.png" Pack="true" PackagePath="\" />
@@ -73,13 +80,17 @@
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>TsFullClient.gen.cs</LastGenOutput>
     </None>
+    <None Update="Query\TsQueryClient.gen.tt">
+      <LastGenOutput>TsQueryClient.gen.cs</LastGenOutput>
+      <Generator>TextTemplatingFileGenerator</Generator>
+    </None>
     <None Update="Types.gen.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
       <LastGenOutput>Types.gen.cs</LastGenOutput>
     </None>
-    <None Update="Generated\Versions.tt">
+    <None Update="Generated\TsVersion.gen.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
-      <LastGenOutput>Versions.cs</LastGenOutput>
+      <LastGenOutput>TsVersion.gen.cs</LastGenOutput>
     </None>
     <None Update="TsBaseFunctions.gen.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
@@ -122,10 +133,15 @@
       <AutoGen>True</AutoGen>
       <DependentUpon>TsPermission.tt</DependentUpon>
     </Compile>
-    <Compile Update="Generated\Versions.cs">
+    <Compile Update="Generated\TsVersion.gen.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
-      <DependentUpon>Versions.tt</DependentUpon>
+      <DependentUpon>TsVersion.gen.tt</DependentUpon>
+    </Compile>
+    <Compile Update="Query\TsQueryClient.gen.cs">
+      <DependentUpon>TsQueryClient.gen.tt</DependentUpon>
+      <DesignTime>True</DesignTime>
+      <AutoGen>True</AutoGen>
     </Compile>
     <Compile Update="TsBaseFunctions.gen.cs">
       <DesignTime>True</DesignTime>

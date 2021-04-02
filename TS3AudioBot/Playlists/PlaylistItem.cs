@@ -14,19 +14,20 @@ using TS3AudioBot.ResourceFactories;
 
 namespace TS3AudioBot.Playlists
 {
-	public class PlaylistItem : IAudioResourceResult
+	public class PlaylistItem : IAudioResourceResult, IMetaContainer
 	{
-		public MetaData Meta { get; set; }
+		public PlayInfo? PlayInfo { get; set; }
 		public AudioResource AudioResource { get; }
 
-		private PlaylistItem(MetaData meta = null)
-		{
-			Meta = meta;
-		}
-
-		public PlaylistItem(AudioResource resource, MetaData meta = null) : this(meta)
+		public PlaylistItem(AudioResource resource, PlayInfo? meta = null)
 		{
 			AudioResource = resource ?? throw new ArgumentNullException(nameof(resource));
+			PlayInfo = meta;
+		}
+
+		public static PlaylistItem From(PlayResource playResource)
+		{
+			return new PlaylistItem(playResource.AudioResource, playResource.PlayInfo);
 		}
 
 		public override string ToString() => AudioResource.ResourceTitle ?? $"{AudioResource.AudioType}: {AudioResource.ResourceId}";

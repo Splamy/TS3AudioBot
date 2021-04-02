@@ -9,24 +9,31 @@
 
 namespace TS3AudioBot.CommandSystem.Text
 {
-	public class AppliedTextMod
+	public readonly struct AppliedTextMod
 	{
-		public string Text { get; }
-		public TextMod Mod { get; set; } = TextMod.None;
+		public string? Text { get; }
+		public TextMod Mod { get; }
 
-		public AppliedTextMod(string text)
+		public AppliedTextMod(string? text)
 		{
 			Text = text;
+			Mod = TextMod.None;
 		}
 
-		public AppliedTextMod Color(Color color) { Mod = Mod.Color(color); return this; }
-		public AppliedTextMod Bold() { Mod = Mod.Bold(); return this; }
-		public AppliedTextMod Italic() { Mod = Mod.Italic(); return this; }
-		public AppliedTextMod Underline() { Mod = Mod.Underline(); return this; }
-		public AppliedTextMod Strike() { Mod = Mod.Strike(); return this; }
+		public AppliedTextMod(string? text, TextMod mod)
+		{
+			Text = text;
+			Mod = mod;
+		}
 
-		public static implicit operator AppliedTextMod(string text) => new AppliedTextMod(text);
+		public readonly AppliedTextMod Color(Color color) => new AppliedTextMod(Text, Mod.Color(color));
+		public readonly AppliedTextMod Bold() => new AppliedTextMod(Text, Mod.Bold());
+		public readonly AppliedTextMod Italic() => new AppliedTextMod(Text, Mod.Italic());
+		public readonly AppliedTextMod Underline() => new AppliedTextMod(Text, Mod.Underline());
+		public readonly AppliedTextMod Strike() => new AppliedTextMod(Text, Mod.Strike());
 
-		public override string ToString() => Text;
+		public static implicit operator AppliedTextMod(string? text) => new AppliedTextMod(text);
+
+		public override readonly string? ToString() => Text;
 	}
 }

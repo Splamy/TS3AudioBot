@@ -26,7 +26,7 @@ namespace TSLib.Helper
 
 		public override string ToString() => Value.ToString();
 
-		public override bool Equals(object obj) => obj is Id id && Equals(id);
+		public override bool Equals(object? obj) => obj is Id id && Equals(id);
 		public bool Equals(Id other) => Value == other.Value;
 		public override int GetHashCode() => Value;
 

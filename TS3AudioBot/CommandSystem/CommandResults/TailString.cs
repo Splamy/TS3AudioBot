@@ -9,13 +9,18 @@
 
 namespace TS3AudioBot.CommandSystem.CommandResults
 {
-	public class TailString : PrimitiveResult<string>
+	public class TailString : IWrappedResult
 	{
+		public string Content { get; }
 		public string Tail { get; }
+		object? IWrappedResult.Content => Content;
 
-		public TailString(string contentArg, string tailArg) : base(contentArg)
+		public TailString(string contentArg, string tailArg)
 		{
+			Content = contentArg;
 			Tail = tailArg;
 		}
+
+		public override string ToString() => Content;
 	}
 }

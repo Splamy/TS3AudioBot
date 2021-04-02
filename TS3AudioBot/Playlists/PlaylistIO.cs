@@ -39,9 +39,12 @@ namespace TS3AudioBot.Playlists
 			this.confBot = confBot;
 		}
 
-		private FileInfo NameToFile(string listId)
+		private FileInfo? NameToFile(string listId)
 		{
-			return new FileInfo(Path.Combine(confBot.LocalConfigDir, BotPaths.Playlists, listId));
+			var localDir = confBot.LocalConfigDir;
+			if (localDir is null)
+				return null;
+			return new FileInfo(Path.Combine(localDir, BotPaths.Playlists, listId));
 		}
 
 		public R<Playlist, LocalStr> Read(string listId) => ReadInternal(listId, false, false);
@@ -63,11 +66,8 @@ namespace TS3AudioBot.Playlists
 
 				if (!hasWriteLock)
 				{
-					if (hasReadLock)
-					{
-						rwLock.ExitReadLock();
-						hasReadLock = false;
-					}
+					rwLock.ExitReadLock();
+					hasReadLock = false;
 
 					rwLock.EnterWriteLock();
 					hasWriteLock = true;
@@ -97,84 +97,81 @@ namespace TS3AudioBot.Playlists
 		private R<Playlist, LocalStr> ReadFromFile(string listId, bool headOnly = false)
 		{
 			var fi = NameToFile(listId);
-			if (!fi.Exists)
+			if (fi is null || !fi.Exists)
 				return new LocalStr(strings.error_playlist_not_found);
 
-			using (var sr = new StreamReader(fi.Open(FileMode.Open, FileAccess.Read, FileShare.Read), Tools.Utf8Encoder))
+			using var sr = new StreamReader(fi.Open(FileMode.Open, FileAccess.Read, FileShare.Read), Tools.Utf8Encoder);
+			var metaRes = ReadHeadStream(sr);
+			if (!metaRes.Ok)
+				return metaRes.Error;
+			var meta = metaRes.Value;
+
+			playlistInfo[listId] = meta;
+
+			var plist = new Playlist
 			{
-				var metaRes = ReadHeadStream(sr);
-				if (!metaRes.Ok)
-					return metaRes.Error;
-				var meta = metaRes.Value;
+				Title = meta.Title
+			};
 
-				playlistInfo[listId] = meta;
+			if (headOnly)
+				return plist;
 
-				var plist = new Playlist
+			// read content
+			string? line;
+			while ((line = sr.ReadLine()) != null)
+			{
+				var kvp = line.Split(new[] { ':' }, 2);
+				if (kvp.Length < 2) continue;
+
+				string key = kvp[0];
+				string value = kvp[1];
+
+				switch (key)
 				{
-					Title = meta.Title
-				};
-
-				if (headOnly)
-					return plist;
-
-				// read content
-				string line;
-				while ((line = sr.ReadLine()) != null)
-				{
-					var kvp = line.Split(new[] { ':' }, 2);
-					if (kvp.Length < 2) continue;
-
-					string key = kvp[0];
-					string value = kvp[1];
-
-					switch (key)
+				// Legacy entry
+				case "rs":
 					{
-					// Legacy entry
-					case "rs":
+						var rskvp = value.Split(new[] { ':' }, 2);
+						if (kvp.Length < 2)
 						{
-							var rskvp = value.Split(new[] { ':' }, 2);
-							if (kvp.Length < 2)
-							{
-								Log.Warn("Erroneus playlist split count: {0}", line);
-								continue;
-							}
-							string optOwner = rskvp[0];
-							string content = rskvp[1];
-
-							var rsSplit = content.Split(new[] { ',' }, 3);
-							if (rsSplit.Length < 3)
-								goto default;
-							if (!string.IsNullOrWhiteSpace(rsSplit[0]))
-								plist.Add(new PlaylistItem(new AudioResource(Uri.UnescapeDataString(rsSplit[1]), Uri.UnescapeDataString(rsSplit[2]), rsSplit[0])));
-							else
-								goto default;
-							break;
+							Log.Warn("Erroneus playlist split count: {0}", line);
+							continue;
 						}
+						string content = rskvp[1];
 
-					case "rsj":
-						var res = JsonConvert.DeserializeObject<AudioResource>(value);
-						plist.Add(new PlaylistItem(res));
-						break;
-
-					case "id":
-					case "ln":
-						Log.Warn("Deprecated playlist data block: {0}", line);
-						break;
-
-					default:
-						Log.Warn("Erroneus playlist data block: {0}", line);
+						var rsSplit = content.Split(new[] { ',' }, 3);
+						if (rsSplit.Length < 3)
+							goto default;
+						if (!string.IsNullOrWhiteSpace(rsSplit[0]))
+							plist.Add(new PlaylistItem(new AudioResource(Uri.UnescapeDataString(rsSplit[1]), Uri.UnescapeDataString(rsSplit[2]), rsSplit[0])));
+						else
+							goto default;
 						break;
 					}
-				}
 
-				meta.Count = plist.Items.Count;
-				return plist;
+				case "rsj":
+					var res = JsonConvert.DeserializeObject<AudioResource>(value);
+					plist.Add(new PlaylistItem(res));
+					break;
+
+				case "id":
+				case "ln":
+					Log.Warn("Deprecated playlist data block: {0}", line);
+					break;
+
+				default:
+					Log.Warn("Erroneus playlist data block: {0}", line);
+					break;
+				}
 			}
+
+			meta.Count = plist.Items.Count;
+			return plist;
 		}
 
 		private R<PlaylistMeta, LocalStr> ReadHeadStream(StreamReader sr)
 		{
-			string line;
+			string? line;
 			int version = -1;
 
 			// read header
@@ -225,6 +222,8 @@ namespace TS3AudioBot.Playlists
 		private E<LocalStr> WriteToFile(string listId, IReadOnlyPlaylist plist)
 		{
 			var fi = NameToFile(listId);
+			if (fi is null)
+				return new LocalStr(strings.error_playlist_no_store_directory);
 			var dir = fi.Directory;
 			if (!dir.Exists)
 				dir.Create();
@@ -235,7 +234,6 @@ namespace TS3AudioBot.Playlists
 				{
 					Formatting = Formatting.None,
 				};
-
 
 				var meta = playlistInfo.GetOrNew(listId);
 				meta.Title = plist.Title;
@@ -277,7 +275,7 @@ namespace TS3AudioBot.Playlists
 			var fi = NameToFile(listId);
 			bool cached = playlistInfo.ContainsKey(listId);
 
-			if (!cached && !fi.Exists)
+			if (!cached && (fi is null || !fi.Exists))
 				return new LocalStr(strings.error_playlist_not_found);
 
 			playlistCache.Remove(listId);
@@ -286,14 +284,14 @@ namespace TS3AudioBot.Playlists
 
 			try
 			{
-				fi.Delete();
+				fi?.Delete();
 				return R.Ok;
 			}
 			catch (IOException) { return new LocalStr(strings.error_io_in_use); }
 			catch (System.Security.SecurityException) { return new LocalStr(strings.error_io_missing_permission); }
 		}
 
-		public R<PlaylistInfo[], LocalStr> ListPlaylists(string pattern)
+		public R<PlaylistInfo[], LocalStr> ListPlaylists(string? pattern)
 		{
 			if (confBot.LocalConfigDir is null)
 				return new LocalStr("Temporary bots cannot have playlists"); // TODO do this for all other methods too
@@ -330,10 +328,8 @@ namespace TS3AudioBot.Playlists
 					hasWriteLock = false;
 				}
 
-				return playlistInfo.Select(kvp => new PlaylistInfo
+				return playlistInfo.Select(kvp => new PlaylistInfo(kvp.Key, kvp.Value.Title)
 				{
-					Id = kvp.Key,
-					Title = kvp.Value.Title,
 					SongCount = kvp.Value.Count
 				}).ToArray();
 			}
@@ -366,7 +362,7 @@ namespace TS3AudioBot.Playlists
 			if (playlistInfo.ContainsKey(listId))
 				return true;
 			var fi = NameToFile(listId);
-			return fi.Exists;
+			return fi is null || fi.Exists;
 		}
 
 		public void Flush()
@@ -402,7 +398,7 @@ namespace TS3AudioBot.Playlists
 		[JsonProperty(PropertyName = "count")]
 		public int Count { get; set; }
 		[JsonProperty(PropertyName = "title")]
-		public string Title { get; set; }
+		public string Title { get; set; } = string.Empty;
 		[JsonIgnore]
 		public int Version { get; set; }
 	}

@@ -1,39 +1,28 @@
 using NUnit.Framework;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text.RegularExpressions;
 using System.Threading;
 using TS3AudioBot;
 using TS3AudioBot.Config;
-using TS3AudioBot.Helper;
 using TS3AudioBot.History;
-using TS3AudioBot.Playlists.Shuffle;
 using TS3AudioBot.ResourceFactories;
-using TS3AudioBot.ResourceFactories.Youtube;
 using TSLib;
-using TSLib.Full;
-using TSLib.Messages;
 
 namespace TS3ABotUnitTests
 {
 	[TestFixture]
-	public class UnitTests
+	public class HistoryTests
 	{
-		// ReSharper disable PossibleMultipleEnumeration
-
-		/* ======================= General Tests ==========================*/
-
 		[Test]
 		public void HistoryFileIntergrityTest()
 		{
 			string testFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "history.test");
 			if (File.Exists(testFile)) File.Delete(testFile);
 
-			var inv1 = new ClientList { ClientId = (ClientId)10, Uid = (Uid)"Uid1", Name = "Invoker1" };
-			var inv2 = new ClientList { ClientId = (ClientId)20, Uid = (Uid)"Uid2", Name = "Invoker2" };
+			var inv1 = new { ClientId = (ClientId)10, Uid = (Uid)"Uid1", Name = "Invoker1" };
+			var inv2 = new { ClientId = (ClientId)20, Uid = (Uid)"Uid2", Name = "Invoker2" };
 
 			var ar1 = new AudioResource("asdf", "sc_ar1", "soundcloud");
 			var ar2 = new AudioResource("./File.mp3", "me_ar2", "media");
@@ -95,7 +84,6 @@ namespace TS3ABotUnitTests
 			hf.RenameEntry(ale1, "sc_ar1X");
 			hf.LogAudioResourceDelayed(new HistorySaveData(ale1.AudioResource, (Uid)"Uid4"));
 
-
 			db.Dispose();
 
 			// check entry renaming
@@ -154,95 +142,8 @@ namespace TS3ABotUnitTests
 			Assert.AreEqual(ar3, lastXEntriesArray[0].AudioResource);
 			db.Dispose();
 
-
+			// Cleanup
 			File.Delete(testFile);
-		}
-
-		[Test]
-		public void UtilSeedTest()
-		{
-			var lowCaseRegex = new Regex("^[a-z]*$", Util.DefaultRegexConfig & ~RegexOptions.IgnoreCase);
-			for (int i = 0; i < 100000; i++)
-			{
-				var str = Util.FromSeed(i);
-				Assert.IsTrue(lowCaseRegex.IsMatch(str), "For seed: " + i);
-				var roundtrip = Util.ToSeed(str);
-				Assert.AreEqual(i, roundtrip);
-			}
-		}
-
-		/* ====================== Algorithm Tests =========================*/
-
-		[Test]
-		public void NormalOrderTest()
-		{
-			TestShuffleAlgorithmBiDir(new NormalOrder());
-		}
-
-		[Test]
-		public void ListedShuffleTest()
-		{
-			TestShuffleAlgorithmBiDir(new ListedShuffle());
-		}
-
-		[Test]
-		public void LinearFeedbackShiftRegisterTest()
-		{
-			TestShuffleAlgorithmBiDir(new LinearFeedbackShiftRegister());
-		}
-
-		private static void TestShuffleAlgorithmBiDir(IShuffleAlgorithm algo)
-		{
-			TestShuffleAlgorithm(algo, true);
-			TestShuffleAlgorithm(algo, false);
-		}
-
-		private static void TestShuffleAlgorithm(IShuffleAlgorithm algo, bool forward)
-		{
-			for (int i = 1; i < 1000; i++)
-			{
-				var checkNumbers = new BitArray(i, false);
-
-				algo.Length = i;
-				algo.Seed = i;
-
-				for (int j = 0; j < i; j++)
-				{
-					if (forward) algo.Next();
-					else algo.Prev();
-					int shufNum = algo.Index;
-					if (checkNumbers.Get(shufNum))
-						Assert.Fail("Duplicate number");
-					checkNumbers.Set(shufNum, true);
-				}
-			}
-		}
-
-		/* =================== ResourceFactories Tests ====================*/
-
-		[Test]
-		public void Factory_YoutubeFactoryTest()
-		{
-			var ctx = new ResolveContext(null, null);
-			using (IResourceResolver rfac = new YoutubeResolver(new ConfFactories()))
-			{
-				// matching links
-				Assert.AreEqual(rfac.MatchResource(ctx, @"https://www.youtube.com/watch?v=robqdGEhQWo"), MatchCertainty.Always);
-				Assert.AreEqual(rfac.MatchResource(ctx, @"https://youtu.be/robqdGEhQWo"), MatchCertainty.Always);
-				Assert.AreEqual(rfac.MatchResource(ctx, @"https://discarded-ideas.org/sites/discarded-ideas.org/files/music/darkforestkeep_symphonic.mp3"), MatchCertainty.Never);
-				Assert.AreNotEqual(rfac.MatchResource(ctx, @"http://splamy.de/youtube.com/youtu.be/fake.mp3"), MatchCertainty.Always);
-
-				// restoring links
-				Assert.AreEqual("https://youtu.be/robqdGEhQWo", rfac.RestoreLink(ctx, new AudioResource { ResourceId = "robqdGEhQWo" }));
-			}
-		}
-
-		/* ======================= TSLib Tests ========================*/
-
-		[Test]
-		public void VersionSelfCheck()
-		{
-			TsCrypt.VersionSelfCheck();
 		}
 	}
 

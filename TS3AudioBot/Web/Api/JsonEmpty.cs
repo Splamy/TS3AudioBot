@@ -11,9 +11,11 @@ namespace TS3AudioBot.Web.Api
 {
 	public class JsonEmpty : JsonObject
 	{
-		public JsonEmpty(string msg) : base(msg) { }
+		private readonly string message;
+		public JsonEmpty(string msg) { message = msg; }
 
 		public override object GetSerializeObject() => string.Empty;
 		public override string Serialize() => string.Empty;
+		public override string ToString() => message;
 	}
 }

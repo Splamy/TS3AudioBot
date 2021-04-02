@@ -54,7 +54,7 @@ namespace TSLib.Full.Book
 				return;
 			}}");
 
-			foreach (var prop in rule.properties) {
+			foreach (var prop in rule.properties.OrderBy(x => x.to)) {
 				void WriteMove(string from, string to) {
 					var bookProp = bookItem.properties.FirstOrDefault(x => x.name == to);
 					if(bookProp is null) {

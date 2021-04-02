@@ -11,11 +11,11 @@ using System;
 
 namespace TS3AudioBot.Dependency
 {
-	public class NullInjector : IInjector
+	public sealed class NullInjector : IInjector
 	{
 		public static readonly IInjector Instance = new NullInjector();
 		private NullInjector() { }
-		public object GetModule(Type type) => null;
+		public object? GetModule(Type type) => null;
 		public void AddModule(Type type, object obj) { }
 	}
 }

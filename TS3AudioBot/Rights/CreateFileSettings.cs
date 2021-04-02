@@ -12,7 +12,7 @@ namespace TS3AudioBot.Rights
 	public class CreateFileSettings
 	{
 		// can be null
-		public string[] AdminUids { get; set; } = null;
+		public string[]? AdminUids { get; set; } = null;
 
 		public bool OverwriteIfExists { get; set; } = false;
 	}

@@ -19,7 +19,7 @@ namespace TS3AudioBot.Plugins
 		public IReadOnlyCollection<BotCommand> BagCommands { get; }
 		public IReadOnlyCollection<string> AdditionalRights => Array.Empty<string>();
 
-		public PluginCommandBag(object obj, Type t)
+		public PluginCommandBag(object? obj, Type t)
 		{
 			BagCommands = CommandManager.GetBotCommands(obj, t).ToArray();
 		}

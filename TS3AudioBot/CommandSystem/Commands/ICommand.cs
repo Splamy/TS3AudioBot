@@ -7,8 +7,8 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
-using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace TS3AudioBot.CommandSystem.Commands
 {
@@ -28,12 +28,9 @@ namespace TS3AudioBot.CommandSystem.Commands
 		/// null inside the list allows an empty result.
 		/// </param>
 		/// <returns>
-		/// The result of this command.
-		///
-		/// null is an empty result.
-		/// Primitive types are a special case, it should always implement <see cref="CommandResults.IPrimitiveResult{T}"/>, e.g. through the <see cref="CommandResults.PrimitiveResult{T}"/> class.
-		/// The complete list of primitive types is <see cref="XCommandSystem.BasicTypes"/>.
+		/// <para>The result of this command.</para>
+		/// <para>null is an empty result.</para>
 		/// </returns>
-		object Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<Type> returnTypes);
+		ValueTask<object?> Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments);
 	}
 }

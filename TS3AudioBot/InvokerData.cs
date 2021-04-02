@@ -14,10 +14,9 @@ namespace TS3AudioBot
 	public class InvokerData
 	{
 		public Uid ClientUid { get; }
-		public bool IsAnonymous => ClientUid == AnonymousUid;
+		public bool IsAnonymous => ClientUid == Uid.Anonymous;
 
-		protected static readonly Uid AnonymousUid = (Uid)"Anonymous";
-		public static readonly InvokerData Anonymous = new InvokerData(AnonymousUid);
+		public static readonly InvokerData Anonymous = new InvokerData(Uid.Anonymous);
 
 		public InvokerData(Uid clientUid)
 		{

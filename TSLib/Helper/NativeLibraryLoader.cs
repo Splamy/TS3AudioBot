@@ -8,6 +8,7 @@
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
 
@@ -17,38 +18,53 @@ namespace TSLib.Helper
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 
+#if !NETCOREAPP3_1
 		[DllImport("kernel32.dll", SetLastError = true)]
 		private static extern IntPtr LoadLibrary(string dllToLoad);
+#endif
 
-		public static bool DirectLoadLibrary(string lib, Action dummyLoad = null)
+		public static bool DirectLoadLibrary(string lib, Action? dummyLoad = null)
 		{
 			if (Tools.IsLinux)
 			{
-				if (dummyLoad != null)
+				try
 				{
-					try
-					{
-						dummyLoad.Invoke();
-					}
-					catch (DllNotFoundException ex)
-					{
-						Log.Error(ex, "Failed to load library \"{0}\".", lib);
-						return false;
-					}
+					dummyLoad?.Invoke();
+				}
+				catch (DllNotFoundException ex)
+				{
+					Log.Error(ex, "Failed to load library \"{0}\".", lib);
+					return false;
 				}
 			}
 			else
 			{
-				var libPath = Path.Combine("lib", ArchFolder, lib);
-				Log.Debug("Loading \"{0}\" from \"{1}\"", lib, libPath);
-				var handle = LoadLibrary(libPath);
-				if (handle == IntPtr.Zero)
+				foreach (var libPath in LibPathOptions(lib))
 				{
-					Log.Error("Failed to load library \"{0}\" from \"{1}\", error: {2}", lib, libPath, Marshal.GetLastWin32Error());
-					return false;
+					Log.Debug("Loading \"{0}\" from \"{1}\"", lib, libPath);
+#if NETCOREAPP3_1
+					if (NativeLibrary.TryLoad(libPath, out _))
+						return true;
+#else
+					var handle = LoadLibrary(libPath);
+					if (handle != IntPtr.Zero)
+						return true;
+#endif
 				}
+				Log.Error("Failed to load library \"{0}\", error: {1}", lib, Marshal.GetLastWin32Error());
+				return false;
 			}
 			return true;
+		}
+
+		private static IEnumerable<string> LibPathOptions(string lib)
+		{
+			var fullPath = Directory.GetCurrentDirectory();
+			yield return Path.Combine(fullPath, "lib", ArchFolder, lib);
+			yield return Path.Combine(fullPath, "lib", lib);
+			var asmPath = Path.GetDirectoryName(typeof(NativeLibraryLoader).Assembly.Location)!;
+			yield return Path.Combine(asmPath, "lib", ArchFolder, lib);
+			yield return Path.Combine(asmPath, "lib", lib);
 		}
 
 		public static string ArchFolder

@@ -268,7 +268,7 @@
     <value>&lt;id&gt; Adds a link to your private playlist from the history by &lt;id&gt;.</value>
   </data>
   <data name="cmd_list_clear_help" xml:space="preserve">
-    <value>Clears your private playlist.</value>
+    <value>Clears a playlist.</value>
   </data>
   <data name="cmd_list_delete_help" xml:space="preserve">
     <value>&lt;name&gt; Deletes the playlist with the name &lt;name&gt;. You can only delete playlists which you also have created. Admins can delete every playlist.</value>
@@ -490,7 +490,7 @@ with the id {1}?</value>
     <value>You are not allowed to delete others playlists.</value>
   </data>
   <data name="cmd_list_delete_confirm" xml:space="preserve">
-    <value>Do you really want to delete the playlist "{0}"</value>
+    <value>Do you really want to delete the playlist "{0}"?</value>
   </data>
   <data name="cmd_list_load_response" xml:space="preserve">
     <value>Loaded "{0}" with {1} songs.</value>
@@ -580,7 +580,7 @@ with the id {1}?</value>
     <value>Error: {0}</value>
   </data>
   <data name="error_call_unexpected_error" xml:space="preserve">
-    <value>An unexpected error occured: {0}</value>
+    <value>An unexpected error occurred: {0}</value>
   </data>
   <data name="error_cmd_at_least_four_argument" xml:space="preserve">
     <value>Need at least four arguments to evaluate.</value>
@@ -980,5 +980,14 @@ with the id {1}?</value>
   </data>
   <data name="error_ts_code_781" xml:space="preserve">
     <value>Invalid channel password.</value>
+  </data>
+  <data name="cmd_subscribe_client_help" xml:space="preserve">
+    <value>Subscribes the specified client to listen from anywhere</value>
+  </data>
+  <data name="cmd_unsubscribe_client_help" xml:space="preserve">
+    <value>Unsubscribes the specified client to listen from anywhere.</value>
+  </data>
+  <data name="cmd_jump_help" xml:space="preserve">
+    <value>Jumps to the requested index in the current queue and starts playing.</value>
   </data>
 </root>

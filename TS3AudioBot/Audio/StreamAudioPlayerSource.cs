@@ -8,6 +8,7 @@
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
 using System;
+using System.Threading.Tasks;
 using TSLib.Audio;
 
 namespace TS3AudioBot.Audio
@@ -16,11 +17,11 @@ namespace TS3AudioBot.Audio
 	{
 		private bool hasFired = false;
 
-		public IAudioPassiveProducer InStream { get; set; }
-		public TimeSpan Length => TimeSpan.Zero;
-		public TimeSpan Position { get => TimeSpan.Zero; set { } }
+		public IAudioPassiveProducer? InStream { get; set; }
+		public TimeSpan? Length => null;
+		public TimeSpan? Position => null;
 
-		public event EventHandler OnSongEnd;
+		public event EventHandler? OnSongEnd;
 		event EventHandler<SongInfoChanged> IPlayerSource.OnSongUpdated { add { } remove { } }
 
 		public StreamAudioPlayerSource() { }
@@ -30,7 +31,7 @@ namespace TS3AudioBot.Audio
 			InStream = stream;
 		}
 
-		public int Read(byte[] buffer, int offset, int length, out Meta meta)
+		public int Read(byte[] buffer, int offset, int length, out Meta? meta)
 		{
 			var stream = InStream;
 			if (stream is null)
@@ -52,5 +53,7 @@ namespace TS3AudioBot.Audio
 		public void Reset() => hasFired = false;
 
 		public void Dispose() => InStream?.Dispose();
+
+		public Task Seek(TimeSpan position) { throw new NotSupportedException(); }
 	}
 }

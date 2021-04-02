@@ -20,6 +20,7 @@
 // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 using System;
+using System.Runtime.InteropServices;
 
 namespace TSLib.Audio.Opus
 {
@@ -46,12 +47,12 @@ namespace TSLib.Audio.Opus
 			if (inputChannels != 1 && inputChannels != 2)
 				throw new ArgumentOutOfRangeException(nameof(inputChannels));
 
-			IntPtr encoder = NativeMethods.opus_encoder_create(inputSamplingRate, inputChannels, application, out IntPtr error);
+			var encoderPtr = NativeMethods.opus_encoder_create(inputSamplingRate, inputChannels, application, out IntPtr error);
 			if ((Errors)error != Errors.Ok)
 			{
 				throw new Exception("Exception occured while creating encoder");
 			}
-			return new OpusEncoder(encoder, inputSamplingRate, inputChannels, application);
+			return new OpusEncoder(encoderPtr, inputSamplingRate, inputChannels, application);
 		}
 
 		private IntPtr encoder;
@@ -71,19 +72,18 @@ namespace TSLib.Audio.Opus
 		/// <param name="sampleLength">How many bytes to encode.</param>
 		/// <param name="outputEncodedBuffer">The encoded data is written to this buffer.</param>
 		/// <returns>Opus encoded audio buffer.</returns>
-		public Span<byte> Encode(Span<byte> inputPcmSamples, int sampleLength, byte[] outputEncodedBuffer)
+		public Span<byte> Encode(ReadOnlySpan<byte> inputPcmSamples, int sampleLength, Span<byte> outputEncodedBuffer)
 		{
 			if (disposed)
-				throw new ObjectDisposedException("OpusEncoder");
+				throw new ObjectDisposedException(nameof(OpusEncoder));
 
 			int frames = FrameCount(inputPcmSamples.Length);
-			// TODO fix hacky ref implementation once there is a good alternative with spans
-			int encodedLength = NativeMethods.opus_encode(encoder, ref inputPcmSamples[0], frames, outputEncodedBuffer, sampleLength);
+			int encodedLength = NativeMethods.opus_encode(encoder, MemoryMarshal.GetReference(inputPcmSamples), frames, out MemoryMarshal.GetReference(outputEncodedBuffer), sampleLength);
 
 			if (encodedLength < 0)
 				throw new Exception("Encoding failed - " + (Errors)encodedLength);
 
-			return outputEncodedBuffer.AsSpan(0, encodedLength);
+			return outputEncodedBuffer.Slice(0, encodedLength);
 		}
 
 		/// <summary>
@@ -114,17 +114,17 @@ namespace TSLib.Audio.Opus
 		/// <summary>
 		/// Gets the input sampling rate of the encoder.
 		/// </summary>
-		public int InputSamplingRate { get; private set; }
+		public int InputSamplingRate { get; }
 
 		/// <summary>
 		/// Gets the number of channels of the encoder.
 		/// </summary>
-		public int InputChannels { get; private set; }
+		public int InputChannels { get; }
 
 		/// <summary>
 		/// Gets the coding mode of the encoder.
 		/// </summary>
-		public Application Application { get; private set; }
+		public Application Application { get; }
 
 		/// <summary>
 		/// Gets or sets the bitrate setting of the encoding.
@@ -134,7 +134,7 @@ namespace TSLib.Audio.Opus
 			get
 			{
 				if (disposed)
-					throw new ObjectDisposedException("OpusEncoder");
+					throw new ObjectDisposedException(nameof(OpusEncoder));
 				var ret = NativeMethods.opus_encoder_ctl(encoder, Ctl.GetBitrateRequest, out int bitrate);
 				if (ret < 0)
 					throw new Exception("Encoder error - " + ((Errors)ret).ToString());
@@ -143,7 +143,7 @@ namespace TSLib.Audio.Opus
 			set
 			{
 				if (disposed)
-					throw new ObjectDisposedException("OpusEncoder");
+					throw new ObjectDisposedException(nameof(OpusEncoder));
 				var ret = NativeMethods.opus_encoder_ctl(encoder, Ctl.SetBitrateRequest, value);
 				if (ret < 0)
 					throw new Exception("Encoder error - " + ((Errors)ret).ToString());
@@ -158,7 +158,7 @@ namespace TSLib.Audio.Opus
 			get
 			{
 				if (encoder == IntPtr.Zero)
-					throw new ObjectDisposedException("OpusEncoder");
+					throw new ObjectDisposedException(nameof(OpusEncoder));
 
 				int ret = NativeMethods.opus_encoder_ctl(encoder, Ctl.GetInbandFecRequest, out int fec);
 				if (ret < 0)
@@ -170,7 +170,7 @@ namespace TSLib.Audio.Opus
 			set
 			{
 				if (encoder == IntPtr.Zero)
-					throw new ObjectDisposedException("OpusEncoder");
+					throw new ObjectDisposedException(nameof(OpusEncoder));
 
 				var ret = NativeMethods.opus_encoder_ctl(encoder, Ctl.SetInbandFecRequest, value ? 1 : 0);
 				if (ret < 0)

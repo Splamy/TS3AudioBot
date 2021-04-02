@@ -7,17 +7,15 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
-using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 using TS3AudioBot.Dependency;
 
 namespace TS3AudioBot.CommandSystem.Commands
 {
 	/// <summary>
-	/// A special group command that also accepts commands as first parameter and executes them on the left over parameters.
-	///
-	/// This command is needed to enable easy use of higher order functions.
-	/// E.g. `!(!if 1 > 2 (!vol) (!print)) 10`
+	/// A special group founction that extracts the root group from the current execution context
 	/// </summary>
 	public class RootCommand : ICommand
 	{
@@ -28,14 +26,19 @@ namespace TS3AudioBot.CommandSystem.Commands
 			internArguments = arguments;
 		}
 
-		public virtual object Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<Type> returnTypes)
+		public virtual async ValueTask<object?> Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments)
 		{
-			var merged = new ICommand[internArguments.Count + arguments.Count];
-			internArguments.CopyTo(0, merged, 0);
-			arguments.CopyTo(0, merged, internArguments.Count);
 			if (!info.TryGet<CommandManager>(out var cmdSys))
 				throw new CommandException("Could not find local commandsystem tree", CommandExceptionReason.MissingContext);
-			return cmdSys.RootGroup.Execute(info, merged, returnTypes);
+
+			IReadOnlyList<ICommand> merged;
+			if (arguments.Count == 0)
+				merged = internArguments;
+			else if (internArguments.Count == 0)
+				merged = arguments;
+			else
+				merged = internArguments.Concat(arguments).ToArray();
+			return await cmdSys.RootGroup.Execute(info, merged);
 		}
 
 		public override string ToString() => $"RootCmd({string.Join(", ", internArguments)})";

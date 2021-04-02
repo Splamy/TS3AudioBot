@@ -20,7 +20,7 @@ namespace TSLib.Helper
 		{
 			get
 			{
-				int p = (int)Environment.OSVersion.Platform;
+				var p = (int)Environment.OSVersion.Platform;
 				return p == 4 || p == 6 || p == 128;
 			}
 		}
@@ -55,8 +55,8 @@ namespace TSLib.Helper
 
 		// Math
 
-		public static TimeSpan Min(TimeSpan a, TimeSpan b) => a < b ? a : b;
-		public static TimeSpan Max(TimeSpan a, TimeSpan b) => a > b ? a : b;
+		public static TimeSpan Min(this TimeSpan a, TimeSpan b) => a < b ? a : b;
+		public static TimeSpan Max(this TimeSpan a, TimeSpan b) => a > b ? a : b;
 
 		public static int MathMod(int x, int mod) => (x % mod + mod) % mod;
 
@@ -66,8 +66,8 @@ namespace TSLib.Helper
 		// Generic
 
 		public static void SetLogId(Id id) => SetLogId(id.ToString());
-		public static void SetLogId(string id) => NLog.MappedDiagnosticsContext.Set("BotId", id);
+		public static void SetLogId(string id) => NLog.MappedDiagnosticsLogicalContext.Set("BotId", id);
 
-		public static Exception UnhandledDefault<T>(T value) where T : struct { return new MissingEnumCaseException(typeof(T).Name, value.ToString()); }
+		public static Exception UnhandledDefault<T>(T value) where T : struct { return new MissingEnumCaseException(typeof(T).Name, value.ToString() ?? string.Empty); }
 	}
 }

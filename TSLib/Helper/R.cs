@@ -8,6 +8,7 @@
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
 using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 
 namespace System
 {
@@ -21,50 +22,10 @@ namespace System
 		public static readonly _Error Err = new _Error();
 	}
 
+#pragma warning disable IDE1006 // Naming Styles
 	public readonly struct _Ok { }
 	public readonly struct _Error { }
-
-	/// <summary>
-	/// Provides a safe alternative to Exceptions for error and result wrapping.
-	/// This type represents either success + value or an error + message.
-	/// The value is guaranteed to be non-null when successful.
-	/// </summary>
-	/// <typeparam name="TSuccess">The type of the success value.</typeparam>
-	[DebuggerDisplay("{Ok ? (\"Ok : \" + typeof(TSuccess).Name) : \"Err\", nq}")]
-	public readonly struct R<TSuccess>
-	{
-		public static readonly R<TSuccess> ErrR = new R<TSuccess>();
-
-		public bool Ok { get; }
-		public TSuccess Value { get; }
-
-		private R(TSuccess value) { Ok = true; if (value == null) throw new ArgumentNullException(nameof(value), "Return of ok must not be null."); Value = value; }
-
-		/// <summary>Creates a new successful result with a value</summary>
-		/// <param name="value">The value</param>
-		public static R<TSuccess> OkR(TSuccess value) => new R<TSuccess>(value);
-
-		public static implicit operator bool(R<TSuccess> result) => result.Ok;
-
-		public static implicit operator R<TSuccess>(TSuccess result) => new R<TSuccess>(result);
-
-		// Fluent get
-		public bool GetOk(out TSuccess value)
-		{
-			if (Ok)
-				value = Value;
-			else
-				value = default;
-			return Ok;
-		}
-
-		// Convenience casting
-		public static implicit operator R<TSuccess>(_Error _) => ErrR;
-
-		// Unwrapping
-		public TSuccess OkOr(TSuccess alt) => Ok ? Value : alt;
-		public TSuccess Unwrap() => Ok ? Value : throw new InvalidOperationException("Called upwrap on error");
-	}
+#pragma warning restore IDE1006 // Naming Styles
 
 	/// <summary>
 	/// Provides a safe alternative to Exceptions for error and result wrapping.
@@ -74,15 +35,15 @@ namespace System
 	/// <typeparam name="TSuccess">The type of the success value.</typeparam>
 	/// <typeparam name="TError">The error type.</typeparam>
 	[DebuggerDisplay("{Ok ? (\"Ok : \" + typeof(TSuccess).Name) : (\"Err : \" + typeof(TError).Name), nq}")]
-	public readonly struct R<TSuccess, TError>
+	public readonly struct R<TSuccess, TError> where TSuccess : notnull where TError : notnull
 	{
 		private readonly bool isError;
 		public bool Ok => !isError;
 		public TError Error { get; }
 		public TSuccess Value { get; }
 
-		private R(TSuccess value) { isError = false; Error = default; if (value == null) throw new ArgumentNullException(nameof(value), "Return of ok must not be null."); Value = value; }
-		private R(TError error) { isError = true; Value = default; if (error == null) throw new ArgumentNullException(nameof(error), "Error must not be null."); Error = error; }
+		private R(TSuccess value) { isError = false; Error = default!; if (value == null) throw new ArgumentNullException(nameof(value), "Return of ok must not be null."); Value = value; }
+		private R(TError error) { isError = true; Value = default!; if (error == null) throw new ArgumentNullException(nameof(error), "Error must not be null."); Error = error; }
 		internal R(bool isError, TSuccess value, TError error) { this.isError = isError; Value = value; Error = error; }
 
 		/// <summary>Creates a new failed result with an error object</summary>
@@ -99,27 +60,46 @@ namespace System
 		public static implicit operator R<TSuccess, TError>(TError error) => new R<TSuccess, TError>(error);
 
 		// Fluent get
-		public E<TError> GetOk(out TSuccess value)
+		public bool GetOk([MaybeNullWhen(false)] out TSuccess value)
+		{
+			if (Ok)
+				value = Value;
+			else
+				value = default!;
+			return Ok;
+		}
+
+		public bool Get([MaybeNullWhen(false)] out TSuccess result, [MaybeNullWhen(true)] out TError error)
 		{
 			if (Ok)
 			{
-				value = Value;
-				return E<TError>.OkR;
+				result = Value;
+				error = default!;
 			}
 			else
 			{
-				value = default;
-				return OnlyError();
+				result = default!;
+				error = Error;
 			}
+			return Ok;
 		}
 
 		// Unwrapping
-		public TSuccess OkOr(TSuccess alt) => Ok ? Value : alt;
+		[return: MaybeNull, NotNullIfNotNull("alt")]
+		public TSuccess OkOr([AllowNull] TSuccess alt) => Ok ? Value : alt;
+
 		public TSuccess Unwrap() => Ok ? Value : throw new InvalidOperationException("Called upwrap on error");
 
 		// Downwrapping
 		public E<TError> OnlyError() => new E<TError>(isError, Error);
 		public static implicit operator E<TError>(R<TSuccess, TError> result) => result.OnlyError();
+
+		public R<T, TError> Map<T>(Func<TSuccess, T> map) where T : notnull => Ok
+			? new R<T, TError>(isError, map(Value), default!)
+			: new R<T, TError>(isError, default!, Error);
+		public R<TSuccess, T> MapError<T>(Func<TError, T> mapE) where T : notnull => Ok
+			? new R<TSuccess, T>(isError, Value, default!)
+			: new R<TSuccess, T>(isError, default!, mapE(Error));
 	}
 
 	/// <summary>
@@ -128,7 +108,7 @@ namespace System
 	/// </summary>
 	/// <typeparam name="TError">The type of the error value.</typeparam>
 	[DebuggerDisplay("{Ok ? \"Ok\" : (\"Err : \" + typeof(TError).Name), nq}")]
-	public readonly struct E<TError>
+	public readonly struct E<TError> where TError : notnull
 	{
 		/// <summary>Represents a successful state.</summary>
 		public static E<TError> OkR { get; } = new E<TError>();
@@ -150,18 +130,13 @@ namespace System
 		public static implicit operator E<TError>(TError result) => new E<TError>(result);
 
 		// Fluent get
-		public bool GetError(out TError value)
+		public bool GetOk([MaybeNullWhen(true)] out TError error)
 		{
 			if (Ok)
-			{
-				value = default;
-				return false;
-			}
+				error = default!;
 			else
-			{
-				value = Error;
-				return true;
-			}
+				error = Error;
+			return Ok;
 		}
 
 		// Convenience casting
@@ -178,7 +153,7 @@ namespace System
 		/// </summary>
 		/// <param name="value">The success value. Can be null when the current state is an error.</param>
 		/// <returns>A new combined result.</returns>
-		public R<TSuccess, TError> WithValue<TSuccess>(TSuccess value)
+		public R<TSuccess, TError> WithValue<TSuccess>(TSuccess value) where TSuccess : notnull
 		{
 			if (!isError && value == null) throw new ArgumentNullException(nameof(value), "Value must not be null.");
 			return new R<TSuccess, TError>(isError, value, Error);
@@ -187,14 +162,14 @@ namespace System
 
 	public static class RExtensions
 	{
-		public static R<TSuccess, TError> Flat<TSuccess, TError>(this R<R<TSuccess, TError>, TError> boxedR)
+		public static R<TSuccess, TError> Flat<TSuccess, TError>(this R<R<TSuccess, TError>, TError> boxedR) where TSuccess : notnull where TError : notnull
 		{
 			if (!boxedR.Ok)
 				return boxedR.Error;
 			return boxedR.Value;
 		}
 
-		public static E<TError> Flat<TError>(this R<E<TError>, TError> boxedR)
+		public static E<TError> Flat<TError>(this R<E<TError>, TError> boxedR) where TError : notnull
 		{
 			if (!boxedR.Ok)
 				return boxedR.Error;

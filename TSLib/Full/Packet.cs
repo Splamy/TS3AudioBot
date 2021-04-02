@@ -9,6 +9,7 @@
 
 using System;
 using System.Buffers.Binary;
+using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using TSLib.Helper;
 
@@ -123,14 +124,14 @@ namespace TSLib.Full
 			}
 			else if (typeof(TDir) == typeof(C2S))
 			{
-				var self = (C2S)(object)HeaderExt;
+				var self = (C2S)(object)HeaderExt!;
 				BinaryPrimitives.WriteUInt16BigEndian(into.Slice(0, 2), PacketId);
 				BinaryPrimitives.WriteUInt16BigEndian(into.Slice(2, 2), self.ClientId);
 				into[4] = PacketTypeFlagged;
 			}
 			else
 			{
-				throw new NotSupportedException();
+				Trace.Fail("Invalid associated Packet Data");
 			}
 #if DEBUG
 			into.CopyTo(Header.AsSpan());
@@ -156,7 +157,7 @@ namespace TSLib.Full
 			}
 			else
 			{
-				throw new NotSupportedException();
+				Trace.Fail("Invalid associated Packet Data");
 			}
 		}
 	}

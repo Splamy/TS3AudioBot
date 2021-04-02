@@ -15,19 +15,15 @@ using TS3AudioBot.Helper;
 
 namespace TS3AudioBot.Config
 {
-	public class ConfigArray<T> : ConfigValue<IReadOnlyList<T>>
+	public class ConfigArray<T> : ConfigValue<IReadOnlyList<T>> where T : notnull
 	{
 		public ConfigArray(string key, IReadOnlyList<T> defaultVal, string doc = "") : base(key, defaultVal, doc) { }
 
-		public override void FromToml(TomlObject tomlObject)
+		public override void FromToml(TomlObject? tomlObject)
 		{
-			if (tomlObject != null)
+			if (tomlObject != null && tomlObject.TryGetValueArray<T>(out var array))
 			{
-				var array = tomlObject.TryGetValueArray<T>();
-				if (array != null)
-				{
-					Value = array;
-				}
+				Value = array;
 			}
 		}
 

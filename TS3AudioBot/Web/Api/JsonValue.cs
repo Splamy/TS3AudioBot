@@ -13,22 +13,17 @@ using TS3AudioBot.CommandSystem;
 
 namespace TS3AudioBot.Web.Api
 {
-	public class JsonValue<T> : JsonValue
+	public class JsonValue<T> : JsonValue where T : notnull
 	{
-		protected Func<T, string> AsString { get; }
+		protected Func<T, string>? AsString { get; }
 
-		public new T Value => (T)base.Value;
+		new public T Value => (T)base.Value;
 
 		public JsonValue(T value) : base(value) { }
 		public JsonValue(T value, string msg) : base(value, msg) { }
-		public JsonValue(T value, Func<T, string> asString = null) : base(value)
+		public JsonValue(T value, Func<T, string>? asString) : base(value)
 		{
 			AsString = asString;
-		}
-
-		public override object GetSerializeObject()
-		{
-			return Value;
 		}
 
 		public override string ToString()
@@ -37,10 +32,8 @@ namespace TS3AudioBot.Web.Api
 			{
 				if (AsString != null)
 					AsStringResult = AsString.Invoke(Value);
-				else if (Value == null)
-					AsStringResult = string.Empty;
 				else
-					AsStringResult = Value.ToString();
+					AsStringResult = Value?.ToString() ?? string.Empty;
 			}
 			return AsStringResult;
 		}
@@ -48,10 +41,11 @@ namespace TS3AudioBot.Web.Api
 
 	public abstract class JsonValue : JsonObject
 	{
-		protected object Value { get; }
+		protected string? AsStringResult { get; set; }
+		public object Value { get; }
 
-		protected JsonValue(object value) : base(null) { Value = value; }
-		protected JsonValue(object value, string msg) : base(msg ?? string.Empty) { Value = value; }
+		protected JsonValue(object value) { Value = value; AsStringResult = null; }
+		protected JsonValue(object value, string msg) { Value = value; AsStringResult = msg ?? string.Empty; }
 
 		public override object GetSerializeObject() => Value;
 
@@ -72,8 +66,8 @@ namespace TS3AudioBot.Web.Api
 
 		// static creator methods for anonymous stuff
 
-		public static JsonValue<T> Create<T>(T anon) => new JsonValue<T>(anon);
-		public static JsonValue<T> Create<T>(T anon, string msg) => new JsonValue<T>(anon, msg);
-		public static JsonValue<T> Create<T>(T anon, Func<T, string> asString = null) => new JsonValue<T>(anon, asString);
+		public static JsonValue<T> Create<T>(T anon) where T : notnull => new JsonValue<T>(anon);
+		public static JsonValue<T> Create<T>(T anon, string msg) where T : notnull => new JsonValue<T>(anon, msg);
+		public static JsonValue<T> Create<T>(T anon, Func<T, string>? asString) where T : notnull => new JsonValue<T>(anon, asString);
 	}
 }

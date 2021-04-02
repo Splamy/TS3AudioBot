@@ -38,24 +38,24 @@ namespace TSLib.Full
 		private static readonly byte[] DummyIv = Encoding.ASCII.GetBytes(DummyKeyAndNonceString.Substring(16, 16));
 		private static readonly (byte[], byte[]) DummyKeyAndNonceTuple = (DummyKey, DummyIv);
 		private static readonly byte[] Ts3InitMac = Encoding.ASCII.GetBytes("TS3INIT1");
-		private static readonly uint InitVersion = 1566914096; // 3.5.0 [Stable]
+		private const uint InitVersion = 1566914096; // 3.5.0 [Stable]
 		private readonly EaxBlockCipher eaxCipher = new EaxBlockCipher(new AesEngine());
-		private static readonly Regex IdentityRegex = new Regex(@"^(?<level>\d+)V(?<identity>[\w\/\+]+={0,2})$", RegexOptions.ECMAScript | RegexOptions.CultureInvariant);
 
 		internal const int MacLen = 8;
 		internal const int PacketTypeKinds = 9;
 
-		internal IdentityData Identity { get; set; }
+		internal IdentityData Identity { get; }
 
 		internal bool CryptoInitComplete { get; private set; }
-		private byte[] alphaTmp;
-		private byte[] ivStruct;
+		private byte[]? alphaTmp;
+		private byte[]? ivStruct;
 		private readonly byte[] fakeSignature = new byte[MacLen];
 		private readonly (byte[] key, byte[] nonce, uint generation)?[] cachedKeyNonces = new (byte[], byte[], uint)?[PacketTypeKinds * 2];
 
-		public TsCrypt()
+		public TsCrypt(IdentityData identity)
 		{
 			Reset();
+			Identity = identity;
 		}
 
 		internal void Reset()
@@ -64,7 +64,6 @@ namespace TSLib.Full
 			ivStruct = null;
 			Array.Clear(fakeSignature, 0, fakeSignature.Length);
 			Array.Clear(cachedKeyNonces, 0, cachedKeyNonces.Length);
-			Identity = null;
 		}
 
 		#region KEY IMPORT/EXPROT
@@ -99,19 +98,19 @@ namespace TSLib.Full
 		/// <returns>The identity information.</returns>
 		public static R<IdentityData, string> LoadIdentity(string key, ulong keyOffset, ulong lastCheckedKeyOffset = 0)
 		{
-			// Note: libtomcrypt stores the private AND public key when exporting a private key
-			// This makes importing very convenient :)
 			var asnByteArray = Base64Decode(key);
-			if (!asnByteArray.Ok)
+			if (asnByteArray is null)
 				return "Invalid identity base64 string";
-			var importRes = ImportKeyDynamic(asnByteArray.Value);
+			var importRes = ImportKeyDynamic(asnByteArray);
 			if (!importRes.Ok)
 				return importRes.Error;
 			var (publicKey, privateKey) = importRes.Value;
+			if (privateKey is null)
+				return "Key string did not contain a private key";
 			return LoadIdentity(publicKey, privateKey, keyOffset, lastCheckedKeyOffset);
 		}
 
-		private static IdentityData LoadIdentity(ECPoint publicKey, BigInteger privateKey, ulong keyOffset, ulong lastCheckedKeyOffset)
+		private static IdentityData LoadIdentity(ECPoint? publicKey, BigInteger privateKey, ulong keyOffset, ulong lastCheckedKeyOffset)
 		{
 			return new IdentityData(privateKey, publicKey)
 			{
@@ -136,10 +135,10 @@ namespace TSLib.Full
 			catch (Exception) { return "Could not import public key"; }
 		}
 
-		private static R<(ECPoint publicKey, BigInteger privateKey), string> ImportKeyDynamic(byte[] asnByteArray)
+		private static R<(ECPoint? publicKey, BigInteger? privateKey), string> ImportKeyDynamic(byte[] asnByteArray)
 		{
-			BigInteger privateKey = null;
-			ECPoint publicKey = null;
+			BigInteger? privateKey = null;
+			ECPoint? publicKey = null;
 			try
 			{
 				var asnKeyData = (DerSequence)Asn1Object.FromByteArray(asnByteArray);
@@ -207,6 +206,7 @@ namespace TSLib.Full
 			return curve.G.Multiply(privateKey).Normalize();
 		}
 
+		private static readonly Regex IdentityRegex = new Regex(@"^(?<level>\d+)V(?<identity>[\w\/\+]+={0,2})$", RegexOptions.ECMAScript | RegexOptions.CultureInvariant);
 		private static readonly byte[] TsIdentityObfuscationKey = Encoding.ASCII.GetBytes("b9dfaa7bee6ac57ac7b65f1094a1c155e747327bc2fe5d51c512023fe54a280201004e90ad1daaae1075d53b7d571c30e063b5a62a4a017bb394833aa0983e6e");
 
 		public static R<IdentityData, string> DeobfuscateAndImportTsIdentity(string identity)
@@ -219,27 +219,28 @@ namespace TSLib.Full
 				return "Invalid key offset";
 
 			var ident = Base64Decode(match.Groups["identity"].Value);
-			if (!ident.Ok)
+			if (ident is null)
 				return "Invalid identity base64 string";
 
-			var identityArr = ident.Value;
-			if (ident.Value.Length < 20)
+			if (ident.Length < 20)
 				return "Identity too short";
 
-			int nullIdx = identityArr.AsSpan(20).IndexOf((byte)0);
-			var hash = Hash1It(identityArr, 20, nullIdx < 0 ? identityArr.Length - 20 : nullIdx);
+			int nullIdx = ident.AsSpan(20).IndexOf((byte)0);
+			var hash = Hash1It(ident, 20, nullIdx < 0 ? ident.Length - 20 : nullIdx);
 
-			XorBinary(identityArr, hash, 20, identityArr);
-			XorBinary(identityArr, TsIdentityObfuscationKey, Math.Min(100, identityArr.Length), identityArr);
+			XorBinary(ident, hash, 20, ident);
+			XorBinary(ident, TsIdentityObfuscationKey, Math.Min(100, ident.Length), ident);
 
-			if (System.Buffers.Text.Base64.DecodeFromUtf8InPlace(identityArr, out var length) != System.Buffers.OperationStatus.Done)
+			if (System.Buffers.Text.Base64.DecodeFromUtf8InPlace(ident, out var length) != System.Buffers.OperationStatus.Done)
 				return "Invalid deobfuscated base64 string";
 
-			var importRes = ImportKeyDynamic(identityArr.AsSpan(0, length).ToArray());
+			var importRes = ImportKeyDynamic(ident.AsSpan(0, length).ToArray());
 			if (!importRes.Ok)
 				return importRes.Error;
 
 			var (publicKey, privateKey) = importRes.Value;
+			if (privateKey is null)
+				return "Key string did not contain a private key";
 			return LoadIdentity(publicKey, privateKey, level, level);
 		}
 
@@ -253,20 +254,17 @@ namespace TSLib.Full
 		/// <param name="omega">The omega key from clientinit encoded in base64.</param>
 		internal E<string> CryptoInit(string alpha, string beta, string omega)
 		{
-			if (Identity is null)
-				throw new InvalidOperationException($"No identity has been imported or created. Use the {nameof(LoadIdentity)} or {nameof(GenerateNewIdentity)} method before.");
-
 			var alphaBytes = Base64Decode(alpha);
-			if (!alphaBytes.Ok) return "alphaBytes parameter is invalid";
+			if (alphaBytes is null) return "alphaBytes parameter is invalid";
 			var betaBytes = Base64Decode(beta);
-			if (!alphaBytes.Ok) return "betaBytes parameter is invalid";
+			if (betaBytes is null) return "betaBytes parameter is invalid";
 			var omegaBytes = Base64Decode(omega);
-			if (!alphaBytes.Ok) return "omegaBytes parameter is invalid";
-			var serverPublicKey = ImportPublicKey(omegaBytes.Value);
+			if (omegaBytes is null) return "omegaBytes parameter is invalid";
+			var serverPublicKey = ImportPublicKey(omegaBytes);
 			if (!serverPublicKey.Ok) return "server public key is invalid";
 
 			byte[] sharedKey = GetSharedSecret(serverPublicKey.Value);
-			return SetSharedSecret(alphaBytes.Value, betaBytes.Value, sharedKey);
+			return SetSharedSecret(alphaBytes, betaBytes, sharedKey);
 		}
 
 		/// <summary>Calculates a shared secred with ECDH from the client private and server public key.</summary>
@@ -314,22 +312,22 @@ namespace TSLib.Full
 		internal E<string> CryptoInit2(string license, string omega, string proof, string beta, byte[] privateKey)
 		{
 			var licenseBytes = Base64Decode(license);
-			if (!licenseBytes.Ok) return "license parameter is invalid";
+			if (licenseBytes is null) return "license parameter is invalid";
 			var omegaBytes = Base64Decode(omega);
-			if (!omegaBytes.Ok) return "omega parameter is invalid";
+			if (omegaBytes is null) return "omega parameter is invalid";
 			var proofBytes = Base64Decode(proof);
-			if (!proofBytes.Ok) return "proof parameter is invalid";
+			if (proofBytes is null) return "proof parameter is invalid";
 			var betaBytes = Base64Decode(beta);
-			if (!betaBytes.Ok) return "beta parameter is invalid";
-			var serverPublicKey = ImportPublicKey(omegaBytes.Value);
+			if (betaBytes is null) return "beta parameter is invalid";
+			var serverPublicKey = ImportPublicKey(omegaBytes);
 			if (!serverPublicKey.Ok) return "server public key is invalid";
 
 			// Verify that our connection isn't tampered with
-			if (!VerifySign(serverPublicKey.Value, licenseBytes.Value, proofBytes.Value))
+			if (!VerifySign(serverPublicKey.Value, licenseBytes, proofBytes))
 				return "The init proof is not valid. Your connection might be tampered with or the server is an idiot.";
 
 			var sw = Stopwatch.StartNew();
-			var licenseChainR = Licenses.Parse(licenseBytes.Value);
+			var licenseChainR = Licenses.Parse(licenseBytes);
 			if (!licenseChainR.Ok)
 				return licenseChainR.Error;
 			Log.Debug("Parsed license successfully in {0:F3}ms", sw.Elapsed.TotalMilliseconds);
@@ -343,7 +341,7 @@ namespace TSLib.Full
 			var keyArr = GetSharedSecret2(key, privateKey);
 			Log.Debug("Calculated shared secret in {0:F3}ms", sw.Elapsed.TotalMilliseconds);
 
-			return SetSharedSecret(alphaTmp, betaBytes.Value, keyArr);
+			return SetSharedSecret(alphaTmp, betaBytes, keyArr);
 		}
 
 		private static byte[] GetSharedSecret2(ReadOnlySpan<byte> publicKey, ReadOnlySpan<byte> privateKey)
@@ -361,7 +359,7 @@ namespace TSLib.Full
 			return bytes;
 		}
 
-		internal R<byte[], string> ProcessInit1<TDir>(byte[] data)
+		internal R<byte[], string> ProcessInit1<TDir>(byte[]? data)
 		{
 			const int versionLen = 4;
 			const int initTypeLen = 1;
@@ -371,7 +369,8 @@ namespace TSLib.Full
 			const string packetInvalidStep = packetInvalid + " (invalid step)";
 			const string packetInvalidLength = packetInvalid + " (invalid length)";
 
-			int? type = null;
+			int type;
+			byte[] sendData;
 			if (data != null)
 			{
 				if (Packet<TDir>.FromServer)
@@ -391,21 +390,22 @@ namespace TSLib.Full
 						return packetInvalidStep;
 				}
 			}
-			byte[] sendData;
+			else type = -1;
 
-			switch (type)
+			if (data == null || type == 0x7F)
 			{
-			case 0x7F:
-			// 0x7F: Some strange servers do this
-			// the normal client responds by starting again
-			case null:
+				// 0x7F: Some strange servers do this
+				// the normal client responds by starting again
 				sendData = new byte[versionLen + initTypeLen + 4 + 4 + 8];
 				BinaryPrimitives.WriteUInt32BigEndian(sendData.AsSpan(0), InitVersion); // initVersion
 				sendData[versionLen] = 0x00; // initType
 				BinaryPrimitives.WriteUInt32BigEndian(sendData.AsSpan(versionLen + initTypeLen), Tools.UnixNow); // 4byte timestamp
 				BinaryPrimitives.WriteInt32BigEndian(sendData.AsSpan(versionLen + initTypeLen + 4), Tools.Random.Next()); // 4byte random
 				return sendData;
+			}
 
+			switch (type)
+			{
 			case 0:
 				if (data.Length != 21)
 					return packetInvalidLength;
@@ -549,7 +549,11 @@ namespace TSLib.Full
 					len = eaxCipher.ProcessBytes(packet.Data, 0, packet.Size, result, 0);
 					len += eaxCipher.DoFinal(result, len);
 				}
-				catch (Exception ex) { throw new TsException("Internal encryption error.", ex); }
+				catch (Exception ex)
+				{
+					Log.Error(ex, "Internal encryption error.");
+					throw;
+				}
 			}
 
 			// result consists of [Data..., Mac...]
@@ -664,11 +668,12 @@ namespace TSLib.Full
 			var packetTypeRaw = (byte)packetType;
 
 			int cacheIndex = packetTypeRaw * (fromServer ? 1 : 2);
-			if (!cachedKeyNonces[cacheIndex].HasValue || cachedKeyNonces[cacheIndex].Value.generation != generationId)
+			var cacheValue = cachedKeyNonces[cacheIndex];
+			if (cacheValue is null || cacheValue.Value.generation != generationId)
 			{
 				// this part of the key/nonce is fixed by the message direction and packetType
 
-				var tmpToHash = new byte[ivStruct.Length == 20 ? 26 : 70];
+				var tmpToHash = new byte[ivStruct!.Length == 20 ? 26 : 70];
 
 				tmpToHash[0] = fromServer ? (byte)0x30 : (byte)0x31;
 				tmpToHash[1] = packetTypeRaw;
@@ -678,13 +683,14 @@ namespace TSLib.Full
 
 				var result = Hash256It(tmpToHash).AsSpan();
 
-				cachedKeyNonces[cacheIndex] = (result.Slice(0, 16).ToArray(), result.Slice(16, 16).ToArray(), generationId);
+				cacheValue = (result.Slice(0, 16).ToArray(), result.Slice(16, 16).ToArray(), generationId);
+				cachedKeyNonces[cacheIndex] = cacheValue;
 			}
 
 			var key = new byte[16];
 			var nonce = new byte[16];
-			Array.Copy(cachedKeyNonces[cacheIndex].Value.key, 0, key, 0, 16);
-			Array.Copy(cachedKeyNonces[cacheIndex].Value.nonce, 0, nonce, 0, 16);
+			Array.Copy(cacheValue.Value.key, 0, key, 0, 16);
+			Array.Copy(cacheValue.Value.nonce, 0, nonce, 0, 16);
 
 			// finally the first two bytes get xor'd with the packet id
 			key[0] ^= unchecked((byte)(packetId >> 8));
@@ -764,30 +770,30 @@ namespace TSLib.Full
 
 		private static readonly byte[] TsVersionSignPublicKey = Convert.FromBase64String("UrN1jX0dBE1vulTNLCoYwrVpfITyo+NBuq/twbf9hLw=");
 
-		public static bool EdCheck(VersionSign sign)
+		public static bool EdCheck(TsVersionSigned sign)
 		{
-			var ver = Encoding.ASCII.GetBytes(sign.PlatformName + sign.Name);
+			var ver = Encoding.ASCII.GetBytes(sign.Platform + sign.Version);
 			var signArr = Base64Decode(sign.Sign);
-			if (!signArr.Ok)
+			if (signArr is null)
 				return false;
-			return Chaos.NaCl.Ed25519.Verify(signArr.Value, ver, TsVersionSignPublicKey);
+			return Chaos.NaCl.Ed25519.Verify(signArr, ver, TsVersionSignPublicKey);
 		}
 
 		public static void VersionSelfCheck()
 		{
-			var versions = typeof(VersionSign).GetProperties().Where(prop => prop.PropertyType == typeof(VersionSign));
+			var versions = typeof(TsVersionSigned).GetProperties().Where(prop => prop.PropertyType == typeof(TsVersionSigned));
 			foreach (var ver in versions)
 			{
-				var verObj = (VersionSign)ver.GetValue(null);
+				var verObj = (TsVersionSigned)ver.GetValue(null)!;
 				if (!EdCheck(verObj))
 					throw new Exception($"Version is invalid: {verObj}");
 			}
 		}
 
-		internal static R<byte[], string> Base64Decode(string str)
+		internal static byte[]? Base64Decode(string str)
 		{
 			try { return Convert.FromBase64String(str); }
-			catch (FormatException) { return "Malformed base64 string"; }
+			catch (FormatException) { return null; }
 		}
 
 		#endregion

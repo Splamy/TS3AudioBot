@@ -15,5 +15,9 @@ namespace TS3AudioBot.Web.Model
 	{
 		[JsonProperty(PropertyName = "PlaybackIndex")]
 		public int PlaybackIndex { get; set; }
+
+		public QueueInfo(string id, string title) : base(id, title)
+		{
+		}
 	}
 }

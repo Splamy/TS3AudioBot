@@ -15,6 +15,7 @@ using System.Linq;
 using System.Text;
 using TS3AudioBot.Config;
 using TS3AudioBot.Dependency;
+using TS3AudioBot.ResourceFactories;
 using TSLib.Helper;
 
 namespace TS3AudioBot.Plugins
@@ -35,6 +36,8 @@ namespace TS3AudioBot.Plugins
 	{
 		private readonly ConfPlugins config;
 		private readonly CoreInjector coreInjector;
+		private readonly ResourceResolver resourceResolver;
+		private readonly BotManager botManager;
 		private readonly Dictionary<string, Plugin> plugins = new Dictionary<string, Plugin>();
 		private readonly HashSet<int> usedIds = new HashSet<int>();
 		private readonly object pluginsLock = new object();
@@ -42,13 +45,15 @@ namespace TS3AudioBot.Plugins
 		// TODO remove after plugin rework
 		internal ICollection<Plugin> Plugins => plugins.Values;
 
-		public PluginManager(ConfPlugins config, CoreInjector coreInjector)
+		public PluginManager(ConfPlugins config, CoreInjector coreInjector, ResourceResolver resourceResolver, BotManager botManager)
 		{
 			this.config = config;
 			this.coreInjector = coreInjector;
+			this.resourceResolver = resourceResolver;
+			this.botManager = botManager;
 		}
 
-		private void CheckAndClearPlugins(Bot bot)
+		private void CheckAndClearPlugins(Bot? bot)
 		{
 			ClearMissingFiles();
 			CheckLocalPlugins(bot);
@@ -56,7 +61,7 @@ namespace TS3AudioBot.Plugins
 
 		/// <summary>Updates the plugin dictionary with new and changed plugins.</summary>
 		/// <param name="bot">A bot instance when the plugin is a bot local plugin.</param>
-		private void CheckLocalPlugins(Bot bot)
+		private void CheckLocalPlugins(Bot? bot)
 		{
 			var dir = new DirectoryInfo(config.Path);
 			if (!dir.Exists)
@@ -87,7 +92,7 @@ namespace TS3AudioBot.Plugins
 					if (IsIgnored(file))
 						continue;
 
-					plugin = new Plugin(file, GetFreeId());
+					plugin = new Plugin(coreInjector, resourceResolver, botManager, file, GetFreeId());
 
 					if (plugin.Load() == PluginResponse.Disabled)
 					{
@@ -95,7 +100,6 @@ namespace TS3AudioBot.Plugins
 						continue;
 					}
 
-					coreInjector.FillProperties(plugin);
 					plugins.Add(file.Name, plugin);
 				}
 			}
@@ -140,7 +144,7 @@ namespace TS3AudioBot.Plugins
 			return id;
 		}
 
-		public PluginResponse StartPlugin(string identifier, Bot bot)
+		public PluginResponse StartPlugin(string identifier, Bot? bot)
 		{
 			lock (pluginsLock)
 			{
@@ -150,7 +154,7 @@ namespace TS3AudioBot.Plugins
 			}
 		}
 
-		public PluginResponse StopPlugin(string identifier, Bot bot)
+		public PluginResponse StopPlugin(string identifier, Bot? bot)
 		{
 			lock (pluginsLock)
 			{
@@ -174,7 +178,7 @@ namespace TS3AudioBot.Plugins
 			plugin.Unload();
 		}
 
-		public PluginStatusInfo[] GetPluginOverview(Bot bot)
+		public PluginStatusInfo[] GetPluginOverview(Bot? bot)
 		{
 			lock (pluginsLock)
 			{

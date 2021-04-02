@@ -9,6 +9,7 @@
 
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.Emit;
 using Microsoft.CodeAnalysis.Text;
 using System;
 using System.Collections.Generic;
@@ -20,7 +21,6 @@ using System.Text;
 using TS3AudioBot.CommandSystem;
 using TS3AudioBot.Dependency;
 using TS3AudioBot.ResourceFactories;
-using Microsoft.CodeAnalysis.Emit;
 using TSLib.Helper;
 
 namespace TS3AudioBot.Plugins
@@ -29,25 +29,29 @@ namespace TS3AudioBot.Plugins
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 
-		public CoreInjector CoreInjector { get; set; }
-		public ResourceResolver ResourceResolver { get; set; }
-		public BotManager BotManager { get; set; }
+		private readonly CoreInjector coreInjector;
+		private readonly ResourceResolver resourceResolver;
+		private readonly BotManager botManager;
 
-		private byte[] md5CacheSum;
-		private PluginObjects corePlugin;
+		private byte[]? md5CacheSum;
+		private PluginObjects? corePlugin;
 		private readonly Dictionary<Bot, PluginObjects> botPluginList = new Dictionary<Bot, PluginObjects>();
-		private IResolver factoryObject;
-		private Type pluginType;
+		private IResolver? factoryObject;
+		private Type? pluginType;
 		private PluginStatus status;
 
 		internal PluginType Type { get; private set; }
 		public int Id { get; }
 		public FileInfo File { get; }
 		// TODO remove after plugin rework
-		internal PluginObjects CorePlugin => corePlugin;
+		internal PluginObjects CorePlugin => corePlugin!;
 
-		public Plugin(FileInfo file, int id)
+		public Plugin(CoreInjector coreInjector, ResourceResolver resourceResolver, BotManager botManager, FileInfo file, int id)
 		{
+			this.coreInjector = coreInjector;
+			this.resourceResolver = resourceResolver;
+			this.botManager = botManager;
+
 			corePlugin = null;
 			File = file;
 			Id = id;
@@ -84,7 +88,7 @@ namespace TS3AudioBot.Plugins
 			}
 		}
 
-		public PluginStatus CheckStatus(Bot bot)
+		public PluginStatus CheckStatus(Bot? bot)
 		{
 			if (Type != PluginType.BotPlugin)
 				return status;
@@ -158,21 +162,17 @@ namespace TS3AudioBot.Plugins
 
 		private bool Md5EqualsCache()
 		{
-			using (var md5 = MD5.Create())
+			using var md5 = MD5.Create();
+			using var stream = System.IO.File.OpenRead(File.FullName);
+			var newHashSum = md5.ComputeHash(stream);
+			if (md5CacheSum is null)
 			{
-				using (var stream = System.IO.File.OpenRead(File.FullName))
-				{
-					var newHashSum = md5.ComputeHash(stream);
-					if (md5CacheSum is null)
-					{
-						md5CacheSum = newHashSum;
-						return false;
-					}
-					var equals = md5CacheSum.SequenceEqual(newHashSum);
-					md5CacheSum = newHashSum;
-					return equals;
-				}
+				md5CacheSum = newHashSum;
+				return false;
 			}
+			var equals = md5CacheSum.SequenceEqual(newHashSum);
+			md5CacheSum = newHashSum;
+			return equals;
 		}
 
 		private PluginResponse PrepareBinary()
@@ -180,8 +180,8 @@ namespace TS3AudioBot.Plugins
 			// Do not use 'Assembly.LoadFile' as otherwise we cannot replace the dll
 			// on windows aymore after it's opened once.
 			var asmBin = System.IO.File.ReadAllBytes(File.FullName);
-			var pdbFile = File.FullName.Substring(0, File.FullName.Length - File.Extension.Length) + ".pdb";
-			byte[] pdbBin = null;
+			var pdbFile = File.FullName[0..^File.Extension.Length] + ".pdb";
+			byte[]? pdbBin = null;
 			try
 			{
 				if (System.IO.File.Exists(pdbFile))
@@ -199,52 +199,48 @@ namespace TS3AudioBot.Plugins
 				.Select(asm => MetadataReference.CreateFromFile(asm.Location))
 				.Concat(new[] { MetadataReference.CreateFromFile(Assembly.GetExecutingAssembly().Location) }).ToArray();
 
-			using (var pluginFileStream = System.IO.File.OpenRead(File.FullName))
+			using var pluginFileStream = System.IO.File.OpenRead(File.FullName);
+			var sourceTree = CSharpSyntaxTree.ParseText(SourceText.From(pluginFileStream));
+
+			var compilation = CSharpCompilation.Create($"plugin_{File.Name}_{Tools.Random.Next()}")
+				.WithOptions(new CSharpCompilationOptions(
+					outputKind: OutputKind.DynamicallyLinkedLibrary,
+					optimizationLevel: OptimizationLevel.Release))
+				.AddReferences(param)
+				.AddSyntaxTrees(sourceTree);
+
+			using var ms_assembly = new MemoryStream();
+			using var ms_pdb = new MemoryStream();
+			var result = compilation.Emit(ms_assembly, ms_pdb,
+				options: new EmitOptions()
+					.WithDebugInformationFormat(DebugInformationFormat.PortablePdb)
+				);
+
+			if (result.Success)
 			{
-				var sourceTree = CSharpSyntaxTree.ParseText(SourceText.From(pluginFileStream));
-
-				var compilation = CSharpCompilation.Create($"plugin_{File.Name}_{Tools.Random.Next()}")
-					.WithOptions(new CSharpCompilationOptions(
-						outputKind: OutputKind.DynamicallyLinkedLibrary,
-						optimizationLevel: OptimizationLevel.Release))
-					.AddReferences(param)
-					.AddSyntaxTrees(sourceTree);
-
-				using (var ms_assembly = new MemoryStream())
-				using (var ms_pdb = new MemoryStream())
+				ms_assembly.Seek(0, SeekOrigin.Begin);
+				ms_pdb.Seek(0, SeekOrigin.Begin);
+				var assembly = Assembly.Load(ms_assembly.ToArray(), ms_pdb.ToArray());
+				return InitializeAssembly(assembly);
+			}
+			else
+			{
+				bool containsErrors = false;
+				var strb = new StringBuilder();
+				strb.AppendFormat("Plugin \"{0}\" [{1}] compiler notifications:\n", File.Name, Id);
+				foreach (var error in result.Diagnostics)
 				{
-					var result = compilation.Emit(ms_assembly, ms_pdb,
-						options: new EmitOptions()
-							.WithDebugInformationFormat(DebugInformationFormat.PortablePdb)
-						);
-
-					if (result.Success)
-					{
-						ms_assembly.Seek(0, SeekOrigin.Begin);
-						ms_pdb.Seek(0, SeekOrigin.Begin);
-						var assembly = Assembly.Load(ms_assembly.ToArray(), ms_pdb.ToArray());
-						return InitializeAssembly(assembly);
-					}
-					else
-					{
-						bool containsErrors = false;
-						var strb = new StringBuilder();
-						strb.AppendFormat("Plugin \"{0}\" [{1}] compiler notifications:\n", File.Name, Id);
-						foreach (var error in result.Diagnostics)
-						{
-							var position = error.Location.GetLineSpan();
-							containsErrors |= error.WarningLevel == 0;
-							strb.AppendFormat("{0} L{1}/C{2}: {3}\n",
-								error.WarningLevel == 0 ? "Error" : ((DiagnosticSeverity)(error.WarningLevel - 1)).ToString(),
-								position.StartLinePosition.Line + 1,
-								position.StartLinePosition.Character,
-								error.GetMessage());
-						}
-						strb.Length--; // remove last linebreak
-						Log.Warn(strb.ToString());
-						return PluginResponse.CompileError;
-					}
+					var position = error.Location.GetLineSpan();
+					containsErrors |= error.WarningLevel == 0;
+					strb.AppendFormat("{0} L{1}/C{2}: {3}\n",
+						error.WarningLevel == 0 ? "Error" : ((DiagnosticSeverity)(error.WarningLevel - 1)).ToString(),
+						position.StartLinePosition.Line + 1,
+						position.StartLinePosition.Character,
+						error.GetMessage());
 				}
+				strb.Length--; // remove last linebreak
+				Log.Warn(strb.ToString());
+				return PluginResponse.CompileError;
 			}
 		}
 
@@ -316,7 +312,7 @@ namespace TS3AudioBot.Plugins
 		/// Changes the status to <see cref="PluginStatus.Active"/> when successful or <see cref="PluginStatus.Error"/> otherwise.
 		/// </summary>
 		/// <param name="bot">The bot instance where this plugin should be started. Can be null when not required.</param>
-		public PluginResponse Start(Bot bot)
+		public PluginResponse Start(Bot? bot)
 		{
 			switch (CheckStatus(bot))
 			{
@@ -346,10 +342,12 @@ namespace TS3AudioBot.Plugins
 			}
 		}
 
-		private bool StartInternal(Bot bot)
+		private bool StartInternal(Bot? bot)
 		{
 			if (CheckStatus(bot) != PluginStatus.Ready)
 				throw new InvalidOperationException("This plugin has not yet been prepared");
+			if (pluginType is null)
+				throw new InvalidOperationException("Plugin not correctly initialized");
 
 			try
 			{
@@ -368,32 +366,32 @@ namespace TS3AudioBot.Plugins
 					if (botPluginList.ContainsKey(bot))
 						throw new InvalidOperationException("Plugin is already instantiated on this bot");
 
-					var botPluginObjs = CreatePluginObjects(bot.Injector, false);
+					var botPluginObjs = CreatePluginObjects(bot.Injector, pluginType, false);
 					botPluginList.Add(bot, botPluginObjs);
 					botPluginObjs.Plugin.Initialize();
 					break;
 
 				case PluginType.CorePlugin:
-					corePlugin = CreatePluginObjects(CoreInjector, false);
-					BotManager.IterateAll(b =>
+					corePlugin = CreatePluginObjects(coreInjector, pluginType, false);
+					botManager.IterateAll(b =>
 					{
 						try
 						{
 							if (b.Injector.TryGet<CommandManager>(out var commandManager))
 								commandManager.RegisterCollection(corePlugin.Bag);
 						}
-						catch (Exception ex) { Log.Error(ex, "Faile to register commands from plugin '{0}' for bot '{1}'", Name, b.Id); }
+						catch (Exception ex) { Log.Error(ex, "Failed to register commands from plugin '{0}' for bot '{1}'", Name, b.Id); }
 					});
 					corePlugin.Plugin.Initialize();
 					break;
 
 				case PluginType.Factory:
-					factoryObject = (IResolver)Activator.CreateInstance(pluginType);
-					ResourceResolver.AddResolver(factoryObject);
+					factoryObject = (IResolver)Activator.CreateInstance(pluginType)!;
+					resourceResolver.AddResolver(factoryObject);
 					break;
 
 				case PluginType.Commands:
-					corePlugin = CreatePluginObjects(CoreInjector, true);
+					corePlugin = CreatePluginObjects(coreInjector, pluginType, true);
 					break;
 
 				default:
@@ -421,24 +419,22 @@ namespace TS3AudioBot.Plugins
 		// Note, the 'isStatic' flag is only temporary while StaticPlugins are being
 		// deprecated, after that this distinction is not necessary anymore and
 		// can be removed.
-		public PluginObjects CreatePluginObjects(IInjector injector, bool isStatic)
+		public static PluginObjects CreatePluginObjects(IInjector injector, Type type, bool isStatic)
 		{
-			object pluginInstance = null;
+			object? pluginInstance = null;
 			if (!isStatic)
 			{
-				if (!injector.TryCreate(pluginType, out pluginInstance))
-					return null; // TODO
+				if (!injector.TryCreate(type, out pluginInstance))
+					throw new Exception("Plugin is missing dependencies");
 				injector.FillProperties(pluginInstance);
 			}
 			if (!injector.TryGet<CommandManager>(out var commandManager))
-				return null; //TODO
+				throw new Exception("Bot has no CommandSystem");
 
-			var pluginObjs = new PluginObjects
-			{
-				Plugin = (ITabPlugin)pluginInstance,
-				Bag = new PluginCommandBag(pluginInstance, pluginType),
-				CommandManager = commandManager,
-			};
+			var pluginObjs = new PluginObjects(
+				(ITabPlugin)pluginInstance!,
+				new PluginCommandBag(pluginInstance, type),
+				commandManager);
 
 			pluginObjs.CommandManager.RegisterCollection(pluginObjs.Bag);
 			return pluginObjs;
@@ -449,7 +445,7 @@ namespace TS3AudioBot.Plugins
 		/// Changes the status from <see cref="PluginStatus.Active"/> to <see cref="PluginStatus.Ready"/> when successful or <see cref="PluginStatus.Error"/> otherwise.
 		/// </summary>
 		/// <param name="bot">The bot instance where this plugin should be stopped. Can be null when not required.</param>
-		public PluginResponse Stop(Bot bot)
+		public PluginResponse Stop(Bot? bot)
 		{
 			switch (Type)
 			{
@@ -465,18 +461,15 @@ namespace TS3AudioBot.Plugins
 				}
 				else
 				{
-					if (botPluginList.TryGetValue(bot, out var pluginObjs))
-					{
-						botPluginList.Remove(bot);
+					if (botPluginList.Remove(bot, out var pluginObjs))
 						DestroyPluginObjects(pluginObjs);
-					}
 				}
 				break;
 
 			case PluginType.CorePlugin:
 				if (corePlugin != null)
 				{
-					BotManager.IterateAll(b =>
+					botManager.IterateAll(b =>
 					{
 						if (b.Injector.TryGet<CommandManager>(out var commandManager))
 							commandManager.UnregisterCollection(corePlugin.Bag);
@@ -487,7 +480,8 @@ namespace TS3AudioBot.Plugins
 				break;
 
 			case PluginType.Factory:
-				ResourceResolver.RemoveResolver(factoryObject);
+				if (factoryObject != null)
+					resourceResolver.RemoveResolver(factoryObject);
 				break;
 
 			case PluginType.Commands:

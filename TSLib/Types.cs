@@ -13,12 +13,16 @@ namespace TSLib
 {
 	public partial struct Uid
 	{
+		/// <summary>Unofficial type</summary>
+		public static readonly Uid Anonymous = new Uid("anonymous");
+		public static readonly Uid ServerAdmin = new Uid("serveradmin");
+
 		public static bool IsValid(string uid)
 		{
-			if (uid == "anonymous" || uid == "serveradmin")
+			if (uid == Anonymous.Value || uid == ServerAdmin.Value)
 				return true;
 			var result = TsCrypt.Base64Decode(uid);
-			return result.Ok && result.Value.Length == 20;
+			return result != null && result.Length == 20;
 		}
 	}
 

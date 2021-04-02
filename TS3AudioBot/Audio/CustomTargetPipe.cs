@@ -13,15 +13,17 @@ using System.Linq;
 using TSLib;
 using TSLib.Audio;
 using TSLib.Full;
+using TSLib.Helper;
 
 namespace TS3AudioBot.Audio
 {
 	internal class CustomTargetPipe : IVoiceTarget, IAudioPassiveConsumer
 	{
-		public TargetSendMode SendMode { get; set; } = TargetSendMode.None;
+		public TargetSendMode SendMode { get; set; } = TargetSendMode.Voice;
 		public ulong GroupWhisperTargetId { get; private set; }
 		public GroupWhisperType GroupWhisperType { get; private set; }
 		public GroupWhisperTarget GroupWhisperTarget { get; private set; }
+		public bool Alone { get; set; }
 
 		public IReadOnlyCollection<ClientId> WhisperClients
 		{
@@ -40,6 +42,8 @@ namespace TS3AudioBot.Audio
 				{
 				case TargetSendMode.None:
 					return false;
+				case TargetSendMode.Voice:
+					return !Alone;
 				case TargetSendMode.Whisper:
 					UpdatedSubscriptionCache();
 					return channelSubscriptionsCache.Length > 0 || clientSubscriptionsCache.Length > 0;
@@ -51,8 +55,8 @@ namespace TS3AudioBot.Audio
 
 		private readonly Dictionary<ChannelId, bool> channelSubscriptionsSetup = new Dictionary<ChannelId, bool>();
 		private readonly HashSet<ClientId> clientSubscriptionsSetup = new HashSet<ClientId>();
-		private ChannelId[] channelSubscriptionsCache;
-		private ClientId[] clientSubscriptionsCache;
+		private ChannelId[] channelSubscriptionsCache = Array.Empty<ChannelId>();
+		private ClientId[] clientSubscriptionsCache = Array.Empty<ClientId>();
 		private bool subscriptionSetupChanged;
 		private readonly object subscriptionLockObj = new object();
 
@@ -64,7 +68,7 @@ namespace TS3AudioBot.Audio
 			subscriptionSetupChanged = true;
 		}
 
-		public void Write(Span<byte> data, Meta meta)
+		public void Write(Span<byte> data, Meta? meta)
 		{
 			UpdatedSubscriptionCache();
 
@@ -83,7 +87,7 @@ namespace TS3AudioBot.Audio
 				client.SendAudioGroupWhisper(data, codec, GroupWhisperType, GroupWhisperTarget, GroupWhisperTargetId);
 				break;
 			default:
-				throw new ArgumentOutOfRangeException(nameof(SendMode), "Unknown send target");
+				throw Tools.UnhandledDefault(SendMode);
 			}
 		}
 

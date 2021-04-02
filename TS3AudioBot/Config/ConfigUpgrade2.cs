@@ -14,6 +14,10 @@ using TS3AudioBot.Helper;
 
 namespace TS3AudioBot.Config
 {
+	/// <summary>
+	/// Upgrades the /bots/ folder structure from each Bot being a 'bot_(name).toml'
+	/// file to each bot having its own folder with '/(name)/bot.toml'.
+	/// </summary>
 	internal static class ConfigUpgrade2
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();

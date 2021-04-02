@@ -104,7 +104,7 @@ namespace TS3AudioBot.CommandSystem.Text
 
 		private static bool IsDouble(byte num) => (num & 0x0F) == (num >> 4);
 
-		public void GetL(StringBuilder strb)
+		public readonly void GetL(StringBuilder strb)
 		{
 			if (Flags.HasFlag(ColorFlags.Transparent))
 				strb.Append("[COLOR=transparent]");
@@ -116,7 +116,7 @@ namespace TS3AudioBot.CommandSystem.Text
 				strb.AppendFormat("[COLOR=#{0:X2}{1:X2}{2:X2}]", R, G, B);
 		}
 
-		public override bool Equals(object obj)
+		public override readonly bool Equals(object? obj)
 		{
 			if (obj is Color col)
 			{
@@ -125,9 +125,9 @@ namespace TS3AudioBot.CommandSystem.Text
 			return false;
 		}
 
-		public override int GetHashCode() => (int)Flags << 24 | R << 16 | G << 8 | B;
+		public override readonly int GetHashCode() => (int)Flags << 24 | R << 16 | G << 8 | B;
 
-		public override string ToString()
+		public override readonly string ToString()
 		{
 			var strb = new StringBuilder();
 			GetL(strb);

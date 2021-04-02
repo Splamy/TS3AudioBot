@@ -82,7 +82,7 @@ export interface CmdPlaylist extends CmdPlaylistInfo {
 export interface PlaylistItemGetData {
 	Link: string;
 	Title: string;
-	AudioType: string
+	AudioType: string;
 }
 
 export interface CmdQueueInfo extends CmdPlaylist {

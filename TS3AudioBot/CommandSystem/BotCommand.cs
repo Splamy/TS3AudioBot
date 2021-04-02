@@ -14,6 +14,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Threading.Tasks;
 using TS3AudioBot.CommandSystem.Commands;
 using TS3AudioBot.Localization;
 
@@ -24,14 +25,14 @@ namespace TS3AudioBot.CommandSystem
 	public class BotCommand : FunctionCommand
 	{
 		private readonly string helpLookupName;
-		private string cachedFullQualifiedName;
+		private string? cachedFullQualifiedName;
 
 		[JsonProperty(PropertyName = "Name")]
 		public string InvokeName { get; }
 		private readonly string[] requiredRights;
 		public string RequiredRight => requiredRights[0];
 		[JsonProperty(PropertyName = "Description")]
-		public string Description => LocalizationManager.GetString(helpLookupName);
+		public string? Description => LocalizationManager.GetString(helpLookupName);
 		public UsageAttribute[] UsageList { get; }
 		public string FullQualifiedName
 		{
@@ -77,7 +78,7 @@ namespace TS3AudioBot.CommandSystem
 			InvokeName = buildInfo.CommandData.CommandNameSpace;
 			helpLookupName = buildInfo.CommandData.OverrideHelpName ?? ("cmd_" + InvokeName.Replace(" ", "_") + "_help");
 			requiredRights = new[] { "cmd." + string.Join(".", InvokeName.Split(' ')) };
-			UsageList = buildInfo.UsageList?.ToArray() ?? Array.Empty<UsageAttribute>();
+			UsageList = buildInfo.UsageList;
 			// Serialization
 			Return = UnwrapReturnType(CommandReturn).Name;
 			Parameter = (
@@ -118,33 +119,34 @@ namespace TS3AudioBot.CommandSystem
 			return strb.ToString();
 		}
 
-		public override object Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments, IReadOnlyList<Type> returnTypes)
+		public override async ValueTask<object?> Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments)
 		{
 			// Check call complexity
 			info.UseComplexityTokens(1);
 
 			// Check permissions
-			if (!info.HasRights(requiredRights))
+			if (!await info.HasRights(requiredRights))
 				throw new CommandException(string.Format(strings.error_missing_right, InvokeName, RequiredRight), CommandExceptionReason.MissingRights);
 
-			return base.Execute(info, arguments, returnTypes);
+			return await base.Execute(info, arguments);
 		}
 	}
 
 	public class CommandBuildInfo
 	{
-		public object Parent { get; }
+		public object? Parent { get; }
 		public MethodInfo Method { get; }
 		public CommandAttribute CommandData { get; }
 		public UsageAttribute[] UsageList { get; set; }
 
-		public CommandBuildInfo(object p, MethodInfo m, CommandAttribute comAtt)
+		public CommandBuildInfo(object? p, MethodInfo m, CommandAttribute comAtt)
 		{
 			Parent = p;
 			Method = m;
 			if (!m.IsStatic && p is null)
 				throw new ArgumentException("Got instance method without accociated object");
 			CommandData = comAtt;
+			UsageList = Array.Empty<UsageAttribute>();
 		}
 	}
 }

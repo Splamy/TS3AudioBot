@@ -18,17 +18,16 @@ namespace TSLib.Full
 	/// To improve the security level of this identity use <see cref="TsCrypt.ImproveSecurity"/>.</summary>
 	public class IdentityData
 	{
-		private string publicKeyString;
-		private string privateKeyString;
-		private string publicAndPrivateKeyString;
+		private string? publicKeyString;
+		private string? privateKeyString;
+		private string? publicAndPrivateKeyString;
 
 		/// <summary>The public key encoded in base64.</summary>
-		public string PublicKeyString => publicKeyString ?? (publicKeyString = TsCrypt.ExportPublicKey(PublicKey));
+		public string PublicKeyString => publicKeyString ??= TsCrypt.ExportPublicKey(PublicKey);
 		/// <summary>The private key encoded in base64.</summary>
-		public string PrivateKeyString => privateKeyString ?? (privateKeyString = TsCrypt.ExportPrivateKey(PrivateKey));
+		public string PrivateKeyString => privateKeyString ??= TsCrypt.ExportPrivateKey(PrivateKey);
 		/// <summary>The public and private key encoded in base64.</summary>
-		public string PublicAndPrivateKeyString =>
-			publicAndPrivateKeyString ?? (publicAndPrivateKeyString = TsCrypt.ExportPublicAndPrivateKey(PublicKey, PrivateKey));
+		public string PublicAndPrivateKeyString => publicAndPrivateKeyString ??= TsCrypt.ExportPublicAndPrivateKey(PublicKey, PrivateKey);
 		/// <summary>The public key represented as its cryptographic data structure.</summary>
 		public ECPoint PublicKey { get; }
 		/// <summary>The private key represented as its cryptographic data structure.</summary>
@@ -41,28 +40,12 @@ namespace TSLib.Full
 
 		private Uid? clientUid;
 		/// <summary>The client uid, which can be used in teamspeak for various features.</summary>
-		public Uid ClientUid
-		{
-			get
-			{
-				if (clientUid == null)
-					clientUid = (Uid)TsCrypt.GetUidFromPublicKey(PublicKeyString);
-				return clientUid.Value;
-			}
-		}
+		public Uid ClientUid => clientUid ?? (clientUid = (Uid)TsCrypt.GetUidFromPublicKey(PublicKeyString)).Value;
 
-		public IdentityData(BigInteger privateKey, ECPoint publicKey = null)
+		public IdentityData(BigInteger privateKey, ECPoint? publicKey = null)
 		{
 			PrivateKey = privateKey ?? throw new ArgumentNullException(nameof(privateKey));
 			PublicKey = publicKey ?? TsCrypt.RestorePublicFromPrivateKey(privateKey);
-		}
-
-		public static bool IsUidValid(string uid)
-		{
-			if (uid == "anonymous" || uid == "serveradmin")
-				return true;
-			var result = TsCrypt.Base64Decode(uid);
-			return result.Ok && result.Value.Length == 20;
 		}
 	}
 }

@@ -16,7 +16,7 @@
 <#@ import namespace="System.Collections.Generic" #>
 <#
 var types = new (string alias, string backing)[] {
-	("Uid", "string"),
+	("Uid", "string?"),
 	("ClientDbId", "ulong"),
 	("ClientId", "ushort"),
 	("ChannelId", "ulong"),
@@ -26,6 +26,7 @@ var types = new (string alias, string backing)[] {
 	//("ConnectionId", "uint"),
 };
 #>
+#nullable enable
 using Newtonsoft.Json;
 using System;
 using System.Diagnostics;
@@ -34,13 +35,13 @@ using System.Runtime.InteropServices;
 namespace TSLib
 {
 	<# foreach(var type in types) {
-		var isStr = type.backing == "string"; #>
+		var isStr = type.backing.StartsWith("string"); #>
 	[StructLayout(LayoutKind.Sequential, Pack=0)]
 	[DebuggerDisplay("{Value, nq}")]
 	[JsonConverter(typeof(<#= type.alias #>.Converter))]
 	public readonly partial struct <#= type.alias #> :<#= isStr ? "" : " IFormattable," #> IEquatable<<#= type.alias #>>
 	{
-		public static readonly <#= type.alias #> Null = default;
+		public static readonly <#= type.alias #> Null = new <#= type.alias #>(<#= isStr ? "string.Empty" : "default" #>);
 		public static <#= type.alias #> To(<#= type.backing #> v) => new <#= type.alias #>(v);
 
 		public <#= type.backing #> Value { get; }
@@ -48,21 +49,21 @@ namespace TSLib
 		public static explicit operator <#= type.alias #>(<#= type.backing #> v) => new <#= type.alias #>(v);
 		public static bool operator ==(<#= type.alias #> a, <#= type.alias #> b) => a.Value == b.Value;
 		public static bool operator !=(<#= type.alias #> a, <#= type.alias #> b) => a.Value != b.Value;
-		public override int GetHashCode() => Value.GetHashCode();
-		public override bool Equals(object obj) => obj is <#= type.alias #> c && Value.Equals(c.Value);
-		public override string ToString() => Value.ToString();
+		public override int GetHashCode() => <#= isStr ? "Value?.GetHashCode() ?? 0" : "Value.GetHashCode()" #> ;
+		public override bool Equals(object? obj) => obj is <#= type.alias #> c && this.Equals(c);
+		public override string ToString() => Value <#= isStr ? "?? \"\"" : ".ToString()" #>;
 		<# if (isStr) { #>
-		public bool Equals(<#= type.alias #> other) => Value.Equals(other.Value, StringComparison.Ordinal);
+		public bool Equals(<#= type.alias #> other) => string.Equals(Value, other.Value, StringComparison.Ordinal);
 		<# } else { #>
 		public bool Equals(<#= type.alias #> other) => Value.Equals(other.Value);
-		public string ToString(string format, IFormatProvider formatProvider) => Value.ToString(format, formatProvider);
+		public string ToString(string? format, IFormatProvider? formatProvider) => Value.ToString(format, formatProvider);
 		<# } #>
 		private class Converter : JsonConverter<<#= type.alias #>>
 		{
 			public override void WriteJson(JsonWriter writer, <#= type.alias #> value, JsonSerializer serializer)
 				=> writer.WriteValue(value.Value);
 			public override <#= type.alias #> ReadJson(JsonReader reader, Type objectType, <#= type.alias #> existingValue, bool hasExistingValue, JsonSerializer serializer)
-				=> new <#= type.alias #>(<#= isStr ? "reader.ReadAsString()" : type.backing + ".Parse(reader.ReadAsString())" #>);
+				=> new <#= type.alias #>(<#= isStr ? "" : type.backing + ".Parse" #>(reader.ReadAsString() ?? throw new FormatException()));
 		}
 	}
 	<# } #>

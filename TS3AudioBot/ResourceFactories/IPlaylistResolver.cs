@@ -7,8 +7,7 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
-using System;
-using TS3AudioBot.Localization;
+using System.Threading.Tasks;
 using TS3AudioBot.Playlists;
 
 namespace TS3AudioBot.ResourceFactories
@@ -17,6 +16,6 @@ namespace TS3AudioBot.ResourceFactories
 	{
 		MatchCertainty MatchPlaylist(ResolveContext ctx, string uri);
 
-		R<Playlist, LocalStr> GetPlaylist(ResolveContext ctx, string url);
+		Task<Playlist> GetPlaylist(ResolveContext ctx, string url);
 	}
 }

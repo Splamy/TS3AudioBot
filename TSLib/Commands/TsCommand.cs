@@ -19,15 +19,14 @@ using TSLib.Helper;
 namespace TSLib.Commands
 {
 	/// <summary>Builds TeamSpeak (query) commands from parameters.</summary>
-	public partial class TsCommand : IEnumerable, IEnumerable<ICommandPart>
+	public partial class TsCommand : IEnumerable<ICommandPart>
 	{
 		private static readonly Regex CommandMatch = new Regex("[a-z0-9_]+", RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.ECMAScript);
 
-		protected string raw = null;
-		protected bool cached = false;
+		protected string? raw = null;
 		public bool ExpectResponse { get; set; }
 		public string Command { get; }
-		private ICollection<ICommandPart> parameter;
+		private ICollection<ICommandPart>? parameter = null;
 
 		/// <summary>Creates a new command.</summary>
 		/// <param name="command">The command name.</param>
@@ -49,10 +48,12 @@ namespace TSLib.Commands
 		}
 
 		[DebuggerStepThrough]
-		public virtual TsCommand Add(ICommandPart addParameter)
+		public virtual TsCommand Add(ICommandPart? addParameter)
 		{
-			cached = false;
-			if(parameter == null)
+			if (addParameter is null)
+				return this;
+			raw = null;
+			if (parameter is null)
 				parameter = new List<ICommandPart>();
 			else if (parameter.IsReadOnly)
 				parameter = new List<ICommandPart>(parameter);
@@ -77,15 +78,7 @@ namespace TSLib.Commands
 
 		/// <summary>Builds this command to the query-like command.</summary>
 		/// <returns>The formatted query-like command.</returns>
-		public override string ToString()
-		{
-			if (!cached)
-			{
-				raw = BuildToString(Command, GetParameter());
-				cached = true;
-			}
-			return raw;
-		}
+		public override string ToString() => raw ??= BuildToString(Command, GetParameter());
 
 		/// <summary>Builds the command from its parameters and returns the query-like command.</summary>
 		/// <param name="command">The command name.</param>
@@ -101,8 +94,8 @@ namespace TSLib.Commands
 				throw new ArgumentException("Invalid command characters", nameof(command));
 
 			var strb = new StringBuilder(TsString.Escape(command));
-			List<CommandMultiParameter> multiParamList = null;
-			List<CommandOption> optionList = null;
+			List<CommandMultiParameter>? multiParamList = null;
+			List<CommandOption>? optionList = null;
 
 			foreach (var param in parameter)
 			{
@@ -113,13 +106,11 @@ namespace TSLib.Commands
 					strb.Append(' ').Append(singleParam.Key).Append('=').Append(singleParam.Value);
 					break;
 				case CommandPartType.MultiParameter:
-					if (multiParamList is null)
-						multiParamList = new List<CommandMultiParameter>();
+					multiParamList ??= new List<CommandMultiParameter>();
 					multiParamList.Add((CommandMultiParameter)param);
 					break;
 				case CommandPartType.Option:
-					if (optionList is null)
-						optionList = new List<CommandOption>();
+					optionList ??= new List<CommandOption>();
 					optionList.Add((CommandOption)param);
 					break;
 				default:
@@ -164,20 +155,19 @@ namespace TSLib.Commands
 
 	public class TsRawCommand : TsCommand
 	{
-		public TsRawCommand(string raw) : base(null)
+		public TsRawCommand(string raw) : base(null!)
 		{
 			this.raw = raw;
-			this.cached = true;
 		}
 
-		public override TsCommand Add(ICommandPart addParameter)
+		public override TsCommand Add(ICommandPart? addParameter)
 		{
 			throw new InvalidOperationException("Raw commands cannot be extented");
 		}
 
 		public override string ToString()
 		{
-			return raw;
+			return raw!;
 		}
 	}
 }

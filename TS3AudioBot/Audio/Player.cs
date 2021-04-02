@@ -8,37 +8,41 @@
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
 using System;
+using System.Threading.Tasks;
 using TS3AudioBot.Config;
 using TS3AudioBot.Helper;
 using TS3AudioBot.ResourceFactories;
 using TSLib;
 using TSLib.Audio;
 using TSLib.Helper;
+using TSLib.Scheduler;
 
 namespace TS3AudioBot.Audio
 {
 	public class Player : IDisposable
 	{
 		private const Codec SendCodec = Codec.OpusMusic;
+		private readonly DedicatedTaskScheduler scheduler;
 
-		public IPlayerSource CurrentPlayerSource { get; private set; }
+		public IPlayerSource? CurrentPlayerSource { get; private set; }
 		public StallCheckPipe StallCheckPipe { get; }
 		public VolumePipe VolumePipe { get; }
 		public FfmpegProducer FfmpegProducer { get; }
 		public PreciseTimedPipe TimePipe { get; }
 		public PassiveMergePipe MergePipe { get; }
 		public EncoderPipe EncoderPipe { get; }
-		public IAudioPassiveConsumer PlayerSink { get; private set; }
+		public IAudioPassiveConsumer? PlayerSink { get; private set; }
 
-		public Player(ConfBot config, Id id)
+		public Player(ConfRoot confRoot, ConfBot config, DedicatedTaskScheduler scheduler, Id id)
 		{
-			FfmpegProducer = new FfmpegProducer(config.GetParent().Tools.Ffmpeg, id);
+			this.scheduler = scheduler;
+
+			FfmpegProducer = new FfmpegProducer(confRoot.Tools.Ffmpeg, scheduler, id);
 			StallCheckPipe = new StallCheckPipe();
 			VolumePipe = new VolumePipe();
 			Volume = config.Audio.Volume.Default;
 			EncoderPipe = new EncoderPipe(SendCodec) { Bitrate = ScaleBitrate(config.Audio.Bitrate) };
-			TimePipe = new PreciseTimedPipe { ReadBufferSize = EncoderPipe.PacketSize };
-			TimePipe.Initialize(EncoderPipe, id);
+			TimePipe = new PreciseTimedPipe(EncoderPipe, id) { ReadBufferSize = EncoderPipe.PacketSize };
 			MergePipe = new PassiveMergePipe();
 
 			config.Audio.Bitrate.Changed += (s, e) => EncoderPipe.Bitrate = ScaleBitrate(e.NewValue);
@@ -54,22 +58,19 @@ namespace TS3AudioBot.Audio
 
 		private static int ScaleBitrate(int value) => Tools.Clamp(value, 1, 255) * 1000;
 
-		public event EventHandler OnSongEnd;
-		public event EventHandler<SongInfoChanged> OnSongUpdated;
+		public event AsyncEventHandler? OnSongEnd;
+		public event AsyncEventHandler<SongInfoChanged>? OnSongUpdated;
 
-		private void TriggerSongEnd(object o, EventArgs e) => OnSongEnd?.Invoke(this, EventArgs.Empty);
-		private void TriggerSongUpdated(object o, SongInfoChanged e) => OnSongUpdated?.Invoke(this, e);
+		private void TriggerSongEnd(object? o, EventArgs e) => scheduler.InvokeAsync(() => OnSongEnd.InvokeAsync(this, EventArgs.Empty));
+		private void TriggerSongUpdated(object? o, SongInfoChanged e) => scheduler.InvokeAsync(() => OnSongUpdated.InvokeAsync(this, e));
 
-		public E<string> Play(PlayResource res)
+		public async Task Play(PlayResource res)
 		{
-			E<string> result;
 			if (res is MediaPlayResource mres && mres.IsIcyStream)
-				result = FfmpegProducer.AudioStartIcy(res.PlayUri);
+				await FfmpegProducer.AudioStartIcy(res.PlayUri);
 			else
-				result = FfmpegProducer.AudioStart(res.PlayUri, res.Meta?.StartOffset);
-			if (result)
-				Play(FfmpegProducer);
-			return result;
+				await FfmpegProducer.AudioStart(res.PlayUri, res.PlayInfo?.StartOffset);
+			Play(FfmpegProducer);
 		}
 
 		public void Play(IPlayerSource source)
@@ -91,7 +92,7 @@ namespace TS3AudioBot.Audio
 			TimePipe.Paused = false;
 		}
 
-		private void CleanSource(IPlayerSource source)
+		private void CleanSource(IPlayerSource? source)
 		{
 			if (source is null)
 				return;
@@ -115,17 +116,11 @@ namespace TS3AudioBot.Audio
 			MergePipe.Dispose();
 		}
 
-		public TimeSpan Length => CurrentPlayerSource?.Length ?? TimeSpan.Zero;
+		public TimeSpan? Length => CurrentPlayerSource?.Length;
 
-		public TimeSpan Position
-		{
-			get => CurrentPlayerSource?.Position ?? TimeSpan.Zero;
-			set
-			{
-				if (CurrentPlayerSource != null)
-					CurrentPlayerSource.Position = value;
-			}
-		}
+		public TimeSpan? Position => CurrentPlayerSource?.Position;
+
+		public Task Seek(TimeSpan position) => CurrentPlayerSource?.Seek(position) ?? Task.CompletedTask;
 
 		public float Volume
 		{

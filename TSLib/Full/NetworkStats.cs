@@ -33,10 +33,10 @@ namespace TSLib.Full
 		internal void LogOutPacket<TDir>(ref Packet<TDir> packet)
 		{
 			var kind = TypeToKind(packet.PacketType);
-			outPackets[(int)kind]++;
-			outBytes[(int)kind] += packet.Raw.Length;
 			lock (queueLock)
 			{
+				outPackets[(int)kind]++;
+				outBytes[(int)kind] += packet.Raw.Length;
 				DropOver(outBytesTime, TimeMinute);
 				outBytesTime.Enqueue(new PacketData((ushort)packet.Raw.Length, Tools.Now, kind));
 			}
@@ -45,10 +45,10 @@ namespace TSLib.Full
 		internal void LogInPacket<TDir>(ref Packet<TDir> packet)
 		{
 			var kind = TypeToKind(packet.PacketType);
-			inPackets[(int)kind]++;
-			inBytes[(int)kind] += packet.Raw.Length;
 			lock (queueLock)
 			{
+				inPackets[(int)kind]++;
+				inBytes[(int)kind] += packet.Raw.Length;
 				DropOver(inBytesTime, TimeMinute);
 				inBytesTime.Enqueue(new PacketData((ushort)packet.Raw.Length, Tools.Now, kind));
 			}
@@ -86,22 +86,30 @@ namespace TSLib.Full
 			case PacketType.Pong:
 				return PacketKind.Keepalive;
 			default:
-				throw new ArgumentOutOfRangeException(nameof(type));
+				throw Tools.UnhandledDefault(type);
 			}
 		}
 
-		private static long[] GetWithin(Queue<PacketData> queue, TimeSpan time)
+		private static void GetWithin(Queue<PacketData> queue, TimeSpan time, out DataCatergory data)
 		{
 			var now = Tools.Now;
-			var bandwidth = new long[3];
+			var nowThresh = now - time;
+			data = new DataCatergory();
 			foreach (var pack in queue.Reverse())
-				if (now - pack.SendPoint <= time)
-					bandwidth[(int)pack.Kind] += pack.Size;
-				else
-					break;
-			for (int i = 0; i < 3; i++)
-				bandwidth[i] = (long)(bandwidth[i] / time.TotalSeconds);
-			return bandwidth;
+				if (nowThresh <= pack.SendPoint)
+				{
+					switch (pack.Kind)
+					{
+					case PacketKind.Speech: data.Speech += pack.Size; break;
+					case PacketKind.Keepalive: data.Keepalive += pack.Size; break;
+					case PacketKind.Control: data.Control += pack.Size; break;
+					default: throw Tools.UnhandledDefault(pack.Kind);
+					}
+				}
+				else { break; }
+			data.Speech = (long)(data.Speech / time.TotalSeconds);
+			data.Keepalive = (long)(data.Keepalive / time.TotalSeconds);
+			data.Control = (long)(data.Control / time.TotalSeconds);
 		}
 
 		private static void DropOver(Queue<PacketData> queue, TimeSpan time)
@@ -113,18 +121,18 @@ namespace TSLib.Full
 
 		public TsCommand GenerateStatusAnswer()
 		{
-			long[] lastSecondIn;
-			long[] lastSecondOut;
-			long[] lastMinuteIn;
-			long[] lastMinuteOut;
+			DataCatergory lastSecondIn;
+			DataCatergory lastSecondOut;
+			DataCatergory lastMinuteIn;
+			DataCatergory lastMinuteOut;
 			double lastPing;
 			double deviationPing;
 			lock (queueLock)
 			{
-				lastSecondIn = GetWithin(inBytesTime, TimeSecond);
-				lastSecondOut = GetWithin(outBytesTime, TimeSecond);
-				lastMinuteIn = GetWithin(inBytesTime, TimeMinute);
-				lastMinuteOut = GetWithin(outBytesTime, TimeMinute);
+				GetWithin(inBytesTime, TimeSecond, out lastSecondIn);
+				GetWithin(outBytesTime, TimeSecond, out lastSecondOut);
+				GetWithin(inBytesTime, TimeMinute, out lastMinuteIn);
+				GetWithin(outBytesTime, TimeMinute, out lastMinuteOut);
 				if (pingTimes.Count > 0)
 				{
 					lastPing = pingTimes.Last().TotalMilliseconds;
@@ -155,18 +163,18 @@ namespace TSLib.Full
 				{ "connection_server2client_packetloss_keepalive", 1.0000f },
 				{ "connection_server2client_packetloss_control", 0.5000f },
 				{ "connection_server2client_packetloss_total", 0.0000f },
-				{ "connection_bandwidth_sent_last_second_speech", lastSecondOut[(int)PacketKind.Speech] },
-				{ "connection_bandwidth_sent_last_second_keepalive", lastSecondOut[(int)PacketKind.Keepalive] },
-				{ "connection_bandwidth_sent_last_second_control", lastSecondOut[(int)PacketKind.Control] },
-				{ "connection_bandwidth_sent_last_minute_speech", lastMinuteOut[(int)PacketKind.Speech] },
-				{ "connection_bandwidth_sent_last_minute_keepalive", lastMinuteOut[(int)PacketKind.Keepalive] },
-				{ "connection_bandwidth_sent_last_minute_control", lastMinuteOut[(int)PacketKind.Control] },
-				{ "connection_bandwidth_received_last_second_speech", lastSecondIn[(int)PacketKind.Speech] },
-				{ "connection_bandwidth_received_last_second_keepalive", lastSecondIn[(int)PacketKind.Keepalive] },
-				{ "connection_bandwidth_received_last_second_control", lastSecondIn[(int)PacketKind.Control] },
-				{ "connection_bandwidth_received_last_minute_speech", lastMinuteIn[(int)PacketKind.Speech] },
-				{ "connection_bandwidth_received_last_minute_keepalive", lastMinuteIn[(int)PacketKind.Keepalive] },
-				{ "connection_bandwidth_received_last_minute_control", lastMinuteIn[(int)PacketKind.Control] },
+				{ "connection_bandwidth_sent_last_second_speech", lastSecondOut.Speech },
+				{ "connection_bandwidth_sent_last_second_keepalive", lastSecondOut.Keepalive },
+				{ "connection_bandwidth_sent_last_second_control", lastSecondOut.Control },
+				{ "connection_bandwidth_sent_last_minute_speech", lastMinuteOut.Speech },
+				{ "connection_bandwidth_sent_last_minute_keepalive", lastMinuteOut.Keepalive },
+				{ "connection_bandwidth_sent_last_minute_control", lastMinuteOut.Control },
+				{ "connection_bandwidth_received_last_second_speech", lastSecondIn.Speech },
+				{ "connection_bandwidth_received_last_second_keepalive", lastSecondIn.Keepalive },
+				{ "connection_bandwidth_received_last_second_control", lastSecondIn.Control },
+				{ "connection_bandwidth_received_last_minute_speech", lastMinuteIn.Speech },
+				{ "connection_bandwidth_received_last_minute_keepalive", lastMinuteIn.Keepalive },
+				{ "connection_bandwidth_received_last_minute_control", lastMinuteIn.Control },
 			};
 		}
 
@@ -213,6 +221,13 @@ namespace TSLib.Full
 			public PacketKind Kind { get; }
 
 			public PacketData(ushort size, DateTime sendPoint, PacketKind kind) { Size = size; SendPoint = sendPoint; Kind = kind; }
+		}
+
+		struct DataCatergory
+		{
+			public long Speech { get; set; }
+			public long Keepalive { get; set; }
+			public long Control { get; set; }
 		}
 	}
 }

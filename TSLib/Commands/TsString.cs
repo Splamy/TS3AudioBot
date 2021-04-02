@@ -10,7 +10,8 @@
 using System;
 using System.Linq;
 using System.Text;
-#if NETCOREAPP3_0
+using TSLib.Helper;
+#if NETCOREAPP3_1
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
 #endif
@@ -84,36 +85,36 @@ namespace TSLib.Commands
 				if (c == (byte)'\\')
 				{
 					if (++i >= stringToUnescape.Length) throw new FormatException();
-					switch (stringToUnescape[i])
+					strb[writepos++] = (stringToUnescape[i]) switch
 					{
-					case (byte)'v': strb[writepos++] = (byte)'\v'; break;  // Vertical Tab
-					case (byte)'t': strb[writepos++] = (byte)'\t'; break;  // Horizontal Tab
-					case (byte)'r': strb[writepos++] = (byte)'\r'; break;  // Carriage Return
-					case (byte)'n': strb[writepos++] = (byte)'\n'; break;  // Newline
-					case (byte)'f': strb[writepos++] = (byte)'\f'; break;  // Formfeed
-					case (byte)'p': strb[writepos++] = (byte)'|'; break;   // Pipe
-					case (byte)'s': strb[writepos++] = (byte)' '; break;   // Whitespace
-					case (byte)'/': strb[writepos++] = (byte)'/'; break;   // Slash
-					case (byte)'\\': strb[writepos++] = (byte)'\\'; break; // Backslash
-					default: throw new FormatException();
-					}
+						(byte)'v' => (byte)'\v', // Vertical Tab
+						(byte)'t' => (byte)'\t', // Horizontal Tab
+						(byte)'r' => (byte)'\r', // Carriage Return
+						(byte)'n' => (byte)'\n', // Newline
+						(byte)'f' => (byte)'\f', // Formfeed
+						(byte)'p' => (byte)'|',  // Pipe
+						(byte)'s' => (byte)' ',  // Whitespace
+						(byte)'/' => (byte)'/',  // Slash
+						(byte)'\\' => (byte)'\\',// Backslash
+						_ => throw new FormatException(),
+					};
 				}
 				else strb[writepos++] = c;
 			}
-			return Encoding.UTF8.GetString(strb, 0, writepos);
+			return Tools.Utf8Encoder.GetString(strb, 0, writepos);
 		}
 
-		public static int TokenLength(string str) => Encoding.UTF8.GetByteCount(str) + str.Count(IsDoubleChar);
+		public static int TokenLength(string str) => Tools.Utf8Encoder.GetByteCount(str) + str.Count(IsDoubleChar);
 
-		public static bool IsDoubleChar(char c) => IsDoubleChar(unchecked((byte)c));
+		public static bool IsDoubleChar(char c) => unchecked(c == (byte)c) && IsDoubleChar(unchecked((byte)c));
 
-#if NETCOREAPP3_0
+#if NETCOREAPP3_1
 		private static readonly Vector128<byte> doubleVec = Vector128.Create((byte)'\\', (byte)'/', (byte)' ', (byte)'|', (byte)'\f', (byte)'\n', (byte)'\r', (byte)'\t', (byte)'\v', 0, 0, 0, 0, 0, 0, 0);
 #endif
 
 		public static bool IsDoubleChar(byte c)
 		{
-#if NETCOREAPP3_0
+#if NETCOREAPP3_1
 			if (Sse2.IsSupported)
 			{
 				var inc = Vector128.Create(c);

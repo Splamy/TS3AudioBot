@@ -12,7 +12,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Net;
+using System.Threading.Tasks;
 using TS3AudioBot.Config;
 using TS3AudioBot.Helper;
 using TS3AudioBot.Localization;
@@ -37,18 +37,14 @@ namespace TS3AudioBot.ResourceFactories
 			File.Exists(uri) ? MatchCertainty.Always
 			: MatchCertainty.OnlyIfLast;
 
-		public R<PlayResource, LocalStr> GetResource(ResolveContext ctx, string uri)
+		public Task<PlayResource> GetResource(ResolveContext ctx, string uri)
 		{
 			return GetResourceById(ctx, new AudioResource(uri, null, ResolverFor));
 		}
 
-		public R<PlayResource, LocalStr> GetResourceById(ResolveContext ctx, AudioResource resource)
+		public async Task<PlayResource> GetResourceById(ResolveContext ctx, AudioResource resource)
 		{
-			var result = ValidateFromString(ctx.Config, resource.ResourceId);
-			if (!result)
-				return result.Error;
-
-			var resData = result.Value;
+			var resData = await ValidateFromString(ctx.Config, resource.ResourceId);
 
 			if (resData.IsIcyStream)
 			{
@@ -56,7 +52,7 @@ namespace TS3AudioBot.ResourceFactories
 				return new MediaPlayResource(resData.FullUri, resource, null, true);
 			}
 
-			if (resource.ResourceTitle == null)
+			if (resource.ResourceTitle is null)
 			{
 				if (!string.IsNullOrWhiteSpace(resData.Title))
 					resource.ResourceTitle = resData.Title;
@@ -68,49 +64,40 @@ namespace TS3AudioBot.ResourceFactories
 
 		public string RestoreLink(ResolveContext _, AudioResource resource) => resource.ResourceId;
 
-		private R<ResData, LocalStr> ValidateFromString(ConfBot config, string uriStr)
+		private Task<ResData> ValidateFromString(ConfBot config, string uriStr)
 		{
-			if (TryGetUri(config, uriStr).GetOk(out var uri))
-				return ValidateUri(uri);
-			return new LocalStr(strings.error_media_invalid_uri);
+			var uri = GetUri(config, uriStr);
+			return ValidateUri(uri);
 		}
 
-		private R<ResData, LocalStr> ValidateUri(Uri uri)
+		private Task<ResData> ValidateUri(Uri uri)
 		{
 			if (uri.IsWeb())
 				return ValidateWeb(uri);
 			if (uri.IsFile())
-				return ValidateFile(uri);
+				return Task.Run(() => ValidateFile(uri));
 
-			return new LocalStr(strings.error_media_invalid_uri);
+			throw Error.LocalStr(strings.error_media_invalid_uri);
 		}
 
 		private static HeaderData GetStreamHeaderData(Stream stream)
 		{
 			var headerData = AudioTagReader.GetData(stream) ?? new HeaderData();
-			headerData.Title = headerData.Title ?? string.Empty;
+			headerData.Title ??= string.Empty;
 			return headerData;
 		}
 
-		private static R<ResData, LocalStr> ValidateWeb(Uri link)
+		private static async Task<ResData> ValidateWeb(Uri link)
 		{
-			var requestRes = WebWrapper.CreateRequest(link);
-			if (!requestRes.Ok) return requestRes.Error;
-			var request = requestRes.Value;
-			if (request is HttpWebRequest httpRequest)
-			{
-				httpRequest.Headers["Icy-MetaData"] = "1";
-			}
-
 			try
 			{
-				using (var response = request.GetResponse())
+				return await WebWrapper.Request(link).WithHeader("Icy-MetaData", "1").ToAction(async response =>
 				{
-					if (response.Headers["icy-metaint"] != null)
+					if (response.Headers.GetSingle("icy-metaint") != null)
 					{
 						return new ResData(link.AbsoluteUri, null) { IsIcyStream = true };
 					}
-					var contentType = response.Headers[HttpResponseHeader.ContentType];
+					var contentType = response.Headers.GetSingle("ContentType");
 					if (contentType == "application/vnd.apple.mpegurl"
 						|| contentType == "application/vnd.apple.mpegurl.audio")
 					{
@@ -118,42 +105,41 @@ namespace TS3AudioBot.ResourceFactories
 					}
 					else
 					{
-						using (var stream = response.GetResponseStream())
-						{
-							var headerData = GetStreamHeaderData(stream);
-							return new ResData(link.AbsoluteUri, headerData.Title) { Image = headerData.Picture };
-						}
+						using var stream = await response.Content.ReadAsStreamAsync();
+						var headerData = GetStreamHeaderData(stream);
+						return new ResData(link.AbsoluteUri, headerData.Title) { Image = headerData.Picture };
 					}
-				}
+				});
 			}
 			catch (Exception ex)
 			{
 				Log.Debug(ex, "Failed to validate song");
-				return new LocalStr(strings.error_net_unknown);
+				throw Error.Exception(ex).LocalStr(strings.error_net_unknown);
 			}
 		}
 
-		private R<ResData, LocalStr> ValidateFile(Uri foundPath)
+		private ResData ValidateFile(Uri foundPath)
 		{
 			try
 			{
-				using (var stream = File.Open(foundPath.LocalPath, FileMode.Open, FileAccess.Read, FileShare.Read))
-				{
-					var headerData = GetStreamHeaderData(stream);
-					return new ResData(foundPath.LocalPath, headerData.Title) { Image = headerData.Picture };
-				}
+				using var stream = File.Open(foundPath.LocalPath, FileMode.Open, FileAccess.Read, FileShare.Read);
+				var headerData = GetStreamHeaderData(stream);
+				return new ResData(foundPath.LocalPath, headerData.Title) { Image = headerData.Picture };
 			}
-			catch (UnauthorizedAccessException) { return new LocalStr(strings.error_io_missing_permission); }
+			catch (UnauthorizedAccessException ex)
+			{
+				throw Error.Exception(ex).LocalStr(strings.error_io_missing_permission);
+			}
 			catch (Exception ex)
 			{
 				Log.Warn(ex, "Failed to load song \"{0}\", because {1}", foundPath.OriginalString, ex.Message);
-				return new LocalStr(strings.error_io_unknown_error);
+				throw Error.Exception(ex).LocalStr(strings.error_io_unknown_error);
 			}
 		}
 
-		private R<Uri, LocalStr> TryGetUri(ConfBot conf, string uri)
+		private Uri GetUri(ConfBot conf, string uri)
 		{
-			if (Uri.TryCreate(uri, UriKind.Absolute, out Uri uriResult))
+			if (Uri.TryCreate(uri, UriKind.Absolute, out Uri? uriResult))
 			{
 				return uriResult;
 			}
@@ -161,17 +147,18 @@ namespace TS3AudioBot.ResourceFactories
 			{
 				Log.Trace("Finding media path: '{0}'", uri);
 
-				var file =
-					TryInPath(Path.Combine(conf.LocalConfigDir, BotPaths.Music), uri)
-					?? TryInPath(conf.GetParent().Factories.Media.Path.Value, uri);
+				Uri? file = null;
+				if (conf.LocalConfigDir != null)
+					file ??= TryInPath(Path.Combine(conf.LocalConfigDir, BotPaths.Music), uri);
+				file ??= TryInPath(conf.GetParent().Factories.Media.Path.Value, uri);
 
-				if (file == null)
-					return new LocalStr(strings.error_media_file_not_found);
+				if (file is null)
+					throw Error.LocalStr(strings.error_media_file_not_found);
 				return file;
 			}
 		}
 
-		private static Uri TryInPath(string pathPrefix, string file)
+		private static Uri? TryInPath(string pathPrefix, string file)
 		{
 			try
 			{
@@ -188,7 +175,7 @@ namespace TS3AudioBot.ResourceFactories
 			return null;
 		}
 
-		public R<Playlist, LocalStr> GetPlaylist(ResolveContext ctx, string url)
+		public async Task<Playlist> GetPlaylist(ResolveContext ctx, string url)
 		{
 			if (Directory.Exists(url)) // TODO rework for security
 			{
@@ -196,77 +183,70 @@ namespace TS3AudioBot.ResourceFactories
 				{
 					var di = new DirectoryInfo(url);
 					var plist = new Playlist().SetTitle(di.Name);
-					var resources = from file in di.EnumerateFiles()
-									select ValidateFromString(ctx.Config, file.FullName) into result
-									where result.Ok
-									select result.Value into val
-									select new AudioResource(val.FullUri, string.IsNullOrWhiteSpace(val.Title) ? val.FullUri : val.Title, ResolverFor) into res
-									select new PlaylistItem(res);
-					plist.AddRange(resources);
+					foreach (var file in di.EnumerateFiles())
+					{
+						try
+						{
+							var val = await ValidateFromString(ctx.Config, file.FullName);
+							var res = new AudioResource(val.FullUri, string.IsNullOrWhiteSpace(val.Title) ? val.FullUri : val.Title, ResolverFor);
+							var addResult = plist.Add(new PlaylistItem(res));
+							if (!addResult) break;
+						}
+						catch (AudioBotException) { }
+					}
 
 					return plist;
 				}
 				catch (Exception ex)
 				{
 					Log.Warn("Failed to load playlist \"{0}\", because {1}", url, ex.Message);
-					return new LocalStr(strings.error_io_unknown_error);
+					throw Error.Exception(ex).LocalStr(strings.error_io_unknown_error);
 				}
 			}
 
+			var uri = GetUri(ctx.Config, url);
 			try
 			{
-				if (TryGetUri(ctx.Config, url).GetOk(out var uri))
+				if (uri.IsFile())
 				{
-					if (uri.IsFile())
-					{
-						if (File.Exists(url))
-						{
-							using (var stream = File.OpenRead(uri.AbsolutePath))
-								return GetPlaylistContent(stream, url);
-						}
-					}
-					else if (uri.IsWeb())
-					{
-						return WebWrapper.GetResponse(uri, response =>
-						{
-							var contentType = response.Headers.Get("Content-Type");
-							int index = url.LastIndexOf('.');
-							string anyId = index >= 0 ? url.Substring(index) : url;
-
-							using (var stream = response.GetResponseStream())
-								return GetPlaylistContent(stream, url, contentType);
-						}).Flat();
-					}
+					using var stream = File.OpenRead(uri.AbsolutePath);
+					return await GetPlaylistContentAsync(stream, url);
 				}
-				return new LocalStr(strings.error_media_invalid_uri);
+				else if (uri.IsWeb())
+				{
+					return await WebWrapper.Request(uri).ToAction(async response =>
+					{
+						var contentType = response.Headers.GetSingle("Content-Type");
+						int index = url.LastIndexOf('.');
+						string anyId = index >= 0 ? url.Substring(index) : url;
+
+						using var stream = await response.Content.ReadAsStreamAsync();
+						return await GetPlaylistContentAsync(stream, url, contentType);
+					});
+				}
+				throw Error.LocalStr(strings.error_media_invalid_uri);
 			}
 			catch (Exception ex)
 			{
 				Log.Warn(ex, "Error opening/reading playlist file");
-				return new LocalStr(strings.error_io_unknown_error);
+				throw Error.Exception(ex).LocalStr(strings.error_io_unknown_error);
 			}
 		}
 
-		private R<Playlist, LocalStr> GetPlaylistContent(Stream stream, string url, string mime = null)
+		private Task<Playlist> GetPlaylistContentAsync(Stream stream, string url, string? mime = null)
+			=> Task.Run(() => GetPlaylistContent(stream, url, mime));
+
+		private Playlist GetPlaylistContent(Stream stream, string url, string? mime = null)
 		{
-			string name = null;
+			string? name = null;
 			List<PlaylistItem> items;
-			mime = mime.ToLowerInvariant();
+			mime = mime?.ToLowerInvariant();
 			url = url.ToLowerInvariant();
 			string anyId = mime ?? url;
 
 			switch (anyId)
 			{
 			case ".m3u":
-				{
-					var parser = new M3uContent();
-					var list = parser.GetFromStream(stream);
-
-					items = new List<PlaylistItem>(
-						from e in list.PlaylistEntries
-						select new PlaylistItem(new AudioResource(e.Path, e.Title, ResolverFor)));
-					break;
-				}
 			case ".m3u8":
 			case "application/mpegurl":
 			case "application/x-mpegurl":
@@ -275,7 +255,7 @@ namespace TS3AudioBot.ResourceFactories
 			case "application/vnd.apple.mpegurl":
 			case "application/vnd.apple.mpegurl.audio":
 				{
-					var parser = new M3u8Content();
+					var parser = new M3uContent();
 					var list = parser.GetFromStream(stream);
 
 					items = new List<PlaylistItem>(
@@ -324,7 +304,7 @@ namespace TS3AudioBot.ResourceFactories
 			// ??
 			case "application/xspf+xml":
 			default:
-				return new LocalStr(strings.error_media_file_not_found); // TODO Loc "media not supported"
+				throw Error.LocalStr(strings.error_media_file_not_found); // TODO Loc "media not supported"
 			}
 
 			if (string.IsNullOrEmpty(name))
@@ -335,19 +315,9 @@ namespace TS3AudioBot.ResourceFactories
 			return new Playlist(items).SetTitle(name);
 		}
 
-		private static R<Stream, LocalStr> GetStreamFromUriUnsafe(Uri uri)
+		public async Task GetThumbnail(ResolveContext _, PlayResource playResource, Func<Stream, Task> action)
 		{
-			if (uri.IsWeb())
-				return WebWrapper.GetResponseUnsafe(uri);
-			if (uri.IsFile())
-				return File.OpenRead(uri.LocalPath);
-
-			return new LocalStr(strings.error_media_invalid_uri);
-		}
-
-		public R<Stream, LocalStr> GetThumbnail(ResolveContext _, PlayResource playResource)
-		{
-			byte[] rawImgData;
+			byte[]? rawImgData;
 
 			if (playResource is MediaPlayResource mediaPlayResource)
 			{
@@ -356,20 +326,20 @@ namespace TS3AudioBot.ResourceFactories
 			else
 			{
 				var uri = new Uri(playResource.PlayUri);
-				var result = GetStreamFromUriUnsafe(uri);
-				if (!result)
-					return result.Error;
 
-				using (var stream = result.Value)
-				{
-					rawImgData = AudioTagReader.GetData(stream)?.Picture;
-				}
+				if (uri.IsWeb())
+					rawImgData = await WebWrapper.Request(uri)
+						.ToAction(async response => AudioTagReader.GetData(await response.Content.ReadAsStreamAsync())?.Picture);
+				else if (uri.IsFile())
+					rawImgData = AudioTagReader.GetData(File.OpenRead(uri.LocalPath))?.Picture;
+				else
+					throw Error.LocalStr(strings.error_media_invalid_uri);
 			}
 
 			if (rawImgData is null)
-				return new LocalStr(strings.error_media_image_not_found);
+				throw Error.LocalStr(strings.error_media_image_not_found);
 
-			return new MemoryStream(rawImgData);
+			await action(new MemoryStream(rawImgData));
 		}
 
 		public void Dispose() { }
@@ -378,15 +348,16 @@ namespace TS3AudioBot.ResourceFactories
 	internal class ResData
 	{
 		public string FullUri { get; }
-		public string Title { get; }
-		public byte[] Image { get; set; }
+		public string? Title { get; }
+		public byte[]? Image { get; set; }
 
 		public bool IsIcyStream { get; set; } = false;
 
-		public ResData(string fullUri, string title)
+		public ResData(string fullUri, string? title)
 		{
 			FullUri = fullUri;
 			Title = title;
+			Image = null;
 		}
 	}
 
@@ -394,8 +365,7 @@ namespace TS3AudioBot.ResourceFactories
 	{
 		public static bool IsWeb(this Uri uri)
 			=> uri.Scheme == Uri.UriSchemeHttp
-			|| uri.Scheme == Uri.UriSchemeHttps
-			|| uri.Scheme == Uri.UriSchemeFtp;
+			|| uri.Scheme == Uri.UriSchemeHttps;
 
 		public static bool IsFile(this Uri uri)
 			=> uri.Scheme == Uri.UriSchemeFile;
@@ -403,10 +373,10 @@ namespace TS3AudioBot.ResourceFactories
 
 	public class MediaPlayResource : PlayResource
 	{
-		public byte[] Image { get; }
+		public byte[]? Image { get; }
 		public bool IsIcyStream { get; }
 
-		public MediaPlayResource(string uri, AudioResource baseData, byte[] image, bool isIcyStream) : base(uri, baseData)
+		public MediaPlayResource(string uri, AudioResource baseData, byte[]? image, bool isIcyStream) : base(uri, baseData)
 		{
 			Image = image;
 			IsIcyStream = isIcyStream;

@@ -20,35 +20,40 @@ namespace TS3AudioBot.Rights
 		public int Id { get; private set; }
 		public int Level { get; set; }
 
-		public RightsRule Parent { get; set; }
-		private string[] includeNames;
-		public RightsGroup[] Includes { get; set; }
+		public RightsRule? Parent { get; set; }
+		private string[]? includeNames = null;
+		public RightsGroup[] Includes { get; set; } = Array.Empty<RightsGroup>();
 
-		public string[] DeclAdd { get; set; }
-		public string[] DeclDeny { get; set; }
-
-		public virtual void FillNull()
-		{
-			if (includeNames is null) includeNames = Array.Empty<string>();
-			if (DeclAdd is null) DeclAdd = Array.Empty<string>();
-			if (DeclDeny is null) DeclDeny = Array.Empty<string>();
-		}
+		public string[] DeclAdd { get; set; } = Array.Empty<string>();
+		public string[] DeclDeny { get; set; } = Array.Empty<string>();
 
 		public virtual bool ParseKey(string key, TomlObject tomlObj, ParseContext ctx)
 		{
 			switch (key)
 			{
 			case "+":
-				DeclAdd = tomlObj.TryGetValueArray<string>();
-				if (DeclAdd is null) ctx.Errors.Add("<+> Field has invalid data.");
+				if (!tomlObj.TryGetValueArray<string>(out var declAdd))
+				{
+					ctx.Errors.Add("<+> Field has invalid data.");
+					declAdd = Array.Empty<string>();
+				}
+				DeclAdd = declAdd;
 				return true;
 			case "-":
-				DeclDeny = tomlObj.TryGetValueArray<string>();
-				if (DeclDeny is null) ctx.Errors.Add("<-> Field has invalid data.");
+				if (!tomlObj.TryGetValueArray<string>(out var declDeny))
+				{
+					ctx.Errors.Add("<-> Field has invalid data.");
+					declDeny = Array.Empty<string>();
+				}
+				DeclDeny = declDeny;
 				return true;
 			case "include":
-				includeNames = tomlObj.TryGetValueArray<string>();
-				if (includeNames is null) ctx.Errors.Add("<include> Field has invalid data.");
+				if (!tomlObj.TryGetValueArray<string>(out var includeNames))
+				{
+					ctx.Errors.Add("<include> Field has invalid data.");
+					includeNames = null;
+				}
+				this.includeNames = includeNames;
 				return true;
 			default:
 				return false;
@@ -69,11 +74,10 @@ namespace TS3AudioBot.Rights
 					hasErrors = true;
 				}
 			}
-			FillNull();
 			return !hasErrors;
 		}
 
-		public abstract RightsGroup ResolveGroup(string groupName, ParseContext ctx);
+		public abstract RightsGroup? ResolveGroup(string groupName, ParseContext ctx);
 
 		/// <summary>
 		/// Resolves all include strings to their representative object each.
@@ -84,7 +88,7 @@ namespace TS3AudioBot.Rights
 			bool hasErrors = false;
 			if (includeNames != null)
 			{
-				Includes = includeNames.Select(x => ResolveGroup(x, ctx)).ToArray();
+				Includes = includeNames.Select(x => ResolveGroup(x, ctx)).ToArray()!;
 				for (int i = 0; i < includeNames.Length; i++)
 				{
 					if (Includes[i] is null)

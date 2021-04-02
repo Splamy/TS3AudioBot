@@ -13,6 +13,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using TS3AudioBot.Config;
 using TS3AudioBot.Helper;
 using TS3AudioBot.Localization;
@@ -33,13 +34,13 @@ namespace TS3AudioBot.ResourceFactories
 		public ResourceResolver(ConfFactories conf)
 		{
 			AddResolver(new MediaResolver());
-			AddResolver(new YoutubeResolver(conf));
+			AddResolver(new YoutubeResolver(conf.Youtube));
 			AddResolver(new SoundcloudResolver());
 			AddResolver(new TwitchResolver());
 			AddResolver(new BandcampResolver());
 		}
 
-		private T GetResolverByType<T>(string audioType) where T : class, IResolver =>
+		private T? GetResolverByType<T>(string audioType) where T : class, IResolver =>
 			// ToLower for legacy reasons
 			allResolvers.TryGetValue(audioType.ToLowerInvariant(), out var resolver) && resolver is T resolverT
 				? resolverT
@@ -79,30 +80,31 @@ namespace TS3AudioBot.ResourceFactories
 		/// <param name="resource">An <see cref="AudioResource"/> with at least
 		/// <see cref="AudioResource.AudioType"/> and<see cref="AudioResource.ResourceId"/> set.</param>
 		/// <returns>The playable resource if successful, or an error message otherwise.</returns>
-		public R<PlayResource, LocalStr> Load(ResolveContext ctx, AudioResource resource)
+		public async Task<PlayResource> Load(ResolveContext ctx, AudioResource resource)
 		{
 			if (resource is null)
 				throw new ArgumentNullException(nameof(resource));
 
 			var resolver = GetResolverByType<IResourceResolver>(resource.AudioType);
 			if (resolver is null)
-				return CouldNotLoad(string.Format(strings.error_resfac_no_registered_factory, resource.AudioType));
+				throw CouldNotLoad(string.Format(strings.error_resfac_no_registered_factory, resource.AudioType));
 
-			var sw = Stopwatch.StartNew();
-			R<PlayResource, LocalStr> result;
 			try
 			{
-				result = resolver.GetResourceById(ctx, resource);
+				var sw = Stopwatch.StartNew();
+				var result = await resolver.GetResourceById(ctx, resource);
+				Log.Debug("Took {0}ms to resolve resource.", sw.ElapsedMilliseconds);
+				return result;
+			}
+			catch (AudioBotException ex)
+			{
+				throw CouldNotLoad(ex.Message);
 			}
 			catch (Exception ex)
 			{
 				Log.Error(ex, "Resource resolver '{0}' threw while trying to resolve '{@resource}'", resolver.ResolverFor, resource);
-				return CouldNotLoad(strings.error_playmgr_internal_error);
+				throw CouldNotLoad(strings.error_playmgr_internal_error);
 			}
-			if (!result.Ok)
-				return CouldNotLoad(result.Error.Str);
-			Log.Debug("Took {0}ms to resolve resource.", sw.ElapsedMilliseconds);
-			return result.Value;
 		}
 
 		/// <summary>Generates a new <see cref="PlayResource"/> which can be played.
@@ -113,7 +115,7 @@ namespace TS3AudioBot.ResourceFactories
 		/// <param name="audioType">The associated resource type string to a resolver.
 		/// Leave null to let it detect automatically.</param>
 		/// <returns>The playable resource if successful, or an error message otherwise.</returns>
-		public R<PlayResource, LocalStr> Load(ResolveContext ctx, string message, string audioType = null)
+		public async Task<PlayResource> Load(ResolveContext ctx, string message, string? audioType = null)
 		{
 			if (string.IsNullOrWhiteSpace(message))
 				throw new ArgumentNullException(nameof(message));
@@ -124,31 +126,33 @@ namespace TS3AudioBot.ResourceFactories
 			{
 				var resolver = GetResolverByType<IResourceResolver>(audioType);
 				if (resolver is null)
-					return CouldNotLoad(string.Format(strings.error_resfac_no_registered_factory, audioType));
+					throw CouldNotLoad(string.Format(strings.error_resfac_no_registered_factory, audioType));
 
-				var result = resolver.GetResource(ctx, netlinkurl);
-				if (!result.Ok)
-					return CouldNotLoad(result.Error.Str);
-				return result;
+				return await resolver.GetResource(ctx, netlinkurl);
 			}
 
-			var sw = Stopwatch.StartNew();
 			var resolvers = FilterUsable(GetResResolverByLink(ctx, netlinkurl));
-			List<(string, LocalStr)> errors = null;
+			List<(string, AudioBotException)>? errors = null;
 			foreach (var resolver in resolvers)
 			{
-				var result = resolver.GetResource(ctx, netlinkurl);
-				Log.Trace("Resolver {0} tried, result: {1}", resolver.ResolverFor, result.Ok ? "Ok" : result.Error.Str);
-				if (result)
+				try
+				{
+					var sw = Stopwatch.StartNew();
+					var result = await resolver.GetResource(ctx, netlinkurl);
+					Log.Debug("Took {0}ms to resolve resource.", sw.ElapsedMilliseconds);
 					return result;
-				(errors = errors ?? new List<(string, LocalStr)>()).Add((resolver.ResolverFor, result.Error));
+				}
+				catch (AudioBotException ex)
+				{
+					(errors ??= new List<(string, AudioBotException)>()).Add((resolver.ResolverFor, ex));
+					Log.Trace("Resolver {0} failed, result: {1}", resolver.ResolverFor, ex.Message);
+				}
 			}
-			Log.Debug("Took {0}ms to resolve resource.", sw.ElapsedMilliseconds);
 
-			return ToErrorString(errors);
+			throw ToErrorString(errors);
 		}
 
-		public R<Playlist, LocalStr> LoadPlaylistFrom(ResolveContext ctx, string message, string audioType = null)
+		public async Task<Playlist> LoadPlaylistFrom(ResolveContext ctx, string message, string? audioType = null)
 		{
 			if (string.IsNullOrWhiteSpace(message))
 				throw new ArgumentNullException(nameof(message));
@@ -159,54 +163,66 @@ namespace TS3AudioBot.ResourceFactories
 			{
 				var resolver = GetResolverByType<IPlaylistResolver>(audioType);
 				if (resolver is null)
-					return CouldNotLoad(string.Format(strings.error_resfac_no_registered_factory, audioType));
+					throw CouldNotLoad(string.Format(strings.error_resfac_no_registered_factory, audioType));
 
-				var result = resolver.GetPlaylist(ctx, netlinkurl);
-				if (!result.Ok)
-					return CouldNotLoad(result.Error.Str);
-				return result;
+				try { return await resolver.GetPlaylist(ctx, netlinkurl); }
+				catch (AudioBotException ex) { throw CouldNotLoad(ex.Message); }
 			}
 
 			var resolvers = FilterUsable(GetListResolverByLink(ctx, netlinkurl));
-			List<(string, LocalStr)> errors = null;
+			List<(string, AudioBotException)>? errors = null;
 			foreach (var resolver in resolvers)
 			{
-				var result = resolver.GetPlaylist(ctx, netlinkurl);
-				Log.Trace("ListResolver {0} tried, result: {1}", resolver.ResolverFor, result.Ok ? "Ok" : result.Error.Str);
-				if (result)
-					return result;
-				(errors = errors ?? new List<(string, LocalStr)>()).Add((resolver.ResolverFor, result.Error));
+				try
+				{
+					return await resolver.GetPlaylist(ctx, netlinkurl);
+				}
+				catch (AudioBotException ex)
+				{
+					(errors ??= new List<(string, AudioBotException)>()).Add((resolver.ResolverFor, ex));
+					Log.Trace("Resolver {0} failed, result: {1}", resolver.ResolverFor, ex.Message);
+				}
 			}
 
-			return ToErrorString(errors);
+			throw ToErrorString(errors);
 		}
 
-		public R<string, LocalStr> RestoreLink(ResolveContext ctx, AudioResource res)
+		public string? RestoreLink(ResolveContext ctx, AudioResource res)
 		{
 			var resolver = GetResolverByType<IResourceResolver>(res.AudioType);
 			if (resolver is null)
-				return CouldNotLoad();
-			return resolver.RestoreLink(ctx, res);
+			{
+				Log.Debug("ResourceFactory for '{0}' not found", res.AudioType);
+				return null;
+			}
+			try
+			{
+				return resolver.RestoreLink(ctx, res);
+			}
+			catch (AudioBotException ex)
+			{
+				Log.Error(ex, "Error resolving link ({0})", res);
+				return null;
+			}
 		}
 
-		public R<Stream, LocalStr> GetThumbnail(ResolveContext ctx, PlayResource playResource)
+		public async Task GetThumbnail(ResolveContext ctx, PlayResource playResource, Func<Stream, Task> action)
 		{
-			var resolver = GetResolverByType<IThumbnailResolver>(playResource.BaseData.AudioType);
+			var resolver = GetResolverByType<IThumbnailResolver>(playResource.AudioResource.AudioType);
 			if (resolver is null)
-				return new LocalStr(string.Format(strings.error_resfac_no_registered_factory, playResource.BaseData.AudioType));
+				throw Error.LocalStr(string.Format(strings.error_resfac_no_registered_factory, playResource.AudioResource.AudioType));
 
 			var sw = Stopwatch.StartNew();
-			var result = resolver.GetThumbnail(ctx, playResource);
+			await resolver.GetThumbnail(ctx, playResource, action);
 			Log.Debug("Took {0}ms to load thumbnail.", sw.ElapsedMilliseconds);
-			return result;
 		}
 
-		public R<IList<AudioResource>, LocalStr> Search(ResolveContext ctx, string resolverName, string query)
+		public async Task<IList<AudioResource>> Search(ResolveContext ctx, string resolverName, string query)
 		{
 			var resolver = GetResolverByType<ISearchResolver>(resolverName);
 			if (resolver is null)
-				return CouldNotLoad(string.Format(strings.error_resfac_no_registered_factory, resolverName));
-			return resolver.Search(ctx, query);
+				throw CouldNotLoad(string.Format(strings.error_resfac_no_registered_factory, resolverName));
+			return await resolver.Search(ctx, query);
 		}
 
 		public void AddResolver(IResolver resolver)
@@ -234,10 +250,8 @@ namespace TS3AudioBot.ResourceFactories
 
 		public void RemoveResolver(IResolver Resolver)
 		{
-			if (!allResolvers.TryGetValue(Resolver.ResolverFor, out var resolverInfo))
+			if (!allResolvers.Remove(Resolver.ResolverFor))
 				return;
-
-			allResolvers.Remove(Resolver.ResolverFor);
 
 			if (Resolver is IResourceResolver resResolver)
 				resResolvers.Remove(resResolver);
@@ -247,21 +261,21 @@ namespace TS3AudioBot.ResourceFactories
 				searchResolvers.Remove(searchResolver);
 		}
 
-		private static LocalStr CouldNotLoad(string reason = null)
+		private static AudioBotException CouldNotLoad(string? reason = null)
 		{
 			if (reason is null)
-				return new LocalStr(strings.error_resfac_could_not_load);
+				return Error.LocalStr(strings.error_resfac_could_not_load);
 			var strb = new StringBuilder(strings.error_resfac_could_not_load);
 			strb.Append(" (").Append(reason).Append(")");
-			return new LocalStr(strb.ToString());
+			return Error.LocalStr(strb.ToString());
 		}
 
-		private static LocalStr ToErrorString(List<(string rsv, LocalStr err)> errors)
+		private static AudioBotException ToErrorString(List<(string rsv, AudioBotException err)>? errors)
 		{
 			if (errors is null || errors.Count == 0)
 				throw new ArgumentException("No errors provided", nameof(errors));
 			if (errors.Count == 1)
-				return CouldNotLoad($"{errors[0].rsv}: {errors[0].err}");
+				return CouldNotLoad($"{errors[0].rsv}: {errors[0].err.Message}");
 			return CouldNotLoad(strings.error_resfac_multiple_factories_failed);
 		}
 
