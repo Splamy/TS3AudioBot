@@ -41,16 +41,19 @@ For an in-depth command tutorial see [here in the wiki](https://github.com/Splam
 ## Install
 
 ### Download
-Download either one of the latest builds from our [nightly server](https://splamy.de/Nightly#ts3ab):  
-- [![Download](https://img.shields.io/badge/Download-master-green.svg)](https://splamy.de/api/nightly/ts3ab/master_dotnet_core_3_1_preview/download)
-  Versions are mostly considered stable but won't get bigger features as fast.
-- [![Download](https://img.shields.io/badge/Download-develop-green.svg)](https://splamy.de/api/nightly/ts3ab/develop/download)
-  Will always have the latest and greatest but might not be fully stable or have broken features.
-- [![Docker](https://img.shields.io/badge/Docker-0.11.0-0db7ed.svg)](https://github.com/getdrunkonmovies-com/TS3AudioBot_docker) (NOTE: This build is community-maintained. It comes with all dependencies as well as youtube-dl preconfigured)
+Pick and download the build for your platform and liking:
+
+|  | Stable | Experimental |
+| -- | -- | -- |
+| | Versions are mostly considered stable but won't get bigger features as fast. | Will always have the latest and greatest but might not be fully stable or have broken features. |
+| Windows_x64 | [![Download](https://img.shields.io/badge/Download-master-green.svg)](https://splamy.de/api/nightly/ts3ab/master_win_x64/download) | [![Download](https://img.shields.io/badge/Download-develop-green.svg)](https://splamy.de/api/nightly/ts3ab/develop_win_x64/download) |
+| Linux_x64 | [![Download](https://img.shields.io/badge/Download-master-green.svg)](https://splamy.de/api/nightly/ts3ab/master_linux_x64/download) | [![Download](https://img.shields.io/badge/Download-develop-green.svg)](https://splamy.de/api/nightly/ts3ab/develop_linux_x64/download) |
+| Docker | [![Docker](https://img.shields.io/badge/Docker-0.11.0-0db7ed.svg)](https://github.com/getdrunkonmovies-com/TS3AudioBot_docker) (NOTE: This build is community-maintained. It comes with all dependencies as well as youtube-dl preconfigured) | - |
+
+(We have more builds like linux arm/arm64 and .NET framework dependent builds available on our [nightly server](https://splamy.de/Nightly#ts3ab))
 
 #### Linux
-1. dotnet core: Get the latest `dotnet core 3.1` version by following [this tutorial](https://dotnet.microsoft.com/download/linux-package-manager/ubuntu16-04/sdk-current) and follow the steps after choosing your platform
-1. Other dependencies:
+Install the required dependencies:
 * on **Ubuntu**/**Debian**:  
 Run `sudo apt-get install libopus-dev ffmpeg`
 * on **Arch Linux**:  
@@ -67,18 +70,18 @@ Run
     1. Make the Opus script runnable with `chmod u+x InstallOpus.sh` and run it with `./InstallOpus.sh`
     1. Get the ffmpeg [32bit](https://johnvansickle.com/ffmpeg/builds/ffmpeg-git-i686-static.tar.xz) or [64bit](https://johnvansickle.com/ffmpeg/builds/ffmpeg-git-amd64-static.tar.xz) binary.
     1. Extract the ffmpeg archive with `tar -vxf ffmpeg-git-*XXbit*-static.tar.xz`
-    1. Get the ffmpeg binary from `ffmpeg-git-*DATE*-amd64-static/ffmpeg` and copy it to `TS3AudioBot/bin/Release/netcoreapp3.1`
+    1. Get the ffmpeg binary from `ffmpeg-git-*DATE*-amd64-static/ffmpeg` and copy it into your TS3AudioBot folder.
 
 #### Windows
 1. Get the ffmpeg [32bit](https://ffmpeg.zeranoe.com/builds/win32/static/ffmpeg-latest-win32-static.zip) or [64bit](https://ffmpeg.zeranoe.com/builds/win64/static/ffmpeg-latest-win64-static.zip) binary.
-1. Open the archive and copy the ffmpeg binary from `ffmpeg-latest-winXX-static/bin/ffmpeg.exe` to `TS3AudioBot/bin/Release/netcoreapp3.1`
+1. Open the archive and copy the ffmpeg binary from `ffmpeg-latest-winXX-static/bin/ffmpeg.exe` into your TS3AudioBot folder.
 
 ### Optional Dependencies
 If the bot can't play some youtube videos it might be due to some embedding restrictions which are blocking this.  
-You can add a [youtube-dl](https://github.com/rg3/youtube-dl/) binary or source folder and specify the path in the config to try to bypass this.
+You can install the [youtube-dl](https://github.com/rg3/youtube-dl/) binary or source folder (and specify the path in the config) to try to bypass this.
 
 ### First time setup
-1. Run the bot with `dotnet TS3AudioBot.dll` and follow the setup instructions.
+1. Run the bot with `./TS3AudioBot` (Linux) or `TS3AudioBot.exe` (Windows) and follow the setup instructions.
 1. (Optional) Close the bot and configure your `rights.toml` to your desires.
 You can use the template rules as suggested in the automatically generated file,
 or dive into the rights syntax [here](https://github.com/Splamy/TS3AudioBot/wiki/Rights).

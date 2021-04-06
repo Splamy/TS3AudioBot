@@ -88,7 +88,7 @@
 									: { name: 'r_settings_offline', params: { name: props.row.Name } }"
 								type="is-info"
 							>
-								<b-icon icon="settings" />
+								<b-icon icon="cog" />
 							</b-button>
 						</b-tooltip>
 						<b-dropdown class="control" aria-role="list" position="is-bottom-left">

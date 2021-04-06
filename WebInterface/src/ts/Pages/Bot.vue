@@ -6,7 +6,7 @@
 					<div class="tabs is-boxed is-fullwidth">
 						<ul>
 							<bot-nav-item label="Server" icon="file-tree" page="r_server" :disabled="!online" />
-							<bot-nav-item label="Settings" icon="settings" page="r_settings" />
+							<bot-nav-item label="Settings" icon="cog" page="r_settings" />
 							<bot-nav-item
 								label="Playlists"
 								icon="playlist-music"

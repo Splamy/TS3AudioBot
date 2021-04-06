@@ -62,7 +62,7 @@
 
 			<b-tooltip label="Site Settings" position="is-bottom">
 				<b-navbar-item tag="a" @click.native="openSiteSettings()">
-					<b-icon icon="settings"></b-icon>
+					<b-icon icon="cog"></b-icon>
 					<span class="is-hidden-desktop">Site Settings</span>
 				</b-navbar-item>
 			</b-tooltip>
