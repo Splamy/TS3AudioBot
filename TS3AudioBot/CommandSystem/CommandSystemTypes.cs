@@ -8,7 +8,9 @@
 
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using TS3AudioBot.CommandSystem.CommandResults;
+using TSLib;
 
 namespace TS3AudioBot.CommandSystem
 {
@@ -35,6 +37,6 @@ namespace TS3AudioBot.CommandSystem
 			typeof(ResourceFactories.AudioResource),
 			typeof(History.AudioLogEntry),
 			typeof(Playlists.PlaylistItem),
-		});
+		}.Concat(TsTypes.All));
 	}
 }

@@ -1597,14 +1597,13 @@ namespace TS3AudioBot
 		}
 
 		[Command("subscribe channel")]
-		public static void CommandSubscribeChannel(IVoiceTarget targetManager, ClientCall? invoker = null, params ulong[] channels_ids)
+		public static void CommandSubscribeChannel(IVoiceTarget targetManager, ClientCall? invoker = null, params ChannelId[] channels)
 		{
-			var channels = Array.ConvertAll(channels_ids, item => (ChannelId)item);
-
-			if (channels == null || channels.Length == 0)
+			if (channels.Length == 0)
 			{
-				var subChan = invoker?.ChannelId ?? ChannelId.Null;
-				targetManager.WhisperChannelSubscribe(false, subChan);
+				var subChan = invoker?.ChannelId;
+				if (subChan.HasValue)
+					targetManager.WhisperChannelSubscribe(false, subChan.Value);
 			}
 			else targetManager.WhisperChannelSubscribe(false, channels);
 		}
@@ -1705,16 +1704,18 @@ namespace TS3AudioBot
 		}
 
 		[Command("unsubscribe channel")]
-		public static void CommandUnsubscribeChannel(IVoiceTarget targetManager, ClientCall? invoker = null, params ulong[] channels_ids)
+		public static void CommandUnsubscribeChannel(IVoiceTarget targetManager, ClientCall? invoker = null, params ChannelId[] channels)
 		{
-			var channels = Array.ConvertAll(channels_ids, item => (ChannelId)item);
-
-			if (channels == null || channels.Length == 0)
+			if (channels.Length == 0)
 			{
-				var subChan = invoker?.ChannelId ?? ChannelId.Null;
-				targetManager.WhisperChannelUnsubscribe(false, subChan);
+				var subChan = invoker?.ChannelId;
+				if (subChan.HasValue)
+					targetManager.WhisperChannelUnsubscribe(false, subChan.Value);
 			}
-			else targetManager.WhisperChannelUnsubscribe(false, channels);
+			else
+			{
+				targetManager.WhisperChannelUnsubscribe(false, channels);
+			}
 		}
 
 		[Command("unsubscribe temporary")]

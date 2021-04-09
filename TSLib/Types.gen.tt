@@ -16,26 +16,32 @@
 <#@ import namespace="System.Collections.Generic" #>
 <#
 var types = new (string alias, string backing)[] {
-	("Uid", "string?"),
-	("ClientDbId", "ulong"),
-	("ClientId", "ushort"),
-	("ChannelId", "ulong"),
-	("ServerGroupId", "ulong"),
-	("ChannelGroupId", "ulong"),
-	//("IconHash", "int"),
-	//("ConnectionId", "uint"),
+	("Uid", "String"),
+	("ClientDbId", "UInt64"),
+	("ClientId", "UInt16"),
+	("ChannelId", "UInt64"),
+	("ServerGroupId", "UInt64"),
+	("ChannelGroupId", "UInt64"),
+	//("IconHash", "Int32"),
+	//("ConnectionId", "UInt32"),
 };
 #>
 #nullable enable
 using Newtonsoft.Json;
 using System;
 using System.Diagnostics;
+using System.Globalization;
 using System.Runtime.InteropServices;
 
 namespace TSLib
 {
+	public static class TsTypes
+	{
+		public static Type[] All => new Type[] { <# foreach(var type in types) { Write($"typeof({type.alias}),"); } #> };
+	}
+
 	<# foreach(var type in types) {
-		var isStr = type.backing.StartsWith("string"); #>
+		var isStr = type.backing.Equals("string",StringComparison.OrdinalIgnoreCase); #>
 	[StructLayout(LayoutKind.Sequential, Pack=0)]
 	[DebuggerDisplay("{Value, nq}")]
 	[JsonConverter(typeof(<#= type.alias #>.Converter))]
@@ -58,6 +64,20 @@ namespace TSLib
 		public bool Equals(<#= type.alias #> other) => Value.Equals(other.Value);
 		public string ToString(string? format, IFormatProvider? formatProvider) => Value.ToString(format, formatProvider);
 		<# } #>
+		public static <#= type.alias #>? TryFrom(object value) {
+			<# if (isStr) { #>
+			if (value is string s) return new <#= type.alias #>(s);
+			return null;
+			<# } else { #>
+			if (value is <#= type.backing #> bvalue) return new <#= type.alias #>(bvalue);
+			if (value is string s && <#= type.backing #>.TryParse(s, out var num)) return new <#= type.alias #>(num);
+			if (value is IConvertible c) return new <#= type.alias #>(c.To<#= type.backing #>(CultureInfo.InvariantCulture));
+
+			return null;
+			<# } #>
+			
+		}
+
 		private class Converter : JsonConverter<<#= type.alias #>>
 		{
 			public override void WriteJson(JsonWriter writer, <#= type.alias #> value, JsonSerializer serializer)

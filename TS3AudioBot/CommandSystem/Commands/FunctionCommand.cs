@@ -14,6 +14,7 @@ using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
+using System.Reflection.Emit;
 using System.Threading.Tasks;
 using TS3AudioBot.CommandSystem.CommandResults;
 using TS3AudioBot.Dependency;
@@ -22,6 +23,7 @@ using TS3AudioBot.Localization;
 using TS3AudioBot.Web.Api;
 using TSLib.Helper;
 using static TS3AudioBot.CommandSystem.CommandSystemTypes;
+using TryFromFn = System.Func<object?, object?>;
 
 namespace TS3AudioBot.CommandSystem.Commands
 {
@@ -158,7 +160,7 @@ namespace TS3AudioBot.CommandSystem.Commands
 					if (arg.Kind == ParamKind.NormalTailString && argResultP is TailString tailString)
 						parameters[p] = tailString.Tail;
 					else
-						parameters[p] = ConvertParam(argResultP, argType, filterLazy);
+						parameters[p] = ConvertParam(argResultP, argType, arg, filterLazy);
 
 					takenArguments++;
 					break;
@@ -171,7 +173,7 @@ namespace TS3AudioBot.CommandSystem.Commands
 					for (int i = 0; i < args.Length; i++, takenArguments++)
 					{
 						var argResultA = await arguments[takenArguments].Execute(info, Array.Empty<ICommand>());
-						var convResult = ConvertParam(argResultA, typeArr, filterLazy);
+						var convResult = ConvertParam(argResultA, typeArr, arg, filterLazy);
 						args.SetValue(convResult, i);
 					}
 
@@ -222,13 +224,62 @@ namespace TS3AudioBot.CommandSystem.Commands
 					kind = ParamKind.NormalArray;
 				else if (arg.IsEnum
 					|| BasicTypes.Contains(arg)
-					|| BasicTypes.Contains(UnwrapParamType(arg)))
+					|| BasicTypes.Contains(UnwrapParamType(arg))
+					|| AdvancedTypes.Contains(arg)
+					|| AdvancedTypes.Contains(UnwrapParamType(arg)))
 					kind = ParamKind.NormalParam;
 				// TODO How to distinguish between special type and dependency?
-				else if (AdvancedTypes.Contains(arg))
-					kind = ParamKind.NormalParam;
 				else
 					kind = ParamKind.Dependency;
+
+				TryFromFn? tryFrom = null;
+				if (kind == ParamKind.NormalParam || kind == ParamKind.NormalArray)
+				{
+					var finalType = arg;
+					if (kind == ParamKind.NormalArray)
+						finalType = finalType.GetElementType() ?? throw new InvalidOperationException("Not an array?");
+					finalType = UnwrapParamType(finalType);
+					var method = finalType.GetMethod("TryFrom", BindingFlags.Public | BindingFlags.Static);
+					if (method != null)
+					{
+						if (method.ReturnType == typeof(object))
+						{
+							// return directly: (object) -> object
+							tryFrom = (TryFromFn)method.CreateDelegate(typeof(TryFromFn));
+						}
+						else if (method.ReturnType.IsClass)
+						{
+							// have: [object]->class
+							// can be casted with covariance to [object]->object
+							tryFrom = (TryFromFn)method.CreateDelegate(typeof(Func<,>).MakeGenericType(typeof(object), method.ReturnType));
+						}
+						else if(method.ReturnType.IsValueType)
+						{
+							static TryFromFn? TryCreateWith(MethodInfo method, Type retType)
+							{
+								if (method.ReturnType != retType) return null;
+								try
+								{
+									var tryFromToObjectWrapper = new DynamicMethod(
+										"TryFromToObjectWrapper", typeof(object), new[] { typeof(object) }, typeof(FunctionCommand).Module);
+									var il = tryFromToObjectWrapper.GetILGenerator();
+									il.Emit(OpCodes.Ldarg_0);
+									il.Emit(OpCodes.Call, method);
+									il.Emit(OpCodes.Box, retType);
+									il.Emit(OpCodes.Ret);
+									return (TryFromFn)tryFromToObjectWrapper.CreateDelegate(typeof(TryFromFn));
+								}
+								catch { return null; }
+							}
+							// have: [object]->value
+							// box with (object)([object]->value)
+							tryFrom ??= TryCreateWith(method, method.ReturnType);
+							// have: [object]->value?
+							// box with (object)([object]->value?)
+							tryFrom ??= TryCreateWith(method, typeof(Nullable<>).MakeGenericType(method.ReturnType));
+						}
+					}
+				}
 
 				if (kind.IsNormal())
 				{
@@ -244,7 +295,8 @@ namespace TS3AudioBot.CommandSystem.Commands
 				precomputed[i] = new ParamInfo(
 					parameterInfo,
 					kind,
-					parameterInfo.IsOptional || parameterInfo.GetCustomAttribute<ParamArrayAttribute>() != null);
+					parameterInfo.IsOptional || parameterInfo.GetCustomAttribute<ParamArrayAttribute>() != null,
+					tryFrom);
 			}
 
 			return precomputed;
@@ -307,7 +359,7 @@ namespace TS3AudioBot.CommandSystem.Commands
 		}
 
 		[return: NotNullIfNotNull("value")]
-		public static object? ConvertParam(object? value, Type targetType, Lazy<Algorithm.IFilter> filter)
+		public static object? ConvertParam(object? value, Type targetType, ParamInfo param, Lazy<Algorithm.IFilter> filter)
 		{
 			if (value is null)
 				return null;
@@ -321,6 +373,15 @@ namespace TS3AudioBot.CommandSystem.Commands
 			valueType = value.GetType();
 			if (targetType == valueType || targetType.IsAssignableFrom(valueType))
 				return value;
+
+			if (param.TryFrom != null)
+			{
+				var tryResult = param.TryFrom(value);
+				if (tryResult != null)
+				{
+					return tryResult;
+				}
+			}
 
 			if (targetType.IsEnum)
 			{
@@ -374,19 +435,21 @@ namespace TS3AudioBot.CommandSystem.Commands
 	}
 
 	[DebuggerDisplay("{Kind} {Name,nq}{Optional ? \"?\" : \"\",nq} ({Type.Name,nq})")]
-	public readonly struct ParamInfo
+	public class ParamInfo
 	{
 		public ParamKind Kind { get; }
 		public bool Optional { get; }
 		public ParameterInfo Param { get; }
-		public readonly Type Type => Param.ParameterType;
-		public readonly string Name => Param.Name ?? "<no name>";
+		public TryFromFn? TryFrom { get; }
+		public Type Type => Param.ParameterType;
+		public string Name => Param.Name ?? "<no name>";
 
-		public ParamInfo(ParameterInfo param, ParamKind kind, bool optional)
+		public ParamInfo(ParameterInfo param, ParamKind kind, bool optional, TryFromFn? tryFrom)
 		{
 			Param = param;
 			Kind = kind;
 			Optional = optional;
+			TryFrom = tryFrom;
 		}
 	}
 
