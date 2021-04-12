@@ -587,7 +587,8 @@ namespace TSLib.Full
 			tmpBuffer[2] = (byte)codec;
 			data.CopyTo(tmpBuffer.Slice(3));
 
-			ctx.PacketHandler.AddOutgoingPacket(tmpBuffer, PacketType.Voice);
+			bool unencrypted = Book.CurrentChannel()?.IsUnencrypted ?? false;
+			ctx.PacketHandler.AddOutgoingPacket(tmpBuffer, PacketType.Voice, unencrypted ? PacketFlags.Unencrypted : PacketFlags.None);
 		}
 
 		public void SendAudioWhisper(in ReadOnlySpan<byte> data, Codec codec, IReadOnlyList<ChannelId> channelIds, IReadOnlyList<ClientId> clientIds)
@@ -614,7 +615,8 @@ namespace TSLib.Full
 				BinaryPrimitives.WriteUInt16BigEndian(tmpBuffer.Slice(5 + channelIds.Count * 8 + (i * 2)), clientIds[i].Value);
 			data.CopyTo(tmpBuffer.Slice(offset));
 
-			ctx.PacketHandler.AddOutgoingPacket(tmpBuffer, PacketType.VoiceWhisper);
+			bool unencrypted = Book.CurrentChannel()?.IsUnencrypted ?? false;
+			ctx.PacketHandler.AddOutgoingPacket(tmpBuffer, PacketType.VoiceWhisper, unencrypted ? PacketFlags.Unencrypted : PacketFlags.None);
 		}
 
 		public void SendAudioGroupWhisper(in ReadOnlySpan<byte> data, Codec codec, GroupWhisperType type, GroupWhisperTarget target, ulong targetId = 0)

@@ -268,7 +268,6 @@ namespace TSLib.Full
 			{
 			case PacketType.Voice:
 			case PacketType.VoiceWhisper:
-				packet.PacketFlags |= PacketFlags.Unencrypted;
 				BinaryPrimitives.WriteUInt16BigEndian(packet.Data, packet.PacketId);
 				LogRawVoice.Trace("[O] {0}", packet);
 				break;
