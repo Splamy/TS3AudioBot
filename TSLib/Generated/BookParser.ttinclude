@@ -13,6 +13,8 @@ public class BookDeclarations
 			{
 				prop.get ??= struc.accessor.get;
 				prop.set ??= struc.accessor.set;
+
+				if (struc.name == "Connection" && prop.name == "OwnClient") prop.name = "OwnClientId";
 			}
 		}
 

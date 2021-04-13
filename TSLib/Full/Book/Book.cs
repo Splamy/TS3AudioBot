@@ -9,6 +9,7 @@
 
 using System;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using TSLib.Helper;
 using TSLib.Messages;
 using SocketAddr = System.String;
@@ -19,14 +20,8 @@ namespace TSLib.Full.Book
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 
-		public Client? Self() => GetClient(OwnClient);
-		public Channel? CurrentChannel()
-		{
-			var self = Self();
-			if (self is null)
-				return null;
-			return GetChannel(self.Channel);
-		}
+		public Client? OwnClient { get; set; }
+		public Channel? OwnChannel { get; set; }
 
 		private void SetServer(Server server)
 		{
@@ -93,22 +88,40 @@ namespace TSLib.Full.Book
 			Channels.Clear();
 			Clients.Clear();
 			Groups.Clear();
-			OwnClient = ClientId.Null;
+			OwnClientId = ClientId.Null;
 			Server = new Server();
+
+			OwnClient = null;
+			OwnChannel = null;
 		}
 
 		// Manual post event functions
 
-		partial void PostClientEnterView(ClientEnterView msg) => SetOwnChannelSubscribed(msg.ClientId);
+		partial void PostClientEnterView(ClientEnterView msg)
+		{
+			var clientId = msg.ClientId;
+			if (clientId == OwnClientId && OwnClient is null)
+			{
+				OwnClient = GetClient(OwnClientId);
+				if (OwnClient is null) Log.Warn("Own client enterd but was not found in Book");
+			}
+
+			SetOwnChannelSubscribed(clientId);
+		}
 		partial void PostClientMoved(ClientMoved msg) => SetOwnChannelSubscribed(msg.ClientId);
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		private void SetOwnChannelSubscribed(ClientId clientId)
 		{
-			if (clientId == OwnClient)
+			if (clientId == OwnClientId && OwnClient != null)
 			{
-				var curChan = CurrentChannel();
-				if (curChan != null)
+				OwnChannel = GetChannel(OwnClient.Channel);
+				if (OwnChannel != null)
 				{
-					curChan.Subscribed = true;
+					OwnChannel.Subscribed = true;
+				}
+				else
+				{
+					Log.Warn("Switched channel but new channel was not found in Book");
 				}
 			}
 		}
@@ -236,7 +249,7 @@ namespace TSLib.Full.Book
 
 		private void SetClientDataFun(InitServer initServer)
 		{
-			OwnClient = initServer.ClientId;
+			OwnClientId = initServer.ClientId;
 		}
 
 		private bool ChannelSubscribeFun(ChannelSubscribed _) => true;

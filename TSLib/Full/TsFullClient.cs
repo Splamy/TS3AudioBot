@@ -587,7 +587,7 @@ namespace TSLib.Full
 			tmpBuffer[2] = (byte)codec;
 			data.CopyTo(tmpBuffer.Slice(3));
 
-			bool unencrypted = Book.CurrentChannel()?.IsUnencrypted ?? false;
+			bool unencrypted = Book.OwnChannel?.IsUnencrypted ?? false;
 			ctx.PacketHandler.AddOutgoingPacket(tmpBuffer, PacketType.Voice, unencrypted ? PacketFlags.Unencrypted : PacketFlags.None);
 		}
 
@@ -615,7 +615,7 @@ namespace TSLib.Full
 				BinaryPrimitives.WriteUInt16BigEndian(tmpBuffer.Slice(5 + channelIds.Count * 8 + (i * 2)), clientIds[i].Value);
 			data.CopyTo(tmpBuffer.Slice(offset));
 
-			bool unencrypted = Book.CurrentChannel()?.IsUnencrypted ?? false;
+			bool unencrypted = Book.OwnChannel?.IsUnencrypted ?? false;
 			ctx.PacketHandler.AddOutgoingPacket(tmpBuffer, PacketType.VoiceWhisper, unencrypted ? PacketFlags.Unencrypted : PacketFlags.None);
 		}
 

@@ -309,7 +309,7 @@ namespace TS3AudioBot
 
 		public async Task SetupRights(string? key)
 		{
-			var self = ts3FullClient.Book.Self();
+			var self = ts3FullClient.Book.OwnClient;
 			if (self is null)
 			{
 				Log.Error("Getting self failed");
@@ -616,11 +616,11 @@ namespace TS3AudioBot
 		}
 
 		private bool AloneRecheckRequired(ClientId clientId, ChannelId channelId)
-			=> ownChannelClients.Contains(clientId) || channelId == ts3FullClient.Book.Self()?.Channel;
+			=> ownChannelClients.Contains(clientId) || channelId == ts3FullClient.Book.OwnClient?.Channel;
 
 		private async ValueTask IsAloneRecheck()
 		{
-			var self = ts3FullClient.Book.Self();
+			var self = ts3FullClient.Book.OwnClient;
 			if (self is null)
 				return;
 			var ownChannel = self.Channel;

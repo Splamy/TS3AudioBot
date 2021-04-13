@@ -153,8 +153,8 @@ namespace TS3AudioBot
 			var problems = new List<SelfDiagnoseMessage>();
 			// ** Diagnose common playback problems and more **
 
-			var self = book.Self();
-			var curChan = book.CurrentChannel();
+			var self = book.OwnClient;
+			var curChan = book.OwnChannel;
 
 			// Check talk power
 			if (self != null && curChan != null && !self.TalkPowerGranted && self.TalkPower < curChan.NeededTalkPower)
@@ -264,7 +264,7 @@ namespace TS3AudioBot
 		public static BotInfo CommandBotInfo(Bot bot) => bot.GetInfo();
 
 		[Command("bot info client", "_undocumented")]
-		public static Client? CommandBotInfoClient(Connection book, ApiCall _) => book.Self();
+		public static Client? CommandBotInfoClient(Connection book, ApiCall _) => book.OwnClient;
 
 		[Command("bot info template", "cmd_bot_info_help")]
 		public static BotInfo CommandBotInfo(BotManager botManager, ConfRoot config, string name)
