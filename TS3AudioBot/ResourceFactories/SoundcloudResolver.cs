@@ -23,6 +23,7 @@ namespace TS3AudioBot.ResourceFactories
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private static readonly Regex SoundcloudLink = new Regex(@"^https?\:\/\/(www\.)?soundcloud\.", Util.DefaultRegexConfig);
+		private static readonly Regex SoundcloudPermalink = new Regex(@"\/\/([^\/]+)\/([^\/]+)\/([^\/]+)$", Util.DefaultRegexConfig);
 		private const string SoundcloudClientId = "a9dd3403f858e105d7e266edc162a0c5";
 
 		private const string AddArtist = "artist";
@@ -89,19 +90,28 @@ namespace TS3AudioBot.ResourceFactories
 
 		private AudioResource? CheckAndGet(JsonTrackInfo track)
 		{
-			if (track == null || track.id == 0 || track.title == null
-				|| track.permalink == null || track.user?.permalink == null)
+			if (track == null || track.id == 0 || track.title == null || track.permalink_url == null)
 			{
 				Log.Debug("Parts of track response are empty: {@json}", track);
 				return null;
 			}
 
+			var permalinkMatch = SoundcloudPermalink.Match(track.permalink_url);
+			if (!permalinkMatch.Success)
+			{
+				Log.Debug("Permalink url didn't match: {url}", track.permalink_url);
+				return null;
+			}
+
+			var permaArtist = permalinkMatch.Groups[2].Value;
+			var permaTrack = permalinkMatch.Groups[3].Value;
+
 			return new AudioResource(
 				track.id.ToString(CultureInfo.InvariantCulture),
 				track.title,
 				ResolverFor)
-				.Add(AddArtist, track.user.permalink)
-				.Add(AddTrack, track.permalink);
+				.Add(AddArtist, permaArtist)
+				.Add(AddTrack, permaTrack);
 		}
 
 		private async Task<PlayResource> YoutubeDlWrappedAsync(string link)
@@ -173,7 +183,7 @@ namespace TS3AudioBot.ResourceFactories
 		{
 			public int id { get; set; }
 			public string? title { get; set; }
-			public string? permalink { get; set; }
+			public string? permalink_url { get; set; }
 			public JsonTrackUser? user { get; set; }
 		}
 		private class JsonTrackUser
