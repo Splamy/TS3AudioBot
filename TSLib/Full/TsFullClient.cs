@@ -638,7 +638,8 @@ namespace TSLib.Full
 			BinaryPrimitives.WriteUInt64BigEndian(tmpBuffer.Slice(5), targetId);
 			data.CopyTo(tmpBuffer.Slice(13));
 
-			ctx.PacketHandler.AddOutgoingPacket(tmpBuffer, PacketType.VoiceWhisper, PacketFlags.Newprotocol);
+			bool unencrypted = Book.OwnChannel?.IsUnencrypted ?? false;
+			ctx.PacketHandler.AddOutgoingPacket(tmpBuffer, PacketType.VoiceWhisper, unencrypted ? PacketFlags.Unencrypted : PacketFlags.None);
 		}
 
 		public async Task<R<ClientConnectionInfo, CommandError>> GetClientConnectionInfo(ClientId clientId)

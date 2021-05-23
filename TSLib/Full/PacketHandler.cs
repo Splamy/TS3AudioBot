@@ -296,7 +296,6 @@ namespace TSLib.Full
 				break;
 
 			case PacketType.AckLow:
-				packet.PacketFlags |= PacketFlags.Unencrypted;
 				LogRaw.Debug("[O] Acking AckLow: {0}", BinaryPrimitives.ReadUInt16BigEndian(packet.Data));
 				break;
 

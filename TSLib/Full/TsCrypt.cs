@@ -658,6 +658,7 @@ namespace TSLib.Full
 		/// <param name="packetId">The id of the packet, host order.</param>
 		/// <param name="generationId">Each time the packetId reaches 65535 the next packet will go on with 0 and the generationId will be increased by 1.</param>
 		/// <param name="packetType">The packetType.</param>
+		/// <param name="dummyEncryption">Returns the const dummy (key,nonce) when true, ignoring all other parameters.</param>
 		/// <returns>A tuple of (key, nonce)</returns>
 		private (byte[] key, byte[] nonce) GetKeyNonce(bool fromServer, ushort packetId, uint generationId, PacketType packetType, bool dummyEncryption)
 		{
@@ -667,7 +668,7 @@ namespace TSLib.Full
 			// only the lower 4 bits are used for the real packetType
 			var packetTypeRaw = (byte)packetType;
 
-			int cacheIndex = packetTypeRaw * (fromServer ? 1 : 2);
+			int cacheIndex = packetTypeRaw + (fromServer ? 0 : cachedKeyNonces.Length / 2);
 			var cacheValue = cachedKeyNonces[cacheIndex];
 			if (cacheValue is null || cacheValue.Value.generation != generationId)
 			{
