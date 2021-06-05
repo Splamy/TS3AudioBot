@@ -1,7 +1,9 @@
 #if NETSTANDARD2_0
 
 using System;
+using System.Buffers;
 using System.Collections.Generic;
+using System.IO;
 
 internal static class Extensions
 {
@@ -18,6 +20,23 @@ internal static class Extensions
 			return dict.Remove(key);
 		}
 		return false;
+	}
+
+	// Stream
+
+	public static int Read(this Stream stream, Span<byte> buffer)
+	{
+		byte[] sharedBuffer = ArrayPool<byte>.Shared.Rent(buffer.Length);
+		try
+		{
+			int read = stream.Read(sharedBuffer, 0, sharedBuffer.Length);
+			sharedBuffer.AsSpan(0, read).CopyTo(buffer);
+			return read;
+		}
+		finally
+		{
+			ArrayPool<byte>.Shared.Return(sharedBuffer);
+		}
 	}
 }
 

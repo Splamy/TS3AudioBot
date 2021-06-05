@@ -29,8 +29,11 @@ namespace TSLib
 		/// False will throw an exception if the file already exists.</param>
 		/// <param name="channelPassword">The password for the channel.</param>
 		/// <returns>A token to track the file transfer.</returns>
-		public Task<R<FileTransferToken, CommandError>> UploadFile(IOFileInfo file, ChannelId channel, string path, bool overwrite = false, string channelPassword = "")
-			=> UploadFile(file.Open(FileMode.Open, FileAccess.Read), channel, path, overwrite, channelPassword);
+		public async Task<R<FileTransferToken, CommandError>> UploadFile(IOFileInfo file, ChannelId channel, string path, bool overwrite = false, string channelPassword = "")
+		{
+			using var fs = file.Open(FileMode.Open, FileAccess.Read, FileShare.Read);
+			return await UploadFile(fs, channel, path, overwrite, channelPassword);
+		}
 
 		/// <summary>Initiate a file upload to the server.</summary>
 		/// <param name="stream">Data stream to upload.</param>
@@ -45,8 +48,8 @@ namespace TSLib
 		public async Task<R<FileTransferToken, CommandError>> UploadFile(Stream stream, ChannelId channel, string path, bool overwrite = false, string channelPassword = "", bool closeStream = true, bool createMd5 = false)
 		{
 			ushort cftid = GetFreeTransferId();
-			var request = await FileTransferInitUpload(channel, path, channelPassword, cftid, stream.Length, overwrite, false);
-			if (!request.Ok)
+			var result = await FileTransferInitUpload(channel, path, channelPassword, cftid, stream.Length, overwrite, false);
+			if (!result.Get(out var request, out var error))
 			{
 				if (closeStream)
 				{
@@ -56,9 +59,9 @@ namespace TSLib
 					await stream.DisposeAsync();
 #endif
 				}
-				return request.Error;
+				return error;
 			}
-			var token = new FileTransferToken(stream, request.Value, channel, path, channelPassword, stream.Length, createMd5) { CloseStreamWhenDone = closeStream };
+			var token = new FileTransferToken(stream, request, channel, path, channelPassword, stream.Length, createMd5) { CloseStreamWhenDone = closeStream };
 			return await Transfer(token);
 		}
 
@@ -68,8 +71,11 @@ namespace TSLib
 		/// <param name="path">The download path within the channel. Eg: "file.txt", "path/file.png"</param>
 		/// <param name="channelPassword">The password for the channel.</param>
 		/// <returns>A token to track the file transfer.</returns>
-		public Task<R<FileTransferToken, CommandError>> DownloadFile(IOFileInfo file, ChannelId channel, string path, string channelPassword = "")
-			=> DownloadFile(file.Open(FileMode.Create, FileAccess.Write), channel, path, channelPassword, true);
+		public async Task<R<FileTransferToken, CommandError>> DownloadFile(IOFileInfo file, ChannelId channel, string path, string channelPassword = "")
+		{
+			using var fs = file.Open(FileMode.Create, FileAccess.Write, FileShare.None);
+			return await DownloadFile(fs, channel, path, channelPassword, true);
+		}
 
 		/// <summary>Initiate a file download from the server.</summary>
 		/// <param name="stream">Data stream to write to.</param>
@@ -81,8 +87,8 @@ namespace TSLib
 		public async Task<R<FileTransferToken, CommandError>> DownloadFile(Stream stream, ChannelId channel, string path, string channelPassword = "", bool closeStream = true)
 		{
 			ushort cftid = GetFreeTransferId();
-			var request = await FileTransferInitDownload(channel, path, channelPassword, cftid, 0);
-			if (!request.Ok)
+			var result = await FileTransferInitDownload(channel, path, channelPassword, cftid, 0);
+			if (!result.Get(out var request, out var error))
 			{
 				if (closeStream)
 				{
@@ -92,9 +98,9 @@ namespace TSLib
 					await stream.DisposeAsync();
 #endif
 				}
-				return request.Error;
+				return error;
 			}
-			var token = new FileTransferToken(stream, request.Value, channel, path, channelPassword, 0) { CloseStreamWhenDone = closeStream };
+			var token = new FileTransferToken(stream, request, channel, path, channelPassword, 0) { CloseStreamWhenDone = closeStream };
 			return await Transfer(token);
 		}
 
@@ -196,9 +202,8 @@ namespace TSLib
 			if (token.Direction == TransferDirection.Upload)
 			{
 				var result = await FileTransferInitUpload(token.ChannelId, token.Path, token.ChannelPassword, token.ClientTransferId, token.Size, false, true);
-				if (!result.Ok)
-					return result.Error;
-				var request = result.Value;
+				if (!result.Get(out var request, out var error))
+					return error;
 				token.ServerTransferId = request.ServerFileTransferId;
 				token.SeekPosition = (long)request.SeekPosition;
 				token.Port = request.Port;
@@ -207,9 +212,8 @@ namespace TSLib
 			else // Download
 			{
 				var result = await FileTransferInitDownload(token.ChannelId, token.Path, token.ChannelPassword, token.ClientTransferId, token.LocalStream.Position);
-				if (!result.Ok)
-					return result.Error;
-				var request = result.Value;
+				if (!result.Get(out var request, out var error))
+					return error;
 				token.ServerTransferId = request.ServerFileTransferId;
 				token.SeekPosition = -1;
 				token.Port = request.Port;

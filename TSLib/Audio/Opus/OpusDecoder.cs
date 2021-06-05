@@ -29,9 +29,13 @@ namespace TSLib.Audio.Opus
 	/// </summary>
 	public sealed class OpusDecoder : IDisposable
 	{
-		/// <summary>
-		/// Creates a new Opus decoder.
-		/// </summary>
+		/// <summary>Creates a new Opus decoder.</summary>
+		/// <param name="sampleInfo">The <see cref="SampleInfo"/> for this decoder.</param>
+		/// <returns>A new <c>OpusDecoder</c>.</returns>
+		public static OpusDecoder Create(SampleInfo sampleInfo)
+			=> Create(sampleInfo.SampleRate, sampleInfo.Channels);
+
+		/// <summary>Creates a new Opus decoder.</summary>
 		/// <param name="outputSampleRate">Sample rate to decode at (Hz). This must be one of 8000, 12000, 16000, 24000, or 48000.</param>
 		/// <param name="outputChannels">Number of channels to decode.</param>
 		/// <returns>A new <c>OpusDecoder</c>.</returns>

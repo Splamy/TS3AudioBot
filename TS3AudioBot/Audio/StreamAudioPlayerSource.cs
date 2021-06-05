@@ -31,7 +31,7 @@ namespace TS3AudioBot.Audio
 			InStream = stream;
 		}
 
-		public int Read(byte[] buffer, int offset, int length, out Meta? meta)
+		public int Read(Span<byte> data, out Meta? meta)
 		{
 			var stream = InStream;
 			if (stream is null)
@@ -40,7 +40,7 @@ namespace TS3AudioBot.Audio
 				return 0;
 			}
 
-			var read = stream.Read(buffer, offset, length, out meta);
+			var read = stream.Read(data, out meta);
 			if (read == 0 && !hasFired)
 			{
 				hasFired = true;
@@ -52,7 +52,7 @@ namespace TS3AudioBot.Audio
 
 		public void Reset() => hasFired = false;
 
-		public void Dispose() => InStream?.Dispose();
+		public void Dispose() { }
 
 		public Task Seek(TimeSpan position) { throw new NotSupportedException(); }
 	}

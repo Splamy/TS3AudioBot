@@ -7,6 +7,7 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System;
 using System.IO;
 
 namespace TSLib.Audio
@@ -17,10 +18,10 @@ namespace TSLib.Audio
 
 		public StreamAudioProducer(Stream stream) { this.stream = stream; }
 
-		public int Read(byte[] buffer, int offset, int length, out Meta? meta)
+		public int Read(Span<byte> data, out Meta? meta)
 		{
 			meta = default;
-			return stream.Read(buffer, offset, length);
+			return stream.Read(data);
 		}
 
 		public void Dispose() => stream.Dispose();

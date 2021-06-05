@@ -13,7 +13,7 @@ using TSLib.Audio;
 
 namespace TS3AudioBot.Audio
 {
-	public interface IPlayerSource : IAudioPassiveProducer
+	public interface IPlayerSource : IAudioPassiveProducer, IDisposable
 	{
 		event EventHandler OnSongEnd;
 		event EventHandler<SongInfoChanged> OnSongUpdated;

@@ -100,11 +100,18 @@ namespace TS3AudioBot.Playlists.Parser
 
 		public override void WriteJson(JsonWriter writer, XspfMeta? value, JsonSerializer serializer)
 		{
+			if (value is null)
+			{
+				writer.WriteNull();
+			}
+			else
+			{
 			if (value is null) throw new ArgumentNullException(nameof(value));
-			writer.WriteStartObject();
-			writer.WritePropertyName(value.Key);
-			writer.WriteValue(value.Value);
-			writer.WriteEndObject();
+				writer.WriteStartObject();
+				writer.WritePropertyName(value.Key);
+				writer.WriteValue(value.Value);
+				writer.WriteEndObject();
+			}
 		}
 	}
 }

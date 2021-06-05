@@ -323,12 +323,12 @@ namespace TSLib
 
 		public async CmdR UploadAvatar(System.IO.Stream image)
 		{
-			var token = await UploadFile(image, ChannelId.Null, "/avatar", overwrite: true, createMd5: true);
-			if (!token.Ok)
-				return CommandError.Custom("Avatar upload failed: " + token.Error.ErrorFormat());
-			if (token.Value.Status != TransferStatus.Done)
+			var result = await UploadFile(image, ChannelId.Null, "/avatar", overwrite: true, createMd5: true);
+			if (!result.Get(out var token, out var error))
+				return CommandError.Custom("Avatar upload failed: " + error.ErrorFormat());
+			if (token.Status != TransferStatus.Done)
 				return CommandError.Custom("Avatar upload failed");
-			var md5 = string.Concat(token.Value.Md5Sum.Select(x => x.ToString("x2")));
+			var md5 = string.Concat(token.Md5Sum.Select(x => x.ToString("x2")));
 			return await SendVoid(new TsCommand("clientupdate") { { "client_flag_avatar", md5 } });
 		}
 

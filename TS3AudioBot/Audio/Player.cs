@@ -42,7 +42,7 @@ namespace TS3AudioBot.Audio
 			VolumePipe = new VolumePipe();
 			Volume = config.Audio.Volume.Default;
 			EncoderPipe = new EncoderPipe(SendCodec) { Bitrate = ScaleBitrate(config.Audio.Bitrate) };
-			TimePipe = new PreciseTimedPipe(EncoderPipe, id) { ReadBufferSize = EncoderPipe.PacketSize };
+			TimePipe = new PreciseTimedPipe(EncoderPipe.SampleInfo, id) { ReadBufferSize = EncoderPipe.PacketSize };
 			MergePipe = new PassiveMergePipe();
 
 			config.Audio.Bitrate.Changed += (s, e) => EncoderPipe.Bitrate = ScaleBitrate(e.NewValue);
@@ -113,7 +113,7 @@ namespace TS3AudioBot.Audio
 		{
 			Stop();
 			TimePipe.Paused = true;
-			MergePipe.Dispose();
+			MergePipe.Clear();
 		}
 
 		public TimeSpan? Length => CurrentPlayerSource?.Length;

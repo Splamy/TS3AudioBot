@@ -664,10 +664,11 @@ namespace TSLib.Full
 			=> SendNotifyCommand(new TsCommand("servergetvariables"),
 				NotificationType.ServerUpdated).MapToSingle<ServerUpdated>();
 
-		public CmdR SendPluginCommand(string name, string data, PluginTargetMode targetmode)
+		public CmdR SendPluginCommand(string name, string data, PluginTargetMode targetmode, ClientId? client = null)
 			=> SendVoid(new TsCommand("plugincmd") {
 				{ "name", name },
 				{ "data", data },
+				{ "target", client },
 				{ "targetmode", (int)targetmode },
 			});
 

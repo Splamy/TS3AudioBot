@@ -128,15 +128,15 @@ namespace TS3AudioBot.Audio
 			await Play(invoker, playResource.MergeMeta(meta));
 		}
 
-		public Task Play(InvokerData invoker, IEnumerable<PlaylistItem> items, int index = 0)
+		public async Task Play(InvokerData invoker, IEnumerable<PlaylistItem> items, int index = 0)
 		{
 			playlistManager.Clear();
 			playlistManager.Queue(items.Select(x => UpdateItem(invoker, x)));
 			playlistManager.Index = index;
-			return StartCurrent(invoker);
+			await StartCurrent(invoker);
 		}
 
-		public Task Play(InvokerData invoker, PlaylistItem item)
+		public async Task Play(InvokerData invoker, PlaylistItem item)
 		{
 			if (item is null)
 				throw new ArgumentNullException(nameof(item));
@@ -146,7 +146,7 @@ namespace TS3AudioBot.Audio
 			playlistManager.Clear();
 			playlistManager.Queue(item);
 			playlistManager.Index = 0;
-			return StartResource(invoker, item);
+			await StartResource(invoker, item);
 		}
 
 		public Task Play(InvokerData invoker) => StartCurrent(invoker);
@@ -156,13 +156,29 @@ namespace TS3AudioBot.Audio
 		/// <param name="play">The associated resource type string to a factory.</param>
 		/// <param name="meta">Allows overriding certain settings for the resource.</param>
 		/// <returns>Ok if successful, or an error message otherwise.</returns>
-		public Task Play(InvokerData invoker, PlayResource play)
+		public async Task Play(InvokerData invoker, PlayResource play)
 		{
 			playlistManager.Clear();
 			playlistManager.Queue(PlaylistItem.From(play));
 			playlistManager.Index = 0;
 			stats.TrackSongLoad(play.AudioResource.AudioType, true, true);
-			return StartResource(invoker, play);
+			await StartResource(invoker, play);
+		}
+
+		private async Task StartCurrent(InvokerData invoker, bool manually = true)
+		{
+			var pli = playlistManager.Current;
+			if (pli is null)
+				throw Error.LocalStr(strings.error_playlist_is_empty);
+			try
+			{
+				await StartResource(invoker, pli);
+			}
+			catch (AudioBotException ex)
+			{
+				Log.Warn("Skipping: {0} because {1}", pli, ex.Message);
+				await Next(invoker, manually);
+			}
 		}
 
 		private async Task StartResource(InvokerData invoker, PlaylistItem item)
@@ -201,22 +217,6 @@ namespace TS3AudioBot.Audio
 			playerConnection.Volume = Tools.Clamp(playerConnection.Volume, confBot.Audio.Volume.Min, confBot.Audio.Volume.Max);
 			CurrentPlayData = playInfo; // TODO meta as readonly
 			await AfterResourceStarted.InvokeAsync(this, playInfo);
-		}
-
-		private async Task StartCurrent(InvokerData invoker, bool manually = true)
-		{
-			var pli = playlistManager.Current;
-			if (pli is null)
-				throw Error.LocalStr(strings.error_playlist_is_empty);
-			try
-			{
-				await StartResource(invoker, pli);
-			}
-			catch (AudioBotException ex)
-			{
-				Log.Warn("Skipping: {0} because {1}", pli, ex.Message);
-				await Next(invoker, manually);
-			}
 		}
 
 		public async Task Next(InvokerData invoker, bool manually = true)

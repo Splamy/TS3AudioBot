@@ -7,13 +7,14 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System;
 using System.Runtime.InteropServices;
 
 namespace TSLib.Audio
 {
 	public static class AudioTools
 	{
-		public static bool TryMonoToStereo(byte[] pcm, ref int length)
+		public static bool TryMonoToStereo(Span<byte> pcm, ref int length)
 		{
 			if (length / 2 >= pcm.Length)
 				return false;

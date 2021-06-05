@@ -29,9 +29,14 @@ namespace TSLib.Audio.Opus
 	/// </summary>
 	public sealed class OpusEncoder : IDisposable
 	{
-		/// <summary>
-		/// Creates a new Opus encoder.
-		/// </summary>
+		/// <summary>Creates a new Opus encoder.</summary>
+		/// <param name="sampleInfo"> The <see cref="SampleInfo"/> for this encoder.</param>
+		/// <param name="application">Coding mode.</param>
+		/// <returns>A new <c>OpusEncoder</c></returns>
+		public static OpusEncoder Create(SampleInfo sampleInfo, Application application)
+			=> Create(sampleInfo.SampleRate, sampleInfo.Channels, application);
+
+		/// <summary>Creates a new Opus encoder.</summary>
 		/// <param name="inputSamplingRate">Sampling rate of the input signal (Hz). This must be one of 8000, 12000, 16000, 24000, or 48000.</param>
 		/// <param name="inputChannels">Number of channels (1 or 2) in input signal.</param>
 		/// <param name="application">Coding mode.</param>

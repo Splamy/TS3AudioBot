@@ -13,14 +13,10 @@ using TSLib.Audio.Opus;
 
 namespace TSLib.Audio
 {
-	public class DecoderPipe : IAudioPipe, IDisposable, ISampleInfo
+	public class DecoderPipe : IAudioPipe, IDisposable
 	{
 		public bool Active => OutStream?.Active ?? false;
 		public IAudioPassiveConsumer? OutStream { get; set; }
-
-		public int SampleRate { get; } = 48_000;
-		public int Channels { get; } = 2;
-		public int BitsPerSample { get; } = 16;
 
 		// TOOO:
 		// - Add some sort of decoder reuse to reduce concurrent amount of decoders (see ctl 'reset')
@@ -86,8 +82,8 @@ namespace TSLib.Audio
 		{
 			return codec switch
 			{
-				Codec.OpusVoice => OpusDecoder.Create(SampleRate, 1),
-				Codec.OpusMusic => OpusDecoder.Create(SampleRate, 2),
+				Codec.OpusVoice => OpusDecoder.Create(SampleInfo.OpusVoice),
+				Codec.OpusMusic => OpusDecoder.Create(SampleInfo.OpusMusic),
 				_ => throw new NotSupportedException(),
 			};
 		}

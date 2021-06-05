@@ -64,7 +64,7 @@ namespace TSLib.Audio
 			}
 		}
 
-		public int Read(byte[] buffer, int offset, int length, out Meta? meta)
+		public int Read(Span<byte> data, out Meta? meta)
 		{
 			if (changed)
 			{
@@ -84,17 +84,17 @@ namespace TSLib.Audio
 				return 0;
 
 			if (safeProducerList.Length == 1)
-				return safeProducerList[0].Read(buffer, offset, length, out meta);
+				return safeProducerList[0].Read(data, out _);
 
-			int maxReadLength = Math.Min(accBuffer.Length, length);
+			int maxReadLength = Math.Min(accBuffer.Length, data.Length);
 			Array.Clear(accBuffer, 0, maxReadLength);
 
-			var pcmBuffer = MemoryMarshal.Cast<byte, short>(buffer);
+			var pcmBuffer = MemoryMarshal.Cast<byte, short>(data);
 			int read = 0;
 
 			foreach (var producer in safeProducerList)
 			{
-				int ppread = producer.Read(buffer, offset, maxReadLength, out meta);
+				int ppread = producer.Read(data[..maxReadLength], out meta);
 				if (ppread == 0)
 					continue;
 
@@ -116,13 +116,5 @@ namespace TSLib.Audio
 		public bool Contains(IAudioPassiveProducer item) => safeProducerList.Contains(item);
 
 		public void CopyTo(IAudioPassiveProducer[] array, int arrayIndex) => Array.Copy(safeProducerList, 0, array, arrayIndex, array.Length);
-
-		public void Dispose()
-		{
-			var list = safeProducerList;
-			Clear();
-			foreach (var producer in list)
-				producer.Dispose();
-		}
 	}
 }

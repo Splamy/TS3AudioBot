@@ -23,7 +23,7 @@ using TSLib.Scheduler;
 
 namespace TS3AudioBot.Audio
 {
-	public class FfmpegProducer : IPlayerSource, ISampleInfo, IDisposable
+	public class FfmpegProducer : IPlayerSource, IDisposable
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private readonly Id id;
@@ -41,10 +41,7 @@ namespace TS3AudioBot.Audio
 
 		private readonly DedicatedTaskScheduler scheduler;
 		private FfmpegInstance? ffmpegInstance;
-
-		public int SampleRate { get; } = 48000;
-		public int Channels { get; } = 2;
-		public int BitsPerSample { get; } = 16;
+		public SampleInfo SampleInfo { get; } = SampleInfo.OpusMusic;
 
 		public FfmpegProducer(ConfToolsFfmpeg config, DedicatedTaskScheduler scheduler, Id id)
 		{
@@ -72,7 +69,7 @@ namespace TS3AudioBot.Audio
 
 		public Task Seek(TimeSpan position) { SetPosition(position); return Task.CompletedTask; }
 
-		public int Read(byte[] buffer, int offset, int length, out Meta? meta)
+		public int Read(Span<byte> data, out Meta? meta)
 		{
 			meta = default;
 			int read;
@@ -84,7 +81,7 @@ namespace TS3AudioBot.Audio
 
 			try
 			{
-				read = instance.FfmpegProcess.StandardOutput.BaseStream.Read(buffer, 0, length);
+				read = instance.FfmpegProcess.StandardOutput.BaseStream.Read(data);
 			}
 			catch (Exception ex)
 			{
@@ -135,15 +132,14 @@ namespace TS3AudioBot.Audio
 					{
 						Log.Debug("Connection to song lost, retrying at {0}", actualStopPosition);
 						instance.HasTriedToReconnect = true;
-						var newInstance = SetPosition(actualStopPosition);
-						if (newInstance.Ok)
+						if (SetPosition(actualStopPosition).Get(out var newInstance, out var error))
 						{
-							newInstance.Value.HasTriedToReconnect = true;
+							newInstance.HasTriedToReconnect = true;
 							return (true, false);
 						}
 						else
 						{
-							Log.Debug("Retry failed {0}", newInstance.Error);
+							Log.Debug("Retry failed {0}", error);
 							return (false, true);
 						}
 					}
@@ -209,7 +205,7 @@ namespace TS3AudioBot.Audio
 
 			var newInstance = new FfmpegInstance(
 				url,
-				new PreciseAudioTimer(this)
+				new PreciseAudioTimer(SampleInfo)
 				{
 					SongPositionOffset = offset,
 				});
@@ -238,7 +234,7 @@ namespace TS3AudioBot.Audio
 				var stream = await response.Content.ReadAsStreamAsync();
 				var newInstance = new FfmpegInstance(
 					url,
-					new PreciseAudioTimer(this),
+					new PreciseAudioTimer(SampleInfo),
 					stream,
 					metaint)
 				{
@@ -497,4 +493,7 @@ namespace TS3AudioBot.Audio
 			}
 		}
 	}
+
+	// Icy: IcyLoop +=> FFmpeg -=> Buffer -=> TimePipe
+	// Nrm:             FFmpeg -=> Buffer -=> TimePipe
 }

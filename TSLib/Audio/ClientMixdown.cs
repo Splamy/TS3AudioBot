@@ -78,22 +78,21 @@ namespace TSLib.Audio
 				}
 			}
 
-			public int Read(byte[] buffer, int offset, int length, out Meta? meta)
+			public int Read(Span<byte> data, out Meta? meta)
 			{
 				lock (rwLock)
 				{
-					int take = Math.Min(Length, length);
+					int take = Math.Min(Length, data.Length);
 
-					Array.Copy(Buffer, 0, buffer, offset, take);
-					Array.Copy(Buffer, take, Buffer, 0, Buffer.Length - take);
+					var bufferSpan = Buffer.AsSpan();
+					bufferSpan[..take].CopyTo(data);
+					bufferSpan[take..].CopyTo(bufferSpan);
 					Length -= take;
 
 					meta = default;
 					return take;
 				}
 			}
-
-			public void Dispose() { }
 		}
 	}
 }

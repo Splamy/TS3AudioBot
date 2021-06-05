@@ -14,11 +14,9 @@ namespace TSLib.Audio
 {
 	/// <summary>Provides a precise way to measure a playbackbuffer by tracking
 	/// sent bytes and elapsed time.</summary>
-	public class PreciseAudioTimer : ISampleInfo
+	public class PreciseAudioTimer
 	{
-		public int SampleRate { get; }
-		public int Channels { get; }
-		public int BitsPerSample { get; }
+		public SampleInfo SampleInfo { get; }
 		public int BytesPerSecond { get; }
 
 		private readonly Stopwatch stopwatch;
@@ -38,19 +36,19 @@ namespace TSLib.Audio
 		/// <summary>The current playback position.</summary>
 		public TimeSpan SongPosition => AbsoluteBufferDuration + SongPositionOffset;
 
-		public PreciseAudioTimer(ISampleInfo sampleInfo)
-			: this(sampleInfo.SampleRate, sampleInfo.BitsPerSample, sampleInfo.Channels) { }
+		public PreciseAudioTimer(int sampleRate, int channel, int bits)
+			: this(new SampleInfo(sampleRate, channel, bits)) { }
 
-		public PreciseAudioTimer(int sampleRate, int bits, int channel)
+		public PreciseAudioTimer(SampleInfo sampleInfo)
 		{
+			var bits = sampleInfo.BitsPerSample;
 			if (bits != 8 && bits != 16 && bits != 24 && bits != 32) throw new ArgumentException(nameof(bits));
+			var channel = sampleInfo.Channels;
 			if (channel != 1 && channel != 2) throw new ArgumentException(nameof(channel));
 			stopwatch = new Stopwatch();
 
-			SampleRate = sampleRate;
-			BitsPerSample = bits;
-			Channels = channel;
-			BytesPerSecond = SampleRate * (BitsPerSample / 8) * Channels;
+			SampleInfo = sampleInfo;
+			BytesPerSecond = SampleInfo.GetBytesPerSecond();
 		}
 
 		public void Start()

@@ -176,10 +176,10 @@ namespace TS3AudioBot.Helper
 
 		public static T UnwrapThrow<T>(this R<T, LocalStr> r) where T : notnull
 		{
-			if (r.Ok)
-				return r.Value;
+			if (r.Get(out var value, out var error))
+				return value;
 			else
-				throw new CommandException(r.Error.Str, CommandExceptionReason.CommandError);
+				throw new CommandException(error.Str, CommandExceptionReason.CommandError);
 		}
 
 		public static bool UnwrapToLog(this E<LocalStr> r, NLog.Logger logger, NLog.LogLevel? level = null)

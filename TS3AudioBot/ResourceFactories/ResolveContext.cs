@@ -10,6 +10,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 using TS3AudioBot.Config;
 using TS3AudioBot.Playlists;
@@ -27,8 +28,8 @@ namespace TS3AudioBot.ResourceFactories
 			Config = config;
 		}
 
-		public Task<PlayResource> Load(AudioResource resource) => Resolver.Load(this, resource);
-		public Task<PlayResource> Load(string message, string? audioType = null) => Resolver.Load(this, message, audioType);
+		public Task<PlayResource> Load(AudioResource resource, CancellationToken token = default) => Resolver.Load(this, resource);
+		public Task<PlayResource> Load(string message, string? audioType = null, CancellationToken token = default) => Resolver.Load(this, message, audioType);
 		public Task<Playlist> LoadPlaylistFrom(string message, string? audioType = null) => Resolver.LoadPlaylistFrom(this, message, audioType);
 		public string? RestoreLink(AudioResource res) => Resolver.RestoreLink(this, res);
 		public Task GetThumbnail(PlayResource playResource, Func<Stream, Task> action) => Resolver.GetThumbnail(this, playResource, action);

@@ -15,21 +15,7 @@ namespace TSLib.Audio
 	{
 		public static T Chain<T>(this IAudioActiveProducer producer, T addConsumer) where T : IAudioPassiveConsumer
 		{
-			if (producer.OutStream is null)
-			{
-				producer.OutStream = addConsumer;
-			}
-			else if (producer.OutStream is PassiveSplitterPipe splitter)
-			{
-				splitter.Add(addConsumer);
-			}
-			else
-			{
-				splitter = new PassiveSplitterPipe();
-				splitter.Add(addConsumer);
-				splitter.Add(producer.OutStream);
-				producer.OutStream = splitter;
-			}
+			producer.OutStream = addConsumer;
 			return addConsumer;
 		}
 

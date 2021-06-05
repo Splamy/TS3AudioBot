@@ -14,9 +14,9 @@ namespace TSLib.Audio
 	public interface IAudioStream { }
 
 	/// <summary>Passive producer will serve audio data that must be read.</summary>
-	public interface IAudioPassiveProducer : IAudioStream, IDisposable
+	public interface IAudioPassiveProducer : IAudioStream
 	{
-		int Read(byte[] buffer, int offset, int length, out Meta? meta);
+		int Read(Span<byte> data, out Meta? meta);
 	}
 	/// <summary>Active producer will push audio to the out stream.</summary>
 	public interface IAudioActiveProducer : IAudioStream
@@ -39,25 +39,4 @@ namespace TSLib.Audio
 	// - Use Active-Propagiation: `Active => OutStream?.Active ?? false`
 	// - Alway check `OutStream != null` at begin of Write(...)
 	public interface IAudioPipe : IAudioPassiveConsumer, IAudioActiveProducer { }
-
-	public interface ISampleInfo
-	{
-		int SampleRate { get; }
-		int Channels { get; }
-		int BitsPerSample { get; }
-	}
-
-	public sealed class SampleInfo : ISampleInfo
-	{
-		public int SampleRate { get; }
-		public int Channels { get; }
-		public int BitsPerSample { get; }
-
-		public SampleInfo(int sampleRate, int channels, int bitsPerSample)
-		{
-			SampleRate = sampleRate;
-			Channels = channels;
-			BitsPerSample = bitsPerSample;
-		}
-	}
 }

@@ -12,15 +12,13 @@ using TSLib.Audio.Opus;
 
 namespace TSLib.Audio
 {
-	public class EncoderPipe : IAudioPipe, IDisposable, ISampleInfo
+	public class EncoderPipe : IAudioPipe, IDisposable
 	{
 		public bool Active => OutStream?.Active ?? false;
 		public IAudioPassiveConsumer? OutStream { get; set; }
 
 		public Codec Codec { get; }
-		public int SampleRate { get; }
-		public int Channels { get; }
-		public int BitsPerSample { get; }
+		public SampleInfo SampleInfo { get; }
 
 		public int PacketSize { get; }
 		public int Bitrate { get => opusEncoder.Bitrate; set => opusEncoder.Bitrate = value; }
@@ -54,16 +52,14 @@ namespace TSLib.Audio
 				throw new NotSupportedException();
 
 			case Codec.OpusVoice:
-				SampleRate = 48000;
-				Channels = 1;
-				opusEncoder = OpusEncoder.Create(SampleRate, Channels, Application.Voip);
+				SampleInfo = SampleInfo.OpusVoice;
+				opusEncoder = OpusEncoder.Create(SampleInfo, Application.Voip);
 				Bitrate = 8192 * 2;
 				break;
 
 			case Codec.OpusMusic:
-				SampleRate = 48000;
-				Channels = 2;
-				opusEncoder = OpusEncoder.Create(SampleRate, Channels, Application.Audio);
+				SampleInfo = SampleInfo.OpusMusic;
+				opusEncoder = OpusEncoder.Create(SampleInfo, Application.Audio);
 				Bitrate = 8192 * 4;
 				break;
 
@@ -71,7 +67,6 @@ namespace TSLib.Audio
 				throw new ArgumentOutOfRangeException(nameof(codec));
 			}
 
-			BitsPerSample = 16;
 			PacketSize = opusEncoder.FrameByteCount(SegmentFrames);
 		}
 
@@ -104,11 +99,6 @@ namespace TSLib.Audio
 			}
 
 			soundBuffer.Slice(segmentsEnd, notEncodedLength).CopyTo(soundBuffer);
-		}
-
-		public TimeSpan GetPlayLength(int bytes)
-		{
-			return TimeSpan.FromSeconds(bytes / (double)(SampleRate * (BitsPerSample / 8) * Channels));
 		}
 
 		public void Dispose()
