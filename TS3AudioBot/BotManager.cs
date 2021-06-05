@@ -23,8 +23,8 @@ namespace TS3AudioBot
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 
-		private List<Bot?>? activeBots = new List<Bot?>();
-		private readonly object lockObj = new object();
+		private List<Bot?>? activeBots = new();
+		private readonly object lockObj = new();
 
 		private readonly ConfRoot confRoot;
 		private readonly CoreInjector coreInjector;

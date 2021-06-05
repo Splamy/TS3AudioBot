@@ -621,7 +621,7 @@ namespace TS3AudioBot
 
 		#endregion
 
-		public BotInfo GetInfo() => new BotInfo
+		public BotInfo GetInfo() => new()
 		{
 			Id = Id,
 			Name = config.Name,

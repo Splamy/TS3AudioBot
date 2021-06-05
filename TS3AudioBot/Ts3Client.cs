@@ -57,10 +57,10 @@ namespace TS3AudioBot
 		private readonly ConfBot config;
 		private readonly TsFullClient ts3FullClient;
 		private IdentityData? identity;
-		private List<ClientList> clientbuffer = new List<ClientList>();
+		private List<ClientList> clientbuffer = new();
 		private bool clientbufferOutdated = true;
-		private readonly TimedCache<ClientDbId, ClientDbInfo> clientDbNames = new TimedCache<ClientDbId, ClientDbInfo>();
-		private readonly LruCache<Uid, ClientDbId> dbIdCache = new LruCache<Uid, ClientDbId>(128);
+		private readonly TimedCache<ClientDbId, ClientDbInfo> clientDbNames = new();
+		private readonly LruCache<Uid, ClientDbId> dbIdCache = new(128);
 		private bool alone = true;
 		private ChannelId? reconnectChannel = null;
 		private ClientId[] ownChannelClients = Array.Empty<ClientId>();

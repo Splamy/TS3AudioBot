@@ -29,9 +29,9 @@ namespace TS3AudioBot.CommandSystem
 			typeof(float), typeof(double),
 			typeof(TimeSpan), typeof(DateTime),
 			typeof(string) };
-		public static readonly HashSet<Type> BasicTypes = new HashSet<Type>(TypeOrder);
+		public static readonly HashSet<Type> BasicTypes = new(TypeOrder);
 
-		public static readonly HashSet<Type> AdvancedTypes = new HashSet<Type>(new Type[] {
+		public static readonly HashSet<Type> AdvancedTypes = new(new Type[] {
 			typeof(IAudioResourceResult),
 			typeof(System.Collections.IEnumerable),
 			typeof(ResourceFactories.AudioResource),

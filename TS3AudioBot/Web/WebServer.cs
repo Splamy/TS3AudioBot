@@ -179,7 +179,7 @@ namespace TS3AudioBot.Web
 			})();
 		}
 
-		public void OnShutdown()
+		public static void OnShutdown()
 		{
 			Log.Info("WebServer has closed");
 		}

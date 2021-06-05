@@ -106,7 +106,7 @@ namespace TS3AudioBot.Playlists.Parser
 			}
 			else
 			{
-			if (value is null) throw new ArgumentNullException(nameof(value));
+				if (value is null) throw new ArgumentNullException(nameof(value));
 				writer.WriteStartObject();
 				writer.WritePropertyName(value.Key);
 				writer.WriteValue(value.Value);

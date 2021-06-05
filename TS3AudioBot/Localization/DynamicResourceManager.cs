@@ -17,7 +17,7 @@ namespace TS3AudioBot.Localization
 {
 	internal class DynamicResourceManager : ResourceManager
 	{
-		private readonly Dictionary<string, ResourceSet> dynamicResourceSets = new Dictionary<string, ResourceSet>();
+		private readonly Dictionary<string, ResourceSet> dynamicResourceSets = new();
 
 		public DynamicResourceManager(string baseName, Assembly assembly) : base(baseName, assembly)
 		{

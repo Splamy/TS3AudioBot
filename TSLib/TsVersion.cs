@@ -16,9 +16,10 @@ namespace TSLib
 	/// <summary>Describes a version tuple of version and platform.</summary>
 	public class TsVersion
 	{
-		protected static readonly Regex VersionPattern = new Regex(@"([^ ])* \[Build: (\d+)\]", RegexOptions.ECMAScript | RegexOptions.Compiled);
+		protected static readonly Regex VersionPattern = new(@"([^ ])* \[Build: (\d+)\]", RegexOptions.ECMAScript | RegexOptions.Compiled);
 
-		private static readonly Dictionary<string, ClientPlatform> Platforms = new() {
+		private static readonly Dictionary<string, ClientPlatform> Platforms = new()
+		{
 			{ "Windows", ClientPlatform.Windows },
 			{ "Linux", ClientPlatform.Linux },
 			{ "OS X", ClientPlatform.MacOs },

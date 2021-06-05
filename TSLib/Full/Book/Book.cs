@@ -102,7 +102,8 @@ namespace TSLib.Full.Book
 		{
 			Channels.Clear();
 			Clients.Clear();
-			Groups.Clear();
+			ServerGroups.Clear();
+			ChannelGroups.Clear();
 			OwnClientId = ClientId.Null;
 			Server = new Server();
 
@@ -267,7 +268,7 @@ namespace TSLib.Full.Book
 			OwnClientId = initServer.ClientId;
 		}
 
-		private bool ChannelSubscribeFun(ChannelSubscribed _) => true;
+		private static bool ChannelSubscribeFun(ChannelSubscribed _) => true;
 		private bool ChannelUnsubscribeFun(ChannelUnsubscribed msg)
 		{
 			var goneClients = Clients.Values.Where(client => client.Channel == msg.ChannelId).ToArray();
@@ -278,7 +279,7 @@ namespace TSLib.Full.Book
 
 		private void SubscribeChannelFun(ClientMoved msg)
 		{
-			if (msg.ClientId == OwnClient && Channels.TryGetValue(msg.TargetChannelId, out var channel))
+			if (msg.ClientId == OwnClientId && Channels.TryGetValue(msg.TargetChannelId, out var channel))
 				channel.Subscribed = true;
 		}
 

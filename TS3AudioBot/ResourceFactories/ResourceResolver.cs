@@ -10,7 +10,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -27,10 +26,10 @@ namespace TS3AudioBot.ResourceFactories
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 
-		private readonly Dictionary<string, IResolver> allResolvers = new Dictionary<string, IResolver>();
-		private readonly List<IPlaylistResolver> listResolvers = new List<IPlaylistResolver>();
-		private readonly List<IResourceResolver> resResolvers = new List<IResourceResolver>();
-		private readonly List<ISearchResolver> searchResolvers = new List<ISearchResolver>();
+		private readonly Dictionary<string, IResolver> allResolvers = new();
+		private readonly List<IPlaylistResolver> listResolvers = new();
+		private readonly List<IResourceResolver> resResolvers = new();
+		private readonly List<ISearchResolver> searchResolvers = new();
 
 		public ResourceResolver(ConfFactories conf)
 		{

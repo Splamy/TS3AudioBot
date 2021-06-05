@@ -21,7 +21,7 @@ namespace TS3AudioBot.Sessions
 
 		private const string ApiTokenTable = "apiToken";
 		private readonly LiteCollection<DbApiToken> dbTokenList;
-		private readonly Dictionary<string, ApiToken> dbTokenCache = new Dictionary<string, ApiToken>();
+		private readonly Dictionary<string, ApiToken> dbTokenCache = new();
 
 		public TokenManager(DbStore database)
 		{

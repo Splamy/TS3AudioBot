@@ -53,12 +53,12 @@ namespace TS3AudioBot.Audio
 			}
 		}
 
-		private readonly Dictionary<ChannelId, bool> channelSubscriptionsSetup = new Dictionary<ChannelId, bool>();
-		private readonly HashSet<ClientId> clientSubscriptionsSetup = new HashSet<ClientId>();
+		private readonly Dictionary<ChannelId, bool> channelSubscriptionsSetup = new();
+		private readonly HashSet<ClientId> clientSubscriptionsSetup = new();
 		private ChannelId[] channelSubscriptionsCache = Array.Empty<ChannelId>();
 		private ClientId[] clientSubscriptionsCache = Array.Empty<ClientId>();
 		private bool subscriptionSetupChanged;
-		private readonly object subscriptionLockObj = new object();
+		private readonly object subscriptionLockObj = new();
 
 		private readonly TsFullClient client;
 

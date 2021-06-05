@@ -20,7 +20,7 @@ namespace TSLib
 		protected static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		protected readonly List<WaitBlock>[] dependingBlocks;
 		private readonly Func<string, NotificationType> findTypeOfNotification;
-		public Deserializer Deserializer { get; } = new Deserializer();
+		public Deserializer Deserializer { get; } = new();
 
 		protected ReadOnlyMemory<byte>? cmdLineBuffer;
 		private const byte AsciiSpace = (byte)' ';
@@ -51,7 +51,7 @@ namespace TSLib
 				return null;
 			}
 
-			var lineDataPart = splitindex < 0 ? ReadOnlySpan<byte>.Empty : msgSpan.Slice(splitindex);
+			var lineDataPart = splitindex < 0 ? ReadOnlySpan<byte>.Empty : msgSpan[splitindex..];
 
 			// if it's not an error it is a notification
 			if (ntfyType != NotificationType.CommandError)
@@ -99,13 +99,9 @@ namespace TSLib
 
 	internal sealed class AsyncMessageProcessor : BaseMessageProcessor
 	{
-		private readonly Dictionary<string, WaitBlock> requestDict;
+		private readonly Dictionary<string, WaitBlock> requestDict = new();
 
-		public AsyncMessageProcessor(Func<string, NotificationType> findTypeOfNotification) : base(findTypeOfNotification)
-		{
-			requestDict = new Dictionary<string, WaitBlock>();
-		}
-
+		public AsyncMessageProcessor(Func<string, NotificationType> findTypeOfNotification) : base(findTypeOfNotification) { }
 		protected override LazyNotification? PushMessageInternal(CommandError errorStatus, NotificationType ntfyType)
 		{
 			if (errorStatus.ReturnCode is null)
@@ -156,12 +152,9 @@ namespace TSLib
 
 	internal sealed class SyncMessageProcessor : BaseMessageProcessor
 	{
-		private readonly ConcurrentQueue<WaitBlock> requestQueue;
+		private readonly ConcurrentQueue<WaitBlock> requestQueue = new();
 
-		public SyncMessageProcessor(Func<string, NotificationType> findTypeOfNotification) : base(findTypeOfNotification)
-		{
-			requestQueue = new ConcurrentQueue<WaitBlock>();
-		}
+		public SyncMessageProcessor(Func<string, NotificationType> findTypeOfNotification) : base(findTypeOfNotification) { }
 
 		protected override LazyNotification? PushMessageInternal(CommandError errorStatus, NotificationType ntfyType)
 		{

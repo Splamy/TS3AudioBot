@@ -18,7 +18,7 @@ namespace TSLib.Audio
 		public bool Active => OutStream?.Active ?? false;
 		public IAudioPassiveConsumer? OutStream { get; set; }
 
-		private readonly MetaOut setMeta = new MetaOut();
+		private readonly MetaOut setMeta = new();
 		public TargetSendMode SendMode { get; private set; }
 
 		private void ClearData()

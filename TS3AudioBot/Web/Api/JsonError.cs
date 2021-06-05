@@ -14,7 +14,7 @@ namespace TS3AudioBot.Web.Api
 {
 	public class JsonError : JsonObject
 	{
-		private static readonly JsonSerializerSettings ErrorSerializeSettings = new JsonSerializerSettings
+		private static readonly JsonSerializerSettings ErrorSerializeSettings = new()
 		{
 			NullValueHandling = NullValueHandling.Ignore,
 		};

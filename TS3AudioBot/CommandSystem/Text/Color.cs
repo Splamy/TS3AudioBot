@@ -20,74 +20,72 @@ namespace TS3AudioBot.CommandSystem.Text
 		public byte B { get; }
 		public ColorFlags Flags { get; }
 
-		public static readonly Color Black = new Color(0, 0, 0);
-		public static readonly Color DarkGray = new Color(64, 64, 64);
-		public static readonly Color Gray = new Color(128, 128, 128);
-		public static readonly Color LightGray = new Color(192, 192, 192);
-		public static readonly Color Red = new Color(255, 0, 0);
-		public static readonly Color Green = new Color(0, 255, 0);
-		public static readonly Color Blue = new Color(0, 0, 255);
-		public static readonly Color Yellow = new Color(255, 255, 0);
-		public static readonly Color Cyan = new Color(0, 255, 255);
-		public static readonly Color Pink = new Color(255, 0, 255);
-		public static readonly Color Orange = new Color(255, 128, 0);
-		public static readonly Color White = new Color(255, 255, 255);
-		public static readonly Color Transparent = new Color(0, 0, 0, ColorFlags.Transparent);
+		public static readonly Color Black = (0, 0, 0);
+		public static readonly Color DarkGray = (64, 64, 64);
+		public static readonly Color Gray = (128, 128, 128);
+		public static readonly Color LightGray = (192, 192, 192);
+		public static readonly Color Red = (255, 0, 0);
+		public static readonly Color Green = (0, 255, 0);
+		public static readonly Color Blue = (0, 0, 255);
+		public static readonly Color Yellow = (255, 255, 0);
+		public static readonly Color Cyan = (0, 255, 255);
+		public static readonly Color Pink = (255, 0, 255);
+		public static readonly Color Orange = (255, 128, 0);
+		public static readonly Color White = (255, 255, 255);
+		public static readonly Color Transparent = new(0, 0, 0, ColorFlags.Transparent);
 
-		private static readonly Dictionary<Color, string> ColorOptimizer = new Dictionary<Color, string>();
+		private static readonly Dictionary<Color, string> ColorOptimizer = new();
 
 		static Color()
 		{
-			var colors = new[] {
-				( new Color(0, 255, 255), "aqua" ),
-				( new Color(240, 255, 255), "azure" ),
-				( new Color(245, 245, 220), "beige" ),
-				( new Color(255, 228, 196), "bisque" ),
-				( new Color(0, 0, 0), "black" ),
-				( new Color(0, 0, 255), "blue" ),
-				( new Color(165, 42, 42), "brown" ),
-				( new Color(255, 127, 80), "coral" ),
-				( new Color(0, 255, 255), "cyan" ),
-				( new Color(255, 215, 0), "gold" ),
-				( new Color(128, 128, 128), "gray" ),
-				( new Color(0, 128, 0), "green" ),
-				( new Color(75, 0, 130), "indigo" ),
-				( new Color(255, 255, 240), "ivory" ),
-				( new Color(240, 230, 140), "khaki" ),
-				( new Color(0, 255, 0), "lime" ),
-				( new Color(250, 240, 230), "linen" ),
-				( new Color(128, 0, 0), "maroon" ),
-				( new Color(0, 0, 128), "navy" ),
-				( new Color(128, 128, 0), "olive" ),
-				( new Color(255, 165, 0), "orange" ),
-				( new Color(218, 112, 214), "orchid" ),
-				( new Color(205, 133, 63), "peru" ),
-				( new Color(255, 192, 203), "pink" ),
-				( new Color(221, 160, 221), "plum" ),
-				( new Color(128, 0, 128), "purple" ),
-				( new Color(255, 0, 0), "red" ),
-				( new Color(250, 128, 114), "salmon" ),
-				( new Color(160, 82, 45), "sienna" ),
-				( new Color(192, 192, 192), "silver" ),
-				( new Color(255, 250, 250), "snow" ),
-				( new Color(210, 180, 140), "tan" ),
-				( new Color(0, 128, 128), "teal" ),
-				( new Color(255, 99, 71), "tomato" ),
-				( new Color(238, 130, 238), "violet" ),
-				( new Color(245, 222, 179), "wheat" ),
-				( new Color(255, 255, 255), "white" ),
-				( new Color(255, 255, 0), "yellow" ),
+			var colors = new (Color, string)[] {
+				( (0, 255, 255), "aqua" ),
+				( (240, 255, 255), "azure" ),
+				( (245, 245, 220), "beige" ),
+				( (255, 228, 196), "bisque" ),
+				( (0, 0, 0), "black" ),
+				( (0, 0, 255), "blue" ),
+				( (165, 42, 42), "brown" ),
+				( (255, 127, 80), "coral" ),
+				( (0, 255, 255), "cyan" ),
+				( (255, 215, 0), "gold" ),
+				( (128, 128, 128), "gray" ),
+				( (0, 128, 0), "green" ),
+				( (75, 0, 130), "indigo" ),
+				( (255, 255, 240), "ivory" ),
+				( (240, 230, 140), "khaki" ),
+				( (0, 255, 0), "lime" ),
+				( (250, 240, 230), "linen" ),
+				( (128, 0, 0), "maroon" ),
+				( (0, 0, 128), "navy" ),
+				( (128, 128, 0), "olive" ),
+				( (255, 165, 0), "orange" ),
+				( (218, 112, 214), "orchid" ),
+				( (205, 133, 63), "peru" ),
+				( (255, 192, 203), "pink" ),
+				( (221, 160, 221), "plum" ),
+				( (128, 0, 128), "purple" ),
+				( (255, 0, 0), "red" ),
+				( (250, 128, 114), "salmon" ),
+				( (160, 82, 45), "sienna" ),
+				( (192, 192, 192), "silver" ),
+				( (255, 250, 250), "snow" ),
+				( (210, 180, 140), "tan" ),
+				( (0, 128, 128), "teal" ),
+				( (255, 99, 71), "tomato" ),
+				( (238, 130, 238), "violet" ),
+				( (245, 222, 179), "wheat" ),
+				( (255, 255, 255), "white" ),
+				( (255, 255, 0), "yellow" ),
 			};
 
-			foreach (var values in colors)
+			foreach (var (col, htmlname) in colors)
 			{
-				var col = values.Item1;
-				if (values.Item2.Length < 4
-					|| (values.Item2.Length < 7 && (!IsDouble(col.R) || !IsDouble(col.G) || !IsDouble(col.B))))
+				if (htmlname.Length < 4 || (htmlname.Length < 7 && (!IsDouble(col.R) || !IsDouble(col.G) || !IsDouble(col.B))))
 				{
-					if (!ColorOptimizer.TryGetValue(col, out var name) || name.Length > values.Item2.Length)
+					if (!ColorOptimizer.TryGetValue(col, out var name) || name.Length > htmlname.Length)
 					{
-						ColorOptimizer[col] = values.Item2;
+						ColorOptimizer[col] = htmlname;
 					}
 				}
 			}
@@ -101,6 +99,8 @@ namespace TS3AudioBot.CommandSystem.Text
 			B = b;
 			Flags = flags;
 		}
+		public static implicit operator Color((byte r, byte g, byte b) rgb) => new(rgb.r, rgb.g, rgb.b);
+		public void Deconstruct(out byte r, out byte g, out byte b) => (r, g, b) = (R, G, B);
 
 		private static bool IsDouble(byte num) => (num & 0x0F) == (num >> 4);
 

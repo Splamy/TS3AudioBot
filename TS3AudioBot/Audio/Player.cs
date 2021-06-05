@@ -19,7 +19,7 @@ using TSLib.Scheduler;
 
 namespace TS3AudioBot.Audio
 {
-	public class Player : IDisposable
+	public sealed class Player : IDisposable
 	{
 		private const Codec SendCodec = Codec.OpusMusic;
 		private readonly DedicatedTaskScheduler scheduler;

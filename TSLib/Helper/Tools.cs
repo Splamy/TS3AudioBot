@@ -33,7 +33,7 @@ namespace TSLib.Helper
 
 		// Time
 
-		public static readonly DateTime UnixTimeStart = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+		public static readonly DateTime UnixTimeStart = new(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
 
 		public static uint ToUnix(this DateTime dateTime) => (uint)(dateTime - UnixTimeStart).TotalSeconds;
 
@@ -45,7 +45,7 @@ namespace TSLib.Helper
 
 		// Random
 
-		public static Random Random { get; } = new Random();
+		public static Random Random { get; } = new();
 
 		public static T PickRandom<T>(IReadOnlyList<T> collection)
 		{

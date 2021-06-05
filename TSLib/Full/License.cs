@@ -113,8 +113,8 @@ namespace TSLib.Full
 				return $"Invalid license block type {data[33]}";
 			}
 
-			block.NotValidBefore = Tools.UnixTimeStart.AddSeconds(BinaryPrimitives.ReadUInt32BigEndian(data.Slice(34)) + 0x50e22700uL);
-			block.NotValidAfter = Tools.UnixTimeStart.AddSeconds(BinaryPrimitives.ReadUInt32BigEndian(data.Slice(38)) + 0x50e22700uL);
+			block.NotValidBefore = Tools.UnixTimeStart.AddSeconds(BinaryPrimitives.ReadUInt32BigEndian(data[34..]) + 0x50e22700uL);
+			block.NotValidAfter = Tools.UnixTimeStart.AddSeconds(BinaryPrimitives.ReadUInt32BigEndian(data[38..]) + 0x50e22700uL);
 			if (block.NotValidAfter < block.NotValidBefore)
 				return "License times are invalid";
 

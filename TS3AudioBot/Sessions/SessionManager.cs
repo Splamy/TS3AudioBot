@@ -18,7 +18,7 @@ namespace TS3AudioBot.Sessions
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 
 		// Map: Id => UserSession
-		private readonly Dictionary<ClientId, UserSession> openSessions = new Dictionary<ClientId, UserSession>();
+		private readonly Dictionary<ClientId, UserSession> openSessions = new();
 
 		public UserSession GetOrCreateSession(ClientId clientId)
 		{

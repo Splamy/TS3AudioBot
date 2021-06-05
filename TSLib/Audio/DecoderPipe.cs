@@ -13,7 +13,7 @@ using TSLib.Audio.Opus;
 
 namespace TSLib.Audio
 {
-	public class DecoderPipe : IAudioPipe, IDisposable
+	public sealed class DecoderPipe : IAudioPipe, IDisposable
 	{
 		public bool Active => OutStream?.Active ?? false;
 		public IAudioPassiveConsumer? OutStream { get; set; }
@@ -23,7 +23,7 @@ namespace TSLib.Audio
 		// - Clean up decoders after some time (Control: Tick?)
 		// - Make dispose threadsafe OR redefine thread safety requirements for pipes.
 
-		private readonly Dictionary<ClientId, (OpusDecoder, Codec)> decoders = new Dictionary<ClientId, (OpusDecoder, Codec)>();
+		private readonly Dictionary<ClientId, (OpusDecoder, Codec)> decoders = new();
 		private readonly byte[] decodedBuffer;
 
 		public DecoderPipe()
@@ -78,7 +78,7 @@ namespace TSLib.Audio
 			return newDecoder;
 		}
 
-		private OpusDecoder CreateDecoder(Codec codec)
+		private static OpusDecoder CreateDecoder(Codec codec)
 		{
 			return codec switch
 			{

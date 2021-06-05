@@ -19,8 +19,8 @@ namespace TSLib.Full.Book
 		public MaxClients(MaxClientsKind limitKind, ushort count) =>
 			(LimitKind, Count) = (limitKind, count);
 
-		public static readonly MaxClients Unlimited = new MaxClients(MaxClientsKind.Unlimited, 0);
-		public static readonly MaxClients Inherited = new MaxClients(MaxClientsKind.Inherited, 0);
+		public static readonly MaxClients Unlimited = new(MaxClientsKind.Unlimited, 0);
+		public static readonly MaxClients Inherited = new(MaxClientsKind.Inherited, 0);
 	}
 
 	public enum MaxClientsKind

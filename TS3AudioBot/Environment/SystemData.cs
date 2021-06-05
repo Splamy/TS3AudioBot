@@ -20,10 +20,10 @@ namespace TS3AudioBot.Environment
 {
 	public static class SystemData
 	{
-		private static readonly Regex PlatformRegex = new Regex(@"(\w+)=(.*)", RegexOptions.IgnoreCase | RegexOptions.ECMAScript | RegexOptions.Multiline);
-		private static readonly Regex SemVerRegex = new Regex(@"(\d+)(?:\.(\d+)){1,3}", RegexOptions.IgnoreCase | RegexOptions.ECMAScript | RegexOptions.Multiline);
+		private static readonly Regex PlatformRegex = new(@"(\w+)=(.*)", RegexOptions.IgnoreCase | RegexOptions.ECMAScript | RegexOptions.Multiline);
+		private static readonly Regex SemVerRegex = new(@"(\d+)(?:\.(\d+)){1,3}", RegexOptions.IgnoreCase | RegexOptions.ECMAScript | RegexOptions.Multiline);
 
-		public static BuildData AssemblyData { get; } = new BuildData();
+		public static BuildData AssemblyData { get; } = new();
 
 		public static string PlatformData { get; } = GenPlatformDat();
 		private static string GenPlatformDat()

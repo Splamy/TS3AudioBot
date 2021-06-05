@@ -32,8 +32,6 @@ namespace TS3ABotUnitTests
 			var data2 = new HistorySaveData(ar2, inv2.Uid);
 			var data3 = new HistorySaveData(ar3, (Uid)"Uid3");
 
-			var confHistory = ConfigTable.CreateRoot<ConfHistory>();
-			confHistory.FillDeletedIds.Value = false;
 			var confDb = ConfigTable.CreateRoot<ConfDb>();
 			confDb.Path.Value = testFile;
 
@@ -43,7 +41,7 @@ namespace TS3ABotUnitTests
 			void CreateDbStore()
 			{
 				db = new DbStore(confDb);
-				hf = new HistoryManager(confHistory, db);
+				hf = new HistoryManager(db);
 			}
 
 			CreateDbStore();

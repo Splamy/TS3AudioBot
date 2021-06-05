@@ -22,8 +22,8 @@ namespace TSLib.Scheduler
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		private static readonly TimeSpan CombineTimerThreshold = TimeSpan.FromMilliseconds(10);
 		private readonly TaskFactory factory;
-		private readonly BlockingCollection<Task> queue = new BlockingCollection<Task>();
-		private readonly HashSet<TickWorker> timers = new HashSet<TickWorker>();
+		private readonly BlockingCollection<Task> queue = new();
+		private readonly HashSet<TickWorker> timers = new();
 		private readonly Thread thread;
 		private readonly Id logId;
 		// This is not a duraration but an instant from ticks
@@ -33,9 +33,9 @@ namespace TSLib.Scheduler
 		private readonly Stopwatch monotoneClock = Stopwatch.StartNew();
 		private bool IsOwnThread => Thread.CurrentThread == thread;
 #if DEBUG
-		private readonly Stack<Task> taskStack = new Stack<Task>();
+		private readonly Stack<Task> taskStack = new();
 		private TimeSpan lastTaskCompleted = TimeSpan.MinValue;
-		private readonly Stopwatch overallWatch = new Stopwatch();
+		private readonly Stopwatch overallWatch = new();
 		private TimeSpan actualRunningTime;
 #endif
 		private DedicatedTaskScheduler()

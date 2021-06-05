@@ -10,7 +10,6 @@
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -28,12 +27,12 @@ namespace TS3AudioBot.ResourceFactories.Youtube
 	public sealed class YoutubeResolver : IResourceResolver, IPlaylistResolver, IThumbnailResolver, ISearchResolver
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
-		private static readonly Regex IdMatch = new Regex(@"(?:(?:&|\?)v=|youtu\.be\/)([\w\-_]{11})", Util.DefaultRegexConfig);
-		private static readonly Regex YtTimestampMatch = new Regex(@"(?:&|\?)t=(\d+)", Util.DefaultRegexConfig);
-		private static readonly Regex LinkMatch = new Regex(@"^(https?\:\/\/)?(www\.|m\.)?(youtube\.|youtu\.be)", Util.DefaultRegexConfig);
-		private static readonly Regex ListMatch = new Regex(@"(&|\?)list=([\w\-_]+)", Util.DefaultRegexConfig);
-		private static readonly Regex StreamCodecMatch = new Regex(@"CODECS=""([^""]*)""", Util.DefaultRegexConfig);
-		private static readonly Regex StreamBitrateMatch = new Regex(@"BANDWIDTH=(\d+)", Util.DefaultRegexConfig);
+		private static readonly Regex IdMatch = new(@"(?:(?:&|\?)v=|youtu\.be\/)([\w\-_]{11})", Util.DefaultRegexConfig);
+		private static readonly Regex YtTimestampMatch = new(@"(?:&|\?)t=(\d+)", Util.DefaultRegexConfig);
+		private static readonly Regex LinkMatch = new(@"^(https?\:\/\/)?(www\.|m\.)?(youtube\.|youtu\.be)", Util.DefaultRegexConfig);
+		private static readonly Regex ListMatch = new(@"(&|\?)list=([\w\-_]+)", Util.DefaultRegexConfig);
+		private static readonly Regex StreamCodecMatch = new(@"CODECS=""([^""]*)""", Util.DefaultRegexConfig);
+		private static readonly Regex StreamBitrateMatch = new(@"BANDWIDTH=(\d+)", Util.DefaultRegexConfig);
 		private string YoutubeProjectId => conf.ApiKey.Value;
 		private readonly ConfResolverYoutube conf;
 

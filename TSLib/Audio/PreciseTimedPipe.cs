@@ -13,7 +13,7 @@ using TSLib.Helper;
 
 namespace TSLib.Audio
 {
-	public class PreciseTimedPipe : IAudioActiveConsumer, IAudioActiveProducer, IDisposable
+	public sealed class PreciseTimedPipe : IAudioActiveConsumer, IAudioActiveProducer, IDisposable
 	{
 		public PreciseAudioTimer AudioTimer { get; }
 

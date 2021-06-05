@@ -176,7 +176,8 @@ namespace TSLib
 			Codec? codec, int? codecQuality, int? codecLatencyFactor, bool? codecEncrypted, int? maxClients,
 			int? maxFamilyClients, bool? maxClientsUnlimited, bool? maxFamilyClientsUnlimited, bool? maxFamilyClientsInherited,
 			ChannelId? order, ChannelId? parent, ChannelType? type, TimeSpan? deleteDelay, int? neededTalkPower)
-			=> new TsCommand(op) {
+			=> new(op)
+			{
 				{ "cid", channelId },
 				{ "cpid", parent },
 				{ "channel_name", name },
@@ -329,7 +330,7 @@ namespace TSLib
 				return CommandError.Custom("Avatar upload failed: " + error.ErrorFormat());
 			if (token.Status != TransferStatus.Done)
 				return CommandError.Custom("Avatar upload failed");
-			var md5 = string.Concat(token.Md5Sum.Select(x => x.ToString("x2")));
+			var md5 = string.Concat(token.Md5Sum!.Select(x => x.ToString("x2")));
 			return await SendVoid(new TsCommand("clientupdate") { { "client_flag_avatar", md5 } });
 		}
 

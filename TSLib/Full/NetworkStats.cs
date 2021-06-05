@@ -23,12 +23,12 @@ namespace TSLib.Full
 		private readonly long[] inPackets = new long[3];
 		private readonly long[] outBytes = new long[3];
 		private readonly long[] inBytes = new long[3];
-		private readonly Queue<PacketData> outBytesTime = new Queue<PacketData>();
-		private readonly Queue<PacketData> inBytesTime = new Queue<PacketData>();
-		private readonly Queue<TimeSpan> pingTimes = new Queue<TimeSpan>(60);
+		private readonly Queue<PacketData> outBytesTime = new();
+		private readonly Queue<PacketData> inBytesTime = new();
+		private readonly Queue<TimeSpan> pingTimes = new(60);
 		private static readonly TimeSpan TimeSecond = TimeSpan.FromSeconds(1);
 		private static readonly TimeSpan TimeMinute = TimeSpan.FromMinutes(1);
-		private readonly object queueLock = new object();
+		private readonly object queueLock = new();
 
 		internal void LogOutPacket<TDir>(ref Packet<TDir> packet)
 		{
@@ -54,7 +54,7 @@ namespace TSLib.Full
 			}
 		}
 
-		public void LogLostPings(int count)
+		public static void LogLostPings(int count)
 		{
 			// TODO
 		}

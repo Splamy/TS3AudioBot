@@ -28,7 +28,7 @@ namespace TS3AudioBot.Helper
 	{
 		public const RegexOptions DefaultRegexConfig = RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.ECMAScript;
 
-		private static readonly Regex SafeFileNameMatcher = new Regex(@"^[\w-_]+$", DefaultRegexConfig);
+		private static readonly Regex SafeFileNameMatcher = new(@"^[\w-_]+$", DefaultRegexConfig);
 
 		private static readonly string[] byteSuffix = { "B", "KB", "MB", "GB", "TB", "PB", "EB" };
 

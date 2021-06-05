@@ -13,7 +13,7 @@ using TSLib.Audio;
 
 namespace TS3AudioBot.Audio
 {
-	public class StreamAudioPlayerSource : IPlayerSource, IAudioActiveConsumer
+	public sealed class StreamAudioPlayerSource : IPlayerSource, IAudioActiveConsumer
 	{
 		private bool hasFired = false;
 

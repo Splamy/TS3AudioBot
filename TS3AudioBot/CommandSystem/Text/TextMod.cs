@@ -13,7 +13,7 @@ namespace TS3AudioBot.CommandSystem.Text
 {
 	public readonly struct TextMod : IEquatable<TextMod>
 	{
-		public static readonly TextMod None = new TextMod(0, null);
+		public static readonly TextMod None = new(0, null);
 
 		public TextModFlag Flags { get; }
 		public Color? HasColor { get; }
@@ -24,11 +24,11 @@ namespace TS3AudioBot.CommandSystem.Text
 			HasColor = color;
 		}
 
-		public readonly TextMod Color(Color color) => new TextMod(Flags | TextModFlag.Color, color);
-		public readonly TextMod Bold() => new TextMod(Flags | TextModFlag.Bold, HasColor);
-		public readonly TextMod Italic() => new TextMod(Flags | TextModFlag.Italic, HasColor);
-		public readonly TextMod Strike() => new TextMod(Flags | TextModFlag.Strike, HasColor);
-		public readonly TextMod Underline() => new TextMod(Flags | TextModFlag.Underline, HasColor);
+		public readonly TextMod Color(Color color) => new(Flags | TextModFlag.Color, color);
+		public readonly TextMod Bold() => new(Flags | TextModFlag.Bold, HasColor);
+		public readonly TextMod Italic() => new(Flags | TextModFlag.Italic, HasColor);
+		public readonly TextMod Strike() => new(Flags | TextModFlag.Strike, HasColor);
+		public readonly TextMod Underline() => new(Flags | TextModFlag.Underline, HasColor);
 
 		public static string Format(AppliedTextMod format, params AppliedTextMod[] para)
 			=> new TextModBuilder().AppendFormat(format, para).ToString();

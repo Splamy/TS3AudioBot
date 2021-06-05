@@ -32,7 +32,7 @@ namespace TSLib.Audio
 			// TODO add defragment start
 			meta.In.Sender = (ClientId)BinaryPrimitives.ReadUInt16BigEndian(data.Slice(2, 2));
 			meta.Codec = (Codec)data[4];
-			OutStream?.Write(data.Slice(5), meta);
+			OutStream?.Write(data[5..], meta);
 		}
 	}
 }

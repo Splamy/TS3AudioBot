@@ -23,14 +23,14 @@ using TSLib.Helper;
 
 namespace TS3AudioBot.Playlists
 {
-	public class PlaylistIO : IDisposable
+	public sealed class PlaylistIO : IDisposable
 	{
 		private readonly ConfBot confBot;
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
-		private readonly Dictionary<string, PlaylistMeta> playlistInfo = new Dictionary<string, PlaylistMeta>();
-		private readonly LruCache<string, Playlist> playlistCache = new LruCache<string, Playlist>(16);
-		private readonly HashSet<string> dirtyList = new HashSet<string>();
-		private readonly ReaderWriterLockSlim rwLock = new ReaderWriterLockSlim();
+		private readonly Dictionary<string, PlaylistMeta> playlistInfo = new();
+		private readonly LruCache<string, Playlist> playlistCache = new(16);
+		private readonly HashSet<string> dirtyList = new();
+		private readonly ReaderWriterLockSlim rwLock = new();
 		private bool reloadFolderCache = true;
 		private const int FileVersion = 3;
 

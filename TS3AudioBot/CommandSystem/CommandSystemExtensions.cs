@@ -25,8 +25,7 @@ namespace TS3AudioBot.CommandSystem
 			return Filter.DefaultFilter;
 		}
 
-		public static Lazy<IFilter> GetFilterLazy(this IInjector injector)
-			=> new Lazy<IFilter>(() => injector.GetFilter(), false);
+		public static Lazy<IFilter> GetFilterLazy(this IInjector injector) => new(() => injector.GetFilter(), false);
 
 		public static async ValueTask<string> ExecuteToString(this ICommand com, ExecutionInformation info, IReadOnlyList<ICommand> arguments)
 		{

@@ -410,7 +410,6 @@ namespace TSLib.Full.Book
 		public Dictionary<ChannelGroupId,ChannelGroup> ChannelGroups { get; internal set; }
 		public Dictionary<ChannelId,Channel> Channels { get; internal set; }
 		public Dictionary<ClientId,Client> Clients { get; internal set; }
-		public Dictionary<ServerGroupId,ServerGroup> Groups { get; internal set; }
 		public ClientId OwnClientId { get; internal set; }
 		public Server Server { get; internal set; }
 		public Dictionary<ServerGroupId,ServerGroup> ServerGroups { get; internal set; }

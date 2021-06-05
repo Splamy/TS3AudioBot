@@ -9,8 +9,6 @@
 
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using System;
-using System.IO;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -19,13 +17,13 @@ using TS3AudioBot.Localization;
 
 namespace TS3AudioBot.ResourceFactories
 {
-	public class BandcampResolver : IResourceResolver, IThumbnailResolver
+	public sealed class BandcampResolver : IResourceResolver, IThumbnailResolver
 	{
-		private static readonly Regex BandcampUrlRegex = new Regex(@"([\w_-]+).bandcamp.com/track/([\w_-]+)", Util.DefaultRegexConfig);
-		private static readonly Regex TrackLinkRegex = new Regex(@"""mp3-128""\s*:\s*""([^""]*)""", Util.DefaultRegexConfig);
-		private static readonly Regex TrackNameRegex = new Regex(@"""title""\s*:\s*""([^""]*)""", Util.DefaultRegexConfig);
-		private static readonly Regex TrackArtRegex = new Regex(@"""album_art_id""\s*:\s*(\d+)\s*,", Util.DefaultRegexConfig);
-		private static readonly Regex TrackMainJsonRegex = new Regex(@"trackinfo\s*:(.*),(\r|\n)", Util.DefaultRegexConfig);
+		private static readonly Regex BandcampUrlRegex = new(@"([\w_-]+).bandcamp.com/track/([\w_-]+)", Util.DefaultRegexConfig);
+		private static readonly Regex TrackLinkRegex = new(@"""mp3-128""\s*:\s*""([^""]*)""", Util.DefaultRegexConfig);
+		private static readonly Regex TrackNameRegex = new(@"""title""\s*:\s*""([^""]*)""", Util.DefaultRegexConfig);
+		private static readonly Regex TrackArtRegex = new(@"""album_art_id""\s*:\s*(\d+)\s*,", Util.DefaultRegexConfig);
+		private static readonly Regex TrackMainJsonRegex = new(@"trackinfo\s*:(.*),(\r|\n)", Util.DefaultRegexConfig);
 
 		private const string AddArtist = "artist";
 		private const string AddTrack = "track";

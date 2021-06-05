@@ -98,7 +98,7 @@ namespace TS3AudioBot
 
 		[Command("alias list")]
 		public static JsonArray<string> CommandAliasList(CommandManager commandManager)
-			=> new JsonArray<string>(commandManager.AllAlias.ToArray(), x => string.Join(",", x));
+			=> new(commandManager.AllAlias.ToArray(), x => string.Join(",", x));
 
 		[Command("alias show")]
 		public static string? CommandAliasShow(CommandManager commandManager, string commandName)
@@ -385,7 +385,7 @@ namespace TS3AudioBot
 
 		[Command("data song cover get", "_undocumented")]
 		public static DataStream CommandData(ResolveContext resourceFactory, PlayManager playManager) =>
-			new DataStream(async response =>
+			new(async response =>
 			{
 				var cur = playManager.CurrentPlayData;
 				if (cur is null)
@@ -456,7 +456,7 @@ namespace TS3AudioBot
 			=> invoker.ChannelId?.Value ?? throw new CommandException(strings.error_not_found, CommandExceptionReason.CommandError);
 		[Command("getmy all")]
 		public static JsonValue<ClientCall> CommandGetUser(ClientCall invoker)
-			=> new JsonValue<ClientCall>(invoker, $"Client: Id:{invoker.ClientId} DbId:{invoker.DatabaseId} ChanId:{invoker.ChannelId} Uid:{invoker.ClientUid}"); // LOC: TODO
+			=> new(invoker, $"Client: Id:{invoker.ClientId} DbId:{invoker.DatabaseId} ChanId:{invoker.ChannelId} Uid:{invoker.ClientUid}"); // LOC: TODO
 
 		[Command("getuser uid byid")]
 		public static async Task<string> CommandGetUidById(Ts3Client ts3Client, ushort id) => (await ts3Client.GetFallbackedClientById((ClientId)id)).Uid?.Value ?? "";
@@ -470,7 +470,7 @@ namespace TS3AudioBot
 		public static async Task<JsonValue<ClientList>> CommandGetUserById(Ts3Client ts3Client, ushort id)
 		{
 			var client = await ts3Client.GetFallbackedClientById((ClientId)id);
-			return new JsonValue<ClientList>(client, $"Client: Id:{client.ClientId} DbId:{client.DatabaseId} ChanId:{client.ChannelId} Uid:{client.Uid}");
+			return new(client, $"Client: Id:{client.ClientId} DbId:{client.DatabaseId} ChanId:{client.ChannelId} Uid:{client.Uid}");
 		}
 		[Command("getuser id byname")]
 		public static async Task<ushort> CommandGetIdByName(Ts3Client ts3Client, string username) => (await ts3Client.GetClientByName(username)).ClientId.Value;
@@ -478,15 +478,15 @@ namespace TS3AudioBot
 		public static async Task<JsonValue<ClientList>> CommandGetUserByName(Ts3Client ts3Client, string username)
 		{
 			var client = await ts3Client.GetClientByName(username);
-			return new JsonValue<ClientList>(client, $"Client: Id:{client.ClientId} DbId:{client.DatabaseId} ChanId:{client.ChannelId} Uid:{client.Uid}");
+			return new(client, $"Client: Id:{client.ClientId} DbId:{client.DatabaseId} ChanId:{client.ChannelId} Uid:{client.Uid}");
 		}
 		[Command("getuser name bydbid")]
 		public static async Task<string> CommandGetNameByDbId(Ts3Client ts3Client, ulong dbId) => (await ts3Client.GetDbClientByDbId((ClientDbId)dbId)).Name;
 		[Command("getuser uid bydbid")]
 		public static async Task<string?> CommandGetUidByDbId(Ts3Client ts3Client, ulong dbId) => (await ts3Client.GetDbClientByDbId((ClientDbId)dbId)).Uid.Value;
 
-		private static readonly TextMod HelpCommand = new TextMod(TextModFlag.Bold);
-		private static readonly TextMod HelpCommandParam = new TextMod(TextModFlag.Italic);
+		private static readonly TextMod HelpCommand = new(TextModFlag.Bold);
+		private static readonly TextMod HelpCommandParam = new(TextModFlag.Italic);
 
 		[Command("help")]
 		public static string CommandHelp(CallerInfo callerInfo)
@@ -770,8 +770,8 @@ namespace TS3AudioBot
 			return null;
 		}
 
-		private static readonly TextMod SongDone = new TextMod(TextModFlag.Color, Color.Gray);
-		private static readonly TextMod SongCurrent = new TextMod(TextModFlag.Bold);
+		private static readonly TextMod SongDone = new(TextModFlag.Color, Color.Gray);
+		private static readonly TextMod SongCurrent = new(TextModFlag.Bold);
 
 		private static int GetIndexExpression(PlaylistManager playlistManager, string expression)
 		{
@@ -1177,7 +1177,7 @@ namespace TS3AudioBot
 
 		[Command("plugin list")]
 		public static JsonArray<PluginStatusInfo> CommandPluginList(PluginManager pluginManager, Bot? bot = null)
-			=> new JsonArray<PluginStatusInfo>(pluginManager.GetPluginOverview(bot), PluginManager.FormatOverview);
+			=> new(pluginManager.GetPluginOverview(bot), PluginManager.FormatOverview);
 
 		[Command("plugin unload")]
 		public static void CommandPluginUnload(PluginManager pluginManager, string identifier, Bot? bot = null)
@@ -1210,7 +1210,8 @@ namespace TS3AudioBot
 		}
 
 		[Command("quiz")]
-		public static JsonValue<bool> CommandQuiz(Bot bot) => new JsonValue<bool>(bot.QuizMode, string.Format(strings.info_status_quizmode, bot.QuizMode ? strings.info_on : strings.info_off));
+		public static JsonValue<bool> CommandQuiz(Bot bot)
+			=> new(bot.QuizMode, string.Format(strings.info_status_quizmode, bot.QuizMode ? strings.info_on : strings.info_off));
 		[Command("quiz on")]
 		public static async Task CommandQuizOn(Bot bot, PlayManager playManager)
 		{
@@ -1231,7 +1232,8 @@ namespace TS3AudioBot
 		}
 
 		[Command("random")]
-		public static JsonValue<bool> CommandRandom(PlaylistManager playlistManager) => new JsonValue<bool>(playlistManager.Random, string.Format(strings.info_status_random, playlistManager.Random ? strings.info_on : strings.info_off));
+		public static JsonValue<bool> CommandRandom(PlaylistManager playlistManager)
+			=> new(playlistManager.Random, string.Format(strings.info_status_random, playlistManager.Random ? strings.info_on : strings.info_off));
 		[Command("random on")]
 		public static void CommandRandomOn(PlaylistManager playlistManager) => playlistManager.Random = true;
 		[Command("random off")]
@@ -1254,7 +1256,7 @@ namespace TS3AudioBot
 
 		[Command("repeat")]
 		public static JsonValue<LoopMode> CommandRepeat(PlaylistManager playlistManager)
-			=> new JsonValue<LoopMode>(playlistManager.Loop, x => x switch
+			=> new(playlistManager.Loop, x => x switch
 			{
 				LoopMode.Off => strings.cmd_repeat_info_off,
 				LoopMode.One => strings.cmd_repeat_info_one,
@@ -1337,7 +1339,7 @@ namespace TS3AudioBot
 		}
 
 		private static JsonArray<AudioResource> FormatSearchResult(IList<AudioResource> list, CallerInfo callerInfo)
-			=> new JsonArray<AudioResource>(list, searchResults =>
+			=> new(list, searchResults =>
 			{
 				if (searchResults.Count == 0)
 					return strings.cmd_search_no_result;
@@ -1705,11 +1707,11 @@ namespace TS3AudioBot
 		}
 
 		[Command("version")]
-		public static JsonValue<BuildData> CommandVersion() => new JsonValue<BuildData>(SystemData.AssemblyData, d => d.ToLongString());
+		public static JsonValue<BuildData> CommandVersion() => new(SystemData.AssemblyData, d => d.ToLongString());
 
 		[Command("volume")]
 		public static JsonValue<float> CommandVolume(Player playerConnection)
-			=> new JsonValue<float>(playerConnection.Volume, string.Format(strings.cmd_volume_current, playerConnection.Volume.ToString("0.#")));
+			=> new(playerConnection.Volume, string.Format(strings.cmd_volume_current, playerConnection.Volume.ToString("0.#")));
 
 		[Command("volume")]
 		[Usage("<level>", "A new volume level between 0 and 100.")]

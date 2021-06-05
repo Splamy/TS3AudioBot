@@ -22,10 +22,10 @@ namespace TSLib.Full
 		private const uint SetControl = 0x8000_0000;
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static int GetCompressedSize(ReadOnlySpan<byte> data) => (data[0] & 0x02) != 0 ? BinaryPrimitives.ReadInt32LittleEndian(data.Slice(1)) : data[1];
+		public static int GetCompressedSize(ReadOnlySpan<byte> data) => (data[0] & 0x02) != 0 ? BinaryPrimitives.ReadInt32LittleEndian(data[1..]) : data[1];
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public static int GetDecompressedSize(ReadOnlySpan<byte> data) => (data[0] & 0x02) != 0 ? BinaryPrimitives.ReadInt32LittleEndian(data.Slice(5)) : data[2];
+		public static int GetDecompressedSize(ReadOnlySpan<byte> data) => (data[0] & 0x02) != 0 ? BinaryPrimitives.ReadInt32LittleEndian(data[5..]) : data[2];
 
 		[ThreadStatic]
 		private static int[]? hashtable;
@@ -253,8 +253,8 @@ namespace TSLib.Full
 			{
 				// long header
 				dest[0] = (byte)(flags | 0x02);
-				BinaryPrimitives.WriteInt32LittleEndian(dest.Slice(1), dest.Length);
-				BinaryPrimitives.WriteInt32LittleEndian(dest.Slice(5), srcLen);
+				BinaryPrimitives.WriteInt32LittleEndian(dest[1..], dest.Length);
+				BinaryPrimitives.WriteInt32LittleEndian(dest[5..], srcLen);
 			}
 			else
 			{
@@ -285,7 +285,7 @@ namespace TSLib.Full
 		{
 			var sli6 = arr.Slice(0, 6);
 			var i0 = BinaryPrimitives.ReadUInt32LittleEndian(sli6);
-			var u1 = BinaryPrimitives.ReadUInt16LittleEndian(sli6.Slice(4));
+			var u1 = BinaryPrimitives.ReadUInt16LittleEndian(sli6[4..]);
 			return i0 == i0 >> 8 && unchecked((ushort)i0) == u1;
 		}
 

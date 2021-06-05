@@ -24,9 +24,8 @@ namespace TS3AudioBot.Helper
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 		public static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(10);
-		private const string TimeoutPropertyKey = "RequestTimeout";
 
-		private static readonly HttpClient httpClient = new HttpClient(new RedirectHandler(new HttpClientHandler()));
+		private static readonly HttpClient httpClient = new(new RedirectHandler(new HttpClientHandler()));
 
 		static WebWrapper()
 		{
@@ -42,7 +41,7 @@ namespace TS3AudioBot.Helper
 		// Start
 
 		public static HttpRequestMessage Request(string? link) => Request(CreateUri(link));
-		public static HttpRequestMessage Request(Uri uri) => new HttpRequestMessage(HttpMethod.Get, uri);
+		public static HttpRequestMessage Request(Uri uri) => new(HttpMethod.Get, uri);
 
 		// Prepare
 
@@ -55,12 +54,6 @@ namespace TS3AudioBot.Helper
 		public static HttpRequestMessage WithHeader(this HttpRequestMessage request, string name, string value)
 		{
 			request.Headers.Add(name, value);
-			return request;
-		}
-
-		public static HttpRequestMessage WithTimeout(this HttpRequestMessage request, TimeSpan timeout)
-		{
-			request.Properties[TimeoutPropertyKey] = timeout;
 			return request;
 		}
 

@@ -19,8 +19,8 @@ namespace System
 	/// </summary>
 	public static class R
 	{
-		public static readonly _Ok Ok = new _Ok();
-		public static readonly _Error Err = new _Error();
+		public static readonly _Ok Ok = new();
+		public static readonly _Error Err = new();
 	}
 
 #pragma warning disable IDE1006 // Naming Styles
@@ -49,16 +49,16 @@ namespace System
 
 		/// <summary>Creates a new failed result with an error object</summary>
 		/// <param name="error">The error</param>
-		public static R<TSuccess, TError> Err(TError error) => new R<TSuccess, TError>(error);
+		public static R<TSuccess, TError> Err(TError error) => new(error);
 		/// <summary>Creates a new successful result with a value</summary>
 		/// <param name="value">The value</param>
-		public static R<TSuccess, TError> OkR(TSuccess value) => new R<TSuccess, TError>(value);
+		public static R<TSuccess, TError> OkR(TSuccess value) => new(value);
 
 		public static implicit operator bool(R<TSuccess, TError> result) => result.Ok;
 		public static implicit operator TError(R<TSuccess, TError> result) => result.Error;
 
-		public static implicit operator R<TSuccess, TError>(TSuccess result) => new R<TSuccess, TError>(result);
-		public static implicit operator R<TSuccess, TError>(TError error) => new R<TSuccess, TError>(error);
+		public static implicit operator R<TSuccess, TError>(TSuccess result) => new(result);
+		public static implicit operator R<TSuccess, TError>(TError error) => new(error);
 
 		// Fluent get
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -85,7 +85,7 @@ namespace System
 		public TSuccess Unwrap() => Ok ? Value : throw new InvalidOperationException("Called upwrap on error");
 
 		// Downwrapping
-		public E<TError> OnlyError() => new E<TError>(isError, Error);
+		public E<TError> OnlyError() => new(isError, Error);
 		public static implicit operator E<TError>(R<TSuccess, TError> result) => result.OnlyError();
 
 		public R<T, TError> Map<T>(Func<TSuccess, T> map) where T : notnull => Ok
@@ -116,12 +116,12 @@ namespace System
 
 		/// <summary>Creates a new failed result with a error object.</summary>
 		/// <param name="error">The error object.</param>
-		public static E<TError> Err(TError error) => new E<TError>(error);
+		public static E<TError> Err(TError error) => new(error);
 
 		public static implicit operator bool(E<TError> result) => result.Ok;
 		public static implicit operator TError(E<TError> result) => result.Error;
 
-		public static implicit operator E<TError>(TError result) => new E<TError>(result);
+		public static implicit operator E<TError>(TError result) => new(result);
 
 		// Fluent get
 		public bool GetOk([MaybeNullWhen(true)] out TError error)

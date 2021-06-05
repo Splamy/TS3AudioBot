@@ -17,8 +17,8 @@ namespace TSLib.Audio
 		public int Channels { get; }
 		public int BitsPerSample { get; }
 
-		public static readonly SampleInfo OpusMusic = new SampleInfo(48_000, 2, 16);
-		public static readonly SampleInfo OpusVoice = new SampleInfo(48_000, 1, 16);
+		public static readonly SampleInfo OpusMusic = new(48_000, 2, 16);
+		public static readonly SampleInfo OpusVoice = new(48_000, 1, 16);
 
 		public SampleInfo(int sampleRate, int channels, int bitsPerSample)
 		{

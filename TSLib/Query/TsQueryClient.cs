@@ -24,14 +24,14 @@ namespace TSLib.Query
 {
 	public sealed partial class TsQueryClient : TsBaseFunctions
 	{
-		private readonly object sendQueueLock = new object();
+		private readonly object sendQueueLock = new();
 		private readonly TcpClient tcpClient;
 		private StreamReader? tcpReader;
 		private StreamWriter? tcpWriter;
 		private CancellationTokenSource? cts;
 		private readonly SyncMessageProcessor msgProc;
 		private readonly IEventDispatcher dispatcher;
-		private readonly Pipe dataPipe = new Pipe();
+		private readonly Pipe dataPipe = new();
 
 		public override ClientType ClientType => ClientType.Query;
 		public override bool Connected => tcpClient.Connected;
@@ -101,7 +101,7 @@ namespace TSLib.Query
 			OnDisconnected?.Invoke(this, new DisconnectEventArgs(Reason.LeftServer));
 		}
 
-		private async Task NetworkToPipeLoopAsync(NetworkStream stream, PipeWriter writer, CancellationToken cancellationToken = default)
+		private static async Task NetworkToPipeLoopAsync(NetworkStream stream, PipeWriter writer, CancellationToken cancellationToken = default)
 		{
 			const int minimumBufferSize = 4096;
 #if NETSTANDARD2_0

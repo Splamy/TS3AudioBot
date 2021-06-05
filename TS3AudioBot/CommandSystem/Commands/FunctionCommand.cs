@@ -253,7 +253,7 @@ namespace TS3AudioBot.CommandSystem.Commands
 							// can be casted with covariance to [object]->object
 							tryFrom = (TryFromFn)method.CreateDelegate(typeof(Func<,>).MakeGenericType(typeof(object), method.ReturnType));
 						}
-						else if(method.ReturnType.IsValueType)
+						else if (method.ReturnType.IsValueType)
 						{
 							static TryFromFn? TryCreateWith(MethodInfo method, Type retType)
 							{

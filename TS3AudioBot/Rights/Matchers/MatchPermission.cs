@@ -18,7 +18,7 @@ namespace TS3AudioBot.Rights.Matchers
 {
 	internal class MatchPermission : Matcher
 	{
-		private static readonly Regex expressionMatch = new Regex(@"(\w+)\s*(<|>|=|>=|<=|!=)\s*(-?\d+|true|false)", Util.DefaultRegexConfig);
+		private static readonly Regex ExpressionMatch = new(@"(\w+)\s*(<|>|=|>=|<=|!=)\s*(-?\d+|true|false)", Util.DefaultRegexConfig);
 		private readonly Dictionary<TsPermission, (PermCompare, int)> permissions;
 
 		public MatchPermission(string[] permissions, ParseContext ctx)
@@ -26,7 +26,7 @@ namespace TS3AudioBot.Rights.Matchers
 			this.permissions = new Dictionary<TsPermission, (PermCompare, int)>(permissions.Length);
 			foreach (var expression in permissions)
 			{
-				var match = expressionMatch.Match(expression);
+				var match = ExpressionMatch.Match(expression);
 				if (!match.Success)
 				{
 					ctx.Errors.Add($"The expression \"{expression}\" is not in the valid form of '<permission><compare><value>'");

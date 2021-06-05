@@ -35,8 +35,8 @@ namespace TS3AudioBot.Rights
 		private bool needsRecalculation;
 		private readonly ConfRights config;
 		private RightsRule? rootRule;
-		private HashSet<string> registeredRights = new HashSet<string>();
-		private readonly object rootRuleLock = new object();
+		private HashSet<string> registeredRights = new();
+		private readonly object rootRuleLock = new();
 
 		// Required Matcher Data:
 		// This variables save whether the current rights setup has at least one rule that

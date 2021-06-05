@@ -50,7 +50,7 @@ namespace TS3AudioBot.Dependency
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 
 		private readonly IInjector injector;
-		private readonly LinkedList<Module> modules = new LinkedList<Module>();
+		private readonly LinkedList<Module> modules = new();
 
 		public DependencyBuilder(IInjector injector)
 		{

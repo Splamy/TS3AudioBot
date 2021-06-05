@@ -30,7 +30,7 @@ namespace TS3AudioBot.Helper
 				return Answer.Unknown;
 		}
 
-		private static readonly Regex BbMatch = new Regex(@"\[URL\](.+?)\[\/URL\]", Util.DefaultRegexConfig);
+		private static readonly Regex BbMatch = new(@"\[URL\](.+?)\[\/URL\]", Util.DefaultRegexConfig);
 		public static string ExtractUrlFromBb(string ts3Link)
 		{
 			if (ts3Link.Contains("[URL]"))
@@ -50,7 +50,7 @@ namespace TS3AudioBot.Helper
 				|| !quotedString.EndsWith("\"", StringComparison.Ordinal))
 			{
 				if (throwWhenIncorrect)
-					throw new ArgumentException("The string is not properly quoted");
+					throw new ArgumentException("The string is not properly quoted", nameof(quotedString));
 				else
 					return quotedString;
 			}
@@ -70,7 +70,7 @@ namespace TS3AudioBot.Helper
 			return strb.ToString();
 		}
 
-		private static readonly Regex TimeReg = new Regex(@"^(?:(\d+)d)?(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?(?:(\d+)ms)?$", Util.DefaultRegexConfig);
+		private static readonly Regex TimeReg = new(@"^(?:(\d+)d)?(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?(?:(\d+)ms)?$", Util.DefaultRegexConfig);
 
 		public static TimeSpan? ParseTime(string value)
 		{

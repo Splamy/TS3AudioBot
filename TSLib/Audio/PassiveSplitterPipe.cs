@@ -16,10 +16,10 @@ namespace TSLib.Audio
 	public class PassiveSplitterPipe : IAudioPipe
 	{
 		public bool Active => consumerList.Count > 0 && consumerList.Any(x => x.Active);
-		private readonly List<IAudioPassiveConsumer> safeConsumerList = new List<IAudioPassiveConsumer>();
-		private readonly List<IAudioPassiveConsumer> consumerList = new List<IAudioPassiveConsumer>();
+		private readonly List<IAudioPassiveConsumer> safeConsumerList = new();
+		private readonly List<IAudioPassiveConsumer> consumerList = new();
 		private bool changed;
-		private readonly object listLock = new object();
+		private readonly object listLock = new();
 		private byte[] buffer = Array.Empty<byte>();
 
 		public bool CloneMeta { get; set; } = false;

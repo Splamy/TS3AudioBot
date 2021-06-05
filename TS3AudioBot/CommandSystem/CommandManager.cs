@@ -29,15 +29,14 @@ namespace TS3AudioBot.CommandSystem
 	public class CommandManager
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
-		private static readonly Regex CommandNamespaceValidator =
-			new Regex(@"^[a-z\d]+( [a-z\d]+)*$", Util.DefaultRegexConfig & ~RegexOptions.IgnoreCase);
+		private static readonly Regex CommandNamespaceValidator = new(@"^[a-z\d]+( [a-z\d]+)*$", Util.DefaultRegexConfig & ~RegexOptions.IgnoreCase);
 
-		private readonly Dictionary<string, AliasCommand> aliasPaths = new Dictionary<string, AliasCommand>();
-		private readonly HashSet<string> commandPaths = new HashSet<string>();
-		private readonly HashSet<ICommandBag> baggedCommands = new HashSet<ICommandBag>();
+		private readonly Dictionary<string, AliasCommand> aliasPaths = new();
+		private readonly HashSet<string> commandPaths = new();
+		private readonly HashSet<ICommandBag> baggedCommands = new();
 		private readonly RightsManager? rightsManager;
 
-		public CommandGroup RootGroup { get; } = new CommandGroup();
+		public CommandGroup RootGroup { get; } = new();
 
 		public CommandManager(RightsManager? rightsManager)
 		{
@@ -349,16 +348,7 @@ namespace TS3AudioBot.CommandSystem
 			}
 		}
 
-		private class CommandUnloadNode
-		{
-			public CommandUnloadNode? ParentNode { get; set; }
-			public CommandGroup Self { get; set; }
-			public CommandUnloadNode(CommandUnloadNode? parentNode, CommandGroup self)
-			{
-				ParentNode = parentNode;
-				Self = self;
-			}
-		}
+		private record CommandUnloadNode(CommandUnloadNode? ParentNode, CommandGroup Self);
 
 		#endregion
 

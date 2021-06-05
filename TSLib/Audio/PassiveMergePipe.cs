@@ -18,8 +18,8 @@ namespace TSLib.Audio
 	public class PassiveMergePipe : IAudioPassiveProducer, ICollection<IAudioPassiveProducer>
 	{
 		private IAudioPassiveProducer[] safeProducerList = Array.Empty<IAudioPassiveProducer>();
-		private readonly List<IAudioPassiveProducer> producerList = new List<IAudioPassiveProducer>();
-		private readonly object listLock = new object();
+		private readonly List<IAudioPassiveProducer> producerList = new();
+		private readonly object listLock = new();
 		private bool changed;
 		private readonly int[] accBuffer = new int[4096];
 

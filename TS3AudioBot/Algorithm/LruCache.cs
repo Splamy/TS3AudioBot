@@ -15,8 +15,8 @@ namespace TS3AudioBot.Algorithm
 	public class LruCache<TK, TV> where TK : notnull
 	{
 		private readonly int maxCapacity;
-		private readonly Dictionary<TK, LinkedListNode<(TK key, TV value)>> cacheDict = new Dictionary<TK, LinkedListNode<(TK, TV)>>();
-		private readonly LinkedList<(TK key, TV value)> lruList = new LinkedList<(TK, TV)>();
+		private readonly Dictionary<TK, LinkedListNode<(TK key, TV value)>> cacheDict = new();
+		private readonly LinkedList<(TK key, TV value)> lruList = new();
 
 		public LruCache(int capacity)
 		{

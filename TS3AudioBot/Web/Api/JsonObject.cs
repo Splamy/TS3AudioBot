@@ -15,7 +15,7 @@ namespace TS3AudioBot.Web.Api
 {
 	public abstract class JsonObject : IWrappedResult
 	{
-		private static readonly JsonSerializerSettings DefaultSettigs = new JsonSerializerSettings();
+		private static readonly JsonSerializerSettings DefaultSettigs = new();
 
 		static JsonObject()
 		{

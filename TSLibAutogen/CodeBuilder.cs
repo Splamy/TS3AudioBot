@@ -7,7 +7,7 @@ namespace TSLibAutogen
 	{
 		public StringBuilder Strb = new();
 		public int Level { get; set; } = 0;
-		public string Indent => new string('\t', Level);
+		public string Indent => new('\t', Level);
 
 		public void PushLevel() => Level++;
 		public void PopLevel()
@@ -25,12 +25,13 @@ namespace TSLibAutogen
 		public void AppendLine() => AppendSingleLine("");
 		public void AppendLine(string s)
 		{
-			foreach(var line in s.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None))
+			foreach (var line in s.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None))
 				AppendSingleLine(line);
 			if (s.EndsWith("{")) PushLevel();
 		}
 
-		private void AppendSingleLine(string s) {
+		private void AppendSingleLine(string s)
+		{
 			if (string.IsNullOrWhiteSpace(s))
 				Strb.AppendLine();
 			else

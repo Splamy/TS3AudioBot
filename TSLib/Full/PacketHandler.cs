@@ -24,6 +24,7 @@ namespace TSLib.Full
 	{
 		private static readonly int OutHeaderSize = TsCrypt.MacLen + Packet<TOut>.HeaderLength;
 		private static readonly int MaxOutContentSize = MaxOutPacketSize - OutHeaderSize;
+		private const int PacketBufferSize = 4096;
 
 		// Timout calculations
 		/// <summary>The SmoothedRoundTripTime holds the smoothed average time
@@ -34,8 +35,8 @@ namespace TSLib.Full
 		/// <summary>Holds the current RetransmissionTimeOut, which determines the timespan until
 		/// a packet is considered to be lost.</summary>
 		private TimeSpan currentRto;
-		private readonly Stopwatch pingTimer = new Stopwatch();
-		private readonly Stopwatch lastMessageTimer = new Stopwatch();
+		private readonly Stopwatch pingTimer = new();
+		private readonly Stopwatch lastMessageTimer = new();
 		private ushort lastSentPingId;
 		private ushort lastReceivedPingId;
 
@@ -43,14 +44,14 @@ namespace TSLib.Full
 		private readonly ushort[] packetCounter;
 		private readonly uint[] generationCounter;
 		private ResendPacket<TOut>? initPacketCheck;
-		private readonly Dictionary<ushort, ResendPacket<TOut>> packetAckManager = new Dictionary<ushort, ResendPacket<TOut>>();
+		private readonly Dictionary<ushort, ResendPacket<TOut>> packetAckManager = new();
 		// In Packets
 		private readonly GenerationWindow receiveWindowVoice;
 		private readonly GenerationWindow receiveWindowVoiceWhisper;
 		private readonly RingQueue<Packet<TIn>> receiveQueueCommand;
 		private readonly RingQueue<Packet<TIn>> receiveQueueCommandLow;
 		// ====
-		private readonly object sendLoopLock = new object();
+		private readonly object sendLoopLock = new();
 		private readonly TsCrypt tsCrypt;
 		private Socket? socket;
 		private Timer? resendTimer;
@@ -69,12 +70,12 @@ namespace TSLib.Full
 
 		public PacketHandler(TsCrypt ts3Crypt, Id id)
 		{
-			receiveQueueCommand = new RingQueue<Packet<TIn>>(ReceivePacketWindowSize, ushort.MaxValue + 1);
-			receiveQueueCommandLow = new RingQueue<Packet<TIn>>(ReceivePacketWindowSize, ushort.MaxValue + 1);
-			receiveWindowVoice = new GenerationWindow(ushort.MaxValue + 1);
-			receiveWindowVoiceWhisper = new GenerationWindow(ushort.MaxValue + 1);
+			receiveQueueCommand = new(ReceivePacketWindowSize, ushort.MaxValue + 1);
+			receiveQueueCommandLow = new(ReceivePacketWindowSize, ushort.MaxValue + 1);
+			receiveWindowVoice = new(ushort.MaxValue + 1);
+			receiveWindowVoiceWhisper = new(ushort.MaxValue + 1);
 
-			NetworkStats = new NetworkStats();
+			NetworkStats = new();
 
 			packetCounter = new ushort[TsCrypt.PacketTypeKinds];
 			generationCounter = new uint[TsCrypt.PacketTypeKinds];
@@ -145,7 +146,7 @@ namespace TSLib.Full
 						socket.Bind(new IPEndPoint(address.AddressFamily == AddressFamily.InterNetwork ? IPAddress.Any : IPAddress.IPv6Any, 0));
 
 						var socketEventArgs = new SocketAsyncEventArgs();
-						socketEventArgs.SetBuffer(new byte[4096], 0, 4096);
+						socketEventArgs.SetBuffer(new byte[PacketBufferSize], 0, PacketBufferSize);
 						socketEventArgs.Completed += FetchPacketEvent;
 						socketEventArgs.UserToken = this;
 						socketEventArgs.RemoteEndPoint = remoteAddress;
@@ -455,7 +456,7 @@ namespace TSLib.Full
 			packet.GenerationId = window.GetGeneration(packet.PacketId);
 		}
 
-		private bool ReceiveVoice(ref Packet<TIn> packet, GenerationWindow window)
+		private static bool ReceiveVoice(ref Packet<TIn> packet, GenerationWindow window)
 			=> window.SetAndDrag(packet.PacketId);
 
 		private bool ReceiveCommand(ref Packet<TIn> packet, RingQueue<Packet<TIn>> packetQueue, PacketType ackType)
@@ -665,13 +666,14 @@ namespace TSLib.Full
 			try
 			{
 				bool close = false;
+				var now = Tools.Now;
 				lock (sendLoopLock)
 				{
 					if (closed != 0)
 						return;
 
-					close = (packetAckManager.Count > 0 && ResendPackets(packetAckManager.Values))
-						|| (initPacketCheck != null && ResendPacket(initPacketCheck));
+					close = (packetAckManager.Count > 0 && ResendPackets(packetAckManager.Values, now))
+						|| (initPacketCheck != null && ResendPacket(initPacketCheck, now));
 				}
 				if (close)
 				{
@@ -679,7 +681,6 @@ namespace TSLib.Full
 					return;
 				}
 
-				var now = Tools.Now;
 				var nextTest = now - pingCheck - PingInterval;
 				// we need to check if CryptoInitComplete because while false packet ids won't be incremented
 				if (nextTest > TimeSpan.Zero && tsCrypt.CryptoInitComplete)
@@ -708,17 +709,16 @@ namespace TSLib.Full
 			}
 		}
 
-		private bool ResendPackets(IEnumerable<ResendPacket<TOut>> packetList)
+		private bool ResendPackets(IEnumerable<ResendPacket<TOut>> packetList, DateTime now)
 		{
 			foreach (var outgoingPacket in packetList)
-				if (ResendPacket(outgoingPacket))
+				if (ResendPacket(outgoingPacket, now))
 					return true;
 			return false;
 		}
 
-		private bool ResendPacket(ResendPacket<TOut> packet)
+		private bool ResendPacket(ResendPacket<TOut> packet, DateTime now)
 		{
-			var now = Tools.Now;
 			// Check if the packet timed out completely
 			if (packet.FirstSendTime < now - PacketTimeout)
 			{

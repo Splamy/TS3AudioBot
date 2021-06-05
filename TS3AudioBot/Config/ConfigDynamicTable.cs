@@ -17,7 +17,7 @@ namespace TS3AudioBot.Config
 	[DebuggerDisplay("dyntable:{Key}")]
 	public class ConfigDynamicTable<T> : ConfigEnumerable, IDynamicTable where T : ConfigPart
 	{
-		private readonly Dictionary<string, T> dynamicTables = new Dictionary<string, T>();
+		private readonly Dictionary<string, T> dynamicTables = new();
 		private readonly Func<string, T> createFactory;
 
 		public ConfigDynamicTable(Func<string, T> createFactory)

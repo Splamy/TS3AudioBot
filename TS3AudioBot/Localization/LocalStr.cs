@@ -14,7 +14,7 @@ namespace TS3AudioBot.Localization
 	/// </summary>
 	public readonly struct LocalStr
 	{
-		public static readonly LocalStr Empty = new LocalStr(string.Empty);
+		public static readonly LocalStr Empty = new(string.Empty);
 
 		public string Str { get; }
 

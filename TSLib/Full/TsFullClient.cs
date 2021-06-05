@@ -68,7 +68,7 @@ namespace TSLib.Full
 		public override bool Connected => status == TsClientStatus.Connected;
 		public override bool Connecting => status == TsClientStatus.Connecting;
 		protected override Deserializer Deserializer => msgProc.Deserializer;
-		public Connection Book { get; } = new Connection();
+		public Connection Book { get; } = new();
 
 		public override event EventHandler<DisconnectEventArgs>? OnDisconnected;
 		public event EventHandler<CommandError>? OnErrorEvent;
@@ -93,8 +93,8 @@ namespace TSLib.Full
 		{
 			scheduler.VerifyOwnThread();
 			if (conData is not ConnectionDataFull conDataFull) throw new ArgumentException($"Use the {nameof(ConnectionDataFull)} derivative to connect with the full client.", nameof(conData));
-			if (conDataFull.Identity is null) throw new ArgumentNullException(nameof(conDataFull.Identity));
-			if (conDataFull.VersionSign is null) throw new ArgumentNullException(nameof(conDataFull.VersionSign));
+			if (conDataFull.Identity is null) throw new ArgumentNullException(nameof(conDataFull), nameof(conDataFull.Identity) + " is null");
+			if (conDataFull.VersionSign is null) throw new ArgumentNullException(nameof(conDataFull), nameof(conDataFull.VersionSign) + " is null");
 
 			await Disconnect();
 
@@ -149,7 +149,7 @@ namespace TSLib.Full
 			// TODO: Consider if it is better when in connecting state to wait for connect completion then disconnect
 			if (status == TsClientStatus.Connected)
 			{
-				await ClientDisconnect(Reason.LeftServer, QuitMessage);
+				ClientDisconnect(Reason.LeftServer, QuitMessage);  // TODO: handle error ?
 				ChangeState(ctx, TsClientStatus.Disconnecting);
 			}
 			else
@@ -256,7 +256,7 @@ namespace TSLib.Full
 
 		// Local event processing
 
-		async partial void ProcessEachInitIvExpand(InitIvExpand initIvExpand)
+		partial void ProcessEachInitIvExpand(InitIvExpand initIvExpand)
 		{
 			var ctx = context;
 			if (ctx is null) throw new InvalidOperationException("context should be set");
@@ -270,10 +270,10 @@ namespace TSLib.Full
 				return;
 			}
 
-			await DefaultClientInit(ctx);
+			DefaultClientInit(ctx).Unwrap(); // TODO: better handling
 		}
 
-		async partial void ProcessEachInitIvExpand2(InitIvExpand2 initIvExpand2)
+		partial void ProcessEachInitIvExpand2(InitIvExpand2 initIvExpand2)
 		{
 			var ctx = context;
 			if (ctx is null) throw new InvalidOperationException("context should be set");
@@ -289,7 +289,7 @@ namespace TSLib.Full
 			Array.Copy(beta, 0, toSign, 32, 54);
 			var sign = TsCrypt.Sign(ctx.ConnectionDataFull.Identity.PrivateKey, toSign);
 			var proof = Convert.ToBase64String(sign);
-			await ClientEk(ekBase64, proof);
+			ClientEk(ekBase64, proof).Unwrap(); // TODO: better handling
 
 			var result = ctx.TsCrypt.CryptoInit2(initIvExpand2.License, initIvExpand2.Omega, initIvExpand2.Proof, initIvExpand2.Beta, privateKey);
 			if (!result)
@@ -298,7 +298,7 @@ namespace TSLib.Full
 				return;
 			}
 
-			await DefaultClientInit(ctx);
+			DefaultClientInit(ctx).Unwrap(); // TODO: better handling
 		}
 
 		partial void ProcessEachInitServer(InitServer initServer)
@@ -350,11 +350,11 @@ namespace TSLib.Full
 			await PermissionList();
 		}
 
-		async partial void ProcessEachClientConnectionInfoUpdateRequest(ClientConnectionInfoUpdateRequest _)
+		partial void ProcessEachClientConnectionInfoUpdateRequest(ClientConnectionInfoUpdateRequest _)
 		{
 			if (context is null) throw new InvalidOperationException("context should be set");
 
-			await SendNoResponsed(context.PacketHandler.NetworkStats.GenerateStatusAnswer());
+			SendNoResponsed(context.PacketHandler.NetworkStats.GenerateStatusAnswer());
 		}
 
 		partial void ProcessPermList(PermList[] permList)
@@ -373,7 +373,7 @@ namespace TSLib.Full
 			Deserializer.PermissionTransform = new TablePermissionTransform(buildPermissions.ToArray());
 		}
 
-		private Task DefaultClientInit(ConnectionContext context)
+		private E<CommandError> DefaultClientInit(ConnectionContext context)
 		{
 			var cdf = context.ConnectionDataFull;
 			return ClientInit(
@@ -393,9 +393,9 @@ namespace TSLib.Full
 		/// <para>NOTE: Do not use this method unless you are sure the ts3 command fits the criteria.</para>
 		/// </summary>
 		/// <param name="command">The command to send.</param>
-		public Task SendNoResponsed(TsCommand command)
+		public E<CommandError> SendNoResponsed(TsCommand command)
 		{
-			return SendVoid(command.ExpectsResponse(false));
+			return SendCommandBase(command.ExpectsResponse(false), null);
 		}
 
 		/// <summary>
@@ -410,16 +410,23 @@ namespace TSLib.Full
 		/// Or <code>R(ERR)</code> with the returned error if no response is expected.</returns>
 		public override async Task<R<T[], CommandError>> Send<T>(TsCommand com)
 		{
-			using var wb = new WaitBlock(msgProc.Deserializer);
-			var result = SendCommandBase(wb, com);
-			if (!result.Ok)
-				return result.Error;
 			if (com.ExpectResponse)
+			{
+				using var wb = new WaitBlock(msgProc.Deserializer);
+				var result = SendCommandBase(com, wb);
+				if (!result.Ok)
+					return result.Error;
 				return await wb.WaitForMessageAsync<T>();
+			}
 			else
+			{
+				var result = SendCommandBase(com, null);
+				if (!result.Ok)
+					return result.Error;
 				// This might not be the nicest way to return in this case
 				// but we don't know what the response is, so this acceptable.
 				return CommandError.NoResult;
+			}
 		}
 
 		public override async Task<R<T[], CommandError>> SendHybrid<T>(TsCommand com, NotificationType type)
@@ -434,13 +441,13 @@ namespace TSLib.Full
 				throw new ArgumentException("A special command must take a response");
 
 			using var wb = new WaitBlock(msgProc.Deserializer, dependsOn);
-			var result = SendCommandBase(wb, com);
+			var result = SendCommandBase(com, wb);
 			if (!result.Ok)
 				return result.Error;
 			return await wb.WaitForNotificationAsync();
 		}
 
-		private E<CommandError> SendCommandBase(WaitBlock wb, TsCommand com)
+		private E<CommandError> SendCommandBase(TsCommand com, WaitBlock? wb)
 		{
 			scheduler.VerifyOwnThread();
 
@@ -451,6 +458,7 @@ namespace TSLib.Full
 
 			if (com.ExpectResponse)
 			{
+				if (wb is null) throw new InvalidOperationException("Expecting command needs a waitblock");
 				var responseNumber = unchecked(++returnCode);
 				var retCodeParameter = new CommandParameter("return_code", responseNumber);
 				com.Add(retCodeParameter);
@@ -530,13 +538,13 @@ namespace TSLib.Full
 				{ "client_talk_request", false },
 			});
 
-		public Task ClientEk(string ek, string proof)
+		public E<CommandError> ClientEk(string ek, string proof)
 			=> SendNoResponsed(new TsCommand("clientek") {
 				{ "ek", ek },
 				{ "proof", proof },
 			});
 
-		public Task ClientInit(string nickname, bool inputHardware, bool outputHardware,
+		public E<CommandError> ClientInit(string nickname, bool inputHardware, bool outputHardware,
 				string defaultChannel, string defaultChannelPassword, string serverPassword, string metaData,
 				string nicknamePhonetic, string defaultToken, string hwid, TsVersionSigned versionSign, ulong keyOffset)
 			=> SendNoResponsed(new TsCommand("clientinit") {
@@ -556,7 +564,7 @@ namespace TSLib.Full
 				{ "hwid", hwid },
 			});
 
-		public Task ClientDisconnect(Reason reason, string reasonMsg)
+		public E<CommandError> ClientDisconnect(Reason reason, string reasonMsg)
 			=> SendNoResponsed(new TsCommand("clientdisconnect") {
 				{ "reasonid", (int)reason },
 				{ "reasonmsg", reasonMsg }
@@ -568,7 +576,7 @@ namespace TSLib.Full
 		public CmdR ChannelUnsubscribeAll()
 			=> SendVoid(new TsCommand("channelunsubscribeall"));
 
-		public Task PokeClient(string message, ClientId clientId)
+		public E<CommandError> PokeClient(string message, ClientId clientId)
 			=> SendNoResponsed(new TsCommand("clientpoke") {
 				{ "clid", clientId },
 				{ "msg", message },

@@ -20,7 +20,7 @@ namespace TS3AudioBot.Web.Api
 		public Uri? RequestUrl { get; set; }
 		public string? Body { get; set; }
 
-		public static ApiCall CreateAnonymous() => new ApiCall(Uid.Anonymous);
+		public static ApiCall CreateAnonymous() => new(Uid.Anonymous);
 
 		public ApiCall(Uid clientUid, IPAddress? ipAddress = null, Uri? requestUrl = null, string? token = null, string? body = null) : base(clientUid)
 		{

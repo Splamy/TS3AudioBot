@@ -18,7 +18,7 @@ namespace TSLib.Audio
 
 		private const int BufferSize = 4096 * 8;
 
-		private readonly Dictionary<ClientId, ClientMix> mixdownBuffer = new Dictionary<ClientId, ClientMix>();
+		private readonly Dictionary<ClientId, ClientMix> mixdownBuffer = new();
 
 		public void Write(Span<byte> data, Meta? meta)
 		{
@@ -60,7 +60,7 @@ namespace TSLib.Audio
 			public int Length { get; set; } = 0;
 			public Meta? LastMeta { get; set; }
 
-			private readonly object rwLock = new object();
+			private readonly object rwLock = new();
 
 			public ClientMix(int bufferSize)
 			{

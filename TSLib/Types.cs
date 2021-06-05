@@ -14,8 +14,8 @@ namespace TSLib
 	public partial struct Uid
 	{
 		/// <summary>Unofficial type</summary>
-		public static readonly Uid Anonymous = new Uid("anonymous");
-		public static readonly Uid ServerAdmin = new Uid("serveradmin");
+		public static readonly Uid Anonymous = new("anonymous");
+		public static readonly Uid ServerAdmin = new("serveradmin");
 
 		public static bool IsValid(string uid)
 		{

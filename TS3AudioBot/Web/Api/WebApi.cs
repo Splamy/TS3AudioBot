@@ -35,7 +35,7 @@ namespace TS3AudioBot.Web.Api
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 
-		private static readonly Uri Dummy = new Uri("http://dummy/");
+		private static readonly Uri Dummy = new("http://dummy/");
 
 		private const string ErrorNoUserOrToken = "Unknown user or no active token found";
 		private const string ErrorAuthFailure = "Authentication failed";

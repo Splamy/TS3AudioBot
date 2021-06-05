@@ -22,8 +22,8 @@ namespace TS3AudioBot.Playlists
 	{
 		private readonly PlaylistIO playlistPool;
 		private const string mixName = ".mix";
-		private readonly Playlist mixList = new Playlist() { Title = "Now Playing" };
-		private readonly object listLock = new object();
+		private readonly Playlist mixList = new() { Title = "Now Playing" };
+		private readonly object listLock = new();
 		public IReadOnlyPlaylist CurrentList => mixList;
 
 		private IShuffleAlgorithm shuffle;

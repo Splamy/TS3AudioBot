@@ -256,9 +256,9 @@ namespace TS3AudioBot.Web.Api
 				Type = type;
 			}
 
-			public static OApiSchema FromBasic(string type, string? format = null) => new OApiSchema(type) { Format = format };
+			public static OApiSchema FromBasic(string type, string? format = null) => new(type) { Format = format };
 
-			public OApiSchema ObjWrap() => new OApiSchema("object") { AdditionalProperties = this };
+			public OApiSchema ObjWrap() => new("object") { AdditionalProperties = this };
 		}
 	}
 }

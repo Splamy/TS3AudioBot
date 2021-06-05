@@ -16,7 +16,7 @@ namespace TS3AudioBot.Config
 {
 	public abstract class ConfigEnumerable : ConfigPart
 	{
-		private static readonly object EmptyObject = new object();
+		private static readonly object EmptyObject = new();
 
 		protected virtual TomlTable.TableTypes TableType { get => TomlTable.TableTypes.Default; }
 #pragma warning disable CS8618 // !NRT loaded in FromToml

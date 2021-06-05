@@ -17,7 +17,7 @@ namespace TS3AudioBot.ResourceFactories.AudioTags
 	internal static class AudioTagReader
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
-		private static readonly Dictionary<string, Tag> TagDict = new Dictionary<string, Tag>();
+		private static readonly Dictionary<string, Tag> TagDict = new();
 
 		static AudioTagReader()
 		{

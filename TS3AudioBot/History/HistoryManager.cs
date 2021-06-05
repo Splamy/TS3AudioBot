@@ -12,7 +12,6 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using TS3AudioBot.Config;
 using TS3AudioBot.Localization;
 using TS3AudioBot.ResourceFactories;
 using TSLib;
@@ -29,9 +28,7 @@ namespace TS3AudioBot.History
 		private const string ResourceTitleQueryColumn = "lowTitle";
 
 		private readonly LiteCollection<AudioLogEntry> audioLogEntries;
-		private readonly LinkedList<int> unusedIds = new LinkedList<int>();
-		private readonly object dbLock = new object();
-		private readonly ConfHistory config;
+		private readonly object dbLock = new();
 
 		public IHistoryFormatter Formatter { get; private set; }
 		public uint HighestId => (uint)audioLogEntries.Max().AsInt32;
@@ -42,11 +39,9 @@ namespace TS3AudioBot.History
 				.Id(x => x.Id);
 		}
 
-		public HistoryManager(ConfHistory config, DbStore database)
+		public HistoryManager(DbStore database)
 		{
 			Formatter = new SmartHistoryFormatter();
-
-			this.config = config;
 
 			var meta = database.GetMetaData(AudioLogEntriesTable);
 
@@ -62,7 +57,6 @@ namespace TS3AudioBot.History
 			audioLogEntries.EnsureIndex(x => x.Timestamp);
 			audioLogEntries.EnsureIndex(ResourceTitleQueryColumn,
 				$"LOWER($.{nameof(AudioLogEntry.AudioResource)}.{nameof(AudioResource.ResourceTitle)})");
-			RestoreFromFile();
 
 			if (meta.Version == CurrentHistoryVersion)
 				return;
@@ -98,11 +92,6 @@ namespace TS3AudioBot.History
 				Log.Info("Database table \"{0}\" upgraded to {1}", AudioLogEntriesTable, meta.Version);
 				break;
 			}
-		}
-
-		private void RestoreFromFile()
-		{
-			// TODO load unused id list
 		}
 
 		public AudioLogEntry? LogAudioResource(HistorySaveData saveData)
@@ -152,20 +141,8 @@ namespace TS3AudioBot.History
 			if (string.IsNullOrWhiteSpace(saveData.Resource.ResourceTitle))
 				return new Exception("Track name is empty");
 
-			int nextHid;
-			var first = unusedIds.First;
-			if (config.FillDeletedIds && first != null)
-			{
-				nextHid = first.Value;
-				unusedIds.Remove(first);
-			}
-			else
-			{
-				nextHid = 0;
-			}
-
-			var userUid = (saveData.InvokerUid ?? Uid.Anonymous).Value ?? Uid.Anonymous.Value!;
-			var ale = new AudioLogEntry(nextHid, saveData.Resource, userUid)
+			var userUid = saveData.InvokerUid?.Value ?? Uid.Anonymous.Value;
+			var ale = new AudioLogEntry(0, saveData.Resource, userUid)
 			{
 				Timestamp = Tools.Now,
 				PlayCount = 1,

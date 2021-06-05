@@ -6,7 +6,7 @@ namespace TS3AudioBot
 	public static class Error
 	{
 		public static AudioBotException LocalStr(string text) => new AudioBotException().LocalStr(text);
-		public static AudioBotException Exception(Exception ex) => new AudioBotException(ex);
+		public static AudioBotException Exception(Exception ex) => new(ex);
 		public static AudioBotException Str(string text) => new AudioBotException().Str(text);
 
 		public static AudioBotException LocalStr(this AudioBotException ex, string text) { ex.LocalStr = text; return ex; }

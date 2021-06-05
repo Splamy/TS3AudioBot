@@ -36,7 +36,7 @@ namespace TSLib.Full
 		private static readonly (byte[], byte[]) DummyKeyAndNonceTuple = (DummyKey, DummyIv);
 		private static readonly byte[] Ts3InitMac = Encoding.ASCII.GetBytes("TS3INIT1");
 		private const uint InitVersion = 1566914096; // 3.5.0 [Stable]
-		private readonly EaxBlockCipher eaxCipher = new EaxBlockCipher(new AesEngine());
+		private readonly EaxBlockCipher eaxCipher = new(new AesEngine());
 
 		internal const int MacLen = 8;
 		internal const int PacketTypeKinds = 9;
@@ -115,7 +115,7 @@ namespace TSLib.Full
 
 			// applying hashes to get the required values for ts
 			XorBinary(sharedKey, alpha, alpha.Length, ivStruct);
-			XorBinary(sharedKey.Slice(10), beta, beta.Length, ivStruct.AsSpan(10));
+			XorBinary(sharedKey[10..], beta, beta.Length, ivStruct.AsSpan(10));
 
 			// creating a dummy signature which will be used on packets which dont use a real encryption signature (like plain voice)
 			var buffer2 = Hash1It(ivStruct, 0, ivStruct.Length);
@@ -498,7 +498,7 @@ namespace TSLib.Full
 
 				var result = Hash256It(tmpToHash).AsSpan();
 
-				cacheValue = (result.Slice(0, 16).ToArray(), result.Slice(16, 16).ToArray(), generationId);
+				cacheValue = (result[0..16].ToArray(), result[16..32].ToArray(), generationId);
 			}
 
 			var key = new byte[16];
@@ -535,9 +535,9 @@ namespace TSLib.Full
 				outBuf[i] = (byte)(a[i] ^ b[i]);
 		}
 
-		private static readonly System.Security.Cryptography.SHA1Managed Sha1Hash = new System.Security.Cryptography.SHA1Managed();
-		private static readonly System.Security.Cryptography.SHA256Managed Sha256Hash = new System.Security.Cryptography.SHA256Managed();
-		private static readonly System.Security.Cryptography.SHA512Managed Sha512Hash = new System.Security.Cryptography.SHA512Managed();
+		private static readonly System.Security.Cryptography.SHA1Managed Sha1Hash = new();
+		private static readonly System.Security.Cryptography.SHA256Managed Sha256Hash = new();
+		private static readonly System.Security.Cryptography.SHA512Managed Sha512Hash = new();
 		internal static byte[] Hash1It(byte[] data, int offset = 0, int len = 0) => HashItInternal(Sha1Hash, data, offset, len);
 		internal static byte[] Hash256It(byte[] data, int offset = 0, int len = 0) => HashItInternal(Sha256Hash, data, offset, len);
 		internal static byte[] Hash512It(byte[] data, int offset = 0, int len = 0) => HashItInternal(Sha512Hash, data, offset, len);
@@ -550,10 +550,10 @@ namespace TSLib.Full
 		}
 
 #if !NETSTANDARD2_0
-		internal static void Hash1It(ReadOnlySpan<byte> data, ref Span<byte> hash) => HashItInternal(Sha1Hash, data, ref hash);
-		internal static void Hash256It(ReadOnlySpan<byte> data, ref Span<byte> hash) => HashItInternal(Sha256Hash, data, ref hash);
-		internal static void Hash512It(ReadOnlySpan<byte> data, ref Span<byte> hash) => HashItInternal(Sha512Hash, data, ref hash);
-		private static void HashItInternal(System.Security.Cryptography.HashAlgorithm hashAlgo, ReadOnlySpan<byte> data, ref Span<byte> hash)
+		internal static void Hash1It(ReadOnlySpan<byte> data, Span<byte> hash) => HashItInternal(Sha1Hash, data, hash);
+		internal static void Hash256It(ReadOnlySpan<byte> data, Span<byte> hash) => HashItInternal(Sha256Hash, data, hash);
+		internal static void Hash512It(ReadOnlySpan<byte> data, Span<byte> hash) => HashItInternal(Sha512Hash, data, hash);
+		private static void HashItInternal(System.Security.Cryptography.HashAlgorithm hashAlgo, ReadOnlySpan<byte> data, Span<byte> hash)
 		{
 			lock (hashAlgo)
 			{

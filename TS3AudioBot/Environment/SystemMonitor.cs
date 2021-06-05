@@ -20,8 +20,8 @@ namespace TS3AudioBot.Environment
 	public class SystemMonitor
 	{
 		private static readonly Process CurrentProcess = Process.GetCurrentProcess();
-		private readonly ReaderWriterLockSlim historyLock = new ReaderWriterLockSlim();
-		private readonly Queue<SystemMonitorSnapshot> history = new Queue<SystemMonitorSnapshot>();
+		private readonly ReaderWriterLockSlim historyLock = new();
+		private readonly Queue<SystemMonitorSnapshot> history = new();
 
 		private bool historyChanged = true;
 		private SystemMonitorReport? lastReport = null;

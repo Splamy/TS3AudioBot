@@ -66,8 +66,8 @@ namespace TS3AudioBot.Web.Api
 
 		// static creator methods for anonymous stuff
 
-		public static JsonValue<T> Create<T>(T anon) where T : notnull => new JsonValue<T>(anon);
-		public static JsonValue<T> Create<T>(T anon, string msg) where T : notnull => new JsonValue<T>(anon, msg);
-		public static JsonValue<T> Create<T>(T anon, Func<T, string>? asString) where T : notnull => new JsonValue<T>(anon, asString);
+		public static JsonValue<T> Create<T>(T anon) where T : notnull => new(anon);
+		public static JsonValue<T> Create<T>(T anon, string msg) where T : notnull => new(anon, msg);
+		public static JsonValue<T> Create<T>(T anon, Func<T, string>? asString) where T : notnull => new(anon, asString);
 	}
 }

@@ -45,8 +45,8 @@ namespace TSLib
 	{
 		private Action<LazyNotification> dispatcher;
 		private Thread dispatchThread;
-		private readonly ConcurrentQueue<LazyNotification> eventQueue = new ConcurrentQueue<LazyNotification>();
-		private readonly AutoResetEvent eventBlock = new AutoResetEvent(false);
+		private readonly ConcurrentQueue<LazyNotification> eventQueue = new();
+		private readonly AutoResetEvent eventBlock = new(false);
 		private volatile bool run;
 
 #pragma warning disable CS8618 // !NRT on Init

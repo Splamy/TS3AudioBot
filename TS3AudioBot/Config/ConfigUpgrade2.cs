@@ -21,7 +21,7 @@ namespace TS3AudioBot.Config
 	internal static class ConfigUpgrade2
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
-		private static readonly Regex BotFileMatcher = new Regex(@"^bot_(.+)\.toml$", Util.DefaultRegexConfig);
+		private static readonly Regex BotFileMatcher = new(@"^bot_(.+)\.toml$", Util.DefaultRegexConfig);
 		private const string NewBotConfigFileName = "bot.toml";
 
 		public static void Upgrade(string path)

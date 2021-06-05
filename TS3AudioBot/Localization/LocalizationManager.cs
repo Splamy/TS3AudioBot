@@ -22,7 +22,7 @@ namespace TS3AudioBot.Localization
 	public class LocalizationManager
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
-		private static readonly Dictionary<string, LanguageData> loadedLanguage = new Dictionary<string, LanguageData>();
+		private static readonly Dictionary<string, LanguageData> loadedLanguage = new();
 		private static readonly DynamicResourceManager dynResMan;
 
 		private CultureInfo? culture;
@@ -157,7 +157,7 @@ namespace TS3AudioBot.Localization
 		}
 
 		private static FileInfo GetCultureFileInfo(CultureInfo culture)
-			=> new FileInfo(Path.Combine(Directory.GetCurrentDirectory(), culture.Name, "TS3AudioBot.resources.dll"));
+			=> new(Path.Combine(Directory.GetCurrentDirectory(), culture.Name, "TS3AudioBot.resources.dll"));
 
 		private static async Task<HashSet<string>?> DownloadAvaliableLanguages()
 		{

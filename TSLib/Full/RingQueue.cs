@@ -19,8 +19,7 @@ namespace TSLib.Full
 		private const int InitialBufferSize = 16;
 
 		private int currentStart;
-		private T[] ringBuffer;
-		private bool[] ringBufferSet;
+		private (bool set, T value)[] ringBuffer;
 
 		public int Count { get; private set; } // = currentLength
 		public int MaxBufferSize { get; }
@@ -32,8 +31,7 @@ namespace TSLib.Full
 				throw new ArgumentOutOfRangeException(nameof(mod), "Modulo must be bigger than buffer size");
 			MaxBufferSize = maxBufferSize;
 			var setBufferSize = Math.Min(InitialBufferSize, MaxBufferSize);
-			ringBuffer = new T[setBufferSize];
-			ringBufferSet = new bool[setBufferSize];
+			ringBuffer = new (bool, T)[setBufferSize];
 			Window = new GenerationWindow(mod, MaxBufferSize);
 			Clear();
 		}
@@ -46,28 +44,26 @@ namespace TSLib.Full
 			int local = IndexToLocal(index);
 			int newLength = local - currentStart + 1 + (local >= currentStart ? 0 : ringBuffer.Length);
 			Count = Math.Max(Count, newLength);
-			ringBuffer[local] = value;
-			ringBufferSet[local] = true;
+			ringBuffer[local] = (true, value);
 		}
 
 		private ref T BufferGet(int index)
 		{
 			BufferExtend(index);
 			int local = IndexToLocal(index);
-			return ref ringBuffer[local];
+			return ref ringBuffer[local].value;
 		}
 
 		private bool StateGet(int index)
 		{
 			BufferExtend(index);
 			int local = IndexToLocal(index);
-			return ringBufferSet[local];
+			return ringBuffer[local].set;
 		}
 
 		private void BufferPop()
 		{
-			ringBufferSet[currentStart] = false;
-			ringBuffer[currentStart] = default!;
+			ringBuffer[currentStart] = (false, default!);
 			currentStart = (currentStart + 1) % ringBuffer.Length;
 			Count--;
 		}
@@ -81,15 +77,11 @@ namespace TSLib.Full
 			int extendTo = index < ringBuffer.Length * 2
 				? Math.Min(ringBuffer.Length * 2, MaxBufferSize)
 				: Math.Min(index + ringBuffer.Length, MaxBufferSize);
-			var extRingBuffer = new T[extendTo];
-			var extRingBufferSet = new bool[extendTo];
+			var extRingBuffer = new (bool, T)[extendTo];
 			Array.Copy(ringBuffer, currentStart, extRingBuffer, 0, ringBuffer.Length - currentStart);
-			Array.Copy(ringBufferSet, currentStart, extRingBufferSet, 0, ringBufferSet.Length - currentStart);
 			Array.Copy(ringBuffer, 0, extRingBuffer, ringBuffer.Length - currentStart, currentStart);
-			Array.Copy(ringBufferSet, 0, extRingBufferSet, ringBufferSet.Length - currentStart, currentStart);
 			currentStart = 0;
 			ringBuffer = extRingBuffer;
-			ringBufferSet = extRingBufferSet;
 		}
 
 		private int IndexToLocal(int index) => (currentStart + index) % ringBuffer.Length;
@@ -130,6 +122,14 @@ namespace TSLib.Full
 			return true;
 		}
 
+		public (bool set, T value) Dequeue()
+		{
+			var ret = TryPeekStart(0, out var value) ? (true, value) : (false, default!);
+			BufferPop();
+			Window.Advance(1);
+			return ret;
+		}
+
 		public bool TryPeekStart(int index, [MaybeNullWhen(false)] out T value)
 		{
 			if (index < 0)
@@ -151,7 +151,7 @@ namespace TSLib.Full
 		{
 			currentStart = 0;
 			Count = 0;
-			Array.Clear(ringBufferSet, 0, ringBufferSet.Length);
+			Array.Clear(ringBuffer, 0, ringBuffer.Length);
 			Window.Reset();
 		}
 	}
@@ -166,6 +166,7 @@ namespace TSLib.Full
 	[Flags]
 	public enum ItemSetStatus
 	{
+#pragma warning disable CA1069 // Enums values should not be duplicated
 		NotSet = 0b00,
 		Set = 0b01,
 		OutOfWindow = 0b00,
@@ -175,5 +176,6 @@ namespace TSLib.Full
 		OutOfWindowSet = OutOfWindow | Set,
 		InWindowNotSet = InWindow | NotSet,
 		InWindowSet = InWindow | Set,
+#pragma warning restore CA1069 // Enums values should not be duplicated
 	}
 }

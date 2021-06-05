@@ -32,15 +32,15 @@ namespace TS3AudioBot.Plugins
 	// - Add commands to command manager
 	// - Start config to system?
 
-	public class PluginManager : IDisposable
+	public sealed class PluginManager : IDisposable
 	{
 		private readonly ConfPlugins config;
 		private readonly CoreInjector coreInjector;
 		private readonly ResourceResolver resourceResolver;
 		private readonly BotManager botManager;
-		private readonly Dictionary<string, Plugin> plugins = new Dictionary<string, Plugin>();
-		private readonly HashSet<int> usedIds = new HashSet<int>();
-		private readonly object pluginsLock = new object();
+		private readonly Dictionary<string, Plugin> plugins = new();
+		private readonly HashSet<int> usedIds = new();
+		private readonly object pluginsLock = new();
 
 		// TODO remove after plugin rework
 		internal ICollection<Plugin> Plugins => plugins.Values;

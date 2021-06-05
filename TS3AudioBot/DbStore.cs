@@ -14,7 +14,7 @@ using TS3AudioBot.Config;
 
 namespace TS3AudioBot
 {
-	public class DbStore : IDisposable
+	public sealed class DbStore : IDisposable
 	{
 		private const string DbMetaInformationTable = "dbmeta";
 

@@ -20,8 +20,8 @@ namespace TS3AudioBot.ResourceFactories
 {
 	public sealed class TwitchResolver : IResourceResolver
 	{
-		private static readonly Regex TwitchMatch = new Regex(@"^(https?://)?(www\.)?twitch\.tv/(\w+)", Util.DefaultRegexConfig);
-		private static readonly Regex M3U8ExtMatch = new Regex(@"#([\w-]+)(:(([\w-]+)=(""[^""]*""|[^,]+),?)*)?", Util.DefaultRegexConfig);
+		private static readonly Regex TwitchMatch = new(@"^(https?://)?(www\.)?twitch\.tv/(\w+)", Util.DefaultRegexConfig);
+		private static readonly Regex M3U8ExtMatch = new(@"#([\w-]+)(:(([\w-]+)=(""[^""]*""|[^,]+),?)*)?", Util.DefaultRegexConfig);
 		//private const string TwitchClientId = "t9nlhlxnfux3gk2d6z1p093rj2c71i3";
 		// See: https://github.com/streamlink/streamlink/issues/2680
 		private const string TwitchClientIdPrivate = "kimne78kx3ncx6brgo4mv6wki5h1ko";

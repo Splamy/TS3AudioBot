@@ -82,8 +82,8 @@ namespace TSLib
 		public string HashedPassword { get; }
 
 		private Password(string hashed) { HashedPassword = hashed; }
-		public static Password FromHash(string hash) => new Password(hash);
-		public static Password FromPlain(string pass) => new Password(TsCrypt.HashPassword(pass));
+		public static Password FromHash(string hash) => new(hash);
+		public static Password FromPlain(string pass) => new(TsCrypt.HashPassword(pass));
 
 		public static implicit operator Password(string pass) => FromPlain(pass);
 	}

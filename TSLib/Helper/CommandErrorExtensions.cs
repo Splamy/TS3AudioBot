@@ -24,7 +24,7 @@ namespace TSLib.Messages
 
 		public static CommandError CommandTimeout { get; } = Custom("Command protocol timout");
 
-		public static CommandError Custom(string message) => new CommandError { Id = TsErrorCode.custom_error, Message = message };
+		public static CommandError Custom(string message) => new() { Id = TsErrorCode.custom_error, Message = message };
 
 		public string ErrorFormat()
 		{

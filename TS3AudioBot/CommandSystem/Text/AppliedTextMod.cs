@@ -26,13 +26,13 @@ namespace TS3AudioBot.CommandSystem.Text
 			Mod = mod;
 		}
 
-		public readonly AppliedTextMod Color(Color color) => new AppliedTextMod(Text, Mod.Color(color));
-		public readonly AppliedTextMod Bold() => new AppliedTextMod(Text, Mod.Bold());
-		public readonly AppliedTextMod Italic() => new AppliedTextMod(Text, Mod.Italic());
-		public readonly AppliedTextMod Underline() => new AppliedTextMod(Text, Mod.Underline());
-		public readonly AppliedTextMod Strike() => new AppliedTextMod(Text, Mod.Strike());
+		public readonly AppliedTextMod Color(Color color) => new(Text, Mod.Color(color));
+		public readonly AppliedTextMod Bold() => new(Text, Mod.Bold());
+		public readonly AppliedTextMod Italic() => new(Text, Mod.Italic());
+		public readonly AppliedTextMod Underline() => new(Text, Mod.Underline());
+		public readonly AppliedTextMod Strike() => new(Text, Mod.Strike());
 
-		public static implicit operator AppliedTextMod(string? text) => new AppliedTextMod(text);
+		public static implicit operator AppliedTextMod(string? text) => new(text);
 
 		public override readonly string? ToString() => Text;
 	}

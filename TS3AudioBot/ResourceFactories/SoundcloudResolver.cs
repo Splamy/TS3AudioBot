@@ -9,7 +9,6 @@
 
 using System;
 using System.Globalization;
-using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -23,8 +22,8 @@ namespace TS3AudioBot.ResourceFactories
 	public sealed class SoundcloudResolver : IResourceResolver, IPlaylistResolver, IThumbnailResolver
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
-		private static readonly Regex SoundcloudLink = new Regex(@"^https?\:\/\/(www\.)?soundcloud\.", Util.DefaultRegexConfig);
-		private static readonly Regex SoundcloudPermalink = new Regex(@"\/\/([^\/]+)\/([^\/]+)\/([^\/]+)$", Util.DefaultRegexConfig);
+		private static readonly Regex SoundcloudLink = new(@"^https?\:\/\/(www\.)?soundcloud\.", Util.DefaultRegexConfig);
+		private static readonly Regex SoundcloudPermalink = new(@"\/\/([^\/]+)\/([^\/]+)\/([^\/]+)$", Util.DefaultRegexConfig);
 		private const string SoundcloudClientId = "a9dd3403f858e105d7e266edc162a0c5";
 
 		private const string AddArtist = "artist";

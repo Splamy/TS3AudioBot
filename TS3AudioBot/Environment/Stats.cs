@@ -30,7 +30,7 @@ namespace TS3AudioBot.Environment
 		private const int StatsVersion = 1;
 		private static readonly TimeSpan CheckInterval = TimeSpan.FromMinutes(1);
 		private static readonly TimeSpan SendInterval = TimeSpan.FromDays(1);
-		private static readonly JsonSerializerSettings JsonSettings = new JsonSerializerSettings
+		private static readonly JsonSerializerSettings JsonSettings = new()
 		{
 			NullValueHandling = NullValueHandling.Ignore,
 			Formatting = Formatting.None,
@@ -48,13 +48,13 @@ namespace TS3AudioBot.Environment
 		private readonly StatsMeta statsPoints;
 		private readonly LiteCollection<StatsData> trackEntries;
 		private readonly LiteCollection<StatsData> accEntries;
-		private readonly StatsData CurrentStatsData = new StatsData()
+		private readonly StatsData CurrentStatsData = new()
 		{
 			SongStats = new ConcurrentDictionary<string, StatsFactory>()
 		};
 		private DateTime runtimeLastTrack;
 		// bot id -> factory
-		private readonly ConcurrentDictionary<Id, string> runningSongsPerFactory = new ConcurrentDictionary<Id, string>();
+		private readonly ConcurrentDictionary<Id, string> runningSongsPerFactory = new();
 
 		public Stats(ConfRoot conf, DbStore database, BotManager botManager, DedicatedTaskScheduler scheduler)
 		{

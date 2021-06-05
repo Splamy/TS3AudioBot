@@ -35,7 +35,7 @@ namespace TS3AudioBot.Plugins
 
 		private byte[]? md5CacheSum;
 		private PluginObjects? corePlugin;
-		private readonly Dictionary<Bot, PluginObjects> botPluginList = new Dictionary<Bot, PluginObjects>();
+		private readonly Dictionary<Bot, PluginObjects> botPluginList = new();
 		private IResolver? factoryObject;
 		private Type? pluginType;
 		private PluginStatus status;

@@ -33,7 +33,7 @@ namespace TSLib
 		private const string DnsPrefixUdp = "_ts3._udp.";
 		private const string NicknameLookup = "https://named.myteamspeak.com/lookup?name=";
 		private static readonly TimeSpan LookupTimeout = TimeSpan.FromSeconds(1);
-		public static readonly Resolver Resolver = new Resolver(new[]
+		public static readonly Resolver Resolver = new(new[]
 		{
 			// Google
 			new IPEndPoint(new IPAddress(new byte[] { 8,8,8,8 }), 53),
@@ -50,8 +50,7 @@ namespace TSLib
 		});
 
 		// TODO maybe change to proper TLRU
-		private static readonly ConcurrentDictionary<string, CacheEntry> addressCache
-			= new ConcurrentDictionary<string, CacheEntry>();
+		private static readonly ConcurrentDictionary<string, CacheEntry> addressCache = new();
 		private static readonly TimeSpan CacheTimeout = TimeSpan.FromMinutes(10);
 
 		/// <summary>Tries to resolve an address string to an ip.</summary>
@@ -249,7 +248,7 @@ namespace TSLib
 			catch (SocketException) { return null; }
 		}
 
-		private static readonly Regex IpRegex = new Regex(@"(?<ip>(?:\d{1,3}\.){3}\d{1,3}|\[[0-9a-fA-F:]+\]|localhost)(?::(?<port>\d{1,5}))?", RegexOptions.ECMAScript | RegexOptions.Compiled);
+		private static readonly Regex IpRegex = new(@"(?<ip>(?:\d{1,3}\.){3}\d{1,3}|\[[0-9a-fA-F:]+\]|localhost)(?::(?<port>\d{1,5}))?", RegexOptions.ECMAScript | RegexOptions.Compiled);
 
 		private static IPEndPoint? ParseIpEndPoint(string address, ushort defaultPort)
 		{

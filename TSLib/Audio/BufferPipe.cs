@@ -7,7 +7,7 @@ namespace TSLib.Audio
 	public class BufferPipe : IAudioPassiveConsumer, IAudioPassiveProducer
 	{
 		public bool Active => true;
-		private readonly ByteQueue queue = new ByteQueue();
+		private readonly ByteQueue queue = new();
 		private int upperBufferByteSize;
 		private int lowerBufferByteSize;
 		private TimeSpan upperBufferDuration;
@@ -37,7 +37,7 @@ namespace TSLib.Audio
 		public IAudioPassiveProducer? InStream { get; set; }
 		public SampleInfo SampleInfo { get; }
 		private Mode BufferMode;
-		private readonly object bufferLock = new object();
+		private readonly object bufferLock = new();
 		private readonly DedicatedTaskScheduler scheduler;
 		private const int ReadSize = 4096;
 
