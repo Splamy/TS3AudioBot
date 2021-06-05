@@ -370,12 +370,12 @@ namespace TSLib.Full
 		{
 			var optpacket = Packet<TIn>.FromRaw(buffer);
 			// Invalid packet, ignore
-			if (optpacket is null)
+			if (!optpacket.HasValue)
 			{
 				LogRaw.Warn("Dropping invalid packet: {0}", DebugUtil.DebugToHex(buffer));
 				return;
 			}
-			var packet = optpacket.Value;
+			var packet = optpacket.GetValueOrDefault();
 
 			// DebugToHex is costly and allocates, precheck before logging
 			if (LogRaw.IsTraceEnabled)

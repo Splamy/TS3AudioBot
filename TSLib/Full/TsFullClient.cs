@@ -223,8 +223,8 @@ namespace TSLib.Full
 						Log.Debug("Stray packet from old packethandler");
 
 					var result = msgProc.PushMessage(data);
-					if (result != null)
-						InvokeEvent(result.Value);
+					if (result.HasValue)
+						InvokeEvent(result.GetValueOrDefault());
 				});
 				break;
 
@@ -488,7 +488,7 @@ namespace TSLib.Full
 			if (meta?.Out is null
 				|| meta.Out.SendMode == TargetSendMode.None
 				|| !meta.Codec.HasValue
-				|| meta.Codec.Value == Codec.Raw)
+				|| meta.Codec.GetValueOrDefault() == Codec.Raw)
 				return;
 
 			switch (meta.Out.SendMode)
@@ -496,13 +496,13 @@ namespace TSLib.Full
 			case TargetSendMode.None:
 				break;
 			case TargetSendMode.Voice:
-				SendAudio(data, meta.Codec.Value);
+				SendAudio(data, meta.Codec.GetValueOrDefault());
 				break;
 			case TargetSendMode.Whisper:
-				SendAudioWhisper(data, meta.Codec.Value, meta.Out.ChannelIds!, meta.Out.ClientIds!);
+				SendAudioWhisper(data, meta.Codec.GetValueOrDefault(), meta.Out.ChannelIds!, meta.Out.ClientIds!);
 				break;
 			case TargetSendMode.WhisperGroup:
-				SendAudioGroupWhisper(data, meta.Codec.Value, meta.Out.GroupWhisperType, meta.Out.GroupWhisperTarget, meta.Out.TargetId);
+				SendAudioGroupWhisper(data, meta.Codec.GetValueOrDefault(), meta.Out.GroupWhisperType, meta.Out.GroupWhisperTarget, meta.Out.TargetId);
 				break;
 			default: throw Tools.UnhandledDefault(meta.Out.SendMode);
 			}

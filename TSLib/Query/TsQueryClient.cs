@@ -145,16 +145,16 @@ namespace TSLib.Query
 				{
 					position = buffer.PositionOf((byte)'\n');
 
-					if (position != null)
+					if (position.HasValue)
 					{
-						var notif = msgProc.PushMessage(buffer.Slice(0, position.Value).ToArray());
+						var notif = msgProc.PushMessage(buffer.Slice(0, position.GetValueOrDefault()).ToArray());
 						if (notif.HasValue)
 						{
-							dispatcher.Invoke(notif.Value);
+							dispatcher.Invoke(notif.GetValueOrDefault());
 						}
 
 						// +2 = skipping \n\r
-						buffer = buffer.Slice(buffer.GetPosition(2, position.Value));
+						buffer = buffer.Slice(buffer.GetPosition(2, position.GetValueOrDefault()));
 					}
 				} while (position != null);
 

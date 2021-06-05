@@ -668,9 +668,9 @@ namespace TSLib.Full
 			// only the lower 4 bits are used for the real packetType
 			var packetTypeRaw = (byte)packetType;
 
-			int cacheIndex = packetTypeRaw + (fromServer ? 0 : cachedKeyNonces.Length / 2);
-			var cacheValue = cachedKeyNonces[cacheIndex];
-			if (cacheValue is null || cacheValue.Value.generation != generationId)
+			int cacheIndex = packetTypeRaw + (fromServer ? 0 : PacketTypeKinds);
+			ref var cacheValue = ref cachedKeyNonces[cacheIndex];
+			if (!cacheValue.HasValue || cacheValue.GetValueOrDefault().generation != generationId)
 			{
 				// this part of the key/nonce is fixed by the message direction and packetType
 
@@ -685,13 +685,12 @@ namespace TSLib.Full
 				var result = Hash256It(tmpToHash).AsSpan();
 
 				cacheValue = (result.Slice(0, 16).ToArray(), result.Slice(16, 16).ToArray(), generationId);
-				cachedKeyNonces[cacheIndex] = cacheValue;
 			}
 
 			var key = new byte[16];
 			var nonce = new byte[16];
-			Array.Copy(cacheValue.Value.key, 0, key, 0, 16);
-			Array.Copy(cacheValue.Value.nonce, 0, nonce, 0, 16);
+			Array.Copy(cacheValue.GetValueOrDefault().key, 0, key, 0, 16);
+			Array.Copy(cacheValue.GetValueOrDefault().nonce, 0, nonce, 0, 16);
 
 			// finally the first two bytes get xor'd with the packet id
 			key[0] ^= unchecked((byte)(packetId >> 8));

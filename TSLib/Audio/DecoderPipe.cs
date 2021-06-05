@@ -40,7 +40,7 @@ namespace TSLib.Audio
 			if (OutStream is null || meta?.Codec is null)
 				return;
 
-			switch (meta.Codec.Value)
+			switch (meta.Codec.GetValueOrDefault())
 			{
 			case Codec.OpusVoice:
 				{

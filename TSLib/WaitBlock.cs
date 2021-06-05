@@ -66,9 +66,9 @@ namespace TSLib
 			{
 				answerWaiterAsync.SetResult(commandError);
 			}
-			else if (commandLine != null)
+			else if (commandLine.HasValue)
 			{
-				answerWaiterAsync.SetResult(commandLine.Value);
+				answerWaiterAsync.SetResult(commandLine.GetValueOrDefault());
 			}
 			else
 			{
