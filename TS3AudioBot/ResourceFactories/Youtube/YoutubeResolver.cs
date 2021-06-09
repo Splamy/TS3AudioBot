@@ -7,10 +7,10 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -92,7 +92,7 @@ namespace TS3AudioBot.ResourceFactories.Youtube
 
 			if (dataParse.TryGetValue("player_response", out var playerData))
 			{
-				var parsed = JsonConvert.DeserializeObject<JsonPlayerResponse>(playerData[0]);
+				var parsed = JsonSerializer.Deserialize<JsonPlayerResponse>(playerData[0]);
 				Log.Debug("Extracted data: {@playerData}", parsed);
 
 				if (parsed?.videoDetails != null)

@@ -253,6 +253,10 @@ namespace TS3AudioBot
 			}
 			Log.Debug("TextMessage: {@textMessage}", textMessage);
 
+			textMessage.Message = textMessage.Message.TrimStart(' ');
+			if (!textMessage.Message.StartsWith("!", StringComparison.Ordinal))
+				return;
+
 			if (!localization.LanguageLoaded)
 			{
 				var langResult = await localization.LoadLanguage(config.Language, false);
@@ -260,10 +264,6 @@ namespace TS3AudioBot
 					Log.Error("Failed to load language file ({0})", langResult.Error);
 			}
 			localization.ApplyLanguage();
-
-			textMessage.Message = textMessage.Message.TrimStart(' ');
-			if (!textMessage.Message.StartsWith("!", StringComparison.Ordinal))
-				return;
 
 			Log.Info("User {0} requested: {1}", textMessage.InvokerName, textMessage.Message);
 

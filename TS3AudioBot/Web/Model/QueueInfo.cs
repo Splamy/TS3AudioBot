@@ -7,13 +7,13 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace TS3AudioBot.Web.Model
 {
 	public class QueueInfo : PlaylistInfo
 	{
-		[JsonProperty(PropertyName = "PlaybackIndex")]
+		[JsonPropertyName("PlaybackIndex")]
 		public int PlaybackIndex { get; set; }
 
 		public QueueInfo(string id, string title) : base(id, title)

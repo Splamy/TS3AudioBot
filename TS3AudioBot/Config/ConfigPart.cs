@@ -8,12 +8,12 @@
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
 using Nett;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
-using TS3AudioBot.Helper;
+using System.Text.Json;
+using TS3AudioBot.Helper.Json;
 using static TS3AudioBot.Helper.TomlTools;
 
 namespace TS3AudioBot.Config
@@ -40,8 +40,8 @@ namespace TS3AudioBot.Config
 		public abstract void FromToml(TomlObject? tomlObject);
 		public abstract void ToToml(bool writeDefaults, bool writeDocumentation);
 		public abstract void Derive(ConfigPart derived);
-		public abstract E<string> FromJson(JsonReader reader);
-		public abstract void ToJson(JsonWriter writer);
+		public abstract E<string> FromJson(ref Utf8JsonReader reader, JsonSerializerOptions options);
+		public abstract void ToJson(Utf8JsonWriter writer, JsonSerializerOptions options);
 		public abstract void ClearEvents();
 
 		protected void CreateDocumentation(TomlObject tomlObject)

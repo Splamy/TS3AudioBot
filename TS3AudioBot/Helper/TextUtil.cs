@@ -139,6 +139,27 @@ namespace TS3AudioBot.Helper
 				return R.Ok;
 			return $"Value '{value}' is not a valid time.";
 		}
+
+		public static string FormatTimeAsSimple(TimeSpan timeSpan)
+		{
+			var strb = new StringBuilder();
+			var fullDays = (int)timeSpan.TotalDays;
+			if (fullDays > 0)
+				strb.Append(fullDays).Append('d');
+			var h = timeSpan.Hours;
+			if (h > 0)
+				strb.Append(h).Append('h');
+			var m = timeSpan.Minutes;
+			if (m > 0)
+				strb.Append(m).Append('m');
+			var s = timeSpan.Seconds;
+			if (s > 0)
+				strb.Append(s).Append('s');
+			var ms = timeSpan.Milliseconds;
+			if (ms > 0)
+				strb.Append(ms).Append("ms");
+			return strb.ToString();
+		}
 	}
 
 	public enum Answer

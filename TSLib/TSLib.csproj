@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <TargetFrameworks>net5.0;netstandard2.0;netstandard2.1</TargetFrameworks>
@@ -33,8 +33,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="NLog" Version="4.7.8" />
-    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
+    <PackageReference Include="NLog" Version="4.7.10" />
     <PackageReference Include="Heijden.Dns.Portable" Version="2.0.19" />
     <PackageReference Include="Nullable" Version="1.3.0">
       <PrivateAssets>all</PrivateAssets>
@@ -44,6 +43,7 @@
     <PackageReference Include="Splamy.Ed25519.Toolkit" Version="1.0.3" />
     <PackageReference Include="System.IO.Pipelines" Version="5.0.1" />
     <PackageReference Condition="'$(TargetFramework)' == 'netstandard2.0'" Include="System.Memory" Version="4.5.4" />
+    <PackageReference Condition="'$(TargetFramework)' != 'net5.0'" Include="System.Text.Json" Version="5.0.2" />
   </ItemGroup>
   <ItemGroup>
     <None Include="ReSpeak.png" Pack="true" PackagePath="\" />
@@ -100,11 +100,11 @@
   <ItemGroup>
     <CompilerVisibleItemMetadata Include="AdditionalFiles" MetadataName="TsDeclType" />
     <AdditionalFiles Include="Declarations/Book.toml" TsDeclType="Book" />
-    <AdditionalFiles Include="Declarations/Messages.toml" TsDeclType="Messages"/>
-    <AdditionalFiles Include="Declarations/MessagesToBook.toml" TsDeclType="M2B"/>
-    <AdditionalFiles Include="Declarations/Errors.csv" TsDeclType="Errors"/>
-    <AdditionalFiles Include="Declarations/Permissions.csv" TsDeclType="Permissions"/>
-    <AdditionalFiles Include="Declarations/Versions.csv" TsDeclType="Versions"/>
+    <AdditionalFiles Include="Declarations/Messages.toml" TsDeclType="Messages" />
+    <AdditionalFiles Include="Declarations/MessagesToBook.toml" TsDeclType="M2B" />
+    <AdditionalFiles Include="Declarations/Errors.csv" TsDeclType="Errors" />
+    <AdditionalFiles Include="Declarations/Permissions.csv" TsDeclType="Permissions" />
+    <AdditionalFiles Include="Declarations/Versions.csv" TsDeclType="Versions" />
   </ItemGroup>
   
   <ItemGroup>

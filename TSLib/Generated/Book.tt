@@ -18,6 +18,7 @@
 <#@ import namespace="System.Collections.Generic" #>
 
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 <#= ConversionSet #>
 
@@ -53,6 +54,11 @@ foreach (var struc in gen.@struct)
 		}
 
 	<# foreach(var prop in struc.properties.OrderBy(x => x.name)) {
+		if (prop.mod == "map") {
+			WriteLine("");
+			Write($"[JsonConverter(typeof({prop.key}.DictConverter<{prop.type}>))]");
+		}
+
 		#>
 		public <#
 			switch(prop.mod) {

@@ -7,8 +7,10 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
+using System.Linq;
+using System.Net;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
@@ -20,10 +22,8 @@ namespace TS3AudioBot.ResourceFactories
 	public sealed class BandcampResolver : IResourceResolver, IThumbnailResolver
 	{
 		private static readonly Regex BandcampUrlRegex = new(@"([\w_-]+).bandcamp.com/track/([\w_-]+)", Util.DefaultRegexConfig);
-		private static readonly Regex TrackLinkRegex = new(@"""mp3-128""\s*:\s*""([^""]*)""", Util.DefaultRegexConfig);
-		private static readonly Regex TrackNameRegex = new(@"""title""\s*:\s*""([^""]*)""", Util.DefaultRegexConfig);
-		private static readonly Regex TrackArtRegex = new(@"""album_art_id""\s*:\s*(\d+)\s*,", Util.DefaultRegexConfig);
-		private static readonly Regex TrackMainJsonRegex = new(@"trackinfo\s*:(.*),(\r|\n)", Util.DefaultRegexConfig);
+		private static readonly Regex MainJsonRegex = new(@"data-tralbum=""([^""]*)""", Util.DefaultRegexConfig);
+		private static readonly Regex EmbedJsonRegex = new(@"data-player-data=""([^""]*)""", Util.DefaultRegexConfig);
 
 		private const string AddArtist = "artist";
 		private const string AddTrack = "track";
@@ -41,51 +41,43 @@ namespace TS3AudioBot.ResourceFactories
 			var artistName = match.Groups[1].Value;
 			var trackName = match.Groups[2].Value;
 
-			var webSite = await WebWrapper.Request($"https://{artistName}.bandcamp.com/track/{trackName}").AsString(cancellationToken);
+			var json = await DownloadMainSiteJson(artistName, trackName, cancellationToken);
 
-			match = TrackMainJsonRegex.Match(webSite);
-			if (!match.Success)
-				throw Error.LocalStr(strings.error_media_internal_missing + " (TrackMainJsonRegex)");
+			var track = json.Tracks?.FirstOrDefault();
+			if (track is null)
+				throw Error.LocalStr(strings.error_media_internal_missing + " (no main track)");
 
-			JToken jobj;
-			try { jobj = JToken.Parse(match.Groups[1].Value); }
-			catch (JsonReaderException ex) { throw Error.Exception(ex).LocalStr(strings.error_media_internal_missing + " (TrackMainJsonRegex.JToken)"); }
+			var id = json.Id?.ToString();
+			var link = track.File?.Mp3_128;
+			var title = track.Title;
+			if (id is null || link is null || title is null)
+				throw Error.LocalStr(strings.error_media_internal_missing + " (no main)");
 
-			if (jobj is not JArray jarr || jarr.Count == 0)
-				throw Error.LocalStr(strings.error_media_no_stream_extracted);
-
-			var firstTrack = jarr[0];
-			JToken? firstTrackFile;
-			if (!firstTrack.TryCast<string>("track_id", out var id)
-				|| !firstTrack.TryCast<string>("title", out var title)
-				|| (firstTrackFile = firstTrack["file"]) == null
-				|| !firstTrackFile.TryCast<string>("mp3-128", out var trackObj))
-				throw Error.LocalStr(strings.error_media_no_stream_extracted);
-
-			return new BandcampPlayResource(trackObj,
+			return new BandcampPlayResource(link,
 				new AudioResource(id, title, ResolverFor)
 					.Add(AddArtist, artistName)
 					.Add(AddTrack, trackName),
-				GetTrackArtId(webSite));
+				json.ArtId?.ToString());
 		}
 
 		public async Task<PlayResource> GetResourceById(ResolveContext _, AudioResource resource, CancellationToken cancellationToken)
 		{
-			var webSite = await DownloadEmbeddedSite(resource.ResourceId, cancellationToken);
+			var json = await DownloadEmbeddedSiteJson(resource.ResourceId, cancellationToken);
+			var track = json.Tracks?.FirstOrDefault();
+			if (track is null)
+				throw Error.LocalStr(strings.error_media_internal_missing + " (no embed track)");
 
 			if (string.IsNullOrEmpty(resource.ResourceTitle))
 			{
-				var nameMatch = TrackNameRegex.Match(webSite);
-				resource.ResourceTitle = nameMatch.Success
-					? nameMatch.Groups[1].Value
-					: $"Bandcamp (id: {resource.ResourceId})";
+				var title = track.Title;
+				resource.ResourceTitle = title ?? $"Bandcamp (id: {resource.ResourceId})";
 			}
 
-			var match = TrackLinkRegex.Match(webSite);
-			if (!match.Success)
-				throw Error.LocalStr(strings.error_media_internal_missing + " (TrackLinkRegex)");
+			var link = track.File?.Mp3_128;
+			if (link is null)
+				throw Error.LocalStr(strings.error_media_internal_missing + " (no embed link)");
 
-			return new BandcampPlayResource(match.Groups[1].Value, resource, GetTrackArtId(webSite));
+			return new BandcampPlayResource(link, resource, json.AlbumArtId?.ToString());
 		}
 
 		public string RestoreLink(ResolveContext _, AudioResource resource)
@@ -100,8 +92,28 @@ namespace TS3AudioBot.ResourceFactories
 			return $"https://bandcamp.com/EmbeddedPlayer/v=2/track={resource.ResourceId}";
 		}
 
-		private static Task<string> DownloadEmbeddedSite(string id, CancellationToken cancellationToken)
-			=> WebWrapper.Request($"https://bandcamp.com/EmbeddedPlayer/v=2/track={id}").AsString(cancellationToken);
+		private static Task<JsonEmbeddedBlob> DownloadEmbeddedSiteJson(string id, CancellationToken cancellationToken)
+			=> DownloadSiteJsonInternal<JsonEmbeddedBlob>($"https://bandcamp.com/EmbeddedPlayer/track={id}", EmbedJsonRegex, "embed", cancellationToken);
+
+		private static Task<JsonMainBlob> DownloadMainSiteJson(string artistName, string trackName, CancellationToken cancellationToken)
+			=> DownloadSiteJsonInternal<JsonMainBlob>($"https://{artistName}.bandcamp.com/track/{trackName}", MainJsonRegex, "main", cancellationToken);
+
+		private static async Task<T> DownloadSiteJsonInternal<T>(string url, Regex regex, string log, CancellationToken cancellationToken)
+		{
+			var html = await WebWrapper.Request(url).AsString(cancellationToken);
+			var match = regex.Match(html);
+			if (!match.Success)
+				throw Error.LocalStr($"{strings.error_media_internal_missing} ({log}-regex)");
+			var json = WebUtility.HtmlDecode(match.Groups[1].Value);
+			try
+			{
+				return JsonSerializer.Deserialize<T>(json) ?? throw Error.LocalStr($"{strings.error_media_internal_missing} ({log}-json)");
+			}
+			catch (JsonException ex)
+			{
+				throw Error.Exception(ex).LocalStr($"{strings.error_media_internal_invalid} ({log}-json)");
+			}
+		}
 
 		public async Task GetThumbnail(ResolveContext _, PlayResource playResource, AsyncStreamAction action, CancellationToken cancellationToken)
 		{
@@ -112,8 +124,8 @@ namespace TS3AudioBot.ResourceFactories
 			}
 			if (artId is null)
 			{
-				var webSite = await DownloadEmbeddedSite(playResource.AudioResource.ResourceId, cancellationToken);
-				artId = GetTrackArtId(webSite);
+				var json = await DownloadEmbeddedSiteJson(playResource.AudioResource.ResourceId, cancellationToken);
+				artId = json.AlbumArtId?.ToString();
 			}
 
 			if (string.IsNullOrEmpty(artId))
@@ -139,15 +151,58 @@ namespace TS3AudioBot.ResourceFactories
 			await WebWrapper.Request($"https://f4.bcbits.com/img/a{artId}_4.jpg").ToStream(action, cancellationToken);
 		}
 
-		private static string? GetTrackArtId(string site)
+		public void Dispose() { }
+
+		class JsonMainBlob
 		{
-			var match = TrackArtRegex.Match(site);
-			if (!match.Success)
-				return null;
-			return match.Groups[1].Value;
+			[JsonPropertyName("art_id")]
+			public ulong? ArtId { get; set; }
+
+			[JsonPropertyName("artist")]
+			public string? Artist { get; set; }
+
+			[JsonPropertyName("id")]
+			public ulong? Id { get; set; }
+
+			[JsonPropertyName("trackinfo")]
+			public JsonTrack[]? Tracks { get; set; }
 		}
 
-		public void Dispose() { }
+		class JsonEmbeddedBlob
+		{
+			[JsonPropertyName("album_art_id")]
+			public ulong? AlbumArtId { get; set; }
+
+			[JsonPropertyName("artist")]
+			public string? Artist { get; set; }
+
+			[JsonPropertyName("tracks")]
+			public JsonTrack[]? Tracks { get; set; }
+		}
+
+		class JsonTrack
+		{
+			[JsonPropertyName("title")]
+			public string? Title { get; set; }
+
+			[JsonPropertyName("artist")]
+			public string? Artist { get; set; } // Only set in embed
+
+			[JsonPropertyName("duration")]
+			public float? DurationSeconds { get; set; }
+
+			[JsonPropertyName("file")]
+			public JsonTrackFile? File { get; set; }
+
+			[JsonPropertyName("id")]
+			public ulong? Id { get; set; }
+		}
+
+		class JsonTrackFile
+		{
+			[JsonPropertyName("mp3-128")]
+			public string? Mp3_128 { get; set; }
+		}
 	}
 
 	public class BandcampPlayResource : PlayResource

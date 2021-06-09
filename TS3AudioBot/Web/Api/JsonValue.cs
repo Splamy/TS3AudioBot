@@ -7,8 +7,8 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
-using Newtonsoft.Json;
 using System;
+using System.Text.Json;
 using TS3AudioBot.CommandSystem;
 
 namespace TS3AudioBot.Web.Api
@@ -53,7 +53,7 @@ namespace TS3AudioBot.Web.Api
 		{
 			var seriObj = GetSerializeObject();
 			if (seriObj != null && CommandSystemTypes.BasicTypes.Contains(seriObj.GetType()))
-				return JsonConvert.SerializeObject(this);
+				return JsonSerializer.Serialize(this, DefaultJsonOptions);
 			return base.Serialize();
 		}
 

@@ -7,11 +7,13 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.Encodings.Web;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading;
 using TS3AudioBot.Algorithm;
 using TS3AudioBot.Config;
@@ -33,6 +35,11 @@ namespace TS3AudioBot.Playlists
 		private readonly ReaderWriterLockSlim rwLock = new();
 		private bool reloadFolderCache = true;
 		private const int FileVersion = 3;
+		private static readonly JsonSerializerOptions JsonOptions = new()
+		{
+			Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+			DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+		};
 
 		public PlaylistIO(ConfBot confBot)
 		{
@@ -47,10 +54,13 @@ namespace TS3AudioBot.Playlists
 			return new FileInfo(Path.Combine(localDir, BotPaths.Playlists, listId));
 		}
 
-		public R<Playlist, LocalStr> Read(string listId) => ReadInternal(listId, false, false);
+		public R<Playlist, LocalStr> Read(string listId) => ReadInternal(listId);
 
-		private R<Playlist, LocalStr> ReadInternal(string listId, bool hasReadLock, bool hasWriteLock)
+		private R<Playlist, LocalStr> ReadInternal(string listId)
 		{
+			bool hasReadLock = false;
+			bool hasWriteLock = false;
+
 			try
 			{
 				if (!hasReadLock && !hasWriteLock)
@@ -147,7 +157,7 @@ namespace TS3AudioBot.Playlists
 					}
 
 				case "rsj":
-					var res = JsonConvert.DeserializeObject<AudioResource>(value);
+					var res = JsonSerializer.Deserialize<AudioResource>(value, JsonOptions);
 					plist.Add(new PlaylistItem(res));
 					break;
 
@@ -191,7 +201,7 @@ namespace TS3AudioBot.Playlists
 						return new LocalStr("The file version is too new and can't be read."); // LOC: TODO
 					break;
 				case "meta":
-					var meta = JsonConvert.DeserializeObject<PlaylistMeta>(value);
+					var meta = JsonSerializer.Deserialize<PlaylistMeta>(value, JsonOptions);
 					meta.Version = version;
 					return meta;
 				}
@@ -227,11 +237,6 @@ namespace TS3AudioBot.Playlists
 
 			using (var sw = new StreamWriter(fi.Open(FileMode.Create, FileAccess.Write, FileShare.Read), Tools.Utf8Encoder))
 			{
-				var serializer = new JsonSerializer
-				{
-					Formatting = Formatting.None,
-				};
-
 				var meta = playlistInfo.GetOrNew(listId);
 				meta.Title = plist.Title;
 				meta.Count = plist.Items.Count;
@@ -239,7 +244,7 @@ namespace TS3AudioBot.Playlists
 
 				sw.WriteLine("version:" + FileVersion);
 				sw.Write("meta:");
-				serializer.Serialize(sw, meta);
+				sw.Write(JsonSerializer.Serialize(meta, JsonOptions));
 				sw.WriteLine();
 
 				sw.WriteLine();
@@ -247,7 +252,7 @@ namespace TS3AudioBot.Playlists
 				foreach (var pli in plist.Items)
 				{
 					sw.Write("rsj:");
-					serializer.Serialize(sw, pli.AudioResource);
+					sw.Write(JsonSerializer.Serialize(pli.AudioResource, JsonOptions));
 					sw.WriteLine();
 				}
 			}
@@ -392,9 +397,9 @@ namespace TS3AudioBot.Playlists
 
 	public class PlaylistMeta
 	{
-		[JsonProperty(PropertyName = "count")]
+		[JsonPropertyName("count")]
 		public int Count { get; set; }
-		[JsonProperty(PropertyName = "title")]
+		[JsonPropertyName("title")]
 		public string Title { get; set; } = string.Empty;
 		[JsonIgnore]
 		public int Version { get; set; }

@@ -8,9 +8,9 @@
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
 using Nett;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Text.Json;
 
 namespace TS3AudioBot.Config
 {
@@ -58,28 +58,28 @@ namespace TS3AudioBot.Config
 			}
 		}
 
-		public override void ToJson(JsonWriter writer)
+		public override void ToJson(Utf8JsonWriter writer, JsonSerializerOptions options)
 		{
 			writer.WriteStartObject();
 			foreach (var item in GetAllChildren())
 			{
 				writer.WritePropertyName(item.Key);
-				item.ToJson(writer);
+				item.ToJson(writer, options);
 			}
 			writer.WriteEndObject();
 		}
 
-		public override E<string> FromJson(JsonReader reader)
+		public override E<string> FromJson(ref Utf8JsonReader reader, JsonSerializerOptions options)
 		{
 			try
 			{
-				if (!reader.Read() || (reader.TokenType != JsonToken.StartObject))
+				if (!reader.Read() || (reader.TokenType != JsonTokenType.StartObject))
 					return $"Wrong type, expected start of object but found {reader.TokenType}";
 
 				while (reader.Read()
-					&& (reader.TokenType == JsonToken.PropertyName))
+					&& (reader.TokenType == JsonTokenType.PropertyName))
 				{
-					var childName = (string?)reader.Value;
+					var childName = reader.GetString();
 					if (childName is null)
 						return "No child found";
 					var child = GetChild(childName);
@@ -91,15 +91,15 @@ namespace TS3AudioBot.Config
 							return "No child found";
 					}
 
-					child.FromJson(reader);
+					child.FromJson(ref reader, options);
 				}
 
-				if (reader.TokenType != JsonToken.EndObject)
+				if (reader.TokenType != JsonTokenType.EndObject)
 					return $"Expected end of array but found {reader.TokenType}";
 
 				return R.Ok;
 			}
-			catch (JsonReaderException ex) { return $"Could not read value: {ex.Message}"; }
+			catch (JsonException ex) { return $"Could not read value: {ex.Message}"; }
 		}
 
 		// Virtual table methods

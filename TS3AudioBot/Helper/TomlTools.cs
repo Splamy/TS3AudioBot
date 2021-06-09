@@ -8,7 +8,8 @@
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
 using Nett;
-using Newtonsoft.Json;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
@@ -427,26 +428,25 @@ namespace TS3AudioBot.Helper
 
 		public static string DumpToJson(this TomlObject obj)
 		{
-			var sb = new StringBuilder();
-			var sw = new StringWriter(sb);
-			using (var writer = new JsonTextWriter(sw))
+			using var mem = new MemoryStream();
+			using (var writer = new Utf8JsonWriter(mem, new JsonWriterOptions() { Indented = true }))
 			{
-				writer.Formatting = Formatting.Indented;
 				DumpToJson(obj, writer);
 			}
-			return sb.ToString();
+			mem.Seek(0, SeekOrigin.Begin);
+			return Encoding.UTF8.GetString(mem.ToArray());
 		}
 
-		public static void DumpToJson(this TomlObject obj, JsonWriter writer)
+		public static void DumpToJson(this TomlObject obj, Utf8JsonWriter writer)
 		{
 			switch (obj.TomlType)
 			{
-			case TomlObjectType.Bool: writer.WriteValue(((TomlBool)obj).Value); break;
-			case TomlObjectType.Int: writer.WriteValue(((TomlInt)obj).Value); break;
-			case TomlObjectType.Float: writer.WriteValue(((TomlFloat)obj).Value); break;
-			case TomlObjectType.String: writer.WriteValue(((TomlString)obj).Value); break;
-			case TomlObjectType.DateTime: writer.WriteValue(((TomlLocalDateTime)obj).Value); break;
-			case TomlObjectType.TimeSpan: writer.WriteValue(((TomlDuration)obj).Value); break;
+			case TomlObjectType.Bool: writer.WriteBooleanValue(((TomlBool)obj).Value); break;
+			case TomlObjectType.Int: writer.WriteNumberValue(((TomlInt)obj).Value); break;
+			case TomlObjectType.Float: writer.WriteNumberValue(((TomlFloat)obj).Value); break;
+			case TomlObjectType.String: writer.WriteStringValue(((TomlString)obj).Value); break;
+			case TomlObjectType.DateTime: writer.WriteStringValue(((TomlLocalDateTime)obj).Value); break;
+			case TomlObjectType.TimeSpan: writer.WriteStringValue(((TomlDuration)obj).Value.ToString()); break;
 			case TomlObjectType.Array:
 			case TomlObjectType.ArrayOfTables:
 				writer.WriteStartArray();

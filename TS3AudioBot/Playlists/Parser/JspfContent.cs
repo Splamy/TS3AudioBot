@@ -7,13 +7,15 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
-using Newtonsoft.Json;
 using PlaylistsNET.Content;
 using PlaylistsNET.Models;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using TS3AudioBot.Helper;
 
 namespace TS3AudioBot.Playlists.Parser
 {
@@ -21,10 +23,9 @@ namespace TS3AudioBot.Playlists.Parser
 	{
 		public XspfPlaylist GetFromStream(Stream stream)
 		{
-			var serializer = new JsonSerializer();
 			using var sr = new StreamReader(stream);
-			using var jsonTextReader = new JsonTextReader(sr);
-			return serializer.Deserialize<XspfPlaylist>(jsonTextReader) ?? throw new NullReferenceException("Data empty");
+			var data = sr.ReadToEnd();
+			return JsonSerializer.Deserialize<XspfPlaylist>(data) ?? throw new NullReferenceException("Data empty");
 		}
 
 		public XspfPlaylist GetFromString(string playlistString)
@@ -34,18 +35,18 @@ namespace TS3AudioBot.Playlists.Parser
 
 		public string ToText(XspfPlaylist playlist)
 		{
-			return JsonConvert.SerializeObject(playlist);
+			return JsonSerializer.Serialize(playlist);
 		}
 	}
 
 	public class XspfPlaylist : IBasePlaylist
 	{
-		[JsonProperty(PropertyName = "title")]
+		[JsonPropertyName("title")]
 		public string? Title { get; set; }
-		[JsonProperty(PropertyName = "creator")]
+		[JsonPropertyName("creator")]
 		public string? Creator { get; set; }
 
-		[JsonProperty(PropertyName = "track")]
+		[JsonPropertyName("track")]
 		public List<XspfPlaylistEntry>? PlaylistEntries { get; set; }
 
 		public string? Path { get; set; }
@@ -55,23 +56,23 @@ namespace TS3AudioBot.Playlists.Parser
 		{
 		}
 
-		public List<string> GetTracksPaths() => PlaylistEntries.Select(x => x.Location.FirstOrDefault()).Where(x => x != null).ToList();
+		public List<string> GetTracksPaths() => PlaylistEntries?.SelectNotNull(x => x.Location?.FirstOrDefault()).ToList() ?? new List<string>();
 	}
 
 	public class XspfPlaylistEntry
 	{
 		public XspfPlaylistEntry() { }
 
-		[JsonProperty(PropertyName = "title")]
+		[JsonPropertyName("title")]
 		public string? Title { get; set; }
-		[JsonProperty(PropertyName = "duration")]
+		[JsonPropertyName("duration")]
 		public long? Duration { get; set; } // MS : TODO timespan converter
 
-		[JsonProperty(PropertyName = "meta")]
+		[JsonPropertyName("meta")]
 		[JsonConverter(typeof(JspfMetaConverter))]
 		public List<XspfMeta>? Meta { get; set; }
 
-		[JsonProperty(PropertyName = "location")]
+		[JsonPropertyName("location")]
 		public List<string>? Location { get; set; }
 	}
 
@@ -89,27 +90,26 @@ namespace TS3AudioBot.Playlists.Parser
 
 	internal class JspfMetaConverter : JsonConverter<XspfMeta>
 	{
-		public override XspfMeta ReadJson(JsonReader reader, Type objectType, XspfMeta? existingValue, bool hasExistingValue, JsonSerializer serializer)
+		public override XspfMeta? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
 		{
-			var key = reader.ReadAsString();
-			var value = reader.ReadAsString();
+			var key = reader.GetString();
+			var value = reader.GetString();
 			if (string.IsNullOrEmpty(key) || string.IsNullOrEmpty(value))
 				throw new FormatException();
 			return new XspfMeta(key, value);
 		}
 
-		public override void WriteJson(JsonWriter writer, XspfMeta? value, JsonSerializer serializer)
+		public override void Write(Utf8JsonWriter writer, XspfMeta value, JsonSerializerOptions options)
 		{
 			if (value is null)
 			{
-				writer.WriteNull();
+				writer.WriteNullValue();
 			}
 			else
 			{
 				if (value is null) throw new ArgumentNullException(nameof(value));
 				writer.WriteStartObject();
-				writer.WritePropertyName(value.Key);
-				writer.WriteValue(value.Value);
+				writer.WriteString(value.Key, value.Value);
 				writer.WriteEndObject();
 			}
 		}

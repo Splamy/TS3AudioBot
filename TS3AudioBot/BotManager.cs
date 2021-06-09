@@ -68,7 +68,7 @@ namespace TS3AudioBot
 				Console.WriteLine("Please enter the server password (or leave empty for none):");
 				newBot.Connect.ServerPassword.Password.Value = Console.ReadLine();
 
-				if (!newBot.SaveNew(ConfigHelper.DefaultBotName))
+				if (!newBot.SaveNew(Defaults.BotName))
 				{
 					Log.Error("Could not save new bot. Ensure that the bot has access to the directory.");
 					return;

@@ -7,13 +7,14 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using TS3AudioBot.CommandSystem.Commands;
 using TS3AudioBot.Localization;
@@ -21,43 +22,20 @@ using TS3AudioBot.Localization;
 namespace TS3AudioBot.CommandSystem
 {
 	[DebuggerDisplay("{DebuggerDisplay, nq}")]
-	[JsonObject(MemberSerialization.OptIn)]
+	[JsonConverter(typeof(BotCommandSerializer))]
 	public class BotCommand : FunctionCommand
 	{
 		private readonly string helpLookupName;
-		private string? cachedFullQualifiedName;
 
-		[JsonProperty(PropertyName = "Name")]
 		public string InvokeName { get; }
 		private readonly string[] requiredRights;
 		public string RequiredRight => requiredRights[0];
-		[JsonProperty(PropertyName = "Description")]
 		public string? Description => LocalizationManager.GetString(helpLookupName);
 		public UsageAttribute[] UsageList { get; }
-		public string FullQualifiedName
-		{
-			get
-			{
-				if (cachedFullQualifiedName is null)
-				{
-					var strb = new StringBuilder();
-					strb.Append(InvokeName);
-					strb.Append(" (");
-					strb.Append(string.Join(", ", CommandParameter.Where(p => !p.Kind.IsNormal()).Select(p => p.Type.FullName).OrderBy(p => p)));
-					strb.Append('|');
-					strb.Append(string.Join(", ", CommandParameter.Where(p => p.Kind.IsNormal()).Select(p => p.Type.FullName)));
-					strb.Append(')');
-					cachedFullQualifiedName = strb.ToString();
-				}
-				return cachedFullQualifiedName;
-			}
-		}
+		public string FullQualifiedName { get; }
 
-		[JsonProperty(PropertyName = "Return")]
-		public string Return { get; set; }
-		[JsonProperty(PropertyName = "Parameter")]
+		public string Return { get; }
 		public (string name, string type, bool optional)[] Parameter { get; }
-		[JsonProperty(PropertyName = "Modules")]
 		public (string type, bool optional)[] Modules { get; }
 
 		public string DebuggerDisplay
@@ -89,6 +67,15 @@ namespace TS3AudioBot.CommandSystem
 				from x in CommandParameter
 				where x.Kind == ParamKind.Dependency
 				select (x.Type.Name, x.Optional)).ToArray();
+
+			var strb = new StringBuilder();
+			strb.Append(InvokeName);
+			strb.Append(" (");
+			strb.Append(string.Join(", ", CommandParameter.Where(p => !p.Kind.IsNormal()).Select(p => p.Type.FullName).OrderBy(p => p)));
+			strb.Append('|');
+			strb.Append(string.Join(", ", CommandParameter.Where(p => p.Kind.IsNormal()).Select(p => p.Type.FullName)));
+			strb.Append(')');
+			FullQualifiedName = strb.ToString();
 		}
 
 		public override string ToString()
@@ -129,6 +116,41 @@ namespace TS3AudioBot.CommandSystem
 				throw new CommandException(string.Format(strings.error_missing_right, InvokeName, RequiredRight), CommandExceptionReason.MissingRights);
 
 			return await base.Execute(info, arguments);
+		}
+
+		private class BotCommandSerializer : JsonConverter<BotCommand>
+		{
+			public override BotCommand? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => throw new NotSupportedException();
+			public override void Write(Utf8JsonWriter writer, BotCommand value, JsonSerializerOptions options)
+			{
+				writer.WriteStartObject();
+				writer.WriteString("Name", value.InvokeName);
+				writer.WriteString("Description", value.Description);
+				writer.WriteString("Return", value.Return);
+				writer.WriteStartArray("Parameter");
+
+				foreach (var (name, type, optional) in value.Parameter)
+				{
+					writer.WriteStartObject();
+					writer.WriteString("name", name);
+					writer.WriteString("type", type);
+					writer.WriteBoolean("optional", optional);
+					writer.WriteEndObject();
+				}
+				writer.WriteEndArray();
+
+				writer.WriteStartArray("Modules");
+				foreach (var (type, optional) in value.Modules)
+				{
+					writer.WriteStartObject();
+					writer.WriteString("type", type);
+					writer.WriteBoolean("optional", optional);
+					writer.WriteEndObject();
+				}
+				writer.WriteEndArray();
+
+				writer.WriteEndObject();
+			}
 		}
 	}
 

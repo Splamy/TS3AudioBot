@@ -7,13 +7,13 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Text;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using TS3AudioBot.Config;
@@ -171,16 +171,19 @@ namespace TS3AudioBot.ResourceFactories
 			if (string.IsNullOrEmpty(json))
 				throw Error.LocalStr(strings.error_ytdl_empty_response);
 
+			T? res;
 			try
 			{
-
-				return JsonConvert.DeserializeObject<T>(json);
+				res = JsonSerializer.Deserialize<T>(json);
 			}
 			catch (Exception ex)
 			{
 				Log.Debug(ex, "Failed to read youtube-dl json data");
 				throw Error.Exception(ex).LocalStr(strings.error_media_internal_invalid);
 			}
+			if (res is null)
+				throw Error.LocalStr(strings.error_ytdl_empty_response);
+			return res;
 		}
 
 		public static JsonYtdlFormat? FilterBest(IEnumerable<JsonYtdlFormat>? formats)

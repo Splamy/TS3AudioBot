@@ -98,13 +98,13 @@ namespace TS3AudioBot.Rights
 			case "ip":
 				if (tomlObj.TryGetValueArray<string>(out var ip))
 				{
-					Matcher.Add(new MatchApiCallerIp(ip.Select(x =>
+					Matcher.Add(new MatchApiCallerIp(ip.SelectNotNull(x =>
 					{
 						if (IPAddress.TryParse(x, out var ipa))
 							return ipa;
 						ctx.Errors.Add($"<ip> Field value '{x}' could not be parsed.");
-						return null!;
-					}).Where(x => x != null)));
+						return null;
+					})));
 				}
 				else ctx.Errors.Add("<ip> Field has invalid data.");
 				return true;

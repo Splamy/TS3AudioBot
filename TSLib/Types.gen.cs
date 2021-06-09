@@ -16,17 +16,19 @@
 
 
 #nullable enable
-using Newtonsoft.Json;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.InteropServices;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace TSLib
 {
 	public static class TsTypes
 	{
-		public static Type[] All => new Type[] { typeof(Uid),typeof(ClientDbId),typeof(ClientId),typeof(ChannelId),typeof(ServerGroupId),typeof(ChannelGroupId), };
+		public static IReadOnlyList<Type> All = new Type[] { typeof(Uid),typeof(ClientDbId),typeof(ClientId),typeof(ChannelId),typeof(ServerGroupId),typeof(ChannelGroupId), };
 	}
 
 	
@@ -54,15 +56,32 @@ namespace TSLib
 			if (value is string s) return new Uid(s);
 			return null;
 			
-			
 		}
 
 		private class Converter : JsonConverter<Uid>
 		{
-			public override void WriteJson(JsonWriter writer, Uid value, JsonSerializer serializer)
-				=> writer.WriteValue(value.Value);
-			public override Uid ReadJson(JsonReader reader, Type objectType, Uid existingValue, bool hasExistingValue, JsonSerializer serializer)
-				=> new Uid((reader.ReadAsString() ?? throw new FormatException()));
+			public override void Write(Utf8JsonWriter writer, Uid value, JsonSerializerOptions options)
+				=> writer.WriteStringValue(value.Value);
+			public override Uid Read(ref Utf8JsonReader reader, Type type, JsonSerializerOptions options)
+				=> new(reader.GetString()?? throw new FormatException());
+		}
+
+		public class DictConverter<T> : JsonConverter<Dictionary<Uid, T>>
+		{
+			public override Dictionary<Uid, T> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+			{
+				throw new NotSupportedException();
+			}
+
+			public override void Write(Utf8JsonWriter writer, Dictionary<Uid, T> value, JsonSerializerOptions options)
+			{
+				writer.WriteStartObject();
+				foreach (var kvp in value) {
+					writer.WritePropertyName(kvp.Key.Value);
+					JsonSerializer.Serialize(writer, kvp.Value, options);
+				}
+				writer.WriteEndObject();
+			}
 		}
 	}
 	
@@ -94,15 +113,32 @@ namespace TSLib
 
 			return null;
 			
-			
 		}
 
 		private class Converter : JsonConverter<ClientDbId>
 		{
-			public override void WriteJson(JsonWriter writer, ClientDbId value, JsonSerializer serializer)
-				=> writer.WriteValue(value.Value);
-			public override ClientDbId ReadJson(JsonReader reader, Type objectType, ClientDbId existingValue, bool hasExistingValue, JsonSerializer serializer)
-				=> new ClientDbId(UInt64.Parse(reader.ReadAsString() ?? throw new FormatException()));
+			public override void Write(Utf8JsonWriter writer, ClientDbId value, JsonSerializerOptions options)
+				=> writer.WriteNumberValue(value.Value);
+			public override ClientDbId Read(ref Utf8JsonReader reader, Type type, JsonSerializerOptions options)
+				=> new(reader.GetUInt64());
+		}
+
+		public class DictConverter<T> : JsonConverter<Dictionary<ClientDbId, T>>
+		{
+			public override Dictionary<ClientDbId, T> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+			{
+				throw new NotSupportedException();
+			}
+
+			public override void Write(Utf8JsonWriter writer, Dictionary<ClientDbId, T> value, JsonSerializerOptions options)
+			{
+				writer.WriteStartObject();
+				foreach (var kvp in value) {
+					writer.WritePropertyName(kvp.Key.Value.ToString());
+					JsonSerializer.Serialize(writer, kvp.Value, options);
+				}
+				writer.WriteEndObject();
+			}
 		}
 	}
 	
@@ -134,15 +170,32 @@ namespace TSLib
 
 			return null;
 			
-			
 		}
 
 		private class Converter : JsonConverter<ClientId>
 		{
-			public override void WriteJson(JsonWriter writer, ClientId value, JsonSerializer serializer)
-				=> writer.WriteValue(value.Value);
-			public override ClientId ReadJson(JsonReader reader, Type objectType, ClientId existingValue, bool hasExistingValue, JsonSerializer serializer)
-				=> new ClientId(UInt16.Parse(reader.ReadAsString() ?? throw new FormatException()));
+			public override void Write(Utf8JsonWriter writer, ClientId value, JsonSerializerOptions options)
+				=> writer.WriteNumberValue(value.Value);
+			public override ClientId Read(ref Utf8JsonReader reader, Type type, JsonSerializerOptions options)
+				=> new(reader.GetUInt16());
+		}
+
+		public class DictConverter<T> : JsonConverter<Dictionary<ClientId, T>>
+		{
+			public override Dictionary<ClientId, T> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+			{
+				throw new NotSupportedException();
+			}
+
+			public override void Write(Utf8JsonWriter writer, Dictionary<ClientId, T> value, JsonSerializerOptions options)
+			{
+				writer.WriteStartObject();
+				foreach (var kvp in value) {
+					writer.WritePropertyName(kvp.Key.Value.ToString());
+					JsonSerializer.Serialize(writer, kvp.Value, options);
+				}
+				writer.WriteEndObject();
+			}
 		}
 	}
 	
@@ -174,15 +227,32 @@ namespace TSLib
 
 			return null;
 			
-			
 		}
 
 		private class Converter : JsonConverter<ChannelId>
 		{
-			public override void WriteJson(JsonWriter writer, ChannelId value, JsonSerializer serializer)
-				=> writer.WriteValue(value.Value);
-			public override ChannelId ReadJson(JsonReader reader, Type objectType, ChannelId existingValue, bool hasExistingValue, JsonSerializer serializer)
-				=> new ChannelId(UInt64.Parse(reader.ReadAsString() ?? throw new FormatException()));
+			public override void Write(Utf8JsonWriter writer, ChannelId value, JsonSerializerOptions options)
+				=> writer.WriteNumberValue(value.Value);
+			public override ChannelId Read(ref Utf8JsonReader reader, Type type, JsonSerializerOptions options)
+				=> new(reader.GetUInt64());
+		}
+
+		public class DictConverter<T> : JsonConverter<Dictionary<ChannelId, T>>
+		{
+			public override Dictionary<ChannelId, T> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+			{
+				throw new NotSupportedException();
+			}
+
+			public override void Write(Utf8JsonWriter writer, Dictionary<ChannelId, T> value, JsonSerializerOptions options)
+			{
+				writer.WriteStartObject();
+				foreach (var kvp in value) {
+					writer.WritePropertyName(kvp.Key.Value.ToString());
+					JsonSerializer.Serialize(writer, kvp.Value, options);
+				}
+				writer.WriteEndObject();
+			}
 		}
 	}
 	
@@ -214,15 +284,32 @@ namespace TSLib
 
 			return null;
 			
-			
 		}
 
 		private class Converter : JsonConverter<ServerGroupId>
 		{
-			public override void WriteJson(JsonWriter writer, ServerGroupId value, JsonSerializer serializer)
-				=> writer.WriteValue(value.Value);
-			public override ServerGroupId ReadJson(JsonReader reader, Type objectType, ServerGroupId existingValue, bool hasExistingValue, JsonSerializer serializer)
-				=> new ServerGroupId(UInt64.Parse(reader.ReadAsString() ?? throw new FormatException()));
+			public override void Write(Utf8JsonWriter writer, ServerGroupId value, JsonSerializerOptions options)
+				=> writer.WriteNumberValue(value.Value);
+			public override ServerGroupId Read(ref Utf8JsonReader reader, Type type, JsonSerializerOptions options)
+				=> new(reader.GetUInt64());
+		}
+
+		public class DictConverter<T> : JsonConverter<Dictionary<ServerGroupId, T>>
+		{
+			public override Dictionary<ServerGroupId, T> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+			{
+				throw new NotSupportedException();
+			}
+
+			public override void Write(Utf8JsonWriter writer, Dictionary<ServerGroupId, T> value, JsonSerializerOptions options)
+			{
+				writer.WriteStartObject();
+				foreach (var kvp in value) {
+					writer.WritePropertyName(kvp.Key.Value.ToString());
+					JsonSerializer.Serialize(writer, kvp.Value, options);
+				}
+				writer.WriteEndObject();
+			}
 		}
 	}
 	
@@ -254,15 +341,32 @@ namespace TSLib
 
 			return null;
 			
-			
 		}
 
 		private class Converter : JsonConverter<ChannelGroupId>
 		{
-			public override void WriteJson(JsonWriter writer, ChannelGroupId value, JsonSerializer serializer)
-				=> writer.WriteValue(value.Value);
-			public override ChannelGroupId ReadJson(JsonReader reader, Type objectType, ChannelGroupId existingValue, bool hasExistingValue, JsonSerializer serializer)
-				=> new ChannelGroupId(UInt64.Parse(reader.ReadAsString() ?? throw new FormatException()));
+			public override void Write(Utf8JsonWriter writer, ChannelGroupId value, JsonSerializerOptions options)
+				=> writer.WriteNumberValue(value.Value);
+			public override ChannelGroupId Read(ref Utf8JsonReader reader, Type type, JsonSerializerOptions options)
+				=> new(reader.GetUInt64());
+		}
+
+		public class DictConverter<T> : JsonConverter<Dictionary<ChannelGroupId, T>>
+		{
+			public override Dictionary<ChannelGroupId, T> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+			{
+				throw new NotSupportedException();
+			}
+
+			public override void Write(Utf8JsonWriter writer, Dictionary<ChannelGroupId, T> value, JsonSerializerOptions options)
+			{
+				writer.WriteStartObject();
+				foreach (var kvp in value) {
+					writer.WritePropertyName(kvp.Key.Value.ToString());
+					JsonSerializer.Serialize(writer, kvp.Value, options);
+				}
+				writer.WriteEndObject();
+			}
 		}
 	}
 	

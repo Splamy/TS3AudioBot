@@ -7,16 +7,17 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
-using Newtonsoft.Json;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using TS3AudioBot.CommandSystem;
 
 namespace TS3AudioBot.Web.Api
 {
 	public class JsonError : JsonObject
 	{
-		private static readonly JsonSerializerSettings ErrorSerializeSettings = new()
+		private static readonly JsonSerializerOptions ErrorJsonOptions = new(DefaultJsonOptions)
 		{
-			NullValueHandling = NullValueHandling.Ignore,
+			DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
 		};
 
 		private readonly CommandExceptionReason reason;
@@ -32,7 +33,7 @@ namespace TS3AudioBot.Web.Api
 			this.reason = reason;
 		}
 
-		public override string Serialize() => JsonConvert.SerializeObject(GetSerializeObject(), ErrorSerializeSettings);
+		public override string Serialize() => JsonSerializer.Serialize(GetSerializeObject(), ErrorJsonOptions);
 		public override string ToString() => ErrorMessage;
 	}
 }

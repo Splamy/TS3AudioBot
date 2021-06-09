@@ -8,11 +8,14 @@
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
 using LiteDB;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Net.Http;
+using System.Net.Http.Headers;
+using System.Net.Http.Json;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using TS3AudioBot.Config;
 using TS3AudioBot.Helper;
@@ -30,10 +33,9 @@ namespace TS3AudioBot.Environment
 		private const int StatsVersion = 1;
 		private static readonly TimeSpan CheckInterval = TimeSpan.FromMinutes(1);
 		private static readonly TimeSpan SendInterval = TimeSpan.FromDays(1);
-		private static readonly JsonSerializerSettings JsonSettings = new()
+		private static readonly JsonSerializerOptions JsonOptions = new()
 		{
-			NullValueHandling = NullValueHandling.Ignore,
-			Formatting = Formatting.None,
+			DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
 		};
 
 		private readonly ConfRoot conf;
@@ -83,7 +85,7 @@ namespace TS3AudioBot.Environment
 			}
 			else
 			{
-				statsPoints = JsonConvert.DeserializeObject<StatsMeta>(meta.CustomData, JsonSettings) ?? new StatsMeta();
+				statsPoints = System.Text.Json.JsonSerializer.Deserialize<StatsMeta>(meta.CustomData, JsonOptions) ?? new StatsMeta();
 				// Upgrade steps here
 			}
 
@@ -95,7 +97,7 @@ namespace TS3AudioBot.Environment
 
 		private void UpdateMeta()
 		{
-			meta.CustomData = JsonConvert.SerializeObject(statsPoints, JsonSettings);
+			meta.CustomData = System.Text.Json.JsonSerializer.Serialize(statsPoints, JsonOptions);
 			database.UpdateMetaData(meta);
 		}
 
@@ -113,7 +115,7 @@ namespace TS3AudioBot.Environment
 				var request = WebWrapper
 					.Request("https://splamy.de/api/tab/stats")
 					.WithMethod(HttpMethod.Post);
-				request.Content = new StringContent(JsonConvert.SerializeObject(sendPacket), Tools.Utf8Encoder, "application/json");
+				request.Content = JsonContent.Create(sendPacket, MediaTypeHeaderValue.Parse("application/json"), JsonOptions);
 				await request.ToAction((response, ct) =>
 				{
 					Log.Debug("Stats response {0}", response.StatusCode);
@@ -238,7 +240,10 @@ namespace TS3AudioBot.Environment
 				}}
 			};
 
-			return JsonConvert.SerializeObject(sendData, Formatting.Indented);
+			return System.Text.Json.JsonSerializer.Serialize(sendData, new JsonSerializerOptions(JsonOptions)
+			{
+				WriteIndented = true,
+			});
 		}
 	}
 

@@ -26,4 +26,9 @@ namespace TS3AudioBot.Helper
 		public const string CoreConfig = "ts3audiobot.toml";
 		public const string BotConfig = "bot.toml";
 	}
+
+	public static class Defaults
+	{
+		public const string BotName = "default";
+	}
 }

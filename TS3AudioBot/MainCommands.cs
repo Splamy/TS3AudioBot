@@ -9,7 +9,6 @@
 
 using CliWrap;
 using CliWrap.Buffered;
-using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -30,6 +29,7 @@ using TS3AudioBot.Dependency;
 using TS3AudioBot.Environment;
 using TS3AudioBot.Helper;
 using TS3AudioBot.Helper.Diagnose;
+using TS3AudioBot.Helper.Json;
 using TS3AudioBot.History;
 using TS3AudioBot.Localization;
 using TS3AudioBot.Playlists;

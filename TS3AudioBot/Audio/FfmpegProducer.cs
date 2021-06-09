@@ -56,7 +56,13 @@ namespace TS3AudioBot.Audio
 			return Task.CompletedTask;
 		}
 
-		public async Task AudioStartIcy(string url) => await StartFfmpegProcessIcy(url);
+		public async Task AudioStartIcy(string url)
+		{
+			if (!(await StartFfmpegProcessIcy(url)).Get(out _, out var error))
+			{
+				Log.Warn("Failed to start icy stream: {0}", error);
+			}
+		}
 
 		public void AudioStop()
 		{
@@ -356,10 +362,7 @@ namespace TS3AudioBot.Audio
 					if (!FfmpegProcess.HasExitedSafe())
 						FfmpegProcess.Kill();
 				}
-				catch { }
-				try { FfmpegProcess.CancelErrorRead(); } catch { }
-				try { FfmpegProcess.StandardInput.Dispose(); } catch { }
-				try { FfmpegProcess.StandardOutput.Dispose(); } catch { }
+				catch (Exception ex) { Log.Debug(ex, "Failed killing ffmpeg"); }
 				try { FfmpegProcess.Dispose(); } catch { }
 
 				IcyStream?.Dispose();

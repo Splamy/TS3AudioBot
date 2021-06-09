@@ -7,25 +7,24 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using TS3AudioBot.CommandSystem;
 using TS3AudioBot.CommandSystem.Commands;
+using TS3AudioBot.Helper.Json;
 using TSLib.Helper;
 
 namespace TS3AudioBot.Web.Api
 {
 	public static class OpenApiGenerator
 	{
-		private static readonly JsonSerializer seri = JsonSerializer.CreateDefault();
-
-		static OpenApiGenerator()
+		private static readonly JsonSerializerOptions JsonOptions = new()
 		{
-			seri.NullValueHandling = NullValueHandling.Ignore;
-		}
+			DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+		};
 
 		public static JObject Generate(CommandManager commandManager, BotInfo[] bots)
 		{
@@ -85,10 +84,10 @@ namespace TS3AudioBot.Web.Api
 						)
 					)
 				)
-			);
+			).CustomJsonOptions(JsonOptions);
 		}
 
-		private static JToken? GenerateCommand(CommandManager commandManager, BotCommand command, HashSet<string> addedCommandPaths)
+		private static JProperty? GenerateCommand(CommandManager commandManager, BotCommand command, HashSet<string> addedCommandPaths)
 		{
 			var parameters = new JArray();
 
@@ -121,9 +120,9 @@ namespace TS3AudioBot.Web.Api
 						new JProperty("required", true) // param.optional
 					);
 
-					var paramschema = NormalToSchema(param.Type);
+					var paramschema = TypeToSchema(param.Type);
 					if (paramschema != null)
-						addparam.Add("schema", JObject.FromObject(paramschema, seri));
+						addparam.Add(new JProperty("schema", paramschema));
 					parameters.Add(addparam);
 					break;
 				default:
@@ -154,7 +153,7 @@ namespace TS3AudioBot.Web.Api
 
 			// build final command
 
-			var reponseschema = NormalToSchema(command.CommandReturn);
+			var reponseschema = TypeToSchema(command.CommandReturn);
 
 			return
 			JPropObj(path,
@@ -173,7 +172,7 @@ namespace TS3AudioBot.Web.Api
 										new JProperty("content",
 											new JObject(
 												JPropObj("application/json",
-													new JProperty("schema", JObject.FromObject(reponseschema, seri))
+													new JProperty("schema", reponseschema)
 												)
 											)
 										)
@@ -194,7 +193,7 @@ namespace TS3AudioBot.Web.Api
 			);
 		}
 
-		private static T Chain<T>(this T token, Action<T> func) where T : JToken
+		private static T Chain<T>(this T token, Action<T> func)
 		{
 			func.Invoke(token);
 			return token;
@@ -205,7 +204,7 @@ namespace TS3AudioBot.Web.Api
 			return new JProperty(name, new JObject(token));
 		}
 
-		private static OApiSchema? NormalToSchema(Type type)
+		private static OApiSchema? TypeToSchema(Type type)
 		{
 			type = FunctionCommand.UnwrapReturnType(type);
 
@@ -213,7 +212,7 @@ namespace TS3AudioBot.Web.Api
 			{
 				return new OApiSchema("array")
 				{
-					Items = NormalToSchema(type.GetElementType()!)
+					Items = TypeToSchema(type.GetElementType()!)
 				};
 			}
 
@@ -242,13 +241,13 @@ namespace TS3AudioBot.Web.Api
 
 		private class OApiSchema
 		{
-			[JsonProperty(PropertyName = "type")]
+			[JsonPropertyName("type")]
 			public string Type { get; set; }
-			[JsonProperty(PropertyName = "format")]
+			[JsonPropertyName("format")]
 			public string? Format { get; set; }
-			[JsonProperty(PropertyName = "additionalProperties")]
+			[JsonPropertyName("additionalProperties")]
 			public OApiSchema? AdditionalProperties { get; set; }
-			[JsonProperty(PropertyName = "items")]
+			[JsonPropertyName("items")]
 			public OApiSchema? Items { get; set; }
 
 			public OApiSchema(string type)

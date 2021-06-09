@@ -8,10 +8,10 @@
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
 using Nett;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Text.Json;
 using TS3AudioBot.Helper;
 
 namespace TS3AudioBot.Config
@@ -116,27 +116,23 @@ namespace TS3AudioBot.Config
 			}
 		}
 
-		public override void ToJson(JsonWriter writer)
+		public override void ToJson(Utf8JsonWriter writer, JsonSerializerOptions options)
 		{
-			writer.WriteValue(Value);
+			JsonSerializer.Serialize(writer, Value, options);
 		}
 
-		public override E<string> FromJson(JsonReader reader)
+		public override E<string> FromJson(ref Utf8JsonReader reader, JsonSerializerOptions options)
 		{
 			try
 			{
-				var err = reader.TryReadValue<T>(out var tomlValue);
-				if (err.Ok)
-				{
-					Value = tomlValue;
-					return R.Ok;
-				}
-				return err;
+				var value = JsonSerializer.Deserialize<T>(ref reader, options);
+				if (value is null)
+					return "Value is empty";
+				Value = value;
+				return R.Ok;
 			}
-			catch (JsonReaderException ex) { return $"Could not read value: {ex.Message}"; }
+			catch (JsonException ex) { return $"Could not read value: {ex.Message}"; }
 		}
-
-		public override string ToString() => Value.ToString() ?? "<null>";
 
 		public static implicit operator T(ConfigValue<T> conf) => conf.Value;
 	}

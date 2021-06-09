@@ -15,75 +15,93 @@
 <#@ import namespace="System.Text" #>
 <#@ import namespace="System.Collections.Generic" #>
 <#
-var types = new (string alias, string backing)[] {
-	("Uid", "String"),
-	("ClientDbId", "UInt64"),
-	("ClientId", "UInt16"),
-	("ChannelId", "UInt64"),
-	("ServerGroupId", "UInt64"),
-	("ChannelGroupId", "UInt64"),
-	//("IconId", "Int32"),
-	//("ConnectionId", "UInt32"),
+var types = new (string alias, string backing, bool isStr)[] {
+	("Uid", "String", true),
+	("ClientDbId", "UInt64", false),
+	("ClientId", "UInt16", false),
+	("ChannelId", "UInt64", false),
+	("ServerGroupId", "UInt64", false),
+	("ChannelGroupId", "UInt64", false),
+	//("IconId", "Int32", false),
+	//("ConnectionId", "UInt32", false),
 };
 #>
 #nullable enable
-using Newtonsoft.Json;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Runtime.InteropServices;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace TSLib
 {
 	public static class TsTypes
 	{
-		public static Type[] All => new Type[] { <# foreach(var type in types) { Write($"typeof({type.alias}),"); } #> };
+		public static IReadOnlyList<Type> All = new Type[] { <# foreach(var (alias,_,_) in types) { Write($"typeof({alias}),"); } #> };
 	}
 
-	<# foreach(var type in types) {
-		var isStr = type.backing.Equals("string",StringComparison.OrdinalIgnoreCase); #>
+	<# foreach(var (alias, backing, isStr) in types) { #>
 	[StructLayout(LayoutKind.Sequential, Pack=0)]
 	[DebuggerDisplay("{Value, nq}")]
-	[JsonConverter(typeof(<#= type.alias #>.Converter))]
-	public readonly partial struct <#= type.alias #> :<#= isStr ? "" : " IFormattable," #> IEquatable<<#= type.alias #>>
+	[JsonConverter(typeof(<#= alias #>.Converter))]
+	public readonly partial struct <#= alias #> :<#= isStr ? "" : " IFormattable," #> IEquatable<<#= alias #>>
 	{
-		public static readonly <#= type.alias #> Null = new <#= type.alias #>(<#= isStr ? "string.Empty" : "default" #>);
-		public static <#= type.alias #> To(<#= type.backing #> v) => new <#= type.alias #>(v);
+		public static readonly <#= alias #> Null = new <#= alias #>(<#= isStr ? "string.Empty" : "default" #>);
+		public static <#= alias #> To(<#= backing #> v) => new <#= alias #>(v);
 
-		public <#= type.backing #> Value { get; }
-		public <#= type.alias #>(<#= type.backing #> value) { <#= isStr ? "if (value == null) throw new ArgumentNullException(nameof(value));" : "" #> Value = value; }
-		public static explicit operator <#= type.alias #>(<#= type.backing #> v) => new <#= type.alias #>(v);
-		public static bool operator ==(<#= type.alias #> a, <#= type.alias #> b) => a.Value == b.Value;
-		public static bool operator !=(<#= type.alias #> a, <#= type.alias #> b) => a.Value != b.Value;
+		public <#= backing #> Value { get; }
+		public <#= alias #>(<#= backing #> value) { <#= isStr ? "if (value == null) throw new ArgumentNullException(nameof(value));" : "" #> Value = value; }
+		public static explicit operator <#= alias #>(<#= backing #> v) => new <#= alias #>(v);
+		public static bool operator ==(<#= alias #> a, <#= alias #> b) => a.Value == b.Value;
+		public static bool operator !=(<#= alias #> a, <#= alias #> b) => a.Value != b.Value;
 		public override int GetHashCode() => <#= isStr ? "Value?.GetHashCode() ?? 0" : "Value.GetHashCode()" #> ;
-		public override bool Equals(object? obj) => obj is <#= type.alias #> c && this.Equals(c);
+		public override bool Equals(object? obj) => obj is <#= alias #> c && this.Equals(c);
 		public override string ToString() => Value <#= isStr ? "?? \"\"" : ".ToString()" #>;
 		<# if (isStr) { #>
-		public bool Equals(<#= type.alias #> other) => string.Equals(Value, other.Value, StringComparison.Ordinal);
+		public bool Equals(<#= alias #> other) => string.Equals(Value, other.Value, StringComparison.Ordinal);
 		<# } else { #>
-		public bool Equals(<#= type.alias #> other) => Value.Equals(other.Value);
+		public bool Equals(<#= alias #> other) => Value.Equals(other.Value);
 		public string ToString(string? format, IFormatProvider? formatProvider) => Value.ToString(format, formatProvider);
 		<# } #>
-		public static <#= type.alias #>? TryFrom(object value) {
+		public static <#= alias #>? TryFrom(object value) {
 			<# if (isStr) { #>
-			if (value is string s) return new <#= type.alias #>(s);
+			if (value is string s) return new <#= alias #>(s);
 			return null;
 			<# } else { #>
-			if (value is <#= type.backing #> bvalue) return new <#= type.alias #>(bvalue);
-			if (value is string s && <#= type.backing #>.TryParse(s, out var num)) return new <#= type.alias #>(num);
-			if (value is IConvertible c) return new <#= type.alias #>(c.To<#= type.backing #>(CultureInfo.InvariantCulture));
+			if (value is <#= backing #> bvalue) return new <#= alias #>(bvalue);
+			if (value is string s && <#= backing #>.TryParse(s, out var num)) return new <#= alias #>(num);
+			if (value is IConvertible c) return new <#= alias #>(c.To<#= backing #>(CultureInfo.InvariantCulture));
 
 			return null;
 			<# } #>
-			
 		}
 
-		private class Converter : JsonConverter<<#= type.alias #>>
+		private class Converter : JsonConverter<<#= alias #>>
 		{
-			public override void WriteJson(JsonWriter writer, <#= type.alias #> value, JsonSerializer serializer)
-				=> writer.WriteValue(value.Value);
-			public override <#= type.alias #> ReadJson(JsonReader reader, Type objectType, <#= type.alias #> existingValue, bool hasExistingValue, JsonSerializer serializer)
-				=> new <#= type.alias #>(<#= isStr ? "" : type.backing + ".Parse" #>(reader.ReadAsString() ?? throw new FormatException()));
+			public override void Write(Utf8JsonWriter writer, <#= alias #> value, JsonSerializerOptions options)
+				=> writer.<#= isStr ? "WriteStringValue" : "WriteNumberValue" #>(value.Value);
+			public override <#= alias #> Read(ref Utf8JsonReader reader, Type type, JsonSerializerOptions options)
+				=> new(reader.Get<#= backing #>()<#= isStr ? "?? throw new FormatException()" : "" #>);
+		}
+
+		public class DictConverter<T> : JsonConverter<Dictionary<<#= alias #>, T>>
+		{
+			public override Dictionary<<#= alias #>, T> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+			{
+				throw new NotSupportedException();
+			}
+
+			public override void Write(Utf8JsonWriter writer, Dictionary<<#= alias #>, T> value, JsonSerializerOptions options)
+			{
+				writer.WriteStartObject();
+				foreach (var kvp in value) {
+					writer.WritePropertyName(kvp.Key.Value<#= isStr ? "" : ".ToString()" #>);
+					JsonSerializer.Serialize(writer, kvp.Value, options);
+				}
+				writer.WriteEndObject();
+			}
 		}
 	}
 	<# } #>

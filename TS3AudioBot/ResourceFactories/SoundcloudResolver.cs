@@ -145,14 +145,13 @@ namespace TS3AudioBot.ResourceFactories
 
 			var plist = new Playlist().SetTitle(playlist.title);
 			plist.AddRange(
-				playlist.tracks.Select(track =>
+				playlist.tracks.SelectNotNull(track =>
 				{
 					var resource = CheckAndGet(track);
 					if (resource is null)
-						return null!;
+						return null;
 					return new PlaylistItem(resource);
 				})
-				.Where(track => track != null)
 			);
 
 			return plist;

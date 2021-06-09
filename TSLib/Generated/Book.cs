@@ -21,6 +21,7 @@
 
 
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 #pragma warning disable CS8019 // Ignore unused imports
 using i8  = System.SByte;
@@ -407,11 +408,15 @@ namespace TSLib.Full.Book
 		}
 
 	
+			[JsonConverter(typeof(ChannelGroupId.DictConverter<ChannelGroup>))]
 		public Dictionary<ChannelGroupId,ChannelGroup> ChannelGroups { get; internal set; }
+			[JsonConverter(typeof(ChannelId.DictConverter<Channel>))]
 		public Dictionary<ChannelId,Channel> Channels { get; internal set; }
+			[JsonConverter(typeof(ClientId.DictConverter<Client>))]
 		public Dictionary<ClientId,Client> Clients { get; internal set; }
 		public ClientId OwnClientId { get; internal set; }
 		public Server Server { get; internal set; }
+			[JsonConverter(typeof(ServerGroupId.DictConverter<ServerGroup>))]
 		public Dictionary<ServerGroupId,ServerGroup> ServerGroups { get; internal set; }
 	}
 

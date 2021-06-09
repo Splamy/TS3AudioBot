@@ -7,12 +7,9 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -94,25 +91,6 @@ namespace TS3AudioBot.Helper
 			return assembly.GetManifestResourceStream(name);
 		}
 
-		public static bool TryCast<T>(this JToken token, string key, [MaybeNullWhen(false)] out T value) where T : notnull
-		{
-			value = default!;
-			if (token is null)
-				return false;
-			var jValue = token.SelectToken(key);
-			if (jValue is null)
-				return false;
-			try
-			{
-				var t = jValue.ToObject<T>();
-				if (t is null)
-					return false;
-				value = t;
-				return true;
-			}
-			catch (JsonReaderException) { return false; }
-		}
-
 		public static E<LocalStr> IsSafeFileName(string name)
 		{
 			if (string.IsNullOrWhiteSpace(name))
@@ -126,6 +104,8 @@ namespace TS3AudioBot.Helper
 
 		public static IEnumerable<TResult> SelectOk<TSource, TResult, TErr>(this IEnumerable<TSource> source, Func<TSource, R<TResult, TErr>> selector) where TSource : notnull where TResult : notnull where TErr : notnull
 			=> source.Select(selector).Where(x => x.Ok).Select(x => x.Value);
+		public static IEnumerable<TResult> SelectNotNull<TSource, TResult>(this IEnumerable<TSource> source, Func<TSource, TResult?> selector) where TResult : class
+			=> source.Select(selector).Where(x => x != null)!;
 
 		public static bool HasExitedSafe(this Process process)
 		{

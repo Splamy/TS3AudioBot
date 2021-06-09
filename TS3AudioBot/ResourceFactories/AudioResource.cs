@@ -7,9 +7,9 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
 using TS3AudioBot.CommandSystem.CommandResults;
 
 namespace TS3AudioBot.ResourceFactories
@@ -17,16 +17,17 @@ namespace TS3AudioBot.ResourceFactories
 	public class AudioResource : IAudioResourceResult
 	{
 		/// <summary>The resource type.</summary>
-		[JsonProperty(PropertyName = "type")]
+		[JsonPropertyName("type")]
 		public string AudioType { get; set; }
 		/// <summary>An identifier to create the song. This id is uniqe among all resources with the same resource type string of a factory.</summary>
-		[JsonProperty(PropertyName = "resid")]
+		[JsonPropertyName("resid")]
 		public string ResourceId { get; set; }
 		/// <summary>The display title.</summary>
-		[JsonProperty(PropertyName = "title")]
+		[JsonPropertyName("title")]
 		public string? ResourceTitle { get; set; }
 		/// <summary>Additional data to resolve the link.</summary>
-		[JsonProperty(PropertyName = "add", NullValueHandling = NullValueHandling.Ignore)]
+		[JsonPropertyName("add")]
+		[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
 		public Dictionary<string, string>? AdditionalData { get; set; }
 		/// <summary>An identifier wich is unique among all <see cref="AudioResource"/> and resource type string of a factory.</summary>
 		[JsonIgnore]

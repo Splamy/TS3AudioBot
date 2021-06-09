@@ -7,18 +7,15 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System.Text.Json;
 using System;
-using System.Text.Json.Serialization;
 
-namespace TS3AudioBot.Web.Model
+namespace TS3AudioBot.Helper.Json
 {
-	public class CurrentSongInfo : PlaylistItemGetData
+	public interface IJsonSerializable
 	{
-		[JsonPropertyName("Position")]
-		public TimeSpan Position { get; set; }
-		[JsonPropertyName("Length")]
-		public TimeSpan Length { get; set; }
-		[JsonPropertyName("Paused")]
-		public bool Paused { get; set; }
+		bool ExpectsString { get; }
+		void ToJson(Utf8JsonWriter writer, JsonSerializerOptions options);
+		E<string> FromJson(ref Utf8JsonReader reader, JsonSerializerOptions options);
 	}
 }

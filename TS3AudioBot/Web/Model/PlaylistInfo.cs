@@ -7,28 +7,29 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
-using Newtonsoft.Json;
+using System.Text.Json.Serialization;
 
 namespace TS3AudioBot.Web.Model
 {
 	public class PlaylistInfo
 	{
 		// TODO better names
-		[JsonProperty(PropertyName = "Id")]
+		[JsonPropertyName("Id")]
 		public string Id { get; set; }
-		[JsonProperty(PropertyName = "Title")]
+		[JsonPropertyName("Title")]
 		public string Title { get; set; }
 
 		/// <summary>How many songs are in the entire playlist</summary>
-		[JsonProperty(PropertyName = "SongCount")]
+		[JsonPropertyName("SongCount")]
 		public int SongCount { get; set; }
 		/// <summary>From which index the itemization begins.</summary>
-		[JsonProperty(PropertyName = "DisplayOffset")]
+		[JsonPropertyName("DisplayOffset")]
 		public int DisplayOffset { get; set; }
 		/// <summary>The playlist items for the request.
 		/// This might only be a part of the entire playlist.
 		/// Check <see cref="SongCount"> for the entire count.</summary>
-		[JsonProperty(PropertyName = "Items", NullValueHandling = NullValueHandling.Ignore)]
+		[JsonPropertyName("Items")]
+		[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
 		public PlaylistItemGetData[]? Items { get; set; }
 
 		public PlaylistInfo(string id, string title)
