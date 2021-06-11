@@ -38,7 +38,7 @@ export interface ApiError {
 }
 
 export interface CmdServerTree {
-	OwnClient: number;
+	OwnClientId: number;
 	Server: CmdServerTreeServer;
 	Clients: { [id: number]: CmdServerTreeUser };
 	Channels: { [id: number]: CmdServerTreeChannel };

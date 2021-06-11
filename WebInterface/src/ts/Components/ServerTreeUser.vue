@@ -70,11 +70,11 @@ export default Vue.component("server-tree-user", {
 			return Number(this.$route.params.id);
 		},
 		own_client(): CmdServerTreeUser {
-			return this.meta.tree.Clients[this.meta.tree.OwnClient];
+			return this.meta.tree.Clients[this.meta.tree.OwnClientId];
 		},
 		playing_here(): boolean {
 			if (this.meta.send_mode.SendMode === TargetSendMode.Voice) {
-				return this.node.Id == this.meta.tree.OwnClient;
+				return this.node.Id == this.meta.tree.OwnClientId;
 			} else if (
 				this.meta.send_mode.SendMode === TargetSendMode.Whisper
 			) {

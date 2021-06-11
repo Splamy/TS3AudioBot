@@ -10,6 +10,7 @@
 using System;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Text.Json.Serialization;
 using TSLib.Helper;
 using TSLib.Messages;
 using SocketAddr = System.String;
@@ -20,7 +21,9 @@ namespace TSLib.Full.Book
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 
+		[JsonIgnore]
 		public Client? OwnClient { get; set; }
+		[JsonIgnore]
 		public Channel? OwnChannel { get; set; }
 
 		// Server

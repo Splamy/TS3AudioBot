@@ -155,7 +155,7 @@ export default Vue.component("server-tree-node", {
 			return false;
 		},
 		own_client(): CmdServerTreeUser {
-			return this.meta.tree.Clients[this.meta.tree.OwnClient];
+			return this.meta.tree.Clients[this.meta.tree.OwnClientId];
 		}
 	},
 	methods: {
