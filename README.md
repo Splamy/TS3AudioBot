@@ -53,7 +53,7 @@ Pick and download the build for your platform and liking:
 (We have more builds like linux arm/arm64 and .NET framework dependent builds available on our [nightly server](https://splamy.de/Nightly#ts3ab))
 
 #### Linux
-Install the required dependencies:
+Install the required dependencies for your distro:
 * on **Ubuntu**/**Debian**:  
 Run `sudo apt-get install libopus-dev ffmpeg`
 * on **Arch Linux**:  
@@ -65,7 +65,7 @@ Run
     sudo rpm -Uvh http://li.nux.ro/download/nux/dextop/el7/x86_64/nux-dextop-release-0-5.el7.nux.noarch.rpm
     sudo yum -y install ffmpeg opus-devel
 	```
-* **manually**:
+* or **manually**:
     1. Make sure you have a C compiler installed
     1. Make the Opus script runnable with `chmod u+x InstallOpus.sh` and run it with `./InstallOpus.sh`
     1. Get the ffmpeg [32bit](https://johnvansickle.com/ffmpeg/builds/ffmpeg-git-i686-static.tar.xz) or [64bit](https://johnvansickle.com/ffmpeg/builds/ffmpeg-git-amd64-static.tar.xz) binary.
@@ -102,13 +102,13 @@ For further reading check out the [CommandSystem](https://github.com/Splamy/TS3A
 Download the git repository with `git clone --recurse-submodules https://github.com/Splamy/TS3AudioBot.git`.
 
 #### Linux
-1. Get the latest `dotnet core 3.1` version by following [this tutorial](https://docs.microsoft.com/dotnet/core/install/linux-package-managers) and choose your platform
+1. Get the `.NET 5.0` sdk by following [this tutorial](https://docs.microsoft.com/dotnet/core/install/linux-package-managers) and choose your platform
 1. Go into the directory of the repository with `cd TS3AudioBot`
-1. Execute `dotnet build --framework netcoreapp3.1 --configuration Release TS3AudioBot` to build the AudioBot
-1. The binary will be in `./TS3AudioBot/bin/Release/netcoreapp3.1` and can be run with `dotnet TS3AudioBot.dll`
+1. Execute `dotnet build --framework net5.0 --configuration Release TS3AudioBot` to build the AudioBot
+1. The binary will be in `./TS3AudioBot/bin/Release/net5.0` and can be run with `dotnet TS3AudioBot.dll`
 
 #### Windows
-1. Make sure you have `Visual Studio` with the `dotnet core 3.1` development toolchain installed
+1. Make sure you have `Visual Studio` with the `.NET 5.0` development toolchain installed
 1. Build the AudioBot with Visual Studio.
 
 ### Building the WebInterface

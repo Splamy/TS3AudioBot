@@ -8,14 +8,13 @@
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
 using Nett;
-using System.Text.Json;
-using System.Text.Json.Serialization;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 
 namespace TS3AudioBot.Helper
 {
