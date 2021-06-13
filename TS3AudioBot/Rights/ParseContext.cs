@@ -27,7 +27,7 @@ namespace TS3AudioBot.Rights
 		public RightsRule RootRule { get; }
 		public bool NeedsAvailableGroups { get; set; } = false;
 		public bool NeedsAvailableChanGroups { get; set; } = false;
-		public TsPermission[] NeedsPermOverview { get; set; } = Array.Empty<TsPermission>();
+		public HashSet<TsPermission> NeedsPermOverview { get; set; } = new();
 
 		public ParseContext(ISet<string> registeredRights)
 		{
@@ -54,16 +54,12 @@ namespace TS3AudioBot.Rights
 			if (Errors.Count == 0)
 			{
 				strb.Append(string.Join("\n", Rules.Select(x => x.ToString())));
-				if (strb.Length > 900)
-					strb.Length = 900;
 				return (true, strb.ToString());
 			}
 			else
 			{
 				foreach (var err in Errors)
 					strb.Append("ERR: ").AppendLine(err);
-				if (strb.Length > 900)
-					strb.Length = 900;
 				return (false, strb.ToString());
 			}
 		}

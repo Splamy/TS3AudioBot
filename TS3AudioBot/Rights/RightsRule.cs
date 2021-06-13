@@ -8,6 +8,7 @@
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
 using Nett;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
@@ -132,7 +133,7 @@ namespace TS3AudioBot.Rights
 				}
 			default:
 				// group
-				if (key.StartsWith("$"))
+				if (key.StartsWith("$", StringComparison.Ordinal))
 				{
 					if (tomlObj.TomlType == TomlObjectType.Table)
 					{

@@ -19,5 +19,7 @@ namespace TS3AudioBot.Rights.Matchers
 		public MatchServerGroupId(IEnumerable<ServerGroupId> serverGroupIds) => this.serverGroupIds = new HashSet<ServerGroupId>(serverGroupIds);
 
 		public override bool Matches(ExecuteContext ctx) => ctx.ServerGroups?.Length > 0 && serverGroupIds.Overlaps(ctx.ServerGroups);
+
+		public override void SetRequiredFeatures(ParseContext ctx) => ctx.NeedsAvailableGroups = true;
 	}
 }

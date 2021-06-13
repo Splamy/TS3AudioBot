@@ -17,7 +17,6 @@ using TS3AudioBot.CommandSystem;
 using TS3AudioBot.Config;
 using TS3AudioBot.Dependency;
 using TS3AudioBot.Helper;
-using TS3AudioBot.Rights.Matchers;
 using TS3AudioBot.Web.Api;
 using TSLib;
 using TSLib.Full;
@@ -66,14 +65,14 @@ namespace TS3AudioBot.Rights
 		public async ValueTask<bool> HasAllRights(ExecutionInformation info, params string[] requestedRights)
 		{
 			var ctx = await GetRightsContext(info);
-			var normalizedRequest = ExpandRights(requestedRights, registeredRights);
+			var normalizedRequest = ExpandRights(registeredRights, requestedRights);
 			return ctx.DeclAdd.IsSupersetOf(normalizedRequest);
 		}
 
 		public async ValueTask<string[]> GetRightsSubset(ExecutionInformation info, params string[] requestedRights)
 		{
 			var ctx = await GetRightsContext(info);
-			var normalizedRequest = ExpandRights(requestedRights, registeredRights);
+			var normalizedRequest = ExpandRights(registeredRights, requestedRights);
 			return ctx.DeclAdd.Intersect(normalizedRequest).ToArray();
 		}
 
@@ -253,7 +252,7 @@ namespace TS3AudioBot.Rights
 				{
 					needsAvailableChanGroups = ctx.NeedsAvailableChanGroups;
 					needsAvailableGroups = ctx.NeedsAvailableGroups;
-					needsPermOverview = ctx.NeedsPermOverview;
+					needsPermOverview = ctx.NeedsPermOverview.Count > 0 ? ctx.NeedsPermOverview.ToArray() : Array.Empty<TsPermission>();
 					needsRecalculation = false;
 					return ctx.RootRule;
 				}
@@ -361,36 +360,48 @@ namespace TS3AudioBot.Rights
 			CheckRequiredCalls(parseCtx);
 		}
 
-		private static HashSet<string> ExpandRights(IEnumerable<string> rights, ICollection<string> registeredRights)
+		private static HashSet<string> ExpandRights(ISet<string> registeredRights, IEnumerable<string> rights)
 		{
 			var rightsExpanded = new HashSet<string>();
 			foreach (var right in rights)
 			{
-				int index = right.IndexOf('*');
-				if (index < 0)
-				{
-					// Rule does not contain any wildcards
-					rightsExpanded.Add(right);
-				}
-				else if (index != 0 && right[index - 1] != '.')
-				{
-					// Do not permit misused wildcards
-					throw new ArgumentException($"The right \"{right}\" has a misused wildcard.");
-				}
-				else if (index == 0)
-				{
-					// We are done here when including every possible right
-					rightsExpanded.UnionWith(registeredRights);
-					break;
-				}
-				else
-				{
-					// Add all rights which expand from that wildcard
-					string subMatch = right.Substring(0, index - 1);
-					rightsExpanded.UnionWith(registeredRights.Where(x => x.StartsWith(subMatch)));
-				}
+				ExpandRights(rightsExpanded, registeredRights, right);
 			}
 			return rightsExpanded;
+		}
+
+		private static void ExpandRights(ISet<string> expanded, ISet<string> registeredRights, string right)
+		{
+			int index = right.IndexOf('*');
+			if (index < 0)
+			{
+				// Rule does not contain any wildcards
+				expanded.Add(right);
+				return;
+			}
+
+			if (index == 0 && right.Length == 1) // right == "*"
+			{
+				// We are done here when including every possible right
+				expanded.UnionWith(registeredRights);
+				return;
+			}
+
+			if (right[index - 1] != '.')
+			{
+				// Do not permit misused wildcards
+				throw new ArgumentException($"The right \"{right}\" has a misused wildcard.");
+			}
+
+			// Add all rights which expand from that wildcard
+			var subMatch = right[..(index - 1)];
+			var subMatchWithDot = subMatch + ".";
+			expanded.UnionWith(registeredRights.Where(registeredPerm =>
+			{
+				if (registeredPerm.Length < subMatch.Length) return false;
+				else if (registeredPerm.Length == subMatch.Length) return registeredPerm == subMatch;
+				else return registeredPerm.StartsWith(subMatchWithDot, StringComparison.Ordinal);
+			}));
 		}
 
 		/// <summary>
@@ -402,9 +413,9 @@ namespace TS3AudioBot.Rights
 		{
 			foreach (var rule in ctx.Rules)
 			{
-				var denyNormalized = ExpandRights(rule.DeclDeny, ctx.RegisteredRights);
+				var denyNormalized = ExpandRights(ctx.RegisteredRights, rule.DeclDeny);
 				rule.DeclDeny = denyNormalized.ToArray();
-				var addNormalized = ExpandRights(rule.DeclAdd, ctx.RegisteredRights);
+				var addNormalized = ExpandRights(ctx.RegisteredRights, rule.DeclAdd);
 				addNormalized.ExceptWith(rule.DeclDeny);
 				rule.DeclAdd = addNormalized.ToArray();
 
@@ -613,29 +624,8 @@ namespace TS3AudioBot.Rights
 		/// <param name="ctx">The parsing context for the current file processing.</param>
 		private static void CheckRequiredCalls(ParseContext ctx)
 		{
-			var needsPermOverview = new HashSet<TsPermission>();
-
-			foreach (var group in ctx.Rules)
-			{
-				foreach (var matcher in group.Matcher)
-				{
-					switch (matcher)
-					{
-					case MatchServerGroupId _:
-						ctx.NeedsAvailableGroups = true;
-						break;
-
-					case MatchChannelGroupId _:
-						ctx.NeedsAvailableChanGroups = true;
-						break;
-
-					case MatchPermission sgid:
-						needsPermOverview.UnionWith(sgid.ComparingPermissions());
-						break;
-					}
-				}
-			}
-			ctx.NeedsPermOverview = needsPermOverview.Count > 0 ? needsPermOverview.ToArray() : Array.Empty<TsPermission>();
+			foreach (var matcher in ctx.Rules.SelectMany(g => g.Matcher))
+				matcher.SetRequiredFeatures(ctx);
 		}
 	}
 }

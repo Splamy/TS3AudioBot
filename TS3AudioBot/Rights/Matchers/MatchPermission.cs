@@ -55,7 +55,7 @@ namespace TS3AudioBot.Rights.Matchers
 				default: continue;
 				}
 
-				if ((value == "true" || value == "false") && !permission.StartsWith("b_"))
+				if ((value == "true" || value == "false") && !permission.StartsWith("b_", StringComparison.Ordinal))
 					ctx.Warnings.Add("Comparing an integer permission with boolean value.");
 
 				int valueNum;
@@ -72,8 +72,6 @@ namespace TS3AudioBot.Rights.Matchers
 				this.permissions.Add(permissionId, (compareOp, valueNum));
 			}
 		}
-
-		public IReadOnlyCollection<TsPermission> ComparingPermissions() => permissions.Keys;
 
 		public override bool Matches(ExecuteContext ctx)
 		{
@@ -96,11 +94,13 @@ namespace TS3AudioBot.Rights.Matchers
 					case PermCompare.GreaterOrEqual: if (value >= compare.value) return true; break;
 					case PermCompare.Less: if (value < compare.value) return true; break;
 					case PermCompare.LessOrEqual: if (value <= compare.value) return true; break;
-					default: throw Tools.UnhandledDefault(compare.op);
+					case var _unhandled: throw Tools.UnhandledDefault(_unhandled);
 					}
 				}
 			}
 			return false;
 		}
+
+		public override void SetRequiredFeatures(ParseContext ctx) => ctx.NeedsPermOverview.UnionWith(permissions.Keys);
 	}
 }

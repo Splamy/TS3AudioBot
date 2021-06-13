@@ -12,5 +12,7 @@ namespace TS3AudioBot.Rights.Matchers
 	internal abstract class Matcher
 	{
 		public abstract bool Matches(ExecuteContext ctx);
+
+		public virtual void SetRequiredFeatures(ParseContext ctx) { }
 	}
 }
