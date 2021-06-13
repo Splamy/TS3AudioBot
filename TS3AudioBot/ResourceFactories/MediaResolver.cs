@@ -164,7 +164,7 @@ namespace TS3AudioBot.ResourceFactories
 			{
 				var musicPathPrefix = Path.GetFullPath(pathPrefix);
 				var fullPath = Path.Combine(musicPathPrefix, file);
-				if (fullPath.StartsWith(musicPathPrefix) && File.Exists(fullPath))
+				if (fullPath.StartsWith(musicPathPrefix, StringComparison.Ordinal) && File.Exists(fullPath))
 					return new Uri(fullPath, UriKind.Absolute);
 			}
 			catch (Exception ex)

@@ -77,7 +77,7 @@ namespace TSLib.Audio
 				meta.Out.GroupWhisperType = setMeta.GroupWhisperType;
 				meta.Out.TargetId = setMeta.TargetId;
 				break;
-			default: throw Tools.UnhandledDefault(SendMode);
+			case var _unhandled: throw Tools.UnhandledDefault(_unhandled);
 			}
 			OutStream?.Write(data, meta);
 		}

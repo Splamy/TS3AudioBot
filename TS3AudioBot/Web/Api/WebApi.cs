@@ -284,8 +284,8 @@ namespace TS3AudioBot.Web.Api
 				response.StatusCode = (int)HttpStatusCode.NotFound;
 				break;
 
-			default:
-				throw Tools.UnhandledDefault(ex.Reason);
+			case var _unhandled:
+				throw Tools.UnhandledDefault(_unhandled);
 			}
 
 			return jsonError;
@@ -305,8 +305,8 @@ namespace TS3AudioBot.Web.Api
 				astVal.Value = Uri.UnescapeDataString(astVal.Value);
 				break;
 			case AstType.Error: break;
-			default:
-				throw Tools.UnhandledDefault(node.Type);
+			case var _unhandled:
+				throw Tools.UnhandledDefault(_unhandled);
 			}
 		}
 

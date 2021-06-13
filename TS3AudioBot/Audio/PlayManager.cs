@@ -322,7 +322,7 @@ namespace TS3AudioBot.Audio
 			var meta = new PlayInfo();
 			foreach (var attr in attrs)
 			{
-				if (attr.StartsWith("@"))
+				if (attr.StartsWith("@", StringComparison.Ordinal))
 				{
 					meta.StartOffset = TextUtil.ParseTime(attr[1..]);
 				}

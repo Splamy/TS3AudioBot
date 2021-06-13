@@ -219,7 +219,7 @@ namespace TS3AudioBot
 
 		public Task ChangeBadges(string badgesString)
 		{
-			if (!badgesString.StartsWith("overwolf=") && !badgesString.StartsWith("badges="))
+			if (!badgesString.StartsWith("overwolf=", StringComparison.Ordinal) && !badgesString.StartsWith("badges=", StringComparison.Ordinal))
 				badgesString = "overwolf=0:badges=" + badgesString;
 			return ts3FullClient.ChangeBadges(badgesString).UnwrapThrow();
 		}
@@ -472,6 +472,7 @@ namespace TS3AudioBot
 		private void ClearAllCaches()
 		{
 			InvalidateClientBuffer();
+			clientbuffer.Clear();
 			dbIdCache.Clear();
 			clientDbNames.Clear();
 			alone = true;
@@ -583,9 +584,8 @@ namespace TS3AudioBot
 			case ReconnectType.Ban: delay = config.Reconnect.OnBan.GetValueAsTime(reconnectCounter); break;
 			case ReconnectType.ServerShutdown: delay = config.Reconnect.OnShutdown.GetValueAsTime(reconnectCounter); break;
 			case ReconnectType.Error: delay = config.Reconnect.OnError.GetValueAsTime(reconnectCounter); break;
-			case ReconnectType.None:
-				return false;
-			default: throw Tools.UnhandledDefault(type);
+			case ReconnectType.None: return false;
+			case var _unhandled: throw Tools.UnhandledDefault(_unhandled);
 			}
 			reconnectCounter++;
 

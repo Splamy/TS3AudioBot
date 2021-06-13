@@ -793,7 +793,7 @@ namespace TS3AudioBot.Localization {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Do you really want to delete the playlist &quot;{0}&quot;.
+        ///   Looks up a localized string similar to Do you really want to delete the playlist &quot;{0}&quot;?.
         /// </summary>
         internal static string cmd_list_delete_confirm {
             get {
@@ -1914,15 +1914,6 @@ namespace TS3AudioBot.Localization {
         internal static string error_history_could_not_find_entry {
             get {
                 return ResourceManager.GetString("error_history_could_not_find_entry", resourceCulture);
-            }
-        }
-        
-        /// <summary>
-        ///   Looks up a localized string similar to Invalid token-valid duration..
-        /// </summary>
-        internal static string error_invalid_token_duration {
-            get {
-                return ResourceManager.GetString("error_invalid_token_duration", resourceCulture);
             }
         }
         

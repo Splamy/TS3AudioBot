@@ -113,8 +113,8 @@ namespace TSLib.Commands
 					optionList ??= new List<CommandOption>();
 					optionList.Add((CommandOption)param);
 					break;
-				default:
-					throw Tools.UnhandledDefault(param.Type);
+				case var _unhandled:
+					throw Tools.UnhandledDefault(_unhandled);
 				}
 			}
 

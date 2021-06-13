@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <TargetFrameworks>net5.0;netstandard2.0;netstandard2.1</TargetFrameworks>
@@ -108,7 +108,11 @@
   </ItemGroup>
   
   <ItemGroup>
-    <!--<ProjectReference Include="../TSLibAutogen/TSLibAutogen.csproj" SetTargetFramework="TargetFramework=netstandard2.0" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />-->
+    <!--<ProjectReference
+      Include="../TSLibAutogen/TSLibAutogen.csproj"
+      SetTargetFramework="TargetFramework=netstandard2.0"
+      OutputItemType="Analyzer"
+      ReferenceOutputAssembly="false" />-->
 
     <Compile Update="Commands\TsCommand.gen.cs">
       <DesignTime>True</DesignTime>

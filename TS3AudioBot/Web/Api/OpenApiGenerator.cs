@@ -125,8 +125,8 @@ namespace TS3AudioBot.Web.Api
 						addparam.Add(new JProperty("schema", paramschema));
 					parameters.Add(addparam);
 					break;
-				default:
-					throw Tools.UnhandledDefault(param.Kind);
+				case var _unhandled:
+					throw Tools.UnhandledDefault(_unhandled);
 				}
 			}
 

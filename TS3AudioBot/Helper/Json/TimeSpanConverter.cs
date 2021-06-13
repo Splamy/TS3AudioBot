@@ -37,8 +37,8 @@ namespace TS3AudioBot.Helper.Json
 			case TimeSpanFormatting.Xml:
 				writer.WriteStringValue(XmlConvert.ToString(value));
 				break;
-			default:
-				throw Tools.UnhandledDefault(format);
+			case var _unhandled:
+				throw Tools.UnhandledDefault(_unhandled);
 			}
 		}
 

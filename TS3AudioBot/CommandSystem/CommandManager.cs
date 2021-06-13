@@ -379,8 +379,8 @@ namespace TS3AudioBot.CommandSystem
 			case AstType.Value:
 				var astNode = (AstValue)node;
 				return new ResultCommand(astNode.Value);
-			default:
-				throw Tools.UnhandledDefault(node.Type);
+			case var _unhandled:
+				throw Tools.UnhandledDefault(_unhandled);
 			}
 		}
 

@@ -512,7 +512,8 @@ namespace TSLib.Full
 			case TargetSendMode.WhisperGroup:
 				SendAudioGroupWhisper(data, meta.Codec.GetValueOrDefault(), meta.Out.GroupWhisperType, meta.Out.GroupWhisperTarget, meta.Out.TargetId);
 				break;
-			default: throw Tools.UnhandledDefault(meta.Out.SendMode);
+			case var _unhandled:
+				throw Tools.UnhandledDefault(_unhandled);
 			}
 		}
 		#endregion

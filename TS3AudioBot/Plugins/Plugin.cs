@@ -82,8 +82,8 @@ namespace TS3AudioBot.Plugins
 					return $"{name} (Commands)";
 				case PluginType.None:
 					return $"{File.Name} (Unknown)";
-				default:
-					throw Tools.UnhandledDefault(Type);
+				case var _unhandled:
+					throw Tools.UnhandledDefault(_unhandled);
 				}
 			}
 		}
@@ -92,17 +92,16 @@ namespace TS3AudioBot.Plugins
 		{
 			if (Type != PluginType.BotPlugin)
 				return status;
-			if (status == PluginStatus.Disabled
-				|| status == PluginStatus.Error
-				|| status == PluginStatus.Off)
-				return status;
-			if (bot is null)
-				return PluginStatus.NotAvailable;
-			if (status == PluginStatus.Ready)
-				return botPluginList.ContainsKey(bot) ? PluginStatus.Active : PluginStatus.Ready;
-			if (status == PluginStatus.Active)
-				throw new InvalidOperationException("BotPlugin must not be active");
-			throw Tools.UnhandledDefault(status);
+
+			return (status, bot) switch
+			{
+				(PluginStatus.Disabled or PluginStatus.Error or PluginStatus.Off, _) => status,
+				(_, null) => PluginStatus.NotAvailable,
+				(PluginStatus.Ready, _) => botPluginList.ContainsKey(bot) ? PluginStatus.Active : PluginStatus.Ready,
+				(PluginStatus.Active, _) => throw new InvalidOperationException("BotPlugin must not be 'Active'"),
+				(PluginStatus.NotAvailable, _) => throw new InvalidOperationException("BotPlugin must not be 'NotAvailable'"),
+				var _unhandled => throw Tools.UnhandledDefault(_unhandled),
+			};
 		}
 
 		public PluginResponse Load()
@@ -326,8 +325,8 @@ namespace TS3AudioBot.Plugins
 			case PluginStatus.NotAvailable:
 				return PluginResponse.MissingContext;
 
-			default:
-				throw Tools.UnhandledDefault(Type);
+			case var _unhandled:
+				throw Tools.UnhandledDefault(_unhandled);
 			}
 		}
 
@@ -383,8 +382,8 @@ namespace TS3AudioBot.Plugins
 					corePlugin = CreatePluginObjects(coreInjector, pluginType, true);
 					break;
 
-				default:
-					throw Tools.UnhandledDefault(Type);
+				case var _unhandled:
+					throw Tools.UnhandledDefault(_unhandled);
 				}
 			}
 			catch (Exception ex)
@@ -478,8 +477,8 @@ namespace TS3AudioBot.Plugins
 					DestroyPluginObjects(corePlugin);
 				break;
 
-			default:
-				throw Tools.UnhandledDefault(Type);
+			case var _unhandled:
+				throw Tools.UnhandledDefault(_unhandled);
 			}
 
 			status = PluginStatus.Ready;

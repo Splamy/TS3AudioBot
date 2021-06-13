@@ -86,8 +86,8 @@ namespace TS3AudioBot.Audio
 			case TargetSendMode.WhisperGroup:
 				client.SendAudioGroupWhisper(data, codec, GroupWhisperType, GroupWhisperTarget, GroupWhisperTargetId);
 				break;
-			default:
-				throw Tools.UnhandledDefault(SendMode);
+			case var _unhandled:
+				throw Tools.UnhandledDefault(_unhandled);
 			}
 		}
 

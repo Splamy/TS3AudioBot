@@ -180,8 +180,8 @@ namespace TS3AudioBot.CommandSystem.Commands
 					parameters[p] = args;
 					break;
 
-				default:
-					throw Tools.UnhandledDefault(arg.Kind);
+				case var _unhandled:
+					throw Tools.UnhandledDefault(_unhandled);
 				}
 			}
 

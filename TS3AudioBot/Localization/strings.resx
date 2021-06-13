@@ -591,9 +591,6 @@ with the id {1}?</value>
   <data name="error_could_not_create_bot" xml:space="preserve">
     <value>Could not create new instance.</value>
   </data>
-  <data name="error_invalid_token_duration" xml:space="preserve">
-    <value>Invalid token-valid duration.</value>
-  </data>
   <data name="error_invoker_not_visible" xml:space="preserve">
     <value>Invoker casted Ghost Walk.</value>
   </data>

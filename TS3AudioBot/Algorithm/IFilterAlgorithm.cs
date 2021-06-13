@@ -7,6 +7,7 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -99,7 +100,7 @@ namespace TS3AudioBot.Algorithm
 
 		IEnumerable<KeyValuePair<string, T>> IFilter.Filter<T>(IEnumerable<KeyValuePair<string, T>> list, string filter)
 		{
-			var result = list.Where(x => x.Key.StartsWith(filter));
+			var result = list.Where(x => x.Key.StartsWith(filter, StringComparison.Ordinal));
 			using var enu = result.GetEnumerator();
 			if (!enu.MoveNext())
 				yield break;

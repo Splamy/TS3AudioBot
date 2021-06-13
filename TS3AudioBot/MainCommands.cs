@@ -105,25 +105,15 @@ namespace TS3AudioBot
 			=> commandManager.GetAlias(commandName)?.AliasString;
 
 		[Command("api token")]
-		[Usage("[<duration>]", "Optionally specifies a duration this key is valid in hours.")]
-		public static string CommandApiToken(TokenManager tokenManager, ClientCall invoker, double? validHours = null)
+		[Usage("[<duration>]", "Optionally specifies a duration this key is valid. Uses common TSAB duration notation like '1h5m'")]
+		public static string CommandApiToken(TokenManager tokenManager, ClientCall invoker, TimeSpan? validTime = null)
 		{
 			if (invoker.Visibiliy != null && invoker.Visibiliy != TextMessageTargetMode.Private)
 				throw new CommandException(strings.error_use_private, CommandExceptionReason.CommandError);
 			if (invoker.IsAnonymous || invoker.ClientUid == Uid.Null)
 				throw new MissingContextCommandException(strings.error_no_uid_found, typeof(ClientCall));
 
-			TimeSpan? validSpan = null;
-			try
-			{
-				if (validHours != null)
-					validSpan = TimeSpan.FromHours(validHours.Value);
-			}
-			catch (OverflowException oex)
-			{
-				throw new CommandException(strings.error_invalid_token_duration, oex, CommandExceptionReason.CommandError);
-			}
-			return tokenManager.GenerateToken(invoker.ClientUid.Value!, validSpan);
+			return tokenManager.GenerateToken(invoker.ClientUid.Value!, validTime);
 		}
 
 		[Command("bot avatar set")]
@@ -780,7 +770,7 @@ namespace TS3AudioBot
 			{
 				index = playlistManager.Index;
 			}
-			else if (expression.StartsWith("@"))
+			else if (expression.StartsWith("@", StringComparison.Ordinal))
 			{
 				var subOffset = expression.AsSpan(1).Trim();
 				if (subOffset.IsEmpty)
@@ -1261,7 +1251,7 @@ namespace TS3AudioBot
 				LoopMode.Off => strings.cmd_repeat_info_off,
 				LoopMode.One => strings.cmd_repeat_info_one,
 				LoopMode.All => strings.cmd_repeat_info_all,
-				_ => throw Tools.UnhandledDefault(playlistManager.Loop),
+				var _unhandled => throw Tools.UnhandledDefault(_unhandled),
 			});
 		[Command("repeat off")]
 		public static void CommandRepeatOff(PlaylistManager playlistManager) => playlistManager.Loop = LoopMode.Off;
@@ -1272,7 +1262,14 @@ namespace TS3AudioBot
 
 		[Command("rights can")]
 		public static async Task<JsonArray<string>> CommandRightsCan(ExecutionInformation info, RightsManager rightsManager, params string[] rights)
-			=> new JsonArray<string>(await rightsManager.GetRightsSubset(info, rights), r => r.Count > 0 ? string.Join(", ", r) : strings.info_empty);
+		{
+			try
+			{
+				var perm = await rightsManager.GetRightsSubset(info, rights);
+				return new JsonArray<string>(perm, r => r.Count > 0 ? string.Join(", ", r) : strings.info_empty);
+			}
+			catch (ArgumentException ex) { throw Error.Exception(ex).LocalStr(strings.error_config_value_parse_error); }
+		}
 
 		[Command("rights reload")]
 		public static JsonEmpty CommandRightsReload(RightsManager rightsManager)
@@ -1815,8 +1812,8 @@ namespace TS3AudioBot
 					if (x.GroupWhisper is null) throw new ArgumentNullException();
 					strb.AppendFormat(strings.cmd_whisper_list_target_whispergroup, x.GroupWhisper.Type, x.GroupWhisper.Target, x.GroupWhisper.TargetId);
 					break;
-				default:
-					throw Tools.UnhandledDefault(x.SendMode);
+				case var _unhandled:
+					throw Tools.UnhandledDefault(_unhandled);
 				}
 				return strb.ToString();
 			});
@@ -1878,8 +1875,8 @@ namespace TS3AudioBot
 				case TextMessageTargetMode.Server:
 					await ts3Client.SendServerMessage(msgPart);
 					break;
-				default:
-					throw Tools.UnhandledDefault(invoker.Visibiliy.Value);
+				case var _unhandled:
+					throw Tools.UnhandledDefault(_unhandled);
 				}
 			}
 		}

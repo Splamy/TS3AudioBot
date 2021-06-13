@@ -71,8 +71,7 @@ namespace TS3AudioBot.Plugins
 			{
 				if (plugins.TryGetValue(file.Name, out var plugin))
 				{
-					var status = plugin.CheckStatus(bot);
-					switch (status)
+					switch (plugin.CheckStatus(bot))
 					{
 					case PluginStatus.Disabled:
 					case PluginStatus.Active:
@@ -83,8 +82,8 @@ namespace TS3AudioBot.Plugins
 					case PluginStatus.Error:
 						plugin.Load();
 						break;
-					default:
-						throw Tools.UnhandledDefault(status);
+					case var _unhandled:
+						throw Tools.UnhandledDefault(_unhandled);
 					}
 				}
 				else
@@ -214,7 +213,7 @@ namespace TS3AudioBot.Plugins
 				case PluginStatus.Disabled: strb.Append("UNL"); break;
 				case PluginStatus.Error: strb.Append("ERR"); break;
 				case PluginStatus.NotAvailable: strb.Append("N/A"); break;
-				default: throw Tools.UnhandledDefault(plugin.Status);
+				case var _unhandled: throw Tools.UnhandledDefault(_unhandled);
 				}
 				strb.Append('|').AppendLine(plugin.Name ?? "<not loaded>");
 			}

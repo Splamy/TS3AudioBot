@@ -74,8 +74,8 @@ namespace TSLib.Audio
 					}
 					break;
 
-				default:
-					throw Tools.UnhandledDefault(BufferMode);
+				case var _unhandled:
+					throw Tools.UnhandledDefault(_unhandled);
 				}
 			}
 		}

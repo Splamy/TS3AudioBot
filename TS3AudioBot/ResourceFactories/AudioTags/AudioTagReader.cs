@@ -8,6 +8,7 @@
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
 using System;
+using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
@@ -240,15 +241,9 @@ namespace TS3AudioBot.ResourceFactories.AudioTags
 			private static string DecodeString(byte type, byte[] textBuffer, int offset, int length)
 				=> GetEncoding(type).GetString(textBuffer, offset, length);
 
-			private static int FrameIdV2(string id)
-			{
-				return BitConverterBigEndian.ToInt24(Encoding.ASCII.GetBytes(id));
-			}
+			private static int FrameIdV2(string id) => BinaryPrimitivesExt.ReadInt24BigEndian(Encoding.ASCII.GetBytes(id));
 
-			private static uint FrameIdV3(string id)
-			{
-				return BitConverterBigEndian.ToUInt32(Encoding.ASCII.GetBytes(id));
-			}
+			private static uint FrameIdV3(string id) => BinaryPrimitives.ReadUInt32BigEndian(Encoding.ASCII.GetBytes(id));
 		}
 
 		// ReSharper enable InconsistentNaming

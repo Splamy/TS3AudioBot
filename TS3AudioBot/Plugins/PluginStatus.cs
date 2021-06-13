@@ -21,7 +21,7 @@ namespace TS3AudioBot.Plugins
 		Disabled,
 		/// <summary>The plugin failed to load.</summary>
 		Error,
-		/// <summary>The plugin needs to be checked/loaded withing a Bot context.</summary>
+		/// <summary>The plugin needs to be checked/loaded within a Bot context.</summary>
 		NotAvailable,
 	}
 }

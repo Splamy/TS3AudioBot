@@ -307,7 +307,8 @@ namespace TSLib.Full
 				LogRaw.Trace("[O] {0}", packet);
 				break;
 
-			default: throw Tools.UnhandledDefault(packet.PacketType);
+			case var _unhandled:
+				throw Tools.UnhandledDefault(_unhandled);
 			}
 
 			tsCrypt.Encrypt(ref packet);
@@ -430,7 +431,8 @@ namespace TSLib.Full
 				if (!LogRaw.IsDebugEnabled) LogRaw.Trace("[I] {0}", packet);
 				passPacketToEvent = ReceiveInitAck(ref packet);
 				break;
-			default: throw Tools.UnhandledDefault(packet.PacketType);
+			case var _unhandled:
+				throw Tools.UnhandledDefault(_unhandled);
 			}
 
 			if (passPacketToEvent)

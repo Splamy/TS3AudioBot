@@ -59,7 +59,6 @@ namespace TSLib.Audio.Opus
 		}
 
 		// ReSharper disable EnumUnderlyingTypeIsInt, InconsistentNaming
-#pragma warning disable IDE1006
 		[DllImport("libopus", CallingConvention = CallingConvention.Cdecl)]
 		internal static extern IntPtr opus_encoder_create(int sampleRate, int channels, Application application, out int error);
 
@@ -86,7 +85,6 @@ namespace TSLib.Audio.Opus
 
 		[DllImport("libopus", CallingConvention = CallingConvention.Cdecl)]
 		internal static extern IntPtr opus_get_version_string();
-#pragma warning restore IDE1006
 	}
 
 	public enum Ctl : int

@@ -68,8 +68,7 @@ namespace TS3AudioBot.ResourceFactories.Youtube
 
 		public async Task<PlayResource> GetResourceById(ResolveContext? _, AudioResource resource, CancellationToken cancellationToken)
 		{
-			var priority = conf.ResolverPriority.Value;
-			switch (priority)
+			switch (conf.ResolverPriority.Value)
 			{
 			case LoaderPriority.Internal:
 				try { return await ResolveResourceInternal(resource, cancellationToken); }
@@ -78,8 +77,8 @@ namespace TS3AudioBot.ResourceFactories.Youtube
 			case LoaderPriority.YoutubeDl:
 				return await YoutubeDlWrapped(resource, cancellationToken);
 
-			default:
-				throw Tools.UnhandledDefault(priority);
+			case var _unhandled:
+				throw Tools.UnhandledDefault(_unhandled);
 			}
 		}
 

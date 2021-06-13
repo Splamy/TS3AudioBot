@@ -59,8 +59,8 @@ namespace TSLib
 					else
 						return other;
 
-				default:
-					throw Tools.UnhandledDefault(perm.PermissionType);
+				case var _unhandled:
+					throw Tools.UnhandledDefault(_unhandled);
 				}
 
 			case PermissionType.GlobalClient:
@@ -70,7 +70,7 @@ namespace TSLib
 					PermissionType.GlobalClient => perm.PermissionValue > other.PermissionValue ? perm : other,
 					PermissionType.Channel or PermissionType.ChannelGroup => perm.PermissionSkip ? perm : other,
 					PermissionType.ChannelClient => other,
-					_ => throw Tools.UnhandledDefault(perm.PermissionType),
+					var _unhandled => throw Tools.UnhandledDefault(_unhandled),
 				};
 			case PermissionType.Channel:
 				return other.PermissionType switch
@@ -78,7 +78,7 @@ namespace TSLib
 					PermissionType.ServerGroup or PermissionType.GlobalClient => Combine(other, perm),
 					PermissionType.Channel => perm.PermissionValue > other.PermissionValue ? perm : other,
 					PermissionType.ChannelGroup or PermissionType.ChannelClient => other,
-					_ => throw Tools.UnhandledDefault(perm.PermissionType),
+					var _unhandled => throw Tools.UnhandledDefault(_unhandled),
 				};
 			case PermissionType.ChannelGroup:
 				return other.PermissionType switch
@@ -86,17 +86,17 @@ namespace TSLib
 					PermissionType.ServerGroup or PermissionType.GlobalClient or PermissionType.Channel => perm,
 					PermissionType.ChannelGroup => perm.PermissionValue > other.PermissionValue ? perm : other,
 					PermissionType.ChannelClient => other,
-					_ => throw Tools.UnhandledDefault(perm.PermissionType),
+					var _unhandled => throw Tools.UnhandledDefault(_unhandled),
 				};
 			case PermissionType.ChannelClient:
 				return other.PermissionType switch
 				{
 					PermissionType.ServerGroup or PermissionType.GlobalClient or PermissionType.Channel or PermissionType.ChannelGroup => perm,
 					PermissionType.ChannelClient => perm.PermissionValue > other.PermissionValue ? perm : other,
-					_ => throw Tools.UnhandledDefault(perm.PermissionType),
+					var _unhandled => throw Tools.UnhandledDefault(_unhandled),
 				};
-			default:
-				throw Tools.UnhandledDefault(perm.PermissionType);
+			case var _unhandled:
+				throw Tools.UnhandledDefault(_unhandled);
 			}
 		}
 	}

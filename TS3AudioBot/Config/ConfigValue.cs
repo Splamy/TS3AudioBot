@@ -86,7 +86,7 @@ namespace TS3AudioBot.Config
 		public override void ToToml(bool writeDefaults, bool writeDocumentation)
 		{
 			// Keys with underscore are read-only
-			if (Key.StartsWith("_"))
+			if (Key.StartsWith("_", StringComparison.Ordinal))
 				return;
 
 			if (Parent is null)

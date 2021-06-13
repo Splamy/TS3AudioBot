@@ -76,7 +76,7 @@ namespace TSLib.Full
 				PacketType.Voice or PacketType.VoiceWhisper => PacketKind.Speech,
 				PacketType.Command or PacketType.CommandLow or PacketType.Ack or PacketType.AckLow or PacketType.Init1 => PacketKind.Control,
 				PacketType.Ping or PacketType.Pong => PacketKind.Keepalive,
-				_ => throw Tools.UnhandledDefault(type),
+				var _unhandled => throw Tools.UnhandledDefault(_unhandled),
 			};
 		}
 
@@ -93,7 +93,7 @@ namespace TSLib.Full
 					case PacketKind.Speech: data.Speech += pack.Size; break;
 					case PacketKind.Keepalive: data.Keepalive += pack.Size; break;
 					case PacketKind.Control: data.Control += pack.Size; break;
-					default: throw Tools.UnhandledDefault(pack.Kind);
+					case var _unhandled: throw Tools.UnhandledDefault(_unhandled);
 					}
 				}
 				else { break; }
