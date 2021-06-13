@@ -616,7 +616,7 @@ namespace TSLib.Messages
 			switch(name)
 			{
 
-			case "channel_codec": { if(Utf8Parser.TryParse(value, out u8 oval, out _)) Codec = (Codec)oval; } break;
+			case "channel_codec": { if(Utf8Parser.TryParse(value, out u8 oval, out _) && TsEnums.IsDefinedCodec(oval)) Codec = (Codec)oval; } break;
 			case "channel_codec_is_unencrypted": IsUnencrypted = value.Length > 0 && value[0] != '0'; break;
 			case "channel_codec_quality": { if(Utf8Parser.TryParse(value, out u8 oval, out _)) CodecQuality = (u8)oval; } break;
 			case "channel_delete_delay": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) DeleteDelay = TimeSpan.FromSeconds(oval); } break;
@@ -713,7 +713,7 @@ namespace TSLib.Messages
 			switch(name)
 			{
 
-			case "channel_codec": { if(Utf8Parser.TryParse(value, out u8 oval, out _)) Codec = (Codec)oval; } break;
+			case "channel_codec": { if(Utf8Parser.TryParse(value, out u8 oval, out _) && TsEnums.IsDefinedCodec(oval)) Codec = (Codec)oval; } break;
 			case "channel_codec_is_unencrypted": IsUnencrypted = value.Length > 0 && value[0] != '0'; break;
 			case "channel_codec_latency_factor": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) CodecLatencyFactor = (i32)oval; } break;
 			case "channel_codec_quality": { if(Utf8Parser.TryParse(value, out u8 oval, out _)) CodecQuality = (u8)oval; } break;
@@ -1022,7 +1022,7 @@ namespace TSLib.Messages
 			switch(name)
 			{
 
-			case "channel_codec": { if(Utf8Parser.TryParse(value, out u8 oval, out _)) Codec = (Codec)oval; } break;
+			case "channel_codec": { if(Utf8Parser.TryParse(value, out u8 oval, out _) && TsEnums.IsDefinedCodec(oval)) Codec = (Codec)oval; } break;
 			case "channel_codec_is_unencrypted": IsUnencrypted = value.Length > 0 && value[0] != '0'; break;
 			case "channel_codec_latency_factor": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) CodecLatencyFactor = (i32)oval; } break;
 			case "channel_codec_quality": { if(Utf8Parser.TryParse(value, out u8 oval, out _)) CodecQuality = (u8)oval; } break;
@@ -1127,7 +1127,7 @@ namespace TSLib.Messages
 			switch(name)
 			{
 
-			case "channel_codec": { if(Utf8Parser.TryParse(value, out u8 oval, out _)) Codec = (Codec)oval; } break;
+			case "channel_codec": { if(Utf8Parser.TryParse(value, out u8 oval, out _) && TsEnums.IsDefinedCodec(oval)) Codec = (Codec)oval; } break;
 			case "channel_codec_is_unencrypted": IsUnencrypted = value.Length > 0 && value[0] != '0'; break;
 			case "channel_codec_latency_factor": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) CodecLatencyFactor = (i32)oval; } break;
 			case "channel_codec_quality": { if(Utf8Parser.TryParse(value, out u8 oval, out _)) CodecQuality = (u8)oval; } break;
@@ -1153,7 +1153,7 @@ namespace TSLib.Messages
 			case "invokerid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) InvokerId = (ClientId)oval; } break;
 			case "invokername": InvokerName = (str)TsString.Unescape(value); break;
 			case "invokeruid": InvokerUid = (Uid)TsString.Unescape(value); break;
-			case "reasonid": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) Reason = (Reason)oval; } break;
+			case "reasonid": { if(Utf8Parser.TryParse(value, out i32 oval, out _) && TsEnums.IsDefinedReason(oval)) Reason = (Reason)oval; } break;
 			case "return_code": ReturnCode = (str)TsString.Unescape(value); break;
 			}
 
@@ -1289,7 +1289,7 @@ namespace TSLib.Messages
 			{
 
 			case "name": Name = (str)TsString.Unescape(value); break;
-			case "type": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) GroupType = (GroupType)oval; } break;
+			case "type": { if(Utf8Parser.TryParse(value, out i32 oval, out _) && TsEnums.IsDefinedGroupType(oval)) GroupType = (GroupType)oval; } break;
 			
 			}
 
@@ -1457,7 +1457,7 @@ namespace TSLib.Messages
 			case "name": Name = (str)TsString.Unescape(value); break;
 			case "scgid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) SourceChannelGroupId = (ChannelGroupId)oval; } break;
 			case "tcgid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) TargetChannelGroupId = (ChannelGroupId)oval; } break;
-			case "type": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) GroupType = (GroupType)oval; } break;
+			case "type": { if(Utf8Parser.TryParse(value, out i32 oval, out _) && TsEnums.IsDefinedGroupType(oval)) GroupType = (GroupType)oval; } break;
 			
 			}
 
@@ -1589,10 +1589,10 @@ namespace TSLib.Messages
 			case "n_member_removep": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) NeededMemberRemovePower = (i32)oval; } break;
 			case "n_modifyp": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) NeededModifyPower = (i32)oval; } break;
 			case "name": Name = (str)TsString.Unescape(value); break;
-			case "namemode": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) NamingMode = (GroupNamingMode)oval; } break;
+			case "namemode": { if(Utf8Parser.TryParse(value, out i32 oval, out _) && TsEnums.IsDefinedGroupNamingMode(oval)) NamingMode = (GroupNamingMode)oval; } break;
 			case "savedb": IsPermanent = value.Length > 0 && value[0] != '0'; break;
 			case "sortid": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) SortId = (i32)oval; } break;
-			case "type": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) GroupType = (GroupType)oval; } break;
+			case "type": { if(Utf8Parser.TryParse(value, out i32 oval, out _) && TsEnums.IsDefinedGroupType(oval)) GroupType = (GroupType)oval; } break;
 			case "return_code": ReturnCode = (str)TsString.Unescape(value); break;
 			}
 
@@ -1842,7 +1842,7 @@ namespace TSLib.Messages
 
 			case "channel_banner_gfx_url": BannerGfxUrl = (str)TsString.Unescape(value); break;
 			case "channel_banner_mode": BannerMode = (str)TsString.Unescape(value); break;
-			case "channel_codec": { if(Utf8Parser.TryParse(value, out u8 oval, out _)) Codec = (Codec)oval; } break;
+			case "channel_codec": { if(Utf8Parser.TryParse(value, out u8 oval, out _) && TsEnums.IsDefinedCodec(oval)) Codec = (Codec)oval; } break;
 			case "channel_codec_is_unencrypted": IsUnencrypted = value.Length > 0 && value[0] != '0'; break;
 			case "channel_codec_latency_factor": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) CodecLatencyFactor = (i32)oval; } break;
 			case "channel_codec_quality": { if(Utf8Parser.TryParse(value, out u8 oval, out _)) CodecQuality = (u8)oval; } break;
@@ -1961,7 +1961,7 @@ namespace TSLib.Messages
 
 			case "channel_banner_gfx_url": BannerGfxUrl = (str)TsString.Unescape(value); break;
 			case "channel_banner_mode": BannerMode = (str)TsString.Unescape(value); break;
-			case "channel_codec": { if(Utf8Parser.TryParse(value, out u8 oval, out _)) Codec = (Codec)oval; } break;
+			case "channel_codec": { if(Utf8Parser.TryParse(value, out u8 oval, out _) && TsEnums.IsDefinedCodec(oval)) Codec = (Codec)oval; } break;
 			case "channel_codec_is_unencrypted": IsUnencrypted = value.Length > 0 && value[0] != '0'; break;
 			case "channel_codec_latency_factor": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) CodecLatencyFactor = (i32)oval; } break;
 			case "channel_codec_quality": { if(Utf8Parser.TryParse(value, out u8 oval, out _)) CodecQuality = (u8)oval; } break;
@@ -2098,7 +2098,7 @@ namespace TSLib.Messages
 			switch(name)
 			{
 
-			case "channel_codec": { if(Utf8Parser.TryParse(value, out u8 oval, out _)) Codec = (Codec)oval; } break;
+			case "channel_codec": { if(Utf8Parser.TryParse(value, out u8 oval, out _) && TsEnums.IsDefinedCodec(oval)) Codec = (Codec)oval; } break;
 			case "channel_codec_quality": { if(Utf8Parser.TryParse(value, out u8 oval, out _)) CodecQuality = (u8)oval; } break;
 			case "channel_flag_default": IsDefault = value.Length > 0 && value[0] != '0'; break;
 			case "channel_flag_password": HasPassword = value.Length > 0 && value[0] != '0'; break;
@@ -2222,7 +2222,7 @@ namespace TSLib.Messages
 			case "invokername": InvokerName = (str)TsString.Unescape(value); break;
 			case "invokeruid": InvokerUid = (Uid)TsString.Unescape(value); break;
 			case "order": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) Order = (ChannelId)oval; } break;
-			case "reasonid": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) Reason = (Reason)oval; } break;
+			case "reasonid": { if(Utf8Parser.TryParse(value, out i32 oval, out _) && TsEnums.IsDefinedReason(oval)) Reason = (Reason)oval; } break;
 			
 			}
 
@@ -2300,7 +2300,7 @@ namespace TSLib.Messages
 			{
 
 			case "cid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ChannelId = (ChannelId)oval; } break;
-			case "flags": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) Flags = (ChannelPermissionHint)oval; } break;
+			case "flags": { if(Utf8Parser.TryParse(value, out i32 oval, out _) && TsEnums.IsDefinedChannelPermissionHint(oval)) Flags = (ChannelPermissionHint)oval; } break;
 			
 			}
 
@@ -3274,7 +3274,7 @@ namespace TSLib.Messages
 			case "client_total_bytes_downloaded": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BytesDownloadedTotal = (u64)oval; } break;
 			case "client_total_bytes_uploaded": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BytesUploadedTotal = (u64)oval; } break;
 			case "client_totalconnections": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) ConnectionsTotal = (u32)oval; } break;
-			case "client_type": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) ClientType = (ClientType)oval; } break;
+			case "client_type": { if(Utf8Parser.TryParse(value, out i32 oval, out _) && TsEnums.IsDefinedClientType(oval)) ClientType = (ClientType)oval; } break;
 			case "client_unique_identifier": Uid = (Uid)TsString.Unescape(value); break;
 			case "return_code": ReturnCode = (str)TsString.Unescape(value); break;
 			}
@@ -3615,14 +3615,14 @@ namespace TSLib.Messages
 			case "client_talk_request": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) TalkPowerRequestTime = Tools.FromUnix(oval); } break;
 			case "client_talk_request_msg": TalkPowerRequestMessage = (str)TsString.Unescape(value); break;
 			case "client_totalconnections": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) ConnectionsTotal = (u32)oval; } break;
-			case "client_type": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) ClientType = (ClientType)oval; } break;
+			case "client_type": { if(Utf8Parser.TryParse(value, out i32 oval, out _) && TsEnums.IsDefinedClientType(oval)) ClientType = (ClientType)oval; } break;
 			case "client_unique_identifier": Uid = (Uid)TsString.Unescape(value); break;
 			case "client_unread_messages": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) UnreadMessages = (u32)oval; } break;
 			case "ctid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) TargetChannelId = (ChannelId)oval; } break;
 			case "invokerid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) InvokerId = (ClientId)oval; } break;
 			case "invokername": InvokerName = (str)TsString.Unescape(value); break;
 			case "invokeruid": InvokerUid = (Uid)TsString.Unescape(value); break;
-			case "reasonid": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) Reason = (Reason)oval; } break;
+			case "reasonid": { if(Utf8Parser.TryParse(value, out i32 oval, out _) && TsEnums.IsDefinedReason(oval)) Reason = (Reason)oval; } break;
 			
 			}
 
@@ -3914,7 +3914,7 @@ namespace TSLib.Messages
 			case "client_total_bytes_downloaded": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BytesDownloadedTotal = (u64)oval; } break;
 			case "client_total_bytes_uploaded": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) BytesUploadedTotal = (u64)oval; } break;
 			case "client_totalconnections": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) ConnectionsTotal = (u32)oval; } break;
-			case "client_type": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) ClientType = (ClientType)oval; } break;
+			case "client_type": { if(Utf8Parser.TryParse(value, out i32 oval, out _) && TsEnums.IsDefinedClientType(oval)) ClientType = (ClientType)oval; } break;
 			case "client_unique_identifier": Uid = (Uid)TsString.Unescape(value); break;
 			case "client_unread_messages": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) UnreadMessages = (u32)oval; } break;
 			case "client_version": Version = (str)TsString.Unescape(value); break;
@@ -4211,7 +4211,7 @@ namespace TSLib.Messages
 			{
 
 			case "clid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) ClientId = (ClientId)oval; } break;
-			case "reasonid": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) Reason = (Reason)oval; } break;
+			case "reasonid": { if(Utf8Parser.TryParse(value, out i32 oval, out _) && TsEnums.IsDefinedReason(oval)) Reason = (Reason)oval; } break;
 			case "reasonmsg": ReasonMessage = (str)TsString.Unescape(value); break;
 			
 			}
@@ -4264,7 +4264,7 @@ namespace TSLib.Messages
 			case "invokerid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) InvokerId = (ClientId)oval; } break;
 			case "invokername": InvokerName = (str)TsString.Unescape(value); break;
 			case "invokeruid": InvokerUid = (Uid)TsString.Unescape(value); break;
-			case "reasonid": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) Reason = (Reason)oval; } break;
+			case "reasonid": { if(Utf8Parser.TryParse(value, out i32 oval, out _) && TsEnums.IsDefinedReason(oval)) Reason = (Reason)oval; } break;
 			case "reasonmsg": ReasonMessage = (str)TsString.Unescape(value); break;
 			
 			}
@@ -4361,7 +4361,7 @@ namespace TSLib.Messages
 			case "client_platform": Platform = (str)TsString.Unescape(value); break;
 			case "client_servergroups": { if(value.Length == 0) ServerGroups = Array.Empty<ServerGroupId>(); else { var ss = new SpanSplitter<byte>(); ss.First(value, (byte)','); int cnt = 0; for (int i = 0; i < value.Length; i++) if (value[i] == ',') cnt++; ServerGroups = new ServerGroupId[cnt + 1]; for(int i = 0; i < cnt + 1; i++) { { if(Utf8Parser.TryParse(ss.Trim(value), out u64 oval, out _)) ServerGroups[i] = (ServerGroupId)oval; } if (i < cnt) value = ss.Next(value); } } } break;
 			case "client_talk_power": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) TalkPower = (i32)oval; } break;
-			case "client_type": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) ClientType = (ClientType)oval; } break;
+			case "client_type": { if(Utf8Parser.TryParse(value, out i32 oval, out _) && TsEnums.IsDefinedClientType(oval)) ClientType = (ClientType)oval; } break;
 			case "client_unique_identifier": Uid = (Uid)TsString.Unescape(value); break;
 			case "client_version": Version = (str)TsString.Unescape(value); break;
 			case "connection_client_ip": Ip = (str)TsString.Unescape(value); break;
@@ -4498,7 +4498,7 @@ namespace TSLib.Messages
 			case "invokerid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) InvokerId = (ClientId)oval; } break;
 			case "invokername": InvokerName = (str)TsString.Unescape(value); break;
 			case "invokeruid": InvokerUid = (Uid)TsString.Unescape(value); break;
-			case "reasonid": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) Reason = (Reason)oval; } break;
+			case "reasonid": { if(Utf8Parser.TryParse(value, out i32 oval, out _) && TsEnums.IsDefinedReason(oval)) Reason = (Reason)oval; } break;
 			case "reasonmsg": ReasonMessage = (str)TsString.Unescape(value); break;
 			
 			}
@@ -4733,7 +4733,7 @@ namespace TSLib.Messages
 			{
 
 			case "clid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) ClientId = (ClientId)oval; } break;
-			case "flags": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) Flags = (ClientPermissionHint)oval; } break;
+			case "flags": { if(Utf8Parser.TryParse(value, out i32 oval, out _) && TsEnums.IsDefinedClientPermissionHint(oval)) Flags = (ClientPermissionHint)oval; } break;
 			
 			}
 
@@ -5417,7 +5417,7 @@ namespace TSLib.Messages
 
 			case "extra_msg": ExtraMessage = (str)TsString.Unescape(value); break;
 			case "failed_permid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) MissingPermissionId = ser.PermissionTransform.GetName(oval); } break;
-			case "id": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) Id = (Ts3ErrorCode)oval; } break;
+			case "id": { if(Utf8Parser.TryParse(value, out u32 oval, out _) && TsEnums.IsDefinedTs3ErrorCode(oval)) Id = (Ts3ErrorCode)oval; } break;
 			case "msg": Message = (str)TsString.Unescape(value); break;
 			case "return_code": ReturnCode = (str)TsString.Unescape(value); break;
 			
@@ -5889,7 +5889,7 @@ namespace TSLib.Messages
 			switch(name)
 			{
 
-			case "reasonid": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) Reason = (Reason)oval; } break;
+			case "reasonid": { if(Utf8Parser.TryParse(value, out i32 oval, out _) && TsEnums.IsDefinedReason(oval)) Reason = (Reason)oval; } break;
 			case "reasonmsg": ReasonMessage = (str)TsString.Unescape(value); break;
 			
 			}
@@ -6270,7 +6270,7 @@ namespace TSLib.Messages
 			case "clientftfid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) ClientFiletransferId = (u16)oval; } break;
 			case "msg": Message = (str)TsString.Unescape(value); break;
 			case "size": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) Size = (u64)oval; } break;
-			case "status": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) Status = (Ts3ErrorCode)oval; } break;
+			case "status": { if(Utf8Parser.TryParse(value, out u32 oval, out _) && TsEnums.IsDefinedTs3ErrorCode(oval)) Status = (Ts3ErrorCode)oval; } break;
 			
 			}
 
@@ -6648,12 +6648,12 @@ namespace TSLib.Messages
 			case "client_talk_power": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) TalkPower = (i32)oval; } break;
 			case "client_version": ClientVersion = (str)TsString.Unescape(value); break;
 			case "client_version_sign": ClientVersionSign = (str)TsString.Unescape(value); break;
-			case "lt": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) LicenseType = (LicenseType)oval; } break;
+			case "lt": { if(Utf8Parser.TryParse(value, out u16 oval, out _) && TsEnums.IsDefinedLicenseType(oval)) LicenseType = (LicenseType)oval; } break;
 			case "pv": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) ProtocolVersion = (u16)oval; } break;
 			case "virtualserver_ask_for_privilegekey": AskForPrivilegekey = value.Length > 0 && value[0] != '0'; break;
 			case "virtualserver_capability_extensions": CapabilityExtensions = (str)TsString.Unescape(value); break;
 			case "virtualserver_channel_temp_delete_delay_default": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) TempChannelDefaultDeleteDelay = TimeSpan.FromSeconds(oval); } break;
-			case "virtualserver_codec_encryption_mode": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) CodecEncryptionMode = (CodecEncryptionMode)oval; } break;
+			case "virtualserver_codec_encryption_mode": { if(Utf8Parser.TryParse(value, out i32 oval, out _) && TsEnums.IsDefinedCodecEncryptionMode(oval)) CodecEncryptionMode = (CodecEncryptionMode)oval; } break;
 			case "virtualserver_country_code": CountryCode = (str)TsString.Unescape(value); break;
 			case "virtualserver_created": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) Created = Tools.FromUnix(oval); } break;
 			case "virtualserver_default_channel_admin_group": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) DefaultChannelAdminGroup = (ChannelGroupId)oval; } break;
@@ -6662,13 +6662,13 @@ namespace TSLib.Messages
 			case "virtualserver_default_server_group": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) DefaultServerGroup = (ServerGroupId)oval; } break;
 			case "virtualserver_hostbanner_gfx_interval": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) HostbannerGfxInterval = TimeSpan.FromSeconds(oval); } break;
 			case "virtualserver_hostbanner_gfx_url": HostbannerGfxUrl = (str)TsString.Unescape(value); break;
-			case "virtualserver_hostbanner_mode": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) HostbannerMode = (HostBannerMode)oval; } break;
+			case "virtualserver_hostbanner_mode": { if(Utf8Parser.TryParse(value, out i32 oval, out _) && TsEnums.IsDefinedHostBannerMode(oval)) HostbannerMode = (HostBannerMode)oval; } break;
 			case "virtualserver_hostbanner_url": HostbannerUrl = (str)TsString.Unescape(value); break;
 			case "virtualserver_hostbutton_gfx_url": HostbuttonGfxUrl = (str)TsString.Unescape(value); break;
 			case "virtualserver_hostbutton_tooltip": HostbuttonTooltip = (str)TsString.Unescape(value); break;
 			case "virtualserver_hostbutton_url": HostbuttonUrl = (str)TsString.Unescape(value); break;
 			case "virtualserver_hostmessage": Hostmessage = (str)TsString.Unescape(value); break;
-			case "virtualserver_hostmessage_mode": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) HostmessageMode = (HostMessageMode)oval; } break;
+			case "virtualserver_hostmessage_mode": { if(Utf8Parser.TryParse(value, out i32 oval, out _) && TsEnums.IsDefinedHostMessageMode(oval)) HostmessageMode = (HostMessageMode)oval; } break;
 			case "virtualserver_icon_id": { if(!value.IsEmpty && value[0] == (u8)'-') { if(Utf8Parser.TryParse(value, out i32 oval, out _)) Icon = oval; } else { if(Utf8Parser.TryParse(value, out u64 oval, out _)) Icon = unchecked((i32)oval); } } break;
 			case "virtualserver_id": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) VirtualServerId = (u64)oval; } break;
 			case "virtualserver_ip": { if(value.Length == 0) Ips = Array.Empty<IpAddr>(); else { var ss = new SpanSplitter<byte>(); ss.First(value, (byte)','); int cnt = 0; for (int i = 0; i < value.Length; i++) if (value[i] == ',') cnt++; Ips = new IpAddr[cnt + 1]; for(int i = 0; i < cnt + 1; i++) { Ips[i] = (IpAddr)TsString.Unescape(ss.Trim(value)); if (i < cnt) value = ss.Next(value); } } } break;
@@ -6886,7 +6886,7 @@ namespace TSLib.Messages
 			switch(name)
 			{
 
-			case "loglevel": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) LogLevel = (LogLevel)oval; } break;
+			case "loglevel": { if(Utf8Parser.TryParse(value, out i32 oval, out _) && TsEnums.IsDefinedLogLevel(oval)) LogLevel = (LogLevel)oval; } break;
 			case "logmsg": LogMessage = (str)TsString.Unescape(value); break;
 			
 			}
@@ -7288,7 +7288,7 @@ namespace TSLib.Messages
 			case "id1": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) Id1 = (u64)oval; } break;
 			case "id2": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) Id2 = (u64)oval; } break;
 			case "p": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) PermissionId = ser.PermissionTransform.GetName(oval); } break;
-			case "t": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionType = (PermissionType)oval; } break;
+			case "t": { if(Utf8Parser.TryParse(value, out i32 oval, out _) && TsEnums.IsDefinedPermissionType(oval)) PermissionType = (PermissionType)oval; } break;
 			case "return_code": ReturnCode = (str)TsString.Unescape(value); break;
 			}
 
@@ -7475,7 +7475,7 @@ namespace TSLib.Messages
 			case "n": PermissionNegated = value.Length > 0 && value[0] != '0'; break;
 			case "p": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) PermissionId = ser.PermissionTransform.GetName(oval); } break;
 			case "s": PermissionSkip = value.Length > 0 && value[0] != '0'; break;
-			case "t": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionType = (PermissionType)oval; } break;
+			case "t": { if(Utf8Parser.TryParse(value, out i32 oval, out _) && TsEnums.IsDefinedPermissionType(oval)) PermissionType = (PermissionType)oval; } break;
 			case "v": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) PermissionValue = (i32)oval; } break;
 			case "return_code": ReturnCode = (str)TsString.Unescape(value); break;
 			}
@@ -7668,7 +7668,7 @@ namespace TSLib.Messages
 			case "data": Data = (str)TsString.Unescape(value); break;
 			case "name": Name = (str)TsString.Unescape(value); break;
 			case "target": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) TargetClientId = (ClientId)oval; } break;
-			case "targetmode": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) Target = (PluginTargetMode)oval; } break;
+			case "targetmode": { if(Utf8Parser.TryParse(value, out i32 oval, out _) && TsEnums.IsDefinedPluginTargetMode(oval)) Target = (PluginTargetMode)oval; } break;
 			
 			}
 
@@ -7714,7 +7714,7 @@ namespace TSLib.Messages
 			case "tokendescription": TokenDescription = (str)TsString.Unescape(value); break;
 			case "tokenid1": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) TokenId1 = (u64)oval; } break;
 			case "tokenid2": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) TokenId2 = (ChannelId)oval; } break;
-			case "tokentype": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) TokenType = (TokenType)oval; } break;
+			case "tokentype": { if(Utf8Parser.TryParse(value, out i32 oval, out _) && TsEnums.IsDefinedTokenType(oval)) TokenType = (TokenType)oval; } break;
 			
 			}
 
@@ -7911,7 +7911,7 @@ namespace TSLib.Messages
 
 			case "msg": Message = (str)TsString.Unescape(value); break;
 			case "target": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) TargetClientId = (ClientId)oval; } break;
-			case "targetmode": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) Target = (TextMessageTargetMode)oval; } break;
+			case "targetmode": { if(Utf8Parser.TryParse(value, out i32 oval, out _) && TsEnums.IsDefinedTextMessageTargetMode(oval)) Target = (TextMessageTargetMode)oval; } break;
 			
 			}
 
@@ -8159,7 +8159,7 @@ namespace TSLib.Messages
 			case "virtualserver_antiflood_points_needed_ip_block": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) AntifloodPointsToIpBlock = (u32)oval; } break;
 			case "virtualserver_antiflood_points_tick_reduce": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) AntifloodPointsTickReduce = (u32)oval; } break;
 			case "virtualserver_channel_temp_delete_delay_default": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) TempChannelDefaultDeleteDelay = TimeSpan.FromSeconds(oval); } break;
-			case "virtualserver_codec_encryption_mode": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) CodecEncryptionMode = (CodecEncryptionMode)oval; } break;
+			case "virtualserver_codec_encryption_mode": { if(Utf8Parser.TryParse(value, out i32 oval, out _) && TsEnums.IsDefinedCodecEncryptionMode(oval)) CodecEncryptionMode = (CodecEncryptionMode)oval; } break;
 			case "virtualserver_complain_autoban_count": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) ComplainAutobanCount = (u32)oval; } break;
 			case "virtualserver_complain_autoban_time": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) ComplainAutobanTime = TimeSpan.FromSeconds(oval); } break;
 			case "virtualserver_complain_remove_time": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) ComplainRemoveTime = TimeSpan.FromSeconds(oval); } break;
@@ -8169,13 +8169,13 @@ namespace TSLib.Messages
 			case "virtualserver_download_quota": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) DownloadQuota = (u64)oval; } break;
 			case "virtualserver_hostbanner_gfx_interval": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) HostbannerGfxInterval = TimeSpan.FromSeconds(oval); } break;
 			case "virtualserver_hostbanner_gfx_url": HostbannerGfxUrl = (str)TsString.Unescape(value); break;
-			case "virtualserver_hostbanner_mode": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) HostbannerMode = (HostBannerMode)oval; } break;
+			case "virtualserver_hostbanner_mode": { if(Utf8Parser.TryParse(value, out i32 oval, out _) && TsEnums.IsDefinedHostBannerMode(oval)) HostbannerMode = (HostBannerMode)oval; } break;
 			case "virtualserver_hostbanner_url": HostbannerUrl = (str)TsString.Unescape(value); break;
 			case "virtualserver_hostbutton_gfx_url": HostbuttonGfxUrl = (str)TsString.Unescape(value); break;
 			case "virtualserver_hostbutton_tooltip": HostbuttonTooltip = (str)TsString.Unescape(value); break;
 			case "virtualserver_hostbutton_url": HostbuttonUrl = (str)TsString.Unescape(value); break;
 			case "virtualserver_hostmessage": Hostmessage = (str)TsString.Unescape(value); break;
-			case "virtualserver_hostmessage_mode": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) HostmessageMode = (HostMessageMode)oval; } break;
+			case "virtualserver_hostmessage_mode": { if(Utf8Parser.TryParse(value, out i32 oval, out _) && TsEnums.IsDefinedHostMessageMode(oval)) HostmessageMode = (HostMessageMode)oval; } break;
 			case "virtualserver_icon_id": { if(!value.IsEmpty && value[0] == (u8)'-') { if(Utf8Parser.TryParse(value, out i32 oval, out _)) Icon = oval; } else { if(Utf8Parser.TryParse(value, out u64 oval, out _)) Icon = unchecked((i32)oval); } } break;
 			case "virtualserver_log_channel": LogChannel = value.Length > 0 && value[0] != '0'; break;
 			case "virtualserver_log_client": LogClient = value.Length > 0 && value[0] != '0'; break;
@@ -8295,14 +8295,14 @@ namespace TSLib.Messages
 			case "invokerid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) InvokerId = (ClientId)oval; } break;
 			case "invokername": InvokerName = (str)TsString.Unescape(value); break;
 			case "invokeruid": InvokerUid = (Uid)TsString.Unescape(value); break;
-			case "reasonid": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) Reason = (Reason)oval; } break;
+			case "reasonid": { if(Utf8Parser.TryParse(value, out i32 oval, out _) && TsEnums.IsDefinedReason(oval)) Reason = (Reason)oval; } break;
 			case "virtualserver_channel_temp_delete_delay_default": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) TempChannelDefaultDeleteDelay = TimeSpan.FromSeconds(oval); } break;
-			case "virtualserver_codec_encryption_mode": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) CodecEncryptionMode = (CodecEncryptionMode)oval; } break;
+			case "virtualserver_codec_encryption_mode": { if(Utf8Parser.TryParse(value, out i32 oval, out _) && TsEnums.IsDefinedCodecEncryptionMode(oval)) CodecEncryptionMode = (CodecEncryptionMode)oval; } break;
 			case "virtualserver_default_channel_group": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) DefaultChannelGroup = (ChannelGroupId)oval; } break;
 			case "virtualserver_default_server_group": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) DefaultServerGroup = (ServerGroupId)oval; } break;
 			case "virtualserver_hostbanner_gfx_interval": { if(Utf8Parser.TryParse(value, out f64 oval, out _)) HostbannerGfxInterval = TimeSpan.FromSeconds(oval); } break;
 			case "virtualserver_hostbanner_gfx_url": HostbannerGfxUrl = (str)TsString.Unescape(value); break;
-			case "virtualserver_hostbanner_mode": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) HostbannerMode = (HostBannerMode)oval; } break;
+			case "virtualserver_hostbanner_mode": { if(Utf8Parser.TryParse(value, out i32 oval, out _) && TsEnums.IsDefinedHostBannerMode(oval)) HostbannerMode = (HostBannerMode)oval; } break;
 			case "virtualserver_hostbanner_url": HostbannerUrl = (str)TsString.Unescape(value); break;
 			case "virtualserver_hostbutton_gfx_url": HostbuttonGfxUrl = (str)TsString.Unescape(value); break;
 			case "virtualserver_hostbutton_tooltip": HostbuttonTooltip = (str)TsString.Unescape(value); break;
@@ -8367,7 +8367,7 @@ namespace TSLib.Messages
 			{
 
 			case "name": Name = (str)TsString.Unescape(value); break;
-			case "type": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) GroupType = (GroupType)oval; } break;
+			case "type": { if(Utf8Parser.TryParse(value, out i32 oval, out _) && TsEnums.IsDefinedGroupType(oval)) GroupType = (GroupType)oval; } break;
 			
 			}
 
@@ -8702,7 +8702,7 @@ namespace TSLib.Messages
 			case "name": Name = (str)TsString.Unescape(value); break;
 			case "ssgid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) SourceServerGroupId = (ServerGroupId)oval; } break;
 			case "tsgid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) TargetServerGroupId = (ServerGroupId)oval; } break;
-			case "type": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) GroupType = (GroupType)oval; } break;
+			case "type": { if(Utf8Parser.TryParse(value, out i32 oval, out _) && TsEnums.IsDefinedGroupType(oval)) GroupType = (GroupType)oval; } break;
 			
 			}
 
@@ -8871,11 +8871,11 @@ namespace TSLib.Messages
 			case "n_member_removep": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) NeededMemberRemovePower = (i32)oval; } break;
 			case "n_modifyp": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) NeededModifyPower = (i32)oval; } break;
 			case "name": Name = (str)TsString.Unescape(value); break;
-			case "namemode": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) NamingMode = (GroupNamingMode)oval; } break;
+			case "namemode": { if(Utf8Parser.TryParse(value, out i32 oval, out _) && TsEnums.IsDefinedGroupNamingMode(oval)) NamingMode = (GroupNamingMode)oval; } break;
 			case "savedb": IsPermanent = value.Length > 0 && value[0] != '0'; break;
 			case "sgid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ServerGroupId = (ServerGroupId)oval; } break;
 			case "sortid": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) SortId = (i32)oval; } break;
-			case "type": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) GroupType = (GroupType)oval; } break;
+			case "type": { if(Utf8Parser.TryParse(value, out i32 oval, out _) && TsEnums.IsDefinedGroupType(oval)) GroupType = (GroupType)oval; } break;
 			case "return_code": ReturnCode = (str)TsString.Unescape(value); break;
 			}
 
@@ -9724,7 +9724,7 @@ namespace TSLib.Messages
 			case "virtualserver_download_quota": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) DownloadQuota = (u64)oval; } break;
 			case "virtualserver_flag_password": HasPassword = value.Length > 0 && value[0] != '0'; break;
 			case "virtualserver_hostmessage": Hostmessage = (str)TsString.Unescape(value); break;
-			case "virtualserver_hostmessage_mode": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) HostmessageMode = (HostMessageMode)oval; } break;
+			case "virtualserver_hostmessage_mode": { if(Utf8Parser.TryParse(value, out i32 oval, out _) && TsEnums.IsDefinedHostMessageMode(oval)) HostmessageMode = (HostMessageMode)oval; } break;
 			case "virtualserver_log_channel": LogChannel = value.Length > 0 && value[0] != '0'; break;
 			case "virtualserver_log_client": LogClient = value.Length > 0 && value[0] != '0'; break;
 			case "virtualserver_log_filetransfer": LogFiletransfer = value.Length > 0 && value[0] != '0'; break;
@@ -10067,7 +10067,7 @@ namespace TSLib.Messages
 			case "invokeruid": InvokerUid = (Uid)TsString.Unescape(value); break;
 			case "msg": Message = (str)TsString.Unescape(value); break;
 			case "target": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) TargetClientId = (ClientId)oval; } break;
-			case "targetmode": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) Target = (TextMessageTargetMode)oval; } break;
+			case "targetmode": { if(Utf8Parser.TryParse(value, out i32 oval, out _) && TsEnums.IsDefinedTextMessageTargetMode(oval)) Target = (TextMessageTargetMode)oval; } break;
 			case "timestamp": { if(Utf8Parser.TryParse(value, out u32 oval, out _)) Timestamp = Tools.FromUnix(oval); } break;
 			case "return_code": ReturnCode = (str)TsString.Unescape(value); break;
 			}
@@ -10152,7 +10152,7 @@ namespace TSLib.Messages
 			case "tokendescription": TokenDescription = (str)TsString.Unescape(value); break;
 			case "tokenid1": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) TokenId1 = (u64)oval; } break;
 			case "tokenid2": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) TokenId2 = (ChannelId)oval; } break;
-			case "tokentype": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) TokenType = (TokenType)oval; } break;
+			case "tokentype": { if(Utf8Parser.TryParse(value, out i32 oval, out _) && TsEnums.IsDefinedTokenType(oval)) TokenType = (TokenType)oval; } break;
 			
 			}
 
@@ -10236,7 +10236,7 @@ namespace TSLib.Messages
 			case "token_description": TokenDescription = (str)TsString.Unescape(value); break;
 			case "token_id1": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) TokenId1 = (u64)oval; } break;
 			case "token_id2": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) TokenId2 = (ChannelId)oval; } break;
-			case "token_type": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) TokenType = (TokenType)oval; } break;
+			case "token_type": { if(Utf8Parser.TryParse(value, out i32 oval, out _) && TsEnums.IsDefinedTokenType(oval)) TokenType = (TokenType)oval; } break;
 			case "return_code": ReturnCode = (str)TsString.Unescape(value); break;
 			}
 

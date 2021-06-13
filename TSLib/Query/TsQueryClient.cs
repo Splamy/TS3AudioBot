@@ -197,10 +197,10 @@ namespace TSLib.Query
 			=> RegisterNotification(TargetTypeString[(int)target], null);
 
 		public CmdR RegisterNotificationChannel(ChannelId? channel = null)
-			=> RegisterNotification(TargetTypeString[(int)ReasonIdentifier.Channel], channel);
+			=> RegisterNotification(TargetTypeString[4], channel);
 
 		public CmdR RegisterNotificationServer()
-			=> RegisterNotification(TargetTypeString[(int)ReasonIdentifier.Server], null);
+			=> RegisterNotification(TargetTypeString[5], null);
 
 		private CmdR RegisterNotification(string target, ChannelId? channel)
 			=> SendVoid(new TsCommand("servernotifyregister") {

@@ -8,20 +8,33 @@
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
 using System;
+using i32 = System.Int32;
+using u16 = System.UInt16;
+using u32 = System.UInt32;
+using u8 = System.Byte;
 
 namespace TSLib
 {
-	/*
-		* Most important Id datatypes:
-		*
-		* ClientUid: string
-		* ClientDbId: ulong
-		* ClientId: ushort
-		* ChannelId: ulong
-		* ServerGroupId: ulong
-		* ChannelGroupId: ulong
-		* PermissionIdT: int ???
-	*/
+	public static class TsEnums
+	{
+		public static bool IsDefinedChannelPermissionHint(i32 _) => true; // Bitflag
+		public static bool IsDefinedClientPermissionHint(i32 _) => true; // Bitflag
+		public static bool IsDefinedClientType(i32 value) => value is >= (i32)ClientType.Full and <= (i32)ClientType.Query;
+		public static bool IsDefinedCodec(u8 value) => value is >= (u8)Codec.SpeexNarrowband and <= (u8)Codec.OpusMusic;
+		public static bool IsDefinedCodecEncryptionMode(i32 value) => value is >= (i32)CodecEncryptionMode.Individual and <= (i32)CodecEncryptionMode.Enabled;
+		public static bool IsDefinedGroupNamingMode(i32 value) => value is >= (i32)GroupNamingMode.None and <= (i32)GroupNamingMode.After;
+		public static bool IsDefinedGroupType(i32 value) => value is >= (i32)GroupType.Template and <= (i32)GroupType.Query;
+		public static bool IsDefinedHostBannerMode(i32 value) => value is >= (i32)HostBannerMode.NoAdjust and <= (i32)HostBannerMode.KeepAspect;
+		public static bool IsDefinedHostMessageMode(i32 value) => value is >= (i32)HostMessageMode.None and <= (i32)HostMessageMode.ModalQuit;
+		public static bool IsDefinedLicenseType(u16 value) => value is >= (u16)LicenseType.NoLicense and <= (u16)LicenseType.Npl;
+		public static bool IsDefinedLogLevel(i32 value) => value is >= (i32)LogLevel.Error and <= (i32)LogLevel.Info;
+		public static bool IsDefinedPermissionType(i32 value) => value is >= (i32)PermissionType.ServerGroup and <= (i32)PermissionType.ChannelClient;
+		public static bool IsDefinedPluginTargetMode(i32 value) => value is >= (i32)PluginTargetMode.CurrentChannel and <= (i32)PluginTargetMode.CurrentChannelSubscribedClients;
+		public static bool IsDefinedReason(i32 value) => value is >= (i32)Reason.UserAction and <= (i32)Reason.ServerShutdown;
+		public static bool IsDefinedTextMessageTargetMode(i32 value) => value is >= (i32)TextMessageTargetMode.Private and <= (i32)TextMessageTargetMode.Server;
+		public static bool IsDefinedTokenType(i32 value) => value is >= (i32)TokenType.ServerGroup and <= (i32)TokenType.ChannelGroup;
+		public static bool IsDefinedTs3ErrorCode(u32 _) => true; // Non-exhaustive enum
+	}
 
 	public enum ClientType
 	{
@@ -202,7 +215,7 @@ namespace TSLib
 		Info
 	}
 
-	public enum ReasonIdentifier
+	public enum KickFrom
 	{
 		///<summary>Kick client from channel.</summary>
 		Channel = 4,

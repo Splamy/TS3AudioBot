@@ -119,21 +119,21 @@ namespace TSLib
 			});
 
 		public CmdR KickClientFromServer(ClientId clientId, string? reasonMsg = null)
-			=> KickClient(new[] { clientId }, ReasonIdentifier.Server, reasonMsg);
+			=> KickClient(new[] { clientId }, KickFrom.Server, reasonMsg);
 
 		public CmdR KickClientFromServer(ClientId[] clientIds, string? reasonMsg = null)
-			=> KickClient(clientIds, ReasonIdentifier.Server, reasonMsg);
+			=> KickClient(clientIds, KickFrom.Server, reasonMsg);
 
 		public CmdR KickClientFromChannel(ClientId clientId, string? reasonMsg = null)
-			=> KickClient(new[] { clientId }, ReasonIdentifier.Channel, reasonMsg);
+			=> KickClient(new[] { clientId }, KickFrom.Channel, reasonMsg);
 
 		public CmdR KickClientFromChannel(ClientId[] clientIds, string? reasonMsg = null)
-			=> KickClient(clientIds, ReasonIdentifier.Channel, reasonMsg);
+			=> KickClient(clientIds, KickFrom.Channel, reasonMsg);
 
 		/// <summary>Kicks one or more clients specified with clid from their currently joined channel or from the server, depending on <paramref name="reasonId"/>.
 		/// The reasonmsg parameter specifies a text message sent to the kicked clients.
 		/// This parameter is optional and may only have a maximum of 40 characters.</summary>
-		public CmdR KickClient(ClientId[] clientIds, ReasonIdentifier reasonId, string? reasonMsg = null)
+		public CmdR KickClient(ClientId[] clientIds, KickFrom reasonId, string? reasonMsg = null)
 			=> SendVoid(new TsCommand("clientkick") {
 				{ "reasonid", (int)reasonId },
 				{ "clid", clientIds },

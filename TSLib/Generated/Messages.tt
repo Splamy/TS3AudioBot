@@ -108,7 +108,7 @@ string GenerateSingleDeserializer(Messages.Field fld, string input, string outpu
 	case "ClientPermissionHint":
 		if(!BackingTypes.TryGetValue(fld.type, out backType))
 			backType = "i32";
-		return $"{{ if(Utf8Parser.TryParse({input}, out {backType} oval, out _)) {output} = ({fld.type})oval; }}";
+		return $"{{ if(Utf8Parser.TryParse({input}, out {backType} oval, out _) && TsEnums.IsDefined{fld.type}(oval)) {output} = ({fld.type})oval; }}";
 	case "IconId":
 		return $"{{ if(!{input}.IsEmpty && {input}[0] == (u8)'-') {{ if(Utf8Parser.TryParse({input}, out i32 oval, out _)) {output} = oval; }} else {{ if(Utf8Parser.TryParse({input}, out u64 oval, out _)) {output} = unchecked((i32)oval); }} }}";
 	case "PermissionId":
