@@ -583,7 +583,7 @@ namespace TSLib.Full
 				{ "msg", message },
 			});
 
-		public void SendAudio(in ReadOnlySpan<byte> data, Codec codec)
+		public void SendAudio(ReadOnlySpan<byte> data, Codec codec)
 		{
 			var ctx = context;
 			if (ctx is null) return;
@@ -600,7 +600,7 @@ namespace TSLib.Full
 			ctx.PacketHandler.AddOutgoingPacket(tmpBuffer, PacketType.Voice, unencrypted ? PacketFlags.Unencrypted : PacketFlags.None);
 		}
 
-		public void SendAudioWhisper(in ReadOnlySpan<byte> data, Codec codec, IReadOnlyList<ChannelId> channelIds, IReadOnlyList<ClientId> clientIds)
+		public void SendAudioWhisper(ReadOnlySpan<byte> data, Codec codec, IReadOnlyList<ChannelId> channelIds, IReadOnlyList<ClientId> clientIds)
 		{
 			var ctx = context;
 			if (ctx is null) return;
@@ -628,7 +628,7 @@ namespace TSLib.Full
 			ctx.PacketHandler.AddOutgoingPacket(tmpBuffer, PacketType.VoiceWhisper, unencrypted ? PacketFlags.Unencrypted : PacketFlags.None);
 		}
 
-		public void SendAudioGroupWhisper(in ReadOnlySpan<byte> data, Codec codec, GroupWhisperType type, GroupWhisperTarget target, ulong targetId = 0)
+		public void SendAudioGroupWhisper(ReadOnlySpan<byte> data, Codec codec, GroupWhisperType type, GroupWhisperTarget target, ulong targetId = 0)
 		{
 			var ctx = context;
 			if (ctx is null) return;

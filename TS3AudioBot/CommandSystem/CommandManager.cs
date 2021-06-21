@@ -384,14 +384,14 @@ namespace TS3AudioBot.CommandSystem
 			}
 		}
 
-		public static async Task<ICmdResult> Execute(ExecutionInformation info, string command)
+		public static async ValueTask<ICmdResult> Execute(ExecutionInformation info, string command)
 		{
 			var ast = CommandParser.ParseCommandRequest(command);
 			var cmd = AstToCommandResult(ast);
 			return new ICmdResult(await cmd.Execute(info, Array.Empty<ICommand>()));
 		}
 
-		public static async Task<ICmdResult> Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments)
+		public static async ValueTask<ICmdResult> Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments)
 			=> new ICmdResult(await info.GetModuleOrThrow<CommandManager>().RootGroup.Execute(info, arguments));
 
 		public static string GetTree(ICommand com)

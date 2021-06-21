@@ -73,7 +73,7 @@ namespace TS3AudioBot.Playlists.Shuffle
 			if (Length <= 0)
 				return false;
 			GenList();
-			index = ((index - 1) % permutation.Length + permutation.Length) % permutation.Length;
+			index = Tools.MathMod(index - 1, permutation.Length);
 			return index == permutation.Length - 1;
 		}
 	}

@@ -119,7 +119,7 @@ namespace TS3AudioBot.Playlists.Shuffle
 			for (int i = 0; i < diff; i++)
 			{
 				int checkMask = Tools.MathMod(i + seedOffset, diff) + start;
-				if (NumberOfSetBits(checkMask) % 2 != 0) continue;
+				if ((NumberOfSetBits(checkMask) & 1) != 0) continue;
 
 				if (TestLfsr(checkMask, end))
 					return checkMask;

@@ -19,14 +19,14 @@ namespace TSLib.Helper
 		private T splitchar;
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public void First(in ReadOnlySpan<T> span, T split)
+		public void First(ReadOnlySpan<T> span, T split)
 		{
 			splitchar = split;
 			NextIndex = span.IndexOf(split);
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public ReadOnlySpan<T> Next(in ReadOnlySpan<T> current)
+		public ReadOnlySpan<T> Next(ReadOnlySpan<T> current)
 		{
 			if (!HasNext)
 				throw new InvalidOperationException("No next element in span split");
@@ -36,6 +36,6 @@ namespace TSLib.Helper
 		}
 
 		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public ReadOnlySpan<T> Trim(in ReadOnlySpan<T> current) => HasNext ? current.Slice(0, NextIndex) : current;
+		public ReadOnlySpan<T> Trim(ReadOnlySpan<T> current) => HasNext ? current.Slice(0, NextIndex) : current;
 	}
 }
