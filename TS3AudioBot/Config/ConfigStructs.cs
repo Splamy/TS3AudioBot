@@ -343,9 +343,8 @@ namespace TS3AudioBot.Config
 			var max = repeat ? value.Count - 2 : value.Count - 1;
 			for (int i = 0; i <= max; i++)
 			{
-				var r = TextUtil.ValidateTime(value[i]);
-				if (!r.Ok)
-					return r;
+				if (!TextUtil.ValidateTime(value[i]).GetOk(out var error))
+					return error;
 			}
 			return R.Ok;
 		}

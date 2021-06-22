@@ -158,6 +158,11 @@ namespace TS3AudioBot.Playlists
 
 				case "rsj":
 					var res = JsonSerializer.Deserialize<AudioResource>(value, JsonOptions);
+					if (res is null)
+					{
+						Log.Warn("Invalid rsj element: {0}", line);
+						break;
+					}
 					plist.Add(new PlaylistItem(res));
 					break;
 
@@ -202,6 +207,11 @@ namespace TS3AudioBot.Playlists
 					break;
 				case "meta":
 					var meta = JsonSerializer.Deserialize<PlaylistMeta>(value, JsonOptions);
+					if (meta is null)
+					{
+						Log.Warn("Invalid meta element: {0}", line);
+						break;
+					}
 					meta.Version = version;
 					return meta;
 				}
@@ -231,7 +241,7 @@ namespace TS3AudioBot.Playlists
 			var fi = NameToFile(listId);
 			if (fi is null)
 				return new LocalStr(strings.error_playlist_no_store_directory);
-			var dir = fi.Directory;
+			var dir = fi.Directory ?? throw new Exception("Could not get playlist folder");
 			if (!dir.Exists)
 				dir.Create();
 

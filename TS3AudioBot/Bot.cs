@@ -68,16 +68,6 @@ namespace TS3AudioBot
 			this.config = config;
 			this.Injector = injector;
 
-			// Registering config changes
-			config.Language.Changed += async (s, e) =>
-			{
-				var langResult = await localization.LoadLanguage(e.NewValue, true);
-				if (!langResult.Ok)
-					Log.Error("Failed to load language file ({0})", langResult.Error);
-			};
-			config.Events.IdleDelay.Changed += (s, e) => EnableIdleTickWorker();
-			config.Events.OnIdle.Changed += (s, e) => EnableIdleTickWorker();
-
 			var builder = new DependencyBuilder(Injector);
 			Injector.HideParentModule<CommandManager>();
 			Injector.HideParentModule<DedicatedTaskScheduler>();
@@ -127,6 +117,16 @@ namespace TS3AudioBot
 			stats = Injector.GetModuleOrThrow<Stats>();
 			var commandManager = Injector.GetModuleOrThrow<CommandManager>();
 			localization = Injector.GetModuleOrThrow<LocalizationManager>();
+
+			// Registering config changes
+			config.Language.Changed += async (s, e) =>
+			{
+				var langResult = await localization.LoadLanguage(e.NewValue, true);
+				if (!langResult.Ok)
+					Log.Error("Failed to load language file ({0})", langResult.Error);
+			};
+			config.Events.IdleDelay.Changed += (s, e) => EnableIdleTickWorker();
+			config.Events.OnIdle.Changed += (s, e) => EnableIdleTickWorker();
 
 			idleTickWorker = Scheduler.Invoke(() => Scheduler.CreateTimer(OnIdle, TimeSpan.MaxValue, false)).Result;
 

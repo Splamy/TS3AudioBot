@@ -47,7 +47,7 @@ namespace TSLib.Full
 				// TODO Check valid times
 
 				res.Blocks.Add(license);
-				data = data.Slice(len);
+				data = data[len..];
 			}
 			return res;
 		}
@@ -89,19 +89,19 @@ namespace TSLib.Full
 			switch (data[33])
 			{
 			case 0:
-				if (!ReadNullString(data[46..]).Get(out var nullStr, out var error))
+				if (!ReadNullString(data[46..]).Get(out var issuer, out var error))
 					return error;
-				block = new IntermediateLicenseBlock(nullStr.str);
-				read = 5 + nullStr.read;
+				block = new IntermediateLicenseBlock(issuer.str);
+				read = 5 + issuer.read;
 				break;
 
 			case 2:
 				if (!Enum.IsDefined(typeof(ServerLicenseType), data[42]))
 					return $"Unknown license type {data[42]}";
-				if (!ReadNullString(data[47..]).Get(out nullStr, out error))
+				if (!ReadNullString(data[47..]).Get(out issuer, out error))
 					return error;
-				block = new ServerLicenseBlock(nullStr.str, (ServerLicenseType)data[42]);
-				read = 6 + nullStr.read;
+				block = new ServerLicenseBlock(issuer.str, (ServerLicenseType)data[42]);
+				read = 6 + issuer.read;
 				break;
 
 			case 32:
@@ -131,7 +131,7 @@ namespace TSLib.Full
 		{
 			var termIndex = data.IndexOf((byte)0);
 			if (termIndex >= 0)
-				return (data.Slice(0, termIndex).NewUtf8String(), termIndex);
+				return (data[..termIndex].NewUtf8String(), termIndex);
 			return "Non-null-terminated issuer string";
 		}
 

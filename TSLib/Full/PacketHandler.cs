@@ -240,9 +240,8 @@ namespace TSLib.Full
 				}
 
 				Debug.Assert(!NeedsSplitting(blockSize));
-				var sendResult = SendOutgoingData(rawData.Slice(pos, blockSize), packetType, flags);
-				if (!sendResult.Ok)
-					return sendResult;
+				if (!SendOutgoingData(rawData.Slice(pos, blockSize), packetType, flags).GetOk(out var error))
+					return error;
 
 				pos += blockSize;
 			} while (!last);

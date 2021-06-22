@@ -84,7 +84,7 @@ namespace TSLib.Audio
 			}
 
 			var soundBuffer = notEncodedBuffer.AsSpan();
-			data.CopyTo(soundBuffer.Slice(notEncodedLength));
+			data.CopyTo(soundBuffer[notEncodedLength..]);
 
 			int segmentCount = newSoundBufferLength / PacketSize;
 			int segmentsEnd = segmentCount * PacketSize;

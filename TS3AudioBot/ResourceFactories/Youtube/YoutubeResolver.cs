@@ -308,6 +308,7 @@ namespace TS3AudioBot.ResourceFactories.Youtube
 						+ (nextToken != null ? "&pageToken=" + nextToken : string.Empty)
 						+ "&key=" + YoutubeProjectId).AsJson<JsonVideoListResponse>(cancellationToken);
 
+				if (parsed.items is null) { Log.Debug("Breaking on items:null"); break; }
 				var videoItems = parsed.items;
 				if (!plist.AddRange(
 					videoItems.Select(item =>
@@ -331,6 +332,8 @@ namespace TS3AudioBot.ResourceFactories.Youtube
 		{
 			var plistData = await YoutubeDlHelper.GetPlaylistAsync(url, cancellationToken);
 			var plist = new Playlist().SetTitle(plistData.title ?? $"youtube-{id}");
+			if (plistData.entries is null) { Log.Debug("Youtube-dl returned entries:null"); return plist; }
+
 			plist.AddRange(plistData.entries
 				.Where(entry => entry.id != null)
 				.Select(entry => new PlaylistItem(
@@ -410,6 +413,7 @@ namespace TS3AudioBot.ResourceFactories.Youtube
 					+ "&q=" + Uri.EscapeDataString(keyword)
 					+ "&maxResults=" + maxResults
 					+ "&key=" + YoutubeProjectId).AsJson<JsonSearchListResponse>(cancellationToken);
+			if (parsed.items is null) { Log.Debug("Youtube returned items:null"); return Array.Empty<AudioResource>(); }
 
 			return parsed.items.Select(item => new AudioResource(
 				item.id?.videoId ?? throw new NullReferenceException("item.id.videoId was null"),
@@ -420,6 +424,7 @@ namespace TS3AudioBot.ResourceFactories.Youtube
 		public async Task<IList<AudioResource>> SearchYoutubeDlAsync(string keyword, CancellationToken cancellationToken)
 		{
 			var search = await YoutubeDlHelper.GetSearchAsync(keyword, cancellationToken);
+			if (search.entries is null) { Log.Debug("Youtube-dl returned entries:null"); return Array.Empty<AudioResource>(); }
 
 			return search.entries
 				.Where(entry => entry.id != null)

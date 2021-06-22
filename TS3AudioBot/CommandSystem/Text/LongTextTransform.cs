@@ -23,22 +23,28 @@ namespace TS3AudioBot.CommandSystem.Text
 		{
 			if (maxMessageSize < 4)
 				throw new ArgumentOutOfRangeException(nameof(maxMessageSize), "The minimum split length must be at least 4 bytes to fit all utf8 characters");
+			if (limit <= 0)
+				throw new ArgumentOutOfRangeException(nameof(limit), "Limit must be at least 1");
 
-			// Assuming worst case that each UTF-8 character which epands to 4 bytes.
-			// If the message is still shorter we can safely return in 1 block.
-			if (text.Length * 4 <= maxMessageSize)
+			// Calculates an upper bound by the following assumptions
+			// - Since dotnet uses Unicode strings, any single char can be at max 3 bytes long in UTF8
+			// - All TS escaped characters are ASCII, so 1 byte character + 1 byte escape = 2
+			// so each char '?' => max( MAX_UTF8 = 3, MAX_ASCII_TS_ESCAPED = 2 ) = 3
+			if (text.Length * 3 <= maxMessageSize)
 				return new[] { text };
 
-			var bytes = Tools.Utf8Encoder.GetBytes(text);
-
-			// If the entire text UTF-8 encoded fits in one message we can return early.
-			if (bytes.Length * 2 < maxMessageSize)
+			// If the entire text UTF-8 encoded (*2 since each char could be TS-escaped) fits in one message we can return early.
+			var encodedSize = Tools.Utf8Encoder.GetByteCount(text);
+			if (encodedSize * 2 <= maxMessageSize)
 				return new[] { text };
 
 			var list = new List<string>();
 			Span<Ind> splitIndices = stackalloc Ind[SeparatorWeight.Length];
 
-			var block = bytes.AsSpan();
+			var block = new byte[encodedSize].AsSpan(0, encodedSize);
+			encodedSize = Tools.Utf8Encoder.GetBytes(text, block);
+			if (block.Length != encodedSize) System.Diagnostics.Debug.Fail("Encoding is weird");
+
 			while (block.Length > 0)
 			{
 				int tokenCnt = 0;
@@ -80,8 +86,9 @@ namespace TS3AudioBot.CommandSystem.Text
 					{
 						if (!hasSplit && splitIndices[j].i > 0)
 						{
-							list.Add(block.Slice(0, splitIndices[j].i + 1).NewUtf8String());
-							block = block.Slice(splitIndices[j].i + 1);
+							var (left, right) = block.SplitAt(splitIndices[j].i + 1);
+							list.Add(left.NewUtf8String());
+							block = right;
 							hasSplit = true;
 						}
 					}
@@ -94,8 +101,9 @@ namespace TS3AudioBot.CommandSystem.Text
 					while (i > 0 && (block[i] & 0xC0) == 0x80)
 						i--;
 
-					list.Add(block.Slice(0, i).NewUtf8String());
-					block = block.Slice(i);
+					var (left, right) = block.SplitAt(i);
+					list.Add(left.NewUtf8String());
+					block = right;
 				}
 
 				if (--limit == 0)

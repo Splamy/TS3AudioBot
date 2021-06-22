@@ -42,7 +42,9 @@ namespace TSLib.Messages
 		public IEnumerator<KeyValuePair<KeyType, ValueType>> GetEnumerator() => data.GetEnumerator();
 		public bool Remove(KeyValuePair<KeyType, ValueType> item) { throw new NotSupportedException(); }
 		public bool Remove(KeyType key) { throw new NotSupportedException(); }
+#pragma warning disable
 		public bool TryGetValue(KeyType key, [MaybeNullWhen(false)] out ValueType value) => data.TryGetValue(key, out value);
+#pragma warning restore
 		IEnumerator IEnumerable.GetEnumerator() => data.GetEnumerator();
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser) => data[name] = value.NewUtf8String();

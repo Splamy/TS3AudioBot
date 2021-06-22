@@ -127,9 +127,8 @@ namespace TS3AudioBot.Playlists
 			}
 			else
 			{
-				var checkName = Util.IsSafeFileName(listId);
-				if (!checkName.Ok)
-					return checkName.Error;
+				if (!Util.IsSafeFileName(listId).GetOk(out var error))
+					return error;
 				res = playlistPool.Read(listId);
 			}
 
@@ -140,9 +139,8 @@ namespace TS3AudioBot.Playlists
 
 		public E<LocalStr> CreatePlaylist(string listId, string? title = null)
 		{
-			var checkName = Util.IsSafeFileName(listId);
-			if (!checkName.Ok)
-				return checkName;
+			if (!Util.IsSafeFileName(listId).GetOk(out var error))
+				return error;
 			if (playlistPool.Exists(listId))
 				return new LocalStr("Already exists");
 			return playlistPool.Write(listId, new Playlist().SetTitle(title ?? listId));
@@ -152,8 +150,7 @@ namespace TS3AudioBot.Playlists
 		{
 			if (GetSpecialPlaylist(listId))
 				return true;
-			var checkName = Util.IsSafeFileName(listId);
-			if (!checkName.Ok)
+			if (!Util.IsSafeFileName(listId))
 				return false;
 			return playlistPool.Exists(listId);
 		}
@@ -185,9 +182,8 @@ namespace TS3AudioBot.Playlists
 
 		public E<LocalStr> DeletePlaylist(string listId)
 		{
-			var checkName = Util.IsSafeFileName(listId);
-			if (!checkName.Ok)
-				return checkName.Error;
+			if (!Util.IsSafeFileName(listId).GetOk(out var error))
+				return error;
 
 			return playlistPool.Delete(listId);
 		}

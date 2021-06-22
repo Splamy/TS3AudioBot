@@ -20,12 +20,10 @@ namespace System
 	public static class R
 	{
 		public static readonly _Ok Ok = new();
-		public static readonly _Error Err = new();
 	}
 
 #pragma warning disable IDE1006 // Naming Styles
 	public readonly struct _Ok { }
-	public readonly struct _Error { }
 #pragma warning restore IDE1006 // Naming Styles
 
 	/// <summary>
@@ -124,6 +122,7 @@ namespace System
 		public static implicit operator E<TError>(TError result) => new(result);
 
 		// Fluent get
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public bool GetOk([MaybeNullWhen(true)] out TError error)
 		{
 			error = Error;
@@ -131,6 +130,7 @@ namespace System
 		}
 
 		// Convenience casting
+		[MethodImpl(MethodImplOptions.AggressiveInlining)]
 		public static implicit operator E<TError>(_Ok _) => OkR;
 
 		// Unwrapping

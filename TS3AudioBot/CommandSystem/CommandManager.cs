@@ -59,12 +59,11 @@ namespace TS3AudioBot.CommandSystem
 
 			foreach (var command in bag.BagCommands)
 			{
-				var result = LoadCommand(command);
-				if (!result.Ok)
+				if (!LoadCommand(command).GetOk(out var error))
 				{
-					Log.Error("Failed to load command bag: " + result.Error);
+					Log.Error("Failed to load command bag: " + error);
 					UnregisterCollection(bag);
-					throw new InvalidOperationException(result.Error);
+					throw new InvalidOperationException(error);
 				}
 			}
 			rightsManager?.SetRightsList(AllRights);
@@ -210,9 +209,8 @@ namespace TS3AudioBot.CommandSystem
 					var subGroup = new CommandGroup();
 					group.RemoveCommand(comPathPart);
 					group.AddCommand(comPathPart, subGroup);
-					var insertResult = InsertInto(group, fnCommand, comPathPart);
-					if (!insertResult.Ok)
-						return insertResult.Error;
+					if (!InsertInto(group, fnCommand, comPathPart).GetOk(out var error))
+						return error;
 					group = subGroup;
 					break;
 

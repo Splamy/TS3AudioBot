@@ -166,7 +166,7 @@ namespace TSLib.Full
 	[Flags]
 	public enum ItemSetStatus
 	{
-#pragma warning disable CA1069 // Enums values should not be duplicated
+#pragma warning disable // Enums values should not be duplicated
 		NotSet = 0b00,
 		Set = 0b01,
 		OutOfWindow = 0b00,
@@ -176,6 +176,6 @@ namespace TSLib.Full
 		OutOfWindowSet = OutOfWindow | Set,
 		InWindowNotSet = InWindow | NotSet,
 		InWindowSet = InWindow | Set,
-#pragma warning restore CA1069 // Enums values should not be duplicated
+#pragma warning restore // Enums values should not be duplicated
 	}
 }

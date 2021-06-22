@@ -66,7 +66,7 @@ namespace TS3AudioBot
 					return;
 				newBot.Connect.Address.Value = address;
 				Console.WriteLine("Please enter the server password (or leave empty for none):");
-				newBot.Connect.ServerPassword.Password.Value = Console.ReadLine();
+				newBot.Connect.ServerPassword.Password.Value = Console.ReadLine() ?? "";
 
 				if (!newBot.SaveNew(Defaults.BotName))
 				{
@@ -111,10 +111,9 @@ namespace TS3AudioBot
 
 		public async Task<R<BotInfo, string>> RunBotTemplate(string name)
 		{
-			var config = confRoot.GetBotConfig(name);
-			if (!config.Ok)
-				return config.Error.Message;
-			return await RunBot(config.Value);
+			if (!confRoot.GetBotConfig(name).Get(out var config, out var error))
+				return error.Message;
+			return await RunBot(config);
 		}
 
 		public async Task<R<BotInfo, string>> RunBot(ConfBot config)

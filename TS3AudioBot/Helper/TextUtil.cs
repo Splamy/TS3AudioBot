@@ -45,9 +45,9 @@ namespace TS3AudioBot.Helper
 
 		public static string StripQuotes(string quotedString, bool throwWhenIncorrect = false)
 		{
-			if (quotedString.Length <= 1
-				|| !quotedString.StartsWith("\"", StringComparison.Ordinal)
-				|| !quotedString.EndsWith("\"", StringComparison.Ordinal))
+			if (quotedString.Length < 2
+				|| !quotedString.StartsWith('\"')
+				|| !quotedString.EndsWith('\"'))
 			{
 				if (throwWhenIncorrect)
 					throw new ArgumentException("The string is not properly quoted", nameof(quotedString));

@@ -1,6 +1,7 @@
 using NUnit.Framework;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
@@ -18,13 +19,22 @@ using TSLib;
 namespace TS3ABotUnitTests
 {
 	[TestFixture]
+	[SuppressMessage("Reliability", "CA2012:Use ValueTasks correctly", Justification = "Unit tests here are for non-async operations")]
 	public class BotCommandTests
 	{
+		private static string? CmdSync(ExecutionInformation info, string command)
+		{
+			var valueTask = CommandManager.Execute(info, command);
+			if (valueTask.IsCompleted)
+				return valueTask.Result.AsString();
+			throw new AssertionException("Cannot test with async task");
+		}
+
 		[Test]
 		public void BotCommandTest()
 		{
 			var execInfo = Utils.GetExecInfo("ic3");
-			string? CallCommand(string command) => CommandManager.Execute(execInfo, command).GetAwaiter().GetResult().AsString();
+			string? CallCommand(string command) => CmdSync(execInfo, command);
 
 			var output = CallCommand("!help");
 			Assert.AreEqual(output, CallCommand("!h"));
@@ -75,7 +85,7 @@ namespace TS3ABotUnitTests
 		public void TailStringTest()
 		{
 			var execInfo = Utils.GetExecInfo("ic3");
-			string? CallCommand(string command) => CommandManager.Execute(execInfo, command).Result.AsString();
+			string? CallCommand(string command) => CmdSync(execInfo, command);
 			var group = execInfo.GetModuleOrThrow<CommandManager>().RootGroup;
 			group.AddCommand("cmd", new FunctionCommand(s => s));
 
@@ -138,7 +148,7 @@ namespace TS3ABotUnitTests
 		public void XCommandSystemTest()
 		{
 			var execInfo = Utils.GetExecInfo("ic3", false);
-			string? CallCommand(string command) => CommandManager.Execute(execInfo, command).GetAwaiter().GetResult().AsString();
+			string? CallCommand(string command) => CmdSync(execInfo, command);
 			var group = execInfo.GetModuleOrThrow<CommandManager>().RootGroup;
 
 			group.AddCommand("one", new FunctionCommand(() => "ONE"));
@@ -188,7 +198,7 @@ namespace TS3ABotUnitTests
 		public void XCommandSystemTest2()
 		{
 			var execInfo = Utils.GetExecInfo("exact");
-			string? CallCommand(string command) => CommandManager.Execute(execInfo!, command).GetAwaiter().GetResult().AsString();
+			string? CallCommand(string command) => CmdSync(execInfo, command);
 			var group = execInfo.GetModuleOrThrow<CommandManager>().RootGroup;
 
 			var o1 = new OverloadedFunctionCommand();

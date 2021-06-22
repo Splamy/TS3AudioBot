@@ -104,13 +104,11 @@ namespace TS3AudioBot.History
 				var ale = FindByUniqueId(saveData.Resource.UniqueId);
 				if (ale is null)
 				{
-					var createResult = CreateLogEntry(saveData);
-					if (!createResult.Ok)
+					if (!CreateLogEntry(saveData).Get(out ale, out var error))
 					{
-						Log.Warn(createResult.Error, "AudioLogEntry could not be created!");
+						Log.Warn(error, "AudioLogEntry could not be created!");
 						return null;
 					}
-					ale = createResult.Value;
 				}
 				else
 				{

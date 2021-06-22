@@ -70,5 +70,9 @@ csharp_preserve_single_line_statements = true
 dotnet_diagnostic.CA1310.severity=warning
 dotnet_diagnostic.CA1309.severity=warning
 
+# IDE0057: Use range operator
+csharp_style_prefer_range_operator = true
+dotnet_diagnostic.IDE0057.severity = silent
+
 [*.{tt,ttinclude}]
 insert_final_newline = false

@@ -24,14 +24,14 @@ namespace TSLibAutogen
 			"TokenUsed",
 		};
 
-		public static IEnumerable<GenFile> Build(GeneratorExecutionContext context, Model model)
+		public static IEnumerable<GenFile> Build(Model model)
 		{
-			yield return BuildPart(context, model, "TSLib.Full", "TsFullClient", false, true, model.Messages.Notifies.Where(m => m.s2c));
-			yield return BuildPart(context, model, "TSLib.Query", "TsQueryClient", false, false, model.Messages.Notifies.Where(m => m.s2c && sharedNotifications.Contains(m.Name)));
-			yield return BuildPart(context, model, "TSLib", "TsBaseFunctions", true, false, model.Messages.Notifies.Where(m => m.s2c && sharedNotifications.Contains(m.Name)));
+			yield return BuildPart(model, "TSLib.Full", "TsFullClient", false, true, model.Messages.Notifies.Where(m => m.s2c));
+			yield return BuildPart(model, "TSLib.Query", "TsQueryClient", false, false, model.Messages.Notifies.Where(m => m.s2c && sharedNotifications.Contains(m.Name)));
+			yield return BuildPart(model, "TSLib", "TsBaseFunctions", true, false, model.Messages.Notifies.Where(m => m.s2c && sharedNotifications.Contains(m.Name)));
 		}
 
-		private static GenFile BuildPart(GeneratorExecutionContext context, Model model, string ns, string filename, bool root, bool full, IEnumerable<Message> enu)
+		private static GenFile BuildPart(Model model, string ns, string filename, bool root, bool full, IEnumerable<Message> enu)
 		{
 			var msgs = enu.ToArray();
 			var src = new CodeBuilder();

@@ -168,7 +168,7 @@ namespace TS3AudioBot.Plugins
 			// Do not use 'Assembly.LoadFile' as otherwise we cannot replace the dll
 			// on windows aymore after it's opened once.
 			var asmBin = System.IO.File.ReadAllBytes(File.FullName);
-			var pdbFile = File.FullName[0..^File.Extension.Length] + ".pdb";
+			var pdbFile = File.FullName[..^File.Extension.Length] + ".pdb";
 			byte[]? pdbBin = null;
 			try
 			{

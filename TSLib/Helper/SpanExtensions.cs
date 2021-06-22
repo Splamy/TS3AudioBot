@@ -24,6 +24,7 @@ namespace TSLib.Helper
 
 		public static string NewUtf8String(this Span<byte> span) => ((ReadOnlySpan<byte>)span).NewUtf8String();
 
+#if !NETCOREAPP3_0_OR_GREATER
 		public static ReadOnlySpan<byte> Trim(this ReadOnlySpan<byte> span, byte elem) => span.TrimStart(elem).TrimEnd(elem);
 
 		public static ReadOnlySpan<byte> TrimStart(this ReadOnlySpan<byte> span, byte elem)
@@ -46,6 +47,53 @@ namespace TSLib.Helper
 					break;
 			}
 			return span.Slice(0, end + 1);
+		}
+#endif
+
+		public static SpanTuple<T> SplitAt<T>(this Span<T> span, int index)
+		{
+			return new(span[..index], span[index..]);
+		}
+
+		public static ReadOnlySpanTuple<T> SplitAt<T>(this ReadOnlySpan<T> span, int index)
+		{
+			return new(span[..index], span[index..]);
+		}
+	}
+
+	public ref struct SpanTuple<T>
+	{
+		public Span<T> left;
+		public Span<T> right;
+
+		public SpanTuple(Span<T> left, Span<T> right)
+		{
+			this.left = left;
+			this.right = right;
+		}
+
+		public void Deconstruct(out Span<T> left, out Span<T> right)
+		{
+			left = this.left;
+			right = this.right;
+		}
+	}
+
+	public ref struct ReadOnlySpanTuple<T>
+	{
+		public ReadOnlySpan<T> left;
+		public ReadOnlySpan<T> right;
+
+		public ReadOnlySpanTuple(ReadOnlySpan<T> left, ReadOnlySpan<T> right)
+		{
+			this.left = left;
+			this.right = right;
+		}
+
+		public void Deconstruct(out ReadOnlySpan<T> left, out ReadOnlySpan<T> right)
+		{
+			left = this.left;
+			right = this.right;
 		}
 	}
 }

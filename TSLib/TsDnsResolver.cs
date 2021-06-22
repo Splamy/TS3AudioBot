@@ -218,12 +218,12 @@ namespace TSLib
 
 				using var stream = client.GetStream();
 				var addBuf = Encoding.ASCII.GetBytes(resolveAddress);
-				await stream.WriteAsync(addBuf, 0, addBuf.Length);
+				await stream.WriteAsync(addBuf);
 				await stream.FlushAsync();
 
 				stream.ReadTimeout = (int)LookupTimeout.TotalMilliseconds;
 				var readBuffer = new byte[128];
-				int readLen = await stream.ReadAsync(readBuffer, 0, readBuffer.Length);
+				int readLen = await stream.ReadAsync(readBuffer);
 				string returnString = Encoding.ASCII.GetString(readBuffer, 0, readLen);
 
 				return ParseIpEndPoint(returnString, defaultPort);

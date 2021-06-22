@@ -38,7 +38,9 @@ namespace TS3AudioBot.Helper
 				}
 				return true;
 			}
+#pragma warning disable CS8600 // Converting null literal or possible null value to non-nullable type.
 			else if (tomlObj.TryGetValue(out T retSingleVal))
+#pragma warning restore CS8600
 			{
 				value = new[] { retSingleVal };
 				return true;

@@ -1,4 +1,3 @@
-using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Text;
 using System.Collections.Generic;
 using System.Linq;
@@ -22,7 +21,7 @@ namespace TSLibAutogen
 			{ "PermissionId", "u32" },
 		};
 
-		public static IEnumerable<GenFile> Build(GeneratorExecutionContext context, Model model)
+		public static IEnumerable<GenFile> Build(Model model)
 		{
 			var src = new CodeBuilder();
 

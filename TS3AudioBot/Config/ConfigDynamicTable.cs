@@ -70,7 +70,8 @@ namespace TS3AudioBot.Config
 
 		public void RemoveItem(string key)
 		{
-			dynamicTables.Remove(key);
+			if (dynamicTables.Remove(key, out var child))
+				child.ClearEvents();
 			TomlObject.Remove(key);
 		}
 	}

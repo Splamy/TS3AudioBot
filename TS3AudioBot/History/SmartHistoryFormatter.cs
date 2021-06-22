@@ -18,11 +18,11 @@ namespace TS3AudioBot.History
 	public class SmartHistoryFormatter : IHistoryFormatter
 	{
 		// configurable constants
-		private const string LineBreak = "\n";
+		private const char LineBreak = '\n';
 		private const int MinTokenLine = 40;
 		private readonly bool fairDistribute = true;
 		// resulting constants from configuration
-		private static readonly int LineBreakLen = TsString.TokenLength(LineBreak);
+		private static readonly int LineBreakLen = TsString.TokenLength(LineBreak.ToString());
 		private static readonly int UseableTokenLine = MinTokenLine - LineBreakLen;
 
 		public string ProcessQuery(AudioLogEntry entry, Func<AudioLogEntry, string> format)

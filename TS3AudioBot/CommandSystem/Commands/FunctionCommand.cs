@@ -10,7 +10,6 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.Globalization;
 using System.Linq;
 using System.Reflection;
@@ -324,7 +323,6 @@ namespace TS3AudioBot.CommandSystem.Commands
 			return type;
 		}
 
-		[return: NotNullIfNotNull("value")]
 		private static object? UnwrapReturn(object? value)
 		{
 			if (value is null)
@@ -358,7 +356,6 @@ namespace TS3AudioBot.CommandSystem.Commands
 			return new CommandException(throwString, CommandExceptionReason.MissingParameter);
 		}
 
-		[return: NotNullIfNotNull("value")]
 		public static object? ConvertParam(object? value, Type targetType, ParamInfo param, Lazy<Algorithm.IFilter> filter)
 		{
 			if (value is null)
@@ -370,6 +367,8 @@ namespace TS3AudioBot.CommandSystem.Commands
 			if (targetType == valueType || targetType.IsAssignableFrom(valueType))
 				return value;
 			value = UnwrapReturn(value);
+			if (value is null)
+				return null;
 			valueType = value.GetType();
 			if (targetType == valueType || targetType.IsAssignableFrom(valueType))
 				return value;

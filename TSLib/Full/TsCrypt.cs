@@ -519,8 +519,8 @@ namespace TSLib.Full
 
 		private static bool CheckEqual(ReadOnlySpan<byte> a1, ReadOnlySpan<byte> a2, int len)
 		{
-			if (a1.Length < len || a2.Length < len)
-				throw new ArgumentOutOfRangeException();
+			if (a1.Length < len) throw new ArgumentOutOfRangeException(nameof(a1), "is shorter than the requested compare length");
+			if (a2.Length < len) throw new ArgumentOutOfRangeException(nameof(a2), "is shorter than the requested compare length");
 
 			int res = 0;
 			for (int i = 0; i < len; i++)
@@ -530,7 +530,9 @@ namespace TSLib.Full
 
 		internal static void XorBinary(ReadOnlySpan<byte> a, ReadOnlySpan<byte> b, int len, Span<byte> outBuf)
 		{
-			if (a.Length < len || b.Length < len || outBuf.Length < len) throw new ArgumentException();
+			if (a.Length < len) throw new ArgumentOutOfRangeException(nameof(a), "is shorter than the requested xor length");
+			if (b.Length < len) throw new ArgumentOutOfRangeException(nameof(b), "is shorter than the requested xor length");
+			if (outBuf.Length < len) throw new ArgumentOutOfRangeException(nameof(outBuf), "is shorter than the requested xor length");
 			for (int i = 0; i < len; i++)
 				outBuf[i] = (byte)(a[i] ^ b[i]);
 		}

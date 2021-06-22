@@ -4,6 +4,7 @@
 // https://github.com/dotnet/corefx/blob/1597b894a2e9cac668ce6e484506eca778a85197/src/Common/src/CoreLib/System/Range.cs
 
 #if NETSTANDARD2_0
+#pragma warning disable
 
 using System.Runtime.CompilerServices;
 
@@ -48,6 +49,7 @@ namespace System
 		}
 
 		/// <summary>Create an Index pointing at first element.</summary>
+
 		public static Index Start => new Index(0);
 
 		/// <summary>Create an Index pointing at beyond last element.</summary>
@@ -277,4 +279,5 @@ namespace System.Runtime.CompilerServices
 	}
 }
 
+#pragma warning restore
 #endif

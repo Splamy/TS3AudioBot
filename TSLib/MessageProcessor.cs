@@ -41,7 +41,7 @@ namespace TSLib
 			else
 				notifyname = msgSpan.Slice(0, splitindex).NewUtf8String();
 
-			bool hasEqual = notifyname.IndexOf('=') >= 0;
+			bool hasEqual = notifyname.Contains('=');
 			NotificationType ntfyType;
 			if (hasEqual || (ntfyType = findTypeOfNotification(notifyname)) == NotificationType.Unknown)
 			{

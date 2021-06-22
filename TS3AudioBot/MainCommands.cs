@@ -290,10 +290,8 @@ namespace TS3AudioBot
 
 		private static R<BotInfo, LocalStr> GetOfflineBotInfo(ConfRoot config, string name)
 		{
-			var result = config.GetBotConfig(name);
-			if (!result.Ok)
-				return new LocalStr(result.Error.Message);
-			var botConfig = result.Value;
+			if (!config.GetBotConfig(name).Get(out var botConfig, out var error))
+				return new LocalStr(error.Message);
 			return GetOfflineBotInfo(botConfig);
 		}
 
@@ -1468,10 +1466,9 @@ namespace TS3AudioBot
 			}
 			else
 			{
-				var getTemplateResult = config.GetBotConfig(name);
-				if (!getTemplateResult.Ok)
-					throw new CommandException(strings.error_bot_does_not_exist, getTemplateResult.Error, CommandExceptionReason.CommandError);
-				return await Task.FromResult(scheduledAction(getTemplateResult.Value));
+				if (!config.GetBotConfig(name).Get(out var botConf, out var error))
+					throw new CommandException(strings.error_bot_does_not_exist, error, CommandExceptionReason.CommandError);
+				return await Task.FromResult(scheduledAction(botConf));
 			}
 		}
 
@@ -1482,9 +1479,8 @@ namespace TS3AudioBot
 			var setConfig = config.ByPathAsArray(path).SettingsGetSingle();
 			if (setConfig is IJsonSerializable jsonConfig)
 			{
-				var result = jsonConfig.FromJson(value ?? "");
-				if (!result.Ok)
-					throw new CommandException($"Failed to set the value ({result.Error}).", CommandExceptionReason.CommandError); // LOC: TODO
+				if (!jsonConfig.FromJson(value ?? "").GetOk(out var error))
+					throw new CommandException($"Failed to set the value ({error}).", CommandExceptionReason.CommandError); // LOC: TODO
 			}
 			else
 			{
@@ -1809,7 +1805,7 @@ namespace TS3AudioBot
 					strb.Append(strings.cmd_whisper_list_target_whisper_channel).Append(": [").Append(string.Join(",", x.WhisperChannel)).Append(']');
 					break;
 				case TargetSendMode.WhisperGroup:
-					if (x.GroupWhisper is null) throw new ArgumentNullException();
+					if (x.GroupWhisper is null) throw new NullReferenceException(nameof(x.GroupWhisper) + " should not be null");
 					strb.AppendFormat(strings.cmd_whisper_list_target_whispergroup, x.GroupWhisper.Type, x.GroupWhisper.Target, x.GroupWhisper.TargetId);
 					break;
 				case var _unhandled:

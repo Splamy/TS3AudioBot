@@ -96,10 +96,9 @@ namespace TSLib.Full
 			var asnByteArray = TsCrypt.Base64Decode(key);
 			if (asnByteArray is null)
 				return "Invalid identity base64 string";
-			var importRes = ImportKeyDynamic(asnByteArray);
-			if (!importRes.Ok)
-				return importRes.Error;
-			var (privateKey, publicKey) = importRes.Value;
+			if (!ImportKeyDynamic(asnByteArray).Get(out var importPair, out var error))
+				return error;
+			var (privateKey, publicKey) = importPair;
 			if (privateKey is null)
 				return "Key string did not contain a private key";
 			return new IdentityData(privateKey, publicKey, keyOffset, lastCheckedKeyOffset);

@@ -1,4 +1,3 @@
-using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.Text;
 using System.Collections.Generic;
 using System.Text;
@@ -7,7 +6,7 @@ namespace TSLibAutogen
 {
 	public class BookGenerator
 	{
-		public static IEnumerable<GenFile> Build(GeneratorExecutionContext context, Model model)
+		public static IEnumerable<GenFile> Build(Model model)
 		{
 			var src = new CodeBuilder();
 

@@ -88,12 +88,6 @@ namespace TSLib.Full.Book
 				return client.ConnectionData ??= new();
 			return null;
 		}
-		private void SetConnectionClientData(ConnectionClientData connectionClientData, ClientId id)
-		{
-			if (!Clients.TryGetValue(id, out var client))
-				return;
-			client.ConnectionData = connectionClientData;
-		}
 
 		// ServerGroup
 		private void SetServerGroup(ServerGroup serverGroup, ServerGroupId id) => ServerGroups[id] = serverGroup;

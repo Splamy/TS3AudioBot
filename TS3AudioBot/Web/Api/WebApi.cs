@@ -65,21 +65,19 @@ namespace TS3AudioBot.Web.Api
 			response.Headers["Access-Control-Allow-Origin"] = "*";
 			response.Headers["CacheControl"] = "no-cache, no-store, must-revalidate";
 
-			var authResult = Authenticate(context.Request);
-			if (!authResult.Ok)
+			if (!Authenticate(context.Request).Get(out var apiCallData, out var authError))
 			{
 				Log.Debug("Authorization failed!");
-				await ReturnError(new CommandException(authResult.Error, CommandExceptionReason.Unauthorized), response);
+				await ReturnError(new CommandException(authError, CommandExceptionReason.Unauthorized), response);
 				return;
 			}
-			if (!AllowAnonymousRequest && authResult.Value.ClientUid == Uid.Null)
+			if (!AllowAnonymousRequest && apiCallData.ClientUid == Uid.Null)
 			{
 				Log.Debug("Unauthorized request!");
 				await ReturnError(new CommandException(ErrorAnonymousDisabled, CommandExceptionReason.Unauthorized), response);
 				return;
 			}
 
-			var apiCallData = authResult.Value;
 			var remoteAddress = context.Connection?.RemoteIpAddress;
 			if (remoteAddress is null)
 			{

@@ -53,11 +53,7 @@ namespace TSLib
 			{
 				if (closeStream)
 				{
-#if NETSTANDARD2_0
-					stream.Dispose();
-#else
 					await stream.DisposeAsync();
-#endif
 				}
 				return error;
 			}
@@ -92,11 +88,7 @@ namespace TSLib
 			{
 				if (closeStream)
 				{
-#if NETSTANDARD2_0
-					stream.Dispose();
-#else
 					await stream.DisposeAsync();
-#endif
 				}
 				return error;
 			}
@@ -130,7 +122,7 @@ namespace TSLib
 				using var md5Dig = token.CreateMd5 ? MD5.Create() : null;
 				using var stream = client.GetStream();
 				byte[] keyBytes = Encoding.ASCII.GetBytes(token.TransferKey);
-				await stream.WriteAsync(keyBytes, 0, keyBytes.Length);
+				await stream.WriteAsync(keyBytes);
 
 				if (token.SeekPosition >= 0 && token.LocalStream.Position != token.SeekPosition)
 					token.LocalStream.Seek(token.SeekPosition, SeekOrigin.Begin);
@@ -142,9 +134,9 @@ namespace TSLib
 					var buffer = new byte[bufferSize];
 					int read;
 					md5Dig?.Initialize();
-					while ((read = await token.LocalStream.ReadAsync(buffer, 0, buffer.Length)) != 0)
+					while ((read = await token.LocalStream.ReadAsync(buffer)) != 0)
 					{
-						await stream.WriteAsync(buffer, 0, read);
+						await stream.WriteAsync(buffer.AsMemory(0, read));
 						md5Dig?.TransformBlock(buffer, 0, read, buffer, 0);
 					}
 					md5Dig?.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
@@ -163,11 +155,7 @@ namespace TSLib
 					token.Status = TransferStatus.Done;
 					if (token.CloseStreamWhenDone)
 					{
-#if NETSTANDARD2_0
-						token.LocalStream.Dispose();
-#else
 						await token.LocalStream.DisposeAsync();
-#endif
 					}
 
 				}
@@ -237,11 +225,7 @@ namespace TSLib
 			token.Status = TransferStatus.Cancelled;
 			if (delete && token.CloseStreamWhenDone)
 			{
-#if NETSTANDARD2_0
-				token.LocalStream.Dispose();
-#else
 				await token.LocalStream.DisposeAsync();
-#endif
 			}
 		}
 

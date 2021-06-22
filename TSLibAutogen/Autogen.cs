@@ -57,13 +57,13 @@ namespace TSLibAutogen
 
 				var model = builder.Build(context);
 
-				GeneratedFiles.AddRange(BookGenerator.Build(context, model));
-				GeneratedFiles.AddRange(MessagesGenerator.Build(context, model));
+				GeneratedFiles.AddRange(BookGenerator.Build(model));
+				GeneratedFiles.AddRange(MessagesGenerator.Build(model));
 				GeneratedFiles.AddRange(M2BGenerator.Build(context, model));
-				GeneratedFiles.AddRange(TsErrorGenerator.Build(context, model));
-				GeneratedFiles.AddRange(TsPermissionGenerator.Build(context, model));
+				GeneratedFiles.AddRange(TsErrorGenerator.Build(model));
+				GeneratedFiles.AddRange(TsPermissionGenerator.Build(model));
 				GeneratedFiles.AddRange(TsVersionGenerator.Build(context, model));
-				GeneratedFiles.AddRange(NotifyEvents.Build(context, model));
+				GeneratedFiles.AddRange(NotifyEvents.Build(model));
 			}
 			else
 			{
