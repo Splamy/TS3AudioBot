@@ -44,7 +44,7 @@ deploy_script:
       $targets = $targets_linux + "win-x64"
       foreach ($target in $targets) {
         Write-Host -ForegroundColor Yellow Publishing $target
-        dotnet publish TS3AudioBot -c Release --framework net5.0 --self-contained --runtime $target -p:PublishSingleFile=true,IncludeSymbolsInSingleFile=true,PublishTrimmed=true
+        dotnet publish TS3AudioBot -c Release --framework net5.0 --self-contained --runtime $target -p:PublishSingleFile=true,PublishTrimmed=true,IncludeNativeLibrariesForSelfExtract=true
       }
 
       Write-Host -ForegroundColor Yellow Extracting Version

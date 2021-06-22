@@ -9,7 +9,7 @@
     <Nullable>enable</Nullable>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <Prefer32Bit>false</Prefer32Bit>
-    <DebugType>portable</DebugType>
+    <DebugType>embedded</DebugType>
 
     <RepositoryUrl>https://github.com/Splamy/TS3AudioBot.git</RepositoryUrl>
     <RepositoryType>git</RepositoryType>

@@ -11,7 +11,6 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
-using System.Reflection;
 using System.Text.RegularExpressions;
 using TS3AudioBot.Helper;
 using TSLib.Helper;
@@ -112,73 +111,13 @@ namespace TS3AudioBot.Environment
 			catch { }
 		}
 
-		public static PlatformVersion RuntimeData { get; } = GenRuntimeData();
-		private static PlatformVersion GenRuntimeData()
+		private static PlatformVersion UnknownRuntime { get; } = new PlatformVersion(Runtime.Unknown, "? (?)", null);
+		public static PlatformVersion RuntimeData { get; } = GetNetVersion() ?? UnknownRuntime;
+
+		private static PlatformVersion GetNetVersion()
 		{
-			var ver = GetNetCoreVersion();
-			if (ver != null)
-				return ver;
-
-			ver = GetMonoVersion();
-			if (ver != null)
-				return ver;
-
-			ver = GetNetFrameworkVersion();
-			if (ver != null)
-				return ver;
-
-			return new PlatformVersion(Runtime.Unknown, "? (?)", null);
-		}
-
-		private static PlatformVersion? GetNetCoreVersion()
-		{
-			var assembly = typeof(System.Runtime.GCSettings).GetTypeInfo().Assembly;
-			var assemblyPath = assembly.Location?.Split(new[] { '/', '\\' }, StringSplitOptions.RemoveEmptyEntries);
-			if (assemblyPath is null)
-				return null;
-			int netCoreAppIndex = Array.IndexOf(assemblyPath, "Microsoft.NETCore.App");
-			if (netCoreAppIndex <= 0 || netCoreAppIndex >= assemblyPath.Length - 2)
-				return null;
-			var version = assemblyPath[netCoreAppIndex + 1];
-			var semVer = ParseToSemVer(version);
-			return new PlatformVersion(Runtime.Core, $".NET Core ({version})", semVer);
-		}
-
-		private static PlatformVersion? GetMonoVersion()
-		{
-			var type = Type.GetType("Mono.Runtime");
-			if (type is null)
-				return null;
-			var displayName = type.GetMethod("GetDisplayName", BindingFlags.NonPublic | BindingFlags.Static);
-			if (displayName is null)
-				return new PlatformVersion(Runtime.Mono, "Mono (?)", null);
-			var version = displayName.Invoke(null, null) as string;
-			var semVer = ParseToSemVer(version);
-			return new PlatformVersion(Runtime.Mono, $"Mono ({version})", semVer);
-		}
-
-		private static PlatformVersion GetNetFrameworkVersion()
-		{
-			var version = System.Environment.Version.ToString();
-			var semVer = ParseToSemVer(version);
-			return new PlatformVersion(Runtime.Net, $".NET Framework {version}", semVer);
-		}
-
-		private static Version? ParseToSemVer(string? version)
-		{
-			if (version is null)
-				return null;
-			var semMatch = SemVerRegex.Match(version);
-			if (!semMatch.Success)
-				return null;
-
-			if (!int.TryParse(semMatch.Groups[1].Value, out var major)) major = 0;
-			if (!int.TryParse(semMatch.Groups[2].Captures[0].Value, out var minor)) minor = 0;
-			if (semMatch.Groups[2].Captures.Count <= 1
-				|| !int.TryParse(semMatch.Groups[2].Captures[1].Value, out var patch)) patch = 0;
-			if (semMatch.Groups[2].Captures.Count <= 2
-				|| int.TryParse(semMatch.Groups[2].Captures[2].Value, out var revision)) revision = 0;
-			return new Version(major, minor, patch, revision);
+			var version = System.Environment.Version;
+			return new PlatformVersion(Runtime.Core, $".NET ({version})", version);
 		}
 	}
 
@@ -211,9 +150,9 @@ namespace TS3AudioBot.Environment
 
 	public class PlatformVersion
 	{
-		public Runtime Runtime;
-		public string FullName;
-		public Version? SemVer;
+		public Runtime Runtime { get; }
+		public string FullName { get; }
+		public Version? SemVer { get; }
 
 		public PlatformVersion(Runtime runtime, string fullName, Version? semVer)
 		{

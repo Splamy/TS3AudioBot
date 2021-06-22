@@ -25,6 +25,7 @@ namespace TS3AudioBot.Web
 	public sealed class WebServer : IDisposable
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
+		private const string DefaultFrontendFolder = "WebInterface";
 
 		private CancellationTokenSource? cancelToken;
 		private readonly ConfWeb config;
@@ -68,13 +69,12 @@ namespace TS3AudioBot.Web
 				for (int i = 0; i < 5; i++)
 				{
 					var up = Path.Combine(Enumerable.Repeat("..", i).ToArray());
-					var checkDir = Path.Combine(up, "WebInterface");
+					var checkDir = Path.Combine(up, DefaultFrontendFolder);
 					if (Directory.Exists(checkDir))
 						return Path.GetFullPath(checkDir);
 				}
 
-				var asmPath = Path.GetDirectoryName(typeof(Core).Assembly.Location)!;
-				var asmWebPath = Path.GetFullPath(Path.Combine(asmPath, "WebInterface"));
+				var asmWebPath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, DefaultFrontendFolder));
 				if (Directory.Exists(asmWebPath))
 					return asmWebPath;
 			}

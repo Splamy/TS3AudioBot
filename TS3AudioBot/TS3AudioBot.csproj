@@ -12,7 +12,7 @@
     <Nullable>enable</Nullable>
     <PlatformTarget>AnyCPU</PlatformTarget>
     <Prefer32Bit>false</Prefer32Bit>
-    <DebugType>portable</DebugType>
+    <DebugType>embedded</DebugType>
 
     <ApplicationIcon>Media\favicon.ico</ApplicationIcon>
 
@@ -20,13 +20,14 @@
 
     <StartupObject>TS3AudioBot.Setup</StartupObject>
 
+    <!-- GC Config -->
     <ServerGarbageCollection>true</ServerGarbageCollection>
     <ConcurrentGarbageCollection>true</ConcurrentGarbageCollection>
-
+    <!-- SourceLink -->
     <RepositoryUrl>https://github.com/Splamy/TS3AudioBot.git</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
-
+    <!-- Assemblyinfo -->
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
     <GenerateAssemblyFileVersionAttribute>false</GenerateAssemblyFileVersionAttribute>
     <GenerateAssemblyInformationalVersionAttribute>false</GenerateAssemblyInformationalVersionAttribute>

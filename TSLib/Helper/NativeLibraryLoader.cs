@@ -62,7 +62,7 @@ namespace TSLib.Helper
 			var fullPath = Directory.GetCurrentDirectory();
 			yield return Path.Combine(fullPath, "lib", ArchFolder, lib);
 			yield return Path.Combine(fullPath, "lib", lib);
-			var asmPath = Path.GetDirectoryName(typeof(NativeLibraryLoader).Assembly.Location)!;
+			var asmPath = Path.GetDirectoryName(AppContext.BaseDirectory)!;
 			yield return Path.Combine(asmPath, "lib", ArchFolder, lib);
 			yield return Path.Combine(asmPath, "lib", lib);
 		}
