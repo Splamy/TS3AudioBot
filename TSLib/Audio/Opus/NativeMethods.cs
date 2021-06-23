@@ -92,7 +92,9 @@ namespace TSLib.Audio.Opus
 		SetBitrateRequest = 4002,
 		GetBitrateRequest = 4003,
 		SetInbandFecRequest = 4012,
-		GetInbandFecRequest = 4013
+		GetInbandFecRequest = 4013,
+		SetPacketLossPercentageRequest = 4014,
+		GetPacketLossPercentageRequest = 4015,
 	}
 
 	/// <summary>

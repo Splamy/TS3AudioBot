@@ -33,10 +33,10 @@ namespace TSLib.Audio
 
 		public void Write(Span<byte> data, Meta? meta)
 		{
-			if (OutStream is null || meta?.Codec is null)
+			if (OutStream is null || meta?.Codec is not { } codec)
 				return;
 
-			switch (meta.Codec.GetValueOrDefault())
+			switch (codec)
 			{
 			case Codec.OpusVoice:
 				{

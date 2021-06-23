@@ -394,10 +394,9 @@ namespace TS3AudioBot.CommandSystem.Commands
 			var unwrappedTargetType = UnwrapParamType(targetType);
 			if (valueType == typeof(string) && unwrappedTargetType == typeof(TimeSpan))
 			{
-				var time = TextUtil.ParseTime((string)value);
-				if (time is null)
+				if (TextUtil.ParseTime((string)value) is not { } time)
 					throw new CommandException(string.Format(strings.error_cmd_could_not_convert_to, value, nameof(TimeSpan)), CommandExceptionReason.MissingParameter);
-				return time.Value;
+				return time;
 			}
 
 			// Autoconvert

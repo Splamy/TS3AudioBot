@@ -18,7 +18,7 @@ namespace TS3AudioBot.Rights.Matchers
 
 		public MatchChannelGroupId(IEnumerable<ChannelGroupId> channelGroupIds) => this.channelGroupIds = new HashSet<ChannelGroupId>(channelGroupIds);
 
-		public override bool Matches(ExecuteContext ctx) => ctx.ChannelGroupId != null && channelGroupIds.Contains(ctx.ChannelGroupId.Value);
+		public override bool Matches(ExecuteContext ctx) => ctx.ChannelGroupId is { } id && channelGroupIds.Contains(id);
 
 		public override void SetRequiredFeatures(ParseContext ctx) => ctx.NeedsAvailableChanGroups = true;
 	}

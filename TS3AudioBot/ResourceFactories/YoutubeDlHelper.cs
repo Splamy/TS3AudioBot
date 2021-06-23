@@ -34,32 +34,29 @@ namespace TS3AudioBot.ResourceFactories
 
 		public static async Task<JsonYtdlDump> GetSingleVideo(string id, CancellationToken cancellationToken)
 		{
-			var ytdlPath = FindYoutubeDl();
-			if (ytdlPath is null)
+			if (FindYoutubeDl() is not { } ytdlPath)
 				throw Error.LocalStr(strings.error_ytdl_not_found);
 
-			var param = $"{ytdlPath.Value.param}{ParamGetSingleVideo} {id}";
-			return await RunYoutubeDl<JsonYtdlDump>(ytdlPath.Value.ytdlpath, param, cancellationToken);
+			var param = $"{ytdlPath.param}{ParamGetSingleVideo} {id}";
+			return await RunYoutubeDl<JsonYtdlDump>(ytdlPath.ytdlpath, param, cancellationToken);
 		}
 
 		public static async Task<JsonYtdlPlaylistDump> GetPlaylistAsync(string url, CancellationToken cancellationToken)
 		{
-			var ytdlPath = FindYoutubeDl();
-			if (ytdlPath is null)
+			if (FindYoutubeDl() is not { } ytdlPath)
 				throw Error.LocalStr(strings.error_ytdl_not_found);
 
-			var param = $"{ytdlPath.Value.param}{ParamGetPlaylist} {url}";
-			return await RunYoutubeDl<JsonYtdlPlaylistDump>(ytdlPath.Value.ytdlpath, param, cancellationToken);
+			var param = $"{ytdlPath.param}{ParamGetPlaylist} {url}";
+			return await RunYoutubeDl<JsonYtdlPlaylistDump>(ytdlPath.ytdlpath, param, cancellationToken);
 		}
 
 		public static async Task<JsonYtdlPlaylistDump> GetSearchAsync(string text, CancellationToken cancellationToken)
 		{
-			var ytdlPath = FindYoutubeDl();
-			if (ytdlPath is null)
+			if (FindYoutubeDl() is not { } ytdlPath)
 				throw Error.LocalStr(strings.error_ytdl_not_found);
 
-			var param = $"{ytdlPath.Value.param}{ParamGetSearch}\"{text}\"";
-			return await RunYoutubeDl<JsonYtdlPlaylistDump>(ytdlPath.Value.ytdlpath, param, cancellationToken);
+			var param = $"{ytdlPath.param}{ParamGetSearch}\"{text}\"";
+			return await RunYoutubeDl<JsonYtdlPlaylistDump>(ytdlPath.ytdlpath, param, cancellationToken);
 		}
 
 		public static (string ytdlpath, string param)? FindYoutubeDl()

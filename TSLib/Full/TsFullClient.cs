@@ -222,9 +222,8 @@ namespace TSLib.Full
 					if (ctx != context)
 						Log.Debug("Stray packet from old packethandler");
 
-					var result = msgProc.PushMessage(data);
-					if (result.HasValue)
-						InvokeEvent(result.GetValueOrDefault());
+					if (msgProc.PushMessage(data) is { } notif)
+						InvokeEvent(notif);
 				});
 				break;
 
@@ -493,27 +492,26 @@ namespace TSLib.Full
 		/// <param name="meta">The metadata where to send the packet.</param>
 		public void Write(Span<byte> data, Meta? meta)
 		{
-			if (meta?.Out is null
-				|| meta.Out.SendMode == TargetSendMode.None
-				|| !meta.Codec.HasValue
-				|| meta.Codec.GetValueOrDefault() == Codec.Raw)
-				return;
-
-			switch (meta.Out.SendMode)
+			if (meta?.Out is { } metaOut
+				&& meta.Codec is { } codec
+				&& codec != Codec.Raw)
 			{
-			case TargetSendMode.None:
-				break;
-			case TargetSendMode.Voice:
-				SendAudio(data, meta.Codec.GetValueOrDefault());
-				break;
-			case TargetSendMode.Whisper:
-				SendAudioWhisper(data, meta.Codec.GetValueOrDefault(), meta.Out.ChannelIds!, meta.Out.ClientIds!);
-				break;
-			case TargetSendMode.WhisperGroup:
-				SendAudioGroupWhisper(data, meta.Codec.GetValueOrDefault(), meta.Out.GroupWhisperType, meta.Out.GroupWhisperTarget, meta.Out.TargetId);
-				break;
-			case var _unhandled:
-				throw Tools.UnhandledDefault(_unhandled);
+				switch (metaOut.SendMode)
+				{
+				case TargetSendMode.None:
+					break;
+				case TargetSendMode.Voice:
+					SendAudio(data, codec);
+					break;
+				case TargetSendMode.Whisper:
+					SendAudioWhisper(data, codec, metaOut.ChannelIds!, metaOut.ClientIds!);
+					break;
+				case TargetSendMode.WhisperGroup:
+					SendAudioGroupWhisper(data, codec, metaOut.GroupWhisperType, metaOut.GroupWhisperTarget, metaOut.TargetId);
+					break;
+				case var _unhandled:
+					throw Tools.UnhandledDefault(_unhandled);
+				}
 			}
 		}
 		#endregion

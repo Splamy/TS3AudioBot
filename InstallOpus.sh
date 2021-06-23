@@ -27,7 +27,7 @@ cd "$OpusBaseName"
 if [ ! -f /usr/lib/libopus.so ]; then
     sudo cp ".libs/libopus.so" "/usr/lib/"
 else
-    echo "'/urs/lib/libopus.so' already exists, will not be overwritten"
+    echo "'/usr/lib/libopus.so' already exists, will not be overwritten"
 fi
 
 echo "Done"

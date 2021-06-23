@@ -878,13 +878,13 @@ namespace TS3AudioBot
 
 		private static async Task CommandKickme(Ts3Client ts3Client, ClientCall invoker, bool far)
 		{
-			if (invoker.ClientId is null)
+			if (invoker.ClientId is not { } clientId)
 				return;
 
 			try
 			{
-				if (far) await ts3Client.KickClientFromServer(invoker.ClientId.Value);
-				else await ts3Client.KickClientFromChannel(invoker.ClientId.Value);
+				if (far) await ts3Client.KickClientFromServer(clientId);
+				else await ts3Client.KickClientFromChannel(clientId);
 			}
 			catch (Exception ex) { throw new CommandException(strings.cmd_kickme_missing_permission, ex, CommandExceptionReason.CommandError); }
 		}
@@ -1573,9 +1573,8 @@ namespace TS3AudioBot
 		{
 			if (channels.Length == 0)
 			{
-				var subChan = invoker?.ChannelId;
-				if (subChan.HasValue)
-					targetManager.WhisperChannelSubscribe(false, subChan.Value);
+				if (invoker?.ChannelId is { } subChan)
+					targetManager.WhisperChannelSubscribe(false, subChan);
 			}
 			else targetManager.WhisperChannelSubscribe(false, channels);
 		}
@@ -1671,8 +1670,8 @@ namespace TS3AudioBot
 		[Command("unsubscribe")]
 		public static void CommandUnsubscribe(IVoiceTarget targetManager, ClientCall invoker)
 		{
-			if (invoker.ClientId != null)
-				targetManager.WhisperClientUnsubscribe(invoker.ClientId.Value);
+			if (invoker.ClientId is { } clientId)
+				targetManager.WhisperClientUnsubscribe(clientId);
 		}
 
 		[Command("unsubscribe channel")]
@@ -1680,9 +1679,8 @@ namespace TS3AudioBot
 		{
 			if (channels.Length == 0)
 			{
-				var subChan = invoker?.ChannelId;
-				if (subChan.HasValue)
-					targetManager.WhisperChannelUnsubscribe(false, subChan.Value);
+				if (invoker?.ChannelId is { } subChan)
+					targetManager.WhisperChannelUnsubscribe(false, subChan);
 			}
 			else
 			{

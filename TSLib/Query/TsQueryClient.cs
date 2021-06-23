@@ -131,24 +131,17 @@ namespace TSLib.Query
 				var result = await reader.ReadAsync(cancelationToken);
 
 				var buffer = result.Buffer;
-				SequencePosition? position;
 
-				do
+				while (buffer.PositionOf((byte)'\n') is { } position)
 				{
-					position = buffer.PositionOf((byte)'\n');
-
-					if (position.HasValue)
+					if (msgProc.PushMessage(buffer.Slice(0, position).ToArray()) is { } notif)
 					{
-						var notif = msgProc.PushMessage(buffer.Slice(0, position.GetValueOrDefault()).ToArray());
-						if (notif.HasValue)
-						{
-							dispatcher.Invoke(notif.GetValueOrDefault());
-						}
-
-						// +2 = skipping \n\r
-						buffer = buffer.Slice(buffer.GetPosition(2, position.GetValueOrDefault()));
+						dispatcher.Invoke(notif);
 					}
-				} while (position != null);
+
+					// +2 = skipping \n\r
+					buffer = buffer.Slice(buffer.GetPosition(2, position));
+				}
 
 				reader.AdvanceTo(buffer.Start, buffer.End);
 				if (result.IsCompleted || result.IsCanceled)

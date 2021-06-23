@@ -68,6 +68,7 @@ namespace TS3AudioBot.Config
 
 		private IEnumerable<ConfigPart> ProcessIdentifier(ReadOnlyMemory<char> pathM)
 		{
+			pathM = pathM.Trim();
 			if (pathM.IsEmpty)
 				return Enumerable.Empty<ConfigPart>();
 

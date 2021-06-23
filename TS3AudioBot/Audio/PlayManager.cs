@@ -67,17 +67,17 @@ namespace TS3AudioBot.Audio
 		public Task Enqueue(InvokerData invoker, IEnumerable<PlaylistItem> items)
 		{
 			var startOff = playlistManager.CurrentList.Items.Count;
-			playlistManager.Queue(items.Select(x => UpdateItem(invoker, x)));
+			playlistManager.Queue(items.Select(x => UpdateItem(x, invoker)));
 			return PostEnqueue(invoker, startOff);
 		}
 		public Task Enqueue(InvokerData invoker, PlaylistItem item)
 		{
 			var startOff = playlistManager.CurrentList.Items.Count;
-			playlistManager.Queue(UpdateItem(invoker, item));
+			playlistManager.Queue(UpdateItem(item, invoker));
 			return PostEnqueue(invoker, startOff);
 		}
 
-		private static PlaylistItem UpdateItem(InvokerData invoker, PlaylistItem item)
+		private static PlaylistItem UpdateItem(PlaylistItem item, InvokerData invoker)
 		{
 			item.PlayInfo ??= new PlayInfo();
 			item.PlayInfo.ResourceOwnerUid = invoker.ClientUid;
@@ -139,7 +139,7 @@ namespace TS3AudioBot.Audio
 		public async Task Play(InvokerData invoker, IEnumerable<PlaylistItem> items, int index = 0)
 		{
 			playlistManager.Clear();
-			playlistManager.Queue(items.Select(x => UpdateItem(invoker, x)));
+			playlistManager.Queue(items.Select(x => UpdateItem(x, invoker)));
 			playlistManager.Index = index;
 			await StartCurrent(invoker);
 		}

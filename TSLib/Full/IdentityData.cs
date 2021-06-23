@@ -48,7 +48,7 @@ namespace TSLib.Full
 
 		private Uid? clientUid;
 		/// <summary>The client uid, which can be used in teamspeak for various features.</summary>
-		public Uid ClientUid => clientUid ?? (clientUid = (Uid)GetUidFromPublicKey(PublicKeyString)).Value;
+		public Uid ClientUid => clientUid ??= (Uid)GetUidFromPublicKey(PublicKeyString);
 
 		public IdentityData(BigInteger privateKey, ECPoint? publicKey = null, ulong keyOffset = 0, ulong lastCheckedKeyOffset = 0)
 		{

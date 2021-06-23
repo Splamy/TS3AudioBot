@@ -183,6 +183,27 @@ namespace TSLib.Audio.Opus
 			}
 		}
 
+		public int PacketLoss
+		{
+			get
+			{
+				if (disposed)
+					throw new ObjectDisposedException(nameof(OpusEncoder));
+				var ret = NativeMethods.opus_encoder_ctl(encoder, Ctl.GetPacketLossPercentageRequest, out int perc);
+				if (ret < 0)
+					throw new Exception("Encoder error - " + ((Errors)ret).ToString());
+				return perc;
+			}
+			set
+			{
+				if (disposed)
+					throw new ObjectDisposedException(nameof(OpusEncoder));
+				var ret = NativeMethods.opus_encoder_ctl(encoder, Ctl.SetPacketLossPercentageRequest, value);
+				if (ret < 0)
+					throw new Exception("Encoder error - " + ((Errors)ret).ToString());
+			}
+		}
+
 		~OpusEncoder()
 		{
 			Dispose();

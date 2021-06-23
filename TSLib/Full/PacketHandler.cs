@@ -370,14 +370,12 @@ namespace TSLib.Full
 
 		private void FetchPackets(Span<byte> buffer)
 		{
-			var optpacket = Packet<TIn>.FromRaw(buffer);
-			// Invalid packet, ignore
-			if (!optpacket.HasValue)
+			if (Packet<TIn>.FromRaw(buffer) is not { } packet)
 			{
+				// Invalid packet, ignore
 				LogRaw.Warn("Dropping invalid packet: {0}", DebugUtil.DebugToHex(buffer));
 				return;
 			}
-			var packet = optpacket.GetValueOrDefault();
 
 			// DebugToHex is costly and allocates, precheck before logging
 			if (LogRaw.IsTraceEnabled)

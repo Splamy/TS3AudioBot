@@ -105,7 +105,7 @@ namespace TS3AudioBot.CommandSystem.Text
 			if (flag.HasFlag(TextModFlag.Underline))
 				strb.Append("[U]");
 			if (flag.HasFlag(TextModFlag.Color))
-				mod.HasColor!.Value.GetL(strb);
+				mod.HasColor.GetValueOrDefault().GetL(strb);
 			return cur | mod.Flags;
 		}
 

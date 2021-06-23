@@ -10,6 +10,7 @@
 using LiteDB;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 using TS3AudioBot.Localization;
@@ -23,11 +24,10 @@ namespace TS3AudioBot.History
 	public sealed class HistoryManager
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
-		private const int CurrentHistoryVersion = 1;
+		private const int CurrentHistoryVersion = 2;
 		private const string AudioLogEntriesTable = "audioLogEntries";
-		private const string ResourceTitleQueryColumn = "lowTitle";
 
-		private readonly LiteCollection<AudioLogEntry> audioLogEntries;
+		private readonly ILiteCollection<AudioLogEntry> audioLogEntries;
 		private readonly object dbLock = new();
 
 		public IHistoryFormatter Formatter { get; private set; }
@@ -55,16 +55,21 @@ namespace TS3AudioBot.History
 			audioLogEntries = database.GetCollection<AudioLogEntry>(AudioLogEntriesTable);
 			audioLogEntries.EnsureIndex(x => x.AudioResource.UniqueId, true);
 			audioLogEntries.EnsureIndex(x => x.Timestamp);
-			audioLogEntries.EnsureIndex(ResourceTitleQueryColumn,
-				$"LOWER($.{nameof(AudioLogEntry.AudioResource)}.{nameof(AudioResource.ResourceTitle)})");
+
 
 			if (meta.Version == CurrentHistoryVersion)
 				return;
 
+			void SetMetaVersion(int version)
+			{
+				meta.Version = version;
+				database.UpdateMetaData(meta);
+			}
+
+
 			if (audioLogEntries.Count() == 0)
 			{
-				meta.Version = CurrentHistoryVersion;
-				database.UpdateMetaData(meta);
+				SetMetaVersion(CurrentHistoryVersion);
 				return;
 			}
 
@@ -84,11 +89,16 @@ namespace TS3AudioBot.History
 					}
 				}
 				audioLogEntries.Update(all);
-				meta.Version = 1;
-				database.UpdateMetaData(meta);
+				SetMetaVersion(1);
+				goto case 1;
+
+			case 1:
+				audioLogEntries.DropIndex("lowTitle");
+				SetMetaVersion(2);
 				goto default;
 
 			default:
+				Debug.Assert(meta.Version == CurrentHistoryVersion);
 				Log.Info("Database table \"{0}\" upgraded to {1}", AudioLogEntriesTable, meta.Version);
 				break;
 			}
@@ -168,22 +178,21 @@ namespace TS3AudioBot.History
 			if (search.MaxResults <= 0)
 				return Array.Empty<AudioLogEntry>();
 
-			var query = Query.All(nameof(AudioLogEntry.Timestamp), Query.Descending);
+			var q2 = audioLogEntries.Query().OrderByDescending(x => x.Timestamp);
 
 			if (!string.IsNullOrEmpty(search.TitlePart))
 			{
 				var titleLower = search.TitlePart.ToLowerInvariant();
-				query = Query.And(query,
-					Query.Where(ResourceTitleQueryColumn, val => val.AsString.Contains(titleLower)));
+				q2 = q2.Where(x => x.AudioResource.ResourceTitle!.ToLower().Contains(titleLower));
 			}
 
 			if (search.UserUid != null)
-				query = Query.And(query, Query.EQ(nameof(AudioLogEntry.UserUid), search.UserUid));
+				q2 = q2.Where(x => x.UserUid == search.UserUid);
 
-			if (search.LastInvokedAfter != null)
-				query = Query.And(query, Query.GTE(nameof(AudioLogEntry.Timestamp), search.LastInvokedAfter.Value));
+			if (search.LastInvokedAfter is { } invoked)
+				q2 = q2.Where(x => x.Timestamp >= invoked);
 
-			return audioLogEntries.Find(query, 0, search.MaxResults);
+			return q2.Limit(search.MaxResults).ToEnumerable();
 		}
 
 		public string SearchParsed(SeachQuery query) => Format(Search(query));

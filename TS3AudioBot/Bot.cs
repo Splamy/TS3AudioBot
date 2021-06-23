@@ -146,8 +146,7 @@ namespace TS3AudioBot
 			if (Injector.TryGet<HistoryManager>(out var historyManager))
 				playManager.AfterResourceStarted += (s, e) =>
 				{
-					if (e.PlayInfo != null)
-						historyManager.LogAudioResource(new HistorySaveData(e.PlayResource.AudioResource, e.PlayInfo.ResourceOwnerUid));
+					historyManager.LogAudioResource(new HistorySaveData(e.PlayResource.AudioResource, e.EffectiveOwnerUid));
 					return Task.CompletedTask;
 				};
 			// Update our thumbnail
@@ -253,7 +252,7 @@ namespace TS3AudioBot
 			}
 			Log.Debug("TextMessage: {@textMessage}", textMessage);
 
-			textMessage.Message = textMessage.Message.TrimStart(' ');
+			textMessage.Message = textMessage.Message.Trim();
 			if (!textMessage.Message.StartsWith("!", StringComparison.Ordinal))
 				return;
 
