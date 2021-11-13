@@ -89,7 +89,7 @@ Then start the bot again.
 1. (Optional, but highly recommended for everything to work properly).
    - Create a privilege key for the ServerAdmin group (or a group which has equivalent rights).
    - Send the bot in a private message `!bot setup <privilege key>`.
-1. Congratz, you're done! Enjoy listening to your favourite music, experimenting with the crazy command system or do whatever you whish to do ;).  
+1. Congratz, you're done! Enjoy listening to your favourite music, experimenting with the crazy command system or do whatever you wish to do ;).  
 For further reading check out the [CommandSystem](https://github.com/Splamy/TS3AudioBot/wiki/CommandSystem).
 
 ## Building manually

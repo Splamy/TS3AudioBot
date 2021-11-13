@@ -18,6 +18,6 @@ namespace TS3AudioBot.Rights.Matchers
 
 		public MatchVisibility(TextMessageTargetMode[] visibility) => this.visibility = visibility;
 
-		public override bool Matches(ExecuteContext ctx) => ctx.Visibiliy is { } value && visibility.Contains(value);
+		public override bool Matches(ExecuteContext ctx) => ctx.Visibility is { } value && visibility.Contains(value);
 	}
 }

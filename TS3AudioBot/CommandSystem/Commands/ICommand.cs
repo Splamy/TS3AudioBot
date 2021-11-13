@@ -15,7 +15,7 @@ namespace TS3AudioBot.CommandSystem.Commands
 	public interface ICommand
 	{
 		/// <summary>Execute this command.</summary>
-		/// <param name="info">All global informations for this execution.</param>
+		/// <param name="info">All contextual data for this execution.</param>
 		/// <param name="arguments">
 		/// The arguments for this command.
 		/// They are evaluated lazy which means they will only be evaluated if needed.

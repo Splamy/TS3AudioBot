@@ -25,7 +25,7 @@ namespace TSLib
 	{
 		// ReSharper disable InconsistentNaming, UnusedMember.Global
 		undefined,
-		/// <summary>May occour on error returns with no associated permission</summary>
+		/// <summary>May occur on error returns with no associated permission</summary>
 		unknown,
 		/// <summary>Retrieve information about ServerQuery commands</summary>
 		b_serverinstance_help_view,
@@ -533,7 +533,7 @@ namespace TSLib
 			switch (permid)
 			{
 			case TsPermission.undefined: return "Undefined permission";
-			case TsPermission.unknown: return "May occour on error returns with no associated permission";
+			case TsPermission.unknown: return "May occur on error returns with no associated permission";
 			case TsPermission.b_serverinstance_help_view: return "Retrieve information about ServerQuery commands";
 			case TsPermission.b_serverinstance_version_view: return "Retrieve global server version (including platform and build number)";
 			case TsPermission.b_serverinstance_info_view: return "Retrieve global server information";

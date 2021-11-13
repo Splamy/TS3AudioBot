@@ -42,7 +42,7 @@ namespace TSLibAutogen
 			sourceBuilder.PopCloseBrace(); // switch
 			sourceBuilder.PopCloseBrace(); // fn GetDescription
 			sourceBuilder.PopCloseBrace(); // class
-			sourceBuilder.PopCloseBrace(); // namepsace
+			sourceBuilder.PopCloseBrace(); // namespace
 
 			return new[] { new GenFile("Permissions", SourceText.From(sourceBuilder.ToString(), Encoding.UTF8)) };
 		}

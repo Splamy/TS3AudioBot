@@ -94,7 +94,7 @@ namespace TS3AudioBot.Config
 
 			// Set field if either
 			// - this value is set
-			// - or we explicitely want to write out default values
+			// - or we explicitly want to write out default values
 			var selfToml = Parent.TomlObject.TryGetValue(Key);
 			if (hasValue || (writeDefaults && selfToml is null))
 			{

@@ -284,7 +284,7 @@ namespace TS3AudioBot.Plugins
 			}
 			catch (TypeLoadException tlex)
 			{
-				Log.Warn(nameof(InitializeAssembly) + " failed, The file \"{0}\" seems to be missing some dependecies ({1})", File.Name, tlex.Message);
+				Log.Warn(nameof(InitializeAssembly) + " failed, The file \"{0}\" seems to be missing some dependencies ({1})", File.Name, tlex.Message);
 				return PluginResponse.MissingDependency;
 			}
 			catch (Exception ex)

@@ -82,11 +82,11 @@ namespace TSLib.Full
 					var next = Read24(data, sourcePos);
 					var hash = Hash(next);
 					var offset = hashtable[hash];
-					var chache = cachetable[hash];
+					var cache = cachetable[hash];
 					cachetable[hash] = next;
 					hashtable[hash] = sourcePos;
 
-					if (chache == next
+					if (cache == next
 						&& hashCounter[hash]
 						&& (sourcePos - offset >= 3
 							|| sourcePos == offset + 1

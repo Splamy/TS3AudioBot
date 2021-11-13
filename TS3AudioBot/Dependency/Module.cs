@@ -22,7 +22,7 @@ namespace TS3AudioBot.Dependency
 		{
 			TService = tService;
 			TImplementation = tImplementation;
-			ConstructorParam = DependencyBuilder.GetContructorParam(TImplementation) ?? throw new ArgumentException("Invalid type");
+			ConstructorParam = DependencyBuilder.GetConstructorParam(TImplementation) ?? throw new ArgumentException("Invalid type");
 		}
 
 		public override string ToString() => $"{TService.Name}({(TService != TImplementation ? TImplementation.Name : "-")}) => {string.Join(",", ConstructorParam.Select(x => x.Name))}";

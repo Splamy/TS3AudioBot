@@ -108,7 +108,7 @@ namespace TS3AudioBot
 		[Usage("[<duration>]", "Optionally specifies a duration this key is valid. Uses common TSAB duration notation like '1h5m'")]
 		public static string CommandApiToken(TokenManager tokenManager, ClientCall invoker, TimeSpan? validTime = null)
 		{
-			if (invoker.Visibiliy != null && invoker.Visibiliy != TextMessageTargetMode.Private)
+			if (invoker.Visibility != null && invoker.Visibility != TextMessageTargetMode.Private)
 				throw new CommandException(strings.error_use_private, CommandExceptionReason.CommandError);
 			if (invoker.IsAnonymous || invoker.ClientUid == Uid.Null)
 				throw new MissingContextCommandException(strings.error_no_uid_found, typeof(ClientCall));
@@ -484,7 +484,7 @@ namespace TS3AudioBot
 			tmb.AppendLine("To get some basic help on how to get started use one of the following commands:");
 			tmb.Append("!help play", HelpCommand).AppendLine(" : basics for playing songs");
 			tmb.Append("!help playlists", HelpCommand).AppendLine(" : how to manage playlists");
-			tmb.Append("!help history", HelpCommand).AppendLine(" : viewing and accesing the play history");
+			tmb.Append("!help history", HelpCommand).AppendLine(" : viewing and accessing the play history");
 			tmb.Append("!help bot", HelpCommand).AppendLine(" : useful features to configure your bot");
 			tmb.Append("!help all", HelpCommand).AppendLine(" : show all commands");
 			tmb.Append("!help command", HelpCommand).Append(" <command path>", HelpCommandParam).AppendLine(" : help text of a specific command");
@@ -628,7 +628,7 @@ namespace TS3AudioBot
 		[Command("history from")]
 		public static JsonArray<AudioLogEntry> CommandHistoryFrom(HistoryManager historyManager, string userUid, int? amount = null)
 		{
-			var query = new SeachQuery { UserUid = userUid };
+			var query = new SearchQuery { UserUid = userUid };
 			if (amount != null)
 				query.MaxResults = amount.Value;
 
@@ -657,7 +657,7 @@ namespace TS3AudioBot
 		[Command("history last", "cmd_history_last_int_help")]
 		public static JsonArray<AudioLogEntry> CommandHistoryLast(HistoryManager historyManager, int amount)
 		{
-			var query = new SeachQuery { MaxResults = amount };
+			var query = new SearchQuery { MaxResults = amount };
 			var results = historyManager.Search(query).ToArray();
 			return new JsonArray<AudioLogEntry>(results, historyManager.Format);
 		}
@@ -665,7 +665,7 @@ namespace TS3AudioBot
 		[Command("history last", "cmd_history_last_help")]
 		public static async Task CommandHistoryLast(HistoryManager historyManager, PlayManager playManager, InvokerData invoker)
 		{
-			var ale = historyManager.Search(new SeachQuery { MaxResults = 1 }).FirstOrDefault();
+			var ale = historyManager.Search(new SearchQuery { MaxResults = 1 }).FirstOrDefault();
 			if (ale is null)
 				throw new CommandException(strings.cmd_history_last_is_empty, CommandExceptionReason.CommandError);
 			await playManager.Play(invoker, ale.AudioResource);
@@ -692,7 +692,7 @@ namespace TS3AudioBot
 		[Command("history till", "cmd_history_till_DateTime_help")]
 		public static JsonArray<AudioLogEntry> CommandHistoryTill(HistoryManager historyManager, DateTime time)
 		{
-			var query = new SeachQuery { LastInvokedAfter = time };
+			var query = new SearchQuery { LastInvokedAfter = time };
 			var results = historyManager.Search(query).ToArray();
 			return new JsonArray<AudioLogEntry>(results, historyManager.Format);
 		}
@@ -708,7 +708,7 @@ namespace TS3AudioBot
 				"week" => DateTime.Today.AddDays(-7),
 				_ => throw new CommandException(strings.error_unrecognized_descriptor, CommandExceptionReason.CommandError),
 			};
-			var query = new SeachQuery { LastInvokedAfter = tillTime };
+			var query = new SearchQuery { LastInvokedAfter = tillTime };
 			var results = historyManager.Search(query).ToArray();
 			return new JsonArray<AudioLogEntry>(results, historyManager.Format);
 		}
@@ -716,7 +716,7 @@ namespace TS3AudioBot
 		[Command("history title")]
 		public static JsonArray<AudioLogEntry> CommandHistoryTitle(HistoryManager historyManager, string part)
 		{
-			var query = new SeachQuery { TitlePart = part };
+			var query = new SearchQuery { TitlePart = part };
 			var results = historyManager.Search(query).ToArray();
 			return new JsonArray<AudioLogEntry>(results, historyManager.Format);
 		}
@@ -1130,7 +1130,7 @@ namespace TS3AudioBot
 		[Command("pm")]
 		public static string CommandPm(ClientCall invoker)
 		{
-			invoker.Visibiliy = TextMessageTargetMode.Private;
+			invoker.Visibility = TextMessageTargetMode.Private;
 			return string.Format(strings.cmd_pm_hi, invoker.NickName ?? "Anonymous");
 		}
 
@@ -1211,7 +1211,7 @@ namespace TS3AudioBot
 		[Command("quiz off")]
 		public static async Task CommandQuizOff(Bot bot, PlayManager playManager, ClientCall? invoker = null)
 		{
-			if (invoker != null && invoker.Visibiliy == TextMessageTargetMode.Private)
+			if (invoker != null && invoker.Visibility == TextMessageTargetMode.Private)
 				throw new CommandException(strings.cmd_quiz_off_no_cheating, CommandExceptionReason.CommandError);
 			bot.QuizMode = false;
 			if (playManager.IsPlaying)
@@ -1369,7 +1369,7 @@ namespace TS3AudioBot
 			=> session.GetSingleSearchResult(index);
 
 		[Command("search play", "_undocumented")] // TODO Doc
-		public static async Task CommandSeachPlay(PlayManager playManager, ClientCall clientCall, UserSession session, int index)
+		public static async Task CommandSearchPlay(PlayManager playManager, ClientCall clientCall, UserSession session, int index)
 			=> await playManager.Play(clientCall, session.GetSingleSearchResult(index));
 
 		[Command("search show", "_undocumented")] // TODO Doc
@@ -1845,7 +1845,7 @@ namespace TS3AudioBot
 			if (!info.TryGet<ClientCall>(out var invoker))
 				throw new CommandException(strings.error_no_invoker_in_context);
 
-			if (invoker.Visibiliy is null || invoker.ClientId is null)
+			if (invoker.Visibility is null || invoker.ClientId is null)
 				throw new CommandException(strings.error_invoker_not_visible);
 
 			var behaviour = LongTextBehaviour.Split;
@@ -1858,7 +1858,7 @@ namespace TS3AudioBot
 
 			foreach (var msgPart in LongTextTransform.Split(message, behaviour, ts3Client.ServerConstants.MaxSizeTextMessage, limit))
 			{
-				switch (invoker.Visibiliy.Value)
+				switch (invoker.Visibility.Value)
 				{
 				case TextMessageTargetMode.Private:
 					await ts3Client.SendMessage(msgPart, invoker.ClientId.Value);

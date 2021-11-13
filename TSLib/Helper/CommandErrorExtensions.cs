@@ -22,7 +22,7 @@ namespace TSLib.Messages
 
 		public static CommandError Parser { get; } = Custom("Result could not be parsed");
 
-		public static CommandError CommandTimeout { get; } = Custom("Command protocol timout");
+		public static CommandError CommandTimeout { get; } = Custom("Command protocol timeout");
 
 		public static CommandError Custom(string message) => new() { Id = TsErrorCode.custom_error, Message = message };
 

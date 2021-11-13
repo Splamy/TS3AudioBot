@@ -9,7 +9,7 @@
 
 namespace TSLib.Commands
 {
-	/// <summary>Represents an array of data. Will be expanded to a pipe seperated list when sent.
+	/// <summary>Represents an array of data. Will be expanded to a pipe separated list when sent.
 	/// Multiple <see cref="CommandMultiParameter"/> will be merged automatically but will need the same array length.</summary>
 	public sealed partial class CommandMultiParameter : ICommandPart
 	{

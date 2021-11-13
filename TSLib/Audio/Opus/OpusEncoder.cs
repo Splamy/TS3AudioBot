@@ -55,7 +55,7 @@ namespace TSLib.Audio.Opus
 			var encoderPtr = NativeMethods.opus_encoder_create(inputSamplingRate, inputChannels, application, out var error);
 			if ((Errors)error != Errors.Ok)
 			{
-				throw new Exception("Exception occured while creating encoder");
+				throw new Exception("Exception occurred while creating encoder");
 			}
 			return new OpusEncoder(encoderPtr, inputSamplingRate, inputChannels, application);
 		}

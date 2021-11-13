@@ -163,7 +163,7 @@ namespace TS3AudioBot
 		public bool ShowVersion { get; set; }
 
 		// -i --interactive, minimal ui/console tool to execute basic stuff like
-		// create bot, excute commands
+		// create bot, execute commands
 
 		// --setup setup the entire environment (-y to skip for user input?)
 		// > libopus (self-compile/apt-get)

@@ -26,7 +26,7 @@ namespace TSLib.Full
 		private static readonly int MaxOutContentSize = MaxOutPacketSize - OutHeaderSize;
 		private const int PacketBufferSize = 4096;
 
-		// Timout calculations
+		// Timeout calculations
 		/// <summary>The SmoothedRoundTripTime holds the smoothed average time
 		/// it takes for a packet to get ack'd.</summary>
 		private TimeSpan smoothedRtt;
@@ -381,7 +381,7 @@ namespace TSLib.Full
 			if (LogRaw.IsTraceEnabled)
 				LogRaw.Trace("[I] Raw {0}", DebugUtil.DebugToHex(packet.Raw));
 
-			FindIncommingGenerationId(ref packet);
+			FindIncomingGenerationId(ref packet);
 			if (!tsCrypt.Decrypt(ref packet))
 			{
 				LogRaw.Warn("Dropping not decryptable packet: {0}", DebugUtil.DebugToHex(packet.Raw));
@@ -440,7 +440,7 @@ namespace TSLib.Full
 		// These methods are for low level packet processing which the
 		// rather high level TS3FullClient should not worry about.
 
-		private void FindIncommingGenerationId(ref Packet<TIn> packet)
+		private void FindIncomingGenerationId(ref Packet<TIn> packet)
 		{
 			GenerationWindow window;
 			switch (packet.PacketType)
@@ -650,7 +650,7 @@ namespace TSLib.Full
 		}
 
 		/// <summary>
-		/// ResendLoop will regularly check if a packet has be acknowleged and trys to send it again
+		/// ResendLoop will regularly check if a packet has be acknowledged and tries to send it again
 		/// if the timeout for a packet ran out.
 		/// </summary>
 		private void ResendLoop()

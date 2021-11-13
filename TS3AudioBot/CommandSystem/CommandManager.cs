@@ -25,7 +25,7 @@ using TSLib.Helper;
 
 namespace TS3AudioBot.CommandSystem
 {
-	/// <summary>Mangement for the bot command system.</summary>
+	/// <summary>Management for the bot command system.</summary>
 	public class CommandManager
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();

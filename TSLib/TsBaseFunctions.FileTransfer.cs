@@ -108,7 +108,7 @@ namespace TSLib
 				}
 				if (token.Status != TransferStatus.Waiting)
 					return CommandError.Custom("Token is not open");
-				token.Status = TransferStatus.Transfering;
+				token.Status = TransferStatus.Transferring;
 
 				Log.Trace("Creating new file transfer connection to {0}", remoteAddress);
 				using var client = new TcpClient(remoteAddress.AddressFamily);
@@ -150,7 +150,7 @@ namespace TSLib
 
 					await stream.CopyToAsync(token.LocalStream);
 				}
-				if (token.Status == TransferStatus.Transfering && token.LocalStream.Position == token.Size)
+				if (token.Status == TransferStatus.Transferring && token.LocalStream.Position == token.Size)
 				{
 					token.Status = TransferStatus.Done;
 					if (token.CloseStreamWhenDone)
@@ -219,7 +219,7 @@ namespace TSLib
 		/// False to only temporarily stop the transfer (can be resumed again with <see cref="Resume"/>).</param>
 		public async Task Abort(FileTransferToken token, bool delete = false)
 		{
-			if (token.Status != TransferStatus.Transfering && token.Status != TransferStatus.Waiting)
+			if (token.Status != TransferStatus.Transferring && token.Status != TransferStatus.Waiting)
 				return;
 			await FileTransferStop(token.ServerTransferId, delete);
 			token.Status = TransferStatus.Cancelled;
@@ -234,7 +234,7 @@ namespace TSLib
 		/// <returns>Returns an information object or <code>null</code> when not available.</returns>
 		public async Task<R<Filetransfer, CommandError>> GetStats(FileTransferToken token)
 		{
-			if (token.Status != TransferStatus.Transfering)
+			if (token.Status != TransferStatus.Transferring)
 				return CommandError.Custom("No transfer found");
 
 			var result = await FileTransferList();
@@ -306,7 +306,7 @@ namespace TSLib
 	public enum TransferStatus
 	{
 		Waiting,
-		Transfering,
+		Transferring,
 		Done,
 		Cancelled,
 		Failed,

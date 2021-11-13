@@ -283,7 +283,7 @@ namespace TS3AudioBot.CommandSystem.Commands
 				if (kind.IsNormal())
 				{
 					// If we have the last normal parameter, check if it fits the criteria
-					// to be extened to a tail string.
+					// to be extended to a tail string.
 					// If it does not, we set foundTail to true anyway, since no other
 					// fitting parameter would be a tail anymore
 					if (!foundTail && arg == typeof(string))

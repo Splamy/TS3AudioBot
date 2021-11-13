@@ -8,6 +8,6 @@ export default {
 	"pl": "Polish",
 	"ru": "Russian [Русский]",
 	"es": "Spanish",
-	"es-ar": "Spanish (Argentinia)",
+	"es-ar": "Spanish (Argentina)",
 	"th": "Thai",
 };

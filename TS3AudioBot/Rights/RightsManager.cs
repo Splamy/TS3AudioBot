@@ -89,7 +89,7 @@ namespace TS3AudioBot.Rights
 			{
 				execCtx.ServerGroups = clientCall.ServerGroups;
 				execCtx.ClientUid = clientCall.ClientUid;
-				execCtx.Visibiliy = clientCall.Visibiliy;
+				execCtx.Visibility = clientCall.Visibility;
 				execCtx.IsApi = false;
 
 				// Get Required Matcher Data:
@@ -333,7 +333,7 @@ namespace TS3AudioBot.Rights
 
 		private static void RecalculateRights(TomlTable table, ParseContext parseCtx)
 		{
-			if (!parseCtx.RootRule.ParseChilden(table, parseCtx))
+			if (!parseCtx.RootRule.ParseChildren(table, parseCtx))
 				return;
 
 			parseCtx.SplitDeclarations();

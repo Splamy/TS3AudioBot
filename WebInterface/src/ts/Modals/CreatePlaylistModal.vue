@@ -11,7 +11,7 @@
 				<b-field
 					label="(optional) File name"
 					:type="is_taken ? 'is-danger' : ''"
-					:message="is_taken ? 'File aready exists. Please enter a name.' : ''"
+					:message="is_taken ? 'File already exists. Please enter a name.' : ''"
 				>
 					<b-field>
 						<b-input v-model="id" :placeholder="autoId" expanded></b-input>

@@ -22,11 +22,11 @@ namespace TS3AudioBot
 		public string? NickName { get; }
 		public ServerGroupId[]? ServerGroups { get; }
 		public ChannelGroupId? ChannelGroup { get; }
-		public TextMessageTargetMode? Visibiliy { get; internal set; }
+		public TextMessageTargetMode? Visibility { get; internal set; }
 
 		public ClientCall(Uid clientUid, string textMessage, ClientDbId? databaseId = null,
 			ChannelId? channelId = null, ClientId? clientId = null, string? nickName = null,
-			TextMessageTargetMode? visibiliy = null, ServerGroupId[]? serverGroups = null,
+			TextMessageTargetMode? visibility = null, ServerGroupId[]? serverGroups = null,
 			ChannelGroupId? channelGroup = null) : base(clientUid)
 		{
 			TextMessage = textMessage;
@@ -34,7 +34,7 @@ namespace TS3AudioBot
 			ChannelId = channelId;
 			ClientId = clientId;
 			NickName = nickName;
-			Visibiliy = visibiliy;
+			Visibility = visibility;
 			ServerGroups = serverGroups;
 			ChannelGroup = channelGroup;
 		}

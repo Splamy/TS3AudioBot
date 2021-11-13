@@ -26,7 +26,7 @@ public class M2BDeclarations
 
 				if (bookItem.properties.Any(x => x.name == prop.pretty))
 				{
-					// chek already exists
+					// check already exists
 
 					rule.properties.Add(new M2BPropMove {
 						from = prop.pretty,

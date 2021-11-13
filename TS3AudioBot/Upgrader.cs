@@ -33,7 +33,7 @@ namespace TS3AudioBot
 			switch (meta.Version)
 			{
 			case 0:
-				// Case 0 should always jump to the lastest version, since it gets created on first start.
+				// Case 0 should always jump to the latest version, since it gets created on first start.
 				Advance(CurrentVersion, null);
 				goto case CurrentVersion;
 

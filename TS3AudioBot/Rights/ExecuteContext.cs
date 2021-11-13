@@ -25,7 +25,7 @@ namespace TS3AudioBot.Rights
 		public IPAddress? ApiCallerIp { get; set; }
 		public string? ApiToken { get; set; }
 		public string? Bot { get; set; }
-		public TextMessageTargetMode? Visibiliy { get; set; }
+		public TextMessageTargetMode? Visibility { get; set; }
 		public PermOverview[]? Permissions { get; set; }
 
 		public List<RightsRule> MatchingRules { get; } = new List<RightsRule>();

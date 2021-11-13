@@ -254,8 +254,8 @@ namespace TS3AudioBot.Config
 		{
 			if (!Save(file, false).GetOk(out var error))
 			{
-				Log.Error(error, "An error occoured saving the bot config.");
-				return new LocalStr(string.Format("An error occoured saving the bot config.")); // LOC: TODO
+				Log.Error(error, "An error occurred saving the bot config.");
+				return new LocalStr(string.Format("An error occurred saving the bot config.")); // LOC: TODO
 			}
 			return R.Ok;
 		}

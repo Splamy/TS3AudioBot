@@ -53,7 +53,7 @@ namespace TSLib.Audio.Opus
 			var decoderPtr = NativeMethods.opus_decoder_create(outputSampleRate, outputChannels, out var error);
 			if ((Errors)error != Errors.Ok)
 			{
-				throw new Exception("Exception occured while creating decoder");
+				throw new Exception("Exception occurred while creating decoder");
 			}
 			return new OpusDecoder(decoderPtr, outputSampleRate, outputChannels);
 		}

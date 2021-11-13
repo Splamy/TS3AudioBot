@@ -60,7 +60,7 @@ namespace TS3AudioBot.Rights
 			}
 		}
 
-		public bool ParseChilden(TomlTable tomlObj, ParseContext ctx)
+		public bool ParseChildren(TomlTable tomlObj, ParseContext ctx)
 		{
 			Id = ctx.Declarations.Count;
 			ctx.Declarations.Add(this);

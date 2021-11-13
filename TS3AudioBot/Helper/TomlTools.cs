@@ -169,7 +169,7 @@ namespace TS3AudioBot.Helper
 
 			// I literally have no idea how to write it better with this toml library.
 
-			// Note for TimeSpan: since TimeSpan as Nett (de)serializes it is not standartized we have to cast it manually
+			// Note for TimeSpan: since TimeSpan as Nett (de)serializes it is not standardized we have to cast it manually
 
 			TomlObject retobj = tomlTable.TryGetValue(key);
 			if (retobj is null)

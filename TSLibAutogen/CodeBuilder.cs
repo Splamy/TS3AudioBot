@@ -16,7 +16,7 @@ namespace TSLibAutogen
 			if (Level < 0)
 			{
 				Level = 0;
-				Strb.Append("/* ERROR Indentation undeflow ERROR */"); // TODO diag error
+				Strb.Append("/* ERROR Indentation underflow ERROR */"); // TODO diag error
 			}
 		}
 

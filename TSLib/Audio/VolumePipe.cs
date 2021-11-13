@@ -37,7 +37,7 @@ namespace TSLib.Audio
 			{
 				audioSamples.Fill(0);
 			}
-			else if (volume < 1) // Clipping cannot occour on mult <1
+			else if (volume < 1) // Clipping cannot occur on mult <1
 			{
 				var shortArr = MemoryMarshal.Cast<byte, short>(audioSamples);
 				for (int i = 0; i < shortArr.Length; i++)

@@ -165,7 +165,7 @@ import SettingsPassword from "../Components/SettingsPassword.vue";
 import { bot, cmd, Api } from "../Api";
 import { IVersion } from "../ApiObjects";
 import { Util } from "../Util";
-import Lang from "../Model/Languge";
+import Lang from "../Model/Language";
 import { debounce } from "lodash-es";
 import { SettLevel } from "../Model/SettingsLevel";
 

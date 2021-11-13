@@ -308,7 +308,7 @@ namespace TS3AudioBot
 
 			var invoker = new ClientCall(textMessage.InvokerUid ?? Uid.Anonymous, textMessage.Message,
 				clientId: textMessage.InvokerId,
-				visibiliy: textMessage.Target,
+				visibility: textMessage.Target,
 				nickName: textMessage.InvokerName,
 				channelId: channelId,
 				databaseId: databaseId,

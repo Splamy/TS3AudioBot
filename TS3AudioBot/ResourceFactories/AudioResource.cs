@@ -19,7 +19,7 @@ namespace TS3AudioBot.ResourceFactories
 		/// <summary>The resource type.</summary>
 		[JsonPropertyName("type")]
 		public string AudioType { get; set; }
-		/// <summary>An identifier to create the song. This id is uniqe among all resources with the same resource type string of a factory.</summary>
+		/// <summary>An identifier to create the song. This id is unique among all resources with the same resource type string of a factory.</summary>
 		[JsonPropertyName("resid")]
 		public string ResourceId { get; set; }
 		/// <summary>The display title.</summary>
@@ -29,7 +29,7 @@ namespace TS3AudioBot.ResourceFactories
 		[JsonPropertyName("add")]
 		[JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
 		public Dictionary<string, string>? AdditionalData { get; set; }
-		/// <summary>An identifier wich is unique among all <see cref="AudioResource"/> and resource type string of a factory.</summary>
+		/// <summary>An identifier which is unique among all <see cref="AudioResource"/> and resource type string of a factory.</summary>
 		[JsonIgnore]
 		public string UniqueId => ResourceId + AudioType;
 		[JsonIgnore]

@@ -45,7 +45,7 @@
 				</div>
 
 				<div class="box">
-					<b-field style="margin-bottom: 1em;" groupd>
+					<b-field style="margin-bottom: 1em;" grouped>
 						<b-input v-model="loadSongUrl" type="text" placeholder="New song link" expanded />
 						<b-button type="is-primary" icon-right="plus" @click="addNewSong" />
 						<b-button type="is-primary" icon-right="play" @click="playNewSong" />

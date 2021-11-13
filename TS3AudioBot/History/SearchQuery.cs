@@ -11,14 +11,14 @@ using System;
 
 namespace TS3AudioBot.History
 {
-	public class SeachQuery
+	public class SearchQuery
 	{
 		public string? TitlePart { get; set; }
 		public string? UserUid { get; set; }
 		public DateTime? LastInvokedAfter { get; set; }
 		public int MaxResults { get; set; }
 
-		public SeachQuery()
+		public SearchQuery()
 		{
 			TitlePart = null;
 			UserUid = null;

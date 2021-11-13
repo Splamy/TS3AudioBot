@@ -122,7 +122,7 @@ namespace TS3AudioBot
 
 			// check required security level
 			if (identityConf.Level.Value >= 0 && identityConf.Level.Value <= 160)
-				UpdateIndentityToSecurityLevel(identityConf.Level.Value);
+				UpdateIdentityToSecurityLevel(identityConf.Level.Value);
 			else if (identityConf.Level.Value != -1)
 				Log.Warn("Invalid config value for 'Level', enter a number between '0' and '160' or '-1' to adapt automatically.");
 			config.SaveWhenExists();
@@ -194,7 +194,7 @@ namespace TS3AudioBot
 			ts3FullClient.Dispose();
 		}
 
-		private void UpdateIndentityToSecurityLevel(int targetLevel)
+		private void UpdateIdentityToSecurityLevel(int targetLevel)
 		{
 			if (identity is null) throw new InvalidOperationException();
 			if (identity.GetSecurityLevel() < targetLevel)
@@ -388,7 +388,7 @@ namespace TS3AudioBot
 					TsPermission.i_client_kick_from_server_power, // + Optional for kicking
 					TsPermission.i_client_max_clones_uid, // + In case that bot times out and tries to join again
 
-					TsPermission.b_client_ignore_antiflood, // + The bot should be resistent to forced spam attacks
+					TsPermission.b_client_ignore_antiflood, // + The bot should be resistant to forced spam attacks
 					TsPermission.b_channel_join_ignore_password, // + The noble bot will not abuse this power
 					TsPermission.b_channel_join_permanent, // + Allow joining to all channel even on strict servers
 					TsPermission.b_channel_join_semi_permanent, // + Allow joining to all channel even on strict servers
@@ -400,7 +400,7 @@ namespace TS3AudioBot
 
 					TsPermission.i_client_max_avatar_filesize, // + Uploading thumbnails as avatar
 					TsPermission.b_client_use_channel_commander, // + Enable channel commander
-					TsPermission.b_client_ignore_bans, // + The bot should be resistent to bans
+					TsPermission.b_client_ignore_bans, // + The bot should be resistant to bans
 					TsPermission.b_client_ignore_sticky, // + Should skip weird movement restrictions
 
 					TsPermission.i_client_max_channel_subscriptions, // + Required to find user to communicate
@@ -510,7 +510,7 @@ namespace TS3AudioBot
 					if (config.Connect.Identity.Level.Value == -1 && !string.IsNullOrEmpty(error.ExtraMessage))
 					{
 						int targetSecLevel = int.Parse(error.ExtraMessage);
-						UpdateIndentityToSecurityLevel(targetSecLevel); // TODO Async
+						UpdateIdentityToSecurityLevel(targetSecLevel); // TODO Async
 						await ConnectClient();
 						return; // skip triggering event, we want to reconnect
 					}
@@ -656,7 +656,7 @@ namespace TS3AudioBot
 		}
 	}
 
-	internal static class CommandErrorExtentions
+	internal static class CommandErrorExtensions
 	{
 		public static async Task<T> UnwrapThrow<T>(this Task<R<T, CommandError>> task, Func<TsErrorCode, (string? loc, bool msg)>? prefix = null) where T : notnull
 		{

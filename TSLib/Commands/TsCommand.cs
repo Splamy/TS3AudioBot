@@ -162,7 +162,7 @@ namespace TSLib.Commands
 
 		public override TsCommand Add(ICommandPart? addParameter)
 		{
-			throw new InvalidOperationException("Raw commands cannot be extented");
+			throw new InvalidOperationException("Raw commands cannot be extended");
 		}
 
 		public override string ToString()

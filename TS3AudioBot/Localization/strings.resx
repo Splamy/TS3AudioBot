@@ -229,7 +229,7 @@
     <value>Gets the last &lt;count&gt; songs from the user with the given &lt;user-dbid&gt;</value>
   </data>
   <data name="cmd_history_id_uint_help" xml:space="preserve">
-    <value>&lt;id&gt; Displays all saved informations about the song with &lt;id&gt;</value>
+    <value>&lt;id&gt; Displays all saved information about the song with &lt;id&gt;</value>
   </data>
   <data name="cmd_history_id_string_help" xml:space="preserve">
     <value>(last|next) Gets the highest|next song id</value>
@@ -250,7 +250,7 @@
     <value>&lt;date&gt; Gets all songs played until &lt;date&gt;.</value>
   </data>
   <data name="cmd_history_till_string_help" xml:space="preserve">
-    <value>&lt;name&gt; Any of those desciptors: (hour|today|yesterday|week)</value>
+    <value>&lt;name&gt; Any of those descriptors: (hour|today|yesterday|week)</value>
   </data>
   <data name="cmd_history_title_help" xml:space="preserve">
     <value>Gets all songs which title contains &lt;string&gt;</value>
@@ -730,7 +730,7 @@ with the id {1}?</value>
     <value>The bot does not have the required system permission.</value>
   </data>
   <data name="error_io_unknown_error" xml:space="preserve">
-    <value>An unknown error occoured.</value>
+    <value>An unknown error occurred.</value>
   </data>
   <data name="error_media_failed_to_parse_id" xml:space="preserve">
     <value>The id could not get parsed.</value>
@@ -856,7 +856,7 @@ with the id {1}?</value>
     <value>Provides get/set methods to change the settings.</value>
   </data>
   <data name="cmd_settings_help_help" xml:space="preserve">
-    <value>Get the desciption for a setting.</value>
+    <value>Get the description for a setting.</value>
   </data>
   <data name="cmd_settings_set_help" xml:space="preserve">
     <value>Sets a value from the bot settings.</value>

@@ -246,11 +246,11 @@ namespace TS3AudioBot.ResourceFactories
 					return;
 				}
 
-				var timoutTask = Task.Delay(timeout, cancellationToken);
+				var timeoutTask = Task.Delay(timeout, cancellationToken);
 
 				using (cancellationToken.Register(() => tcs.TrySetCanceled()))
 				{
-					await Task.WhenAny(tcs.Task, timoutTask);
+					await Task.WhenAny(tcs.Task, timeoutTask);
 				}
 			}
 			finally

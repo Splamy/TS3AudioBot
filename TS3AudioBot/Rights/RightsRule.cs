@@ -122,7 +122,7 @@ namespace TS3AudioBot.Rights
 						var rule = new RightsRule();
 						Children.Add(rule);
 						rule.Parent = this;
-						rule.ParseChilden(childTable, ctx);
+						rule.ParseChildren(childTable, ctx);
 					}
 					return true;
 				}
@@ -141,7 +141,7 @@ namespace TS3AudioBot.Rights
 						var group = new RightsGroup(key);
 						Children.Add(group);
 						group.Parent = this;
-						group.ParseChilden(childTable, ctx);
+						group.ParseChildren(childTable, ctx);
 						return true;
 					}
 					else

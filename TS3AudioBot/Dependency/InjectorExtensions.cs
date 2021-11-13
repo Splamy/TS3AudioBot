@@ -61,7 +61,7 @@ namespace TS3AudioBot.Dependency
 
 		public static bool TryCreate(this IInjector injector, Type type, [NotNullWhen(true)] out object? obj)
 		{
-			var param = DependencyBuilder.GetContructorParam(type);
+			var param = DependencyBuilder.GetConstructorParam(type);
 			if (param == null)
 				throw new ArgumentException("Invalid type, no constructors");
 

@@ -141,7 +141,7 @@ namespace TS3AudioBot.Playlists
 						var rskvp = value.Split(new[] { ':' }, 2);
 						if (kvp.Length < 2)
 						{
-							Log.Warn("Erroneus playlist split count: {0}", line);
+							Log.Warn("Erroneous playlist split count: {0}", line);
 							continue;
 						}
 						string content = rskvp[1];
@@ -172,7 +172,7 @@ namespace TS3AudioBot.Playlists
 					break;
 
 				default:
-					Log.Warn("Erroneus playlist data block: {0}", line);
+					Log.Warn("Erroneous playlist data block: {0}", line);
 					break;
 				}
 			}

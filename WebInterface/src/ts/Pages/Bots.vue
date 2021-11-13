@@ -236,7 +236,7 @@ export default Vue.extend({
 				"to",
 				address
 			).get();
-			// TODO get info and jump to corrent page
+			// TODO get info and jump to current page
 			if (!Util.check(this, res, "Error connecting bot")) {
 				return;
 			}

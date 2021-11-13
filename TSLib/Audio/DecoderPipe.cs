@@ -18,7 +18,7 @@ namespace TSLib.Audio
 		public bool Active => OutStream?.Active ?? false;
 		public IAudioPassiveConsumer? OutStream { get; set; }
 
-		// TOOO:
+		// TODO:
 		// - Add some sort of decoder reuse to reduce concurrent amount of decoders (see ctl 'reset')
 		// - Clean up decoders after some time (Control: Tick?)
 		// - Make dispose threadsafe OR redefine thread safety requirements for pipes.

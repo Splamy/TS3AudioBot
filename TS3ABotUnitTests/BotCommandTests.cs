@@ -113,7 +113,7 @@ namespace TS3ABotUnitTests
 			Assert.AreEqual(1, result.Count());
 			Assert.AreEqual("help", result.First().Key);
 
-			// The first occurence of y
+			// The first occurrence of y
 			result = filter.Filter(filterList, "y");
 			Assert.AreEqual(1, result.Count());
 			Assert.AreEqual("ply", result.First().Key);

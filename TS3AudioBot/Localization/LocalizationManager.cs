@@ -76,7 +76,7 @@ namespace TS3AudioBot.Localization
 
 		private static async Task<E<string>> LoadLanguageAssembly(LanguageData languageDataInfo, CultureInfo culture, bool forceDownload)
 		{
-			Task<HashSet<string>?>? avaliableToDownload = null;
+			Task<HashSet<string>?>? availableToDownload = null;
 			var triedDownloading = languageDataInfo.TriedDownloading;
 
 			foreach (var currentResolveCulture in GetWithFallbackCultures(culture))
@@ -94,11 +94,11 @@ namespace TS3AudioBot.Localization
 				// Check if we need to download the resource
 				if (forceDownload || (!tryFile.Exists && !triedDownloading))
 				{
-					if (avaliableToDownload is null)
+					if (availableToDownload is null)
 					{
-						avaliableToDownload = DownloadAvaliableLanguages();
+						availableToDownload = DownloadAvailableLanguages();
 					}
-					var list = await avaliableToDownload;
+					var list = await availableToDownload;
 					if (list is null || !list.Contains(currentResolveCulture.Name))
 					{
 						if (list != null)
@@ -159,7 +159,7 @@ namespace TS3AudioBot.Localization
 		private static FileInfo GetCultureFileInfo(CultureInfo culture)
 			=> new(Path.Combine(Directory.GetCurrentDirectory(), culture.Name, "TS3AudioBot.resources.dll"));
 
-		private static async Task<HashSet<string>?> DownloadAvaliableLanguages()
+		private static async Task<HashSet<string>?> DownloadAvailableLanguages()
 		{
 			try
 			{

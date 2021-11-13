@@ -36,7 +36,7 @@ namespace TSLib.Full
 		public override ClientType ClientType => ClientType.Full;
 		/// <summary>The client id given to this connection by the server.</summary>
 		public ClientId ClientId => context?.PacketHandler.ClientId ?? ClientId.Null;
-		/// <summary>The disonnect message when leaving.</summary>
+		/// <summary>The disconnect message when leaving.</summary>
 		public string QuitMessage { get; set; } = "Disconnected";
 		/// <summary>The <see cref="TsVersionSigned"/> used to connect.</summary>
 		public TsVersionSigned? VersionSign => context?.ConnectionDataFull.VersionSign;
@@ -46,7 +46,7 @@ namespace TSLib.Full
 		/// Status overview:
 		/// <list type="bullet">
 		/// <item> Disconnected:
-		///   <para> ! PacketHandler is not initalized, context == null</para>
+		///   <para> ! PacketHandler is not initialized, context == null</para>
 		///   <para> -> Connect() => Connecting</para>
 		/// </item>
 		/// <item> Connecting:
@@ -74,7 +74,7 @@ namespace TSLib.Full
 		public event EventHandler<CommandError>? OnErrorEvent;
 
 		/// <summary>Creates a new client. A client can manage one connection to a server.</summary>
-		/// <param name="dispatcherType">The message processing method for incomming notifications.
+		/// <param name="dispatcherType">The message processing method for incoming notifications.
 		/// See <see cref="EventDispatchType"/> for further information about each type.</param>
 		public TsFullClient(DedicatedTaskScheduler? scheduler = null)
 		{
@@ -679,7 +679,7 @@ namespace TSLib.Full
 				{ "targetmode", (int)targetmode },
 			});
 
-		// Splitted base commands
+		// Split base commands
 
 		public override async Task<R<IChannelCreateResponse, CommandError>> ChannelCreate(string name,
 			string? namePhonetic = null, string? topic = null, string? description = null, string? password = null,
@@ -786,9 +786,9 @@ namespace TSLib.Full
 		{
 			// Note: TCS.SetResult can continue to run the code of the 'await TSC.Task'
 			// somewhere else synchronously.
-			// While the TsFullClient class is designed to be resistend to problems regarding
+			// While the TsFullClient class is designed to be resilient to problems regarding
 			// intermediate state changes with such call, we still add the runasync Task
-			// option for a more consistent processing order and better predictable behaviour.
+			// option for a more consistent processing order and more predictable behaviour.
 			ConnectEvent = new TaskCompletionSource<E<CommandError>>(TaskCreationOptions.RunContinuationsAsynchronously);
 			DisconnectEvent = new TaskCompletionSource<object?>(TaskCreationOptions.RunContinuationsAsynchronously);
 			TsCrypt = new TsCrypt(connectionDataFull.Identity);

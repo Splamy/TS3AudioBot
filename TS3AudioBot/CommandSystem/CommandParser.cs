@@ -17,7 +17,7 @@ namespace TS3AudioBot.CommandSystem
 	internal static class CommandParser
 	{
 		public const char DefaultCommandChar = '!';
-		public const char DefaultDelimeterChar = ' ';
+		public const char DefaultDelimiterChar = ' ';
 
 		// This switch follows more or less a DEA to this EBNF
 		// COMMAND-EBNF := <COMMAND> | $.*^
@@ -27,7 +27,7 @@ namespace TS3AudioBot.CommandSystem
 		// FREESTRING   := [^)]+
 		// QUOTESTRING  := '"' [<anything but ", \" is ok>]* '"'
 
-		public static AstNode ParseCommandRequest(string request, char commandChar = DefaultCommandChar, char delimeterChar = DefaultDelimeterChar)
+		public static AstNode ParseCommandRequest(string request, char commandChar = DefaultCommandChar, char delimiterChar = DefaultDelimiterChar)
 		{
 			AstCommand? root = null;
 			var comAst = new Stack<AstCommand>();
@@ -65,7 +65,7 @@ namespace TS3AudioBot.CommandSystem
 					break;
 
 				case BuildStatus.SelectParam:
-					strPtr.SkipChar(delimeterChar);
+					strPtr.SkipChar(delimiterChar);
 
 					if (strPtr.End)
 					{
@@ -129,7 +129,7 @@ namespace TS3AudioBot.CommandSystem
 						{
 							if ((strPtr.Char == '(' && strPtr.HasNext && strPtr.IsNext(commandChar))
 								|| strPtr.Char == ')'
-								|| strPtr.Char == delimeterChar)
+								|| strPtr.Char == delimiterChar)
 							{
 								break;
 							}

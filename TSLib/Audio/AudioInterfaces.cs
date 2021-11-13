@@ -37,6 +37,6 @@ namespace TSLib.Audio
 
 	// Best practices for pipes:
 	// - Use Active-Propagiation: `Active => OutStream?.Active ?? false`
-	// - Alway check `OutStream != null` at begin of Write(...)
+	// - Always check `OutStream != null` at begin of Write(...)
 	public interface IAudioPipe : IAudioPassiveConsumer, IAudioActiveProducer { }
 }

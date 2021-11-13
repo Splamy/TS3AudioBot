@@ -41,7 +41,7 @@ namespace TS3AudioBot.Audio
 			if (value < 0) return MinVolume;
 			if (value > 1) return MaxVolume;
 
-			// Undo logarithmical scale
+			// Undo logarithmic scale
 			value = Tools.Clamp((float)(Math.Log((value + fact_a) / fact_a) / fact_b), 0, 1);
 
 			// Map input values from [0, 1] to [MinVolume, MaxVolume]

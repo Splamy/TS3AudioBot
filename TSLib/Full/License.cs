@@ -140,7 +140,7 @@ namespace TSLib.Full
 		/// The key is calculated as following: <code>new_pub_key = pub_key * hash + parent</code>.
 		/// Where <code>pub_key</code> and <code>parent</code> are public keys, and <code>hash</code> a private key.
 		/// </summary>
-		/// <param name="parent">The preceeding key (from the previous block or root key).</param>
+		/// <param name="parent">The preceding key (from the previous block or root key).</param>
 		/// <returns>The new public key after processing it with this block.</returns>
 		public byte[] DeriveKey(ReadOnlySpan<byte> parent)
 		{

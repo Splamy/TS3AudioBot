@@ -41,7 +41,7 @@ namespace TS3AudioBot.ResourceFactories.Youtube
 	public class JsonThumbnail
 	{
 		public string? url { get; set; }
-		public int heigth { get; set; }
+		public int height { get; set; }
 		public int width { get; set; }
 	}
 	// Custom json

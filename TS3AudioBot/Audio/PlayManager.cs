@@ -22,7 +22,7 @@ using TSLib.Helper;
 
 namespace TS3AudioBot.Audio
 {
-	/// <summary>Provides a convenient inferface for enqueing, playing and registering song events.</summary>
+	/// <summary>Provides a interface for enqueuing, playing and registering song events.</summary>
 	public class PlayManager
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();

@@ -172,7 +172,7 @@ namespace TS3AudioBot
 		}
 
 		// !! This method must be called with a lock on lockObj
-		// !! The id must be either used withing the same lock or considered invalid.
+		// !! The id must be used within the same lock or will be considered invalid.
 		private int? GetFreeId()
 		{
 			if (activeBots is null)

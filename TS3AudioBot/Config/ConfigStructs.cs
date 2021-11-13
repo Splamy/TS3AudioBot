@@ -170,7 +170,7 @@ namespace TS3AudioBot.Config
 		public ConfigValue<int> LongMessageSplitLimit { get; } = new("long_message_split_limit", 1,
 			"Limits the split count for long messages. When for example set to 1 the message will simply be trimmed to one message.");
 		public ConfigValue<bool> Color { get; } = new("color", true,
-			"Enables colors and text highlights for respones.");
+			"Enables colors and text highlights for responses.");
 		public ConfigValue<int> CommandComplexity { get; } = new("command_complexity", 64,
 			"Limits the maximum command complexity to prevent endless loops.");
 
@@ -187,7 +187,7 @@ namespace TS3AudioBot.Config
 		public ConfigValue<string> Address { get; } = new("address", "", "The address, ip or nickname (and port; default: 9987) of the TeamSpeak3 server");
 		public ConfigValue<string> Channel { get; } = new("channel", "", "Default channel when connecting. Use a channel path or \"/<id>\".\n" +
 			"Examples: \"Home/Lobby\", \"/5\", \"Home/Afk \\\\/ Not Here\".");
-		public ConfigValue<string> Badges { get; } = new("badges", "", "The client badges. You can set a comma seperated string with max three GUID's. Here is a list: http://yat.qa/ressourcen/abzeichen-badges/");
+		public ConfigValue<string> Badges { get; } = new("badges", "", "The client badges. You can set a comma separated string with max three GUID's. Here is a list: http://yat.qa/ressourcen/abzeichen-badges/");
 		public ConfigValue<string> Name { get; } = new("name", "TS3AudioBot", "Client nickname when connecting.");
 
 		public ConfPassword ServerPassword { get; } = Create<ConfPassword>("server_password",

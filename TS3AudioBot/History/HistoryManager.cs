@@ -170,7 +170,7 @@ namespace TS3AudioBot.History
 		/// The entries are sorted by last playtime descending.</summary>
 		/// <param name="search">All search criteria.</param>
 		/// <returns>A list of all found entries.</returns>
-		public IEnumerable<AudioLogEntry> Search(SeachQuery search)
+		public IEnumerable<AudioLogEntry> Search(SearchQuery search)
 		{
 			if (search is null)
 				throw new ArgumentNullException(nameof(search));
@@ -195,7 +195,7 @@ namespace TS3AudioBot.History
 			return q2.Limit(search.MaxResults).ToEnumerable();
 		}
 
-		public string SearchParsed(SeachQuery query) => Format(Search(query));
+		public string SearchParsed(SearchQuery query) => Format(Search(query));
 
 		public string Format(AudioLogEntry ale)
 			=> Formatter.ProcessQuery(ale, SmartHistoryFormatter.DefaultAleFormat);
@@ -209,7 +209,7 @@ namespace TS3AudioBot.History
 			return FindByUniqueId(resource.UniqueId);
 		}
 
-		/// <summary>Gets an <see cref="AudioLogEntry"/> by its history id or null if not exising.</summary>
+		/// <summary>Gets an <see cref="AudioLogEntry"/> by its history id or null if not existing.</summary>
 		/// <param name="id">The id of the AudioLogEntry</param>
 		public R<AudioLogEntry, LocalStr> GetEntryById(uint id)
 		{

@@ -277,9 +277,9 @@ namespace TSLib
 			try
 			{
 				var request = WebRequest.Create(NicknameLookup + Uri.EscapeDataString(nickname));
-				using var respose = await request.GetResponseAsync().ConfigureAwait(false);
-				using var stream = respose.GetResponseStream();
-				using var reader = new StreamReader(stream, Tools.Utf8Encoder, false, (int)respose.ContentLength);
+				using var response = await request.GetResponseAsync().ConfigureAwait(false);
+				using var stream = response.GetResponseStream();
+				using var reader = new StreamReader(stream, Tools.Utf8Encoder, false, (int)response.ContentLength);
 				result = await reader.ReadToEndAsync().ConfigureAwait(false);
 			}
 			catch (Exception ex)

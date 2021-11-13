@@ -18,7 +18,7 @@ namespace TS3AudioBot.ResourceFactories.AudioTags
 	internal static class AudioTagReader
 	{
 		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
-		private static readonly Dictionary<string, Tag> TagDict = new();
+		private static readonly Dictionary<string, ITag> TagDict = new();
 
 		static AudioTagReader()
 		{
@@ -26,7 +26,7 @@ namespace TS3AudioBot.ResourceFactories.AudioTags
 			Register(new Id3_2());
 		}
 
-		private static void Register(Tag tagHeader)
+		private static void Register(ITag tagHeader)
 		{
 			TagDict.Add(tagHeader.TagId, tagHeader);
 		}
@@ -52,19 +52,19 @@ namespace TS3AudioBot.ResourceFactories.AudioTags
 			return null;
 		}
 
-		private abstract class Tag
+		private interface ITag
 		{
 			public abstract string TagId { get; }
 			public abstract HeaderData GetData(BinaryReader fileStream);
 		}
 
 		// ReSharper disable InconsistentNaming
-		private class Id3_1 : Tag
+		private class Id3_1 : ITag
 		{
 			private const int TitleLength = 30;
-			public override string TagId => "TAG";
+			public string TagId => "TAG";
 
-			public override HeaderData GetData(BinaryReader fileStream)
+			public HeaderData GetData(BinaryReader fileStream)
 			{
 				// 3 bytes skipped for TagID
 				return new HeaderData
@@ -77,7 +77,7 @@ namespace TS3AudioBot.ResourceFactories.AudioTags
 			}
 		}
 
-		private class Id3_2 : Tag
+		private class Id3_2 : ITag
 		{
 			private readonly int v2_TT2 = FrameIdV2("TT2"); // Title
 			private readonly int v2_PIC = FrameIdV2("PIC"); // Picture
@@ -85,11 +85,11 @@ namespace TS3AudioBot.ResourceFactories.AudioTags
 			private readonly uint v3_APIC = FrameIdV3("APIC"); // Picture
 			private readonly uint v3_PIC0 = FrameIdV3("PIC\0"); // Picture
 
-			public override string TagId => "ID3";
+			public string TagId => "ID3";
 
 			// ReSharper disable UnusedVariable
 #pragma warning disable IDE0059 // Unnecessary assignment of a value
-			public override HeaderData GetData(BinaryReader fileStream)
+			public HeaderData GetData(BinaryReader fileStream)
 			{
 				var retdata = new HeaderData();
 
