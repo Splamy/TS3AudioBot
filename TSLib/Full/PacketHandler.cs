@@ -18,783 +18,782 @@ using System.Threading;
 using TSLib.Helper;
 using static TSLib.Full.PacketHandlerConst;
 
-namespace TSLib.Full
+namespace TSLib.Full;
+
+internal sealed class PacketHandler<TIn, TOut>
 {
-	internal sealed class PacketHandler<TIn, TOut>
+	private static readonly int OutHeaderSize = TsCrypt.MacLen + Packet<TOut>.HeaderLength;
+	private static readonly int MaxOutContentSize = MaxOutPacketSize - OutHeaderSize;
+	private const int PacketBufferSize = 4096;
+
+	// Timeout calculations
+	/// <summary>The SmoothedRoundTripTime holds the smoothed average time
+	/// it takes for a packet to get ack'd.</summary>
+	private TimeSpan smoothedRtt;
+	/// <summary>Holds the smoothed rtt variation.</summary>
+	private TimeSpan smoothedRttVar;
+	/// <summary>Holds the current RetransmissionTimeOut, which determines the timespan until
+	/// a packet is considered to be lost.</summary>
+	private TimeSpan currentRto;
+	private readonly Stopwatch pingTimer = new();
+	private readonly Stopwatch lastMessageTimer = new();
+	private ushort lastSentPingId;
+	private ushort lastReceivedPingId;
+
+	// Out Packets
+	private readonly ushort[] packetCounter;
+	private readonly uint[] generationCounter;
+	private ResendPacket<TOut>? initPacketCheck;
+	private readonly Dictionary<ushort, ResendPacket<TOut>> packetAckManager = new();
+	// In Packets
+	private readonly GenerationWindow receiveWindowVoice;
+	private readonly GenerationWindow receiveWindowVoiceWhisper;
+	private readonly RingQueue<Packet<TIn>> receiveQueueCommand;
+	private readonly RingQueue<Packet<TIn>> receiveQueueCommandLow;
+	// ====
+	private readonly object sendLoopLock = new();
+	private readonly TsCrypt tsCrypt;
+	private Socket? socket;
+	private Timer? resendTimer;
+	private DateTime pingCheck;
+	private int pingCheckRunning; // bool
+	private readonly Id id; // Log id
+
+	public NetworkStats NetworkStats { get; }
+
+	public ClientId ClientId { get; set; }
+	private IPEndPoint? remoteAddress;
+	private int closed; // bool
+
+	public PacketEvent<TIn>? PacketEvent;
+	public Action<Reason?>? StopEvent;
+
+	public PacketHandler(TsCrypt ts3Crypt, Id id)
 	{
-		private static readonly int OutHeaderSize = TsCrypt.MacLen + Packet<TOut>.HeaderLength;
-		private static readonly int MaxOutContentSize = MaxOutPacketSize - OutHeaderSize;
-		private const int PacketBufferSize = 4096;
+		receiveQueueCommand = new(ReceivePacketWindowSize, ushort.MaxValue + 1);
+		receiveQueueCommandLow = new(ReceivePacketWindowSize, ushort.MaxValue + 1);
+		receiveWindowVoice = new(ushort.MaxValue + 1);
+		receiveWindowVoiceWhisper = new(ushort.MaxValue + 1);
 
-		// Timeout calculations
-		/// <summary>The SmoothedRoundTripTime holds the smoothed average time
-		/// it takes for a packet to get ack'd.</summary>
-		private TimeSpan smoothedRtt;
-		/// <summary>Holds the smoothed rtt variation.</summary>
-		private TimeSpan smoothedRttVar;
-		/// <summary>Holds the current RetransmissionTimeOut, which determines the timespan until
-		/// a packet is considered to be lost.</summary>
-		private TimeSpan currentRto;
-		private readonly Stopwatch pingTimer = new();
-		private readonly Stopwatch lastMessageTimer = new();
-		private ushort lastSentPingId;
-		private ushort lastReceivedPingId;
+		NetworkStats = new();
 
-		// Out Packets
-		private readonly ushort[] packetCounter;
-		private readonly uint[] generationCounter;
-		private ResendPacket<TOut>? initPacketCheck;
-		private readonly Dictionary<ushort, ResendPacket<TOut>> packetAckManager = new();
-		// In Packets
-		private readonly GenerationWindow receiveWindowVoice;
-		private readonly GenerationWindow receiveWindowVoiceWhisper;
-		private readonly RingQueue<Packet<TIn>> receiveQueueCommand;
-		private readonly RingQueue<Packet<TIn>> receiveQueueCommandLow;
-		// ====
-		private readonly object sendLoopLock = new();
-		private readonly TsCrypt tsCrypt;
-		private Socket? socket;
-		private Timer? resendTimer;
-		private DateTime pingCheck;
-		private int pingCheckRunning; // bool
-		private readonly Id id; // Log id
+		packetCounter = new ushort[TsCrypt.PacketTypeKinds];
+		generationCounter = new uint[TsCrypt.PacketTypeKinds];
+		this.tsCrypt = ts3Crypt;
+		this.id = id;
+	}
 
-		public NetworkStats NetworkStats { get; }
+	public E<string> Connect(IPEndPoint address)
+	{
+		if (!Initialize(address, true).GetOk(out var error))
+			return "Failed to initialize: " + error.Message;
+		// The old client used to send 'clientinitiv' as the first message.
+		// All newer servers still ack it but do not require it anymore.
+		// Therefore there is no use in sending it.
+		// We still have to increase the packet counter as if we had sent
+		//  it because the packed-ids the server expects are fixed.
+		IncPacketCounter(PacketType.Command);
+		// Send the actual new init packet.
+		return AddOutgoingPacket(tsCrypt.ProcessInit1<TIn>(null).Value, PacketType.Init1);
+	}
 
-		public ClientId ClientId { get; set; }
-		private IPEndPoint? remoteAddress;
-		private int closed; // bool
-
-		public PacketEvent<TIn>? PacketEvent;
-		public Action<Reason?>? StopEvent;
-
-		public PacketHandler(TsCrypt ts3Crypt, Id id)
+	public void Listen(IPEndPoint address)
+	{
+		lock (sendLoopLock)
 		{
-			receiveQueueCommand = new(ReceivePacketWindowSize, ushort.MaxValue + 1);
-			receiveQueueCommandLow = new(ReceivePacketWindowSize, ushort.MaxValue + 1);
-			receiveWindowVoice = new(ushort.MaxValue + 1);
-			receiveWindowVoiceWhisper = new(ushort.MaxValue + 1);
-
-			NetworkStats = new();
-
-			packetCounter = new ushort[TsCrypt.PacketTypeKinds];
-			generationCounter = new uint[TsCrypt.PacketTypeKinds];
-			this.tsCrypt = ts3Crypt;
-			this.id = id;
-		}
-
-		public E<string> Connect(IPEndPoint address)
-		{
-			if (!Initialize(address, true).GetOk(out var error))
-				return "Failed to initialize: " + error.Message;
-			// The old client used to send 'clientinitiv' as the first message.
-			// All newer servers still ack it but do not require it anymore.
-			// Therefore there is no use in sending it.
-			// We still have to increase the packet counter as if we had sent
-			//  it because the packed-ids the server expects are fixed.
-			IncPacketCounter(PacketType.Command);
-			// Send the actual new init packet.
-			return AddOutgoingPacket(tsCrypt.ProcessInit1<TIn>(null).Value, PacketType.Init1);
-		}
-
-		public void Listen(IPEndPoint address)
-		{
-			lock (sendLoopLock)
+			Initialize(address, false).Unwrap();
+			// dummy
+			initPacketCheck = new ResendPacket<TOut>(new Packet<TOut>(Array.Empty<byte>(), 0, 0, 0))
 			{
-				Initialize(address, false).Unwrap();
-				// dummy
-				initPacketCheck = new ResendPacket<TOut>(new Packet<TOut>(Array.Empty<byte>(), 0, 0, 0))
-				{
-					FirstSendTime = DateTime.MaxValue,
-					LastSendTime = DateTime.MaxValue
-				};
-			}
+				FirstSendTime = DateTime.MaxValue,
+				LastSendTime = DateTime.MaxValue
+			};
 		}
+	}
 
-		private E<Exception> Initialize(IPEndPoint address, bool connect)
+	private E<Exception> Initialize(IPEndPoint address, bool connect)
+	{
+		if (address is null) throw new ArgumentNullException(nameof(address));
+
+		lock (sendLoopLock)
 		{
-			if (address is null) throw new ArgumentNullException(nameof(address));
+			ClientId = default;
+			closed = 0;
+			smoothedRtt = MaxRetryInterval;
+			smoothedRttVar = TimeSpan.Zero;
+			currentRto = MaxRetryInterval;
+			lastSentPingId = 0;
+			lastReceivedPingId = 0;
+			lastMessageTimer.Restart();
 
-			lock (sendLoopLock)
+			initPacketCheck = null;
+			packetAckManager.Clear();
+			receiveQueueCommand.Clear();
+			receiveQueueCommandLow.Clear();
+			receiveWindowVoice.Reset();
+			receiveWindowVoiceWhisper.Reset();
+			Array.Clear(packetCounter, 0, packetCounter.Length);
+			Array.Clear(generationCounter, 0, generationCounter.Length);
+			NetworkStats.Reset();
+
+			socket?.Dispose();
+			try
 			{
-				ClientId = default;
-				closed = 0;
-				smoothedRtt = MaxRetryInterval;
-				smoothedRttVar = TimeSpan.Zero;
-				currentRto = MaxRetryInterval;
-				lastSentPingId = 0;
-				lastReceivedPingId = 0;
-				lastMessageTimer.Restart();
-
-				initPacketCheck = null;
-				packetAckManager.Clear();
-				receiveQueueCommand.Clear();
-				receiveQueueCommandLow.Clear();
-				receiveWindowVoice.Reset();
-				receiveWindowVoiceWhisper.Reset();
-				Array.Clear(packetCounter, 0, packetCounter.Length);
-				Array.Clear(generationCounter, 0, generationCounter.Length);
-				NetworkStats.Reset();
-
-				socket?.Dispose();
-				try
+				if (connect)
 				{
-					if (connect)
-					{
-						remoteAddress = address;
-						socket = new Socket(address.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
-						socket.Bind(new IPEndPoint(address.AddressFamily == AddressFamily.InterNetwork ? IPAddress.Any : IPAddress.IPv6Any, 0));
+					remoteAddress = address;
+					socket = new Socket(address.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
+					socket.Bind(new IPEndPoint(address.AddressFamily == AddressFamily.InterNetwork ? IPAddress.Any : IPAddress.IPv6Any, 0));
 
-						var socketEventArgs = new SocketAsyncEventArgs();
-						socketEventArgs.SetBuffer(new byte[PacketBufferSize], 0, PacketBufferSize);
-						socketEventArgs.Completed += FetchPacketEvent;
-						socketEventArgs.UserToken = this;
-						socketEventArgs.RemoteEndPoint = remoteAddress;
-						socket.ReceiveFromAsync(socketEventArgs);
-					}
-					else
-					{
-						remoteAddress = null;
-						socket = new Socket(address.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
-						socket.Bind(address);
-						// TODO init socketevargs stuff
-					}
+					var socketEventArgs = new SocketAsyncEventArgs();
+					socketEventArgs.SetBuffer(new byte[PacketBufferSize], 0, PacketBufferSize);
+					socketEventArgs.Completed += FetchPacketEvent;
+					socketEventArgs.UserToken = this;
+					socketEventArgs.RemoteEndPoint = remoteAddress;
+					socket.ReceiveFromAsync(socketEventArgs);
 				}
-				catch (SocketException ex) { return ex; }
-
-				pingCheckRunning = 0;
-				pingCheck = Tools.Now;
-				if (resendTimer == null)
-					resendTimer = new Timer((_) => { using (MappedDiagnosticsLogicalContext.SetScoped("BotId", id)) ResendLoop(); }, null, ClockResolution, ClockResolution);
-				return R.Ok;
-			}
-		}
-
-		public void Stop() => Stop(null);
-		private void Stop(Reason? closeReason)
-		{
-			var wasClosed = Interlocked.Exchange(ref closed, 1);
-			if (wasClosed != 0)
-				return;
-			Log.Debug("Stopping PacketHandler {0}", closeReason);
-
-			lock (sendLoopLock)
-			{
-				resendTimer?.Dispose();
-				socket?.Dispose();
-				PacketEvent = null;
-			}
-			StopEvent?.Invoke(closeReason);
-		}
-
-		public E<string> AddOutgoingPacket(ReadOnlySpan<byte> packet, PacketType packetType, PacketFlags addFlags = PacketFlags.None)
-		{
-			lock (sendLoopLock)
-			{
-				if (closed != 0)
-					return "Connection closed";
-
-				if (NeedsSplitting(packet.Length) && packetType != PacketType.VoiceWhisper)
+				else
 				{
-					// VoiceWhisper packets are excluded for some reason
-					if (packetType == PacketType.Voice)
-						return "Voice packet too big"; // This happens when a voice packet is bigger than the allowed size
-
-					var tmpCompress = QuickerLz.Compress(packet, 1);
-					if (tmpCompress.Length < packet.Length)
-					{
-						packet = tmpCompress;
-						addFlags |= PacketFlags.Compressed;
-					}
-
-					if (NeedsSplitting(packet.Length))
-					{
-						return AddOutgoingSplitData(packet, packetType, addFlags);
-					}
+					remoteAddress = null;
+					socket = new Socket(address.AddressFamily, SocketType.Dgram, ProtocolType.Udp);
+					socket.Bind(address);
+					// TODO init socketevargs stuff
 				}
-				return SendOutgoingData(packet, packetType, addFlags);
 			}
-		}
+			catch (SocketException ex) { return ex; }
 
-		private E<string> AddOutgoingSplitData(ReadOnlySpan<byte> rawData, PacketType packetType, PacketFlags addFlags = PacketFlags.None)
-		{
-			int pos = 0;
-			bool first = true;
-			bool last;
-
-			// TODO check if "packBuffer.FreeSlots >= packetSplit.Count"
-
-			do
-			{
-				int blockSize = Math.Min(MaxOutContentSize, rawData.Length - pos);
-				if (blockSize <= 0) break;
-
-				var flags = PacketFlags.None;
-				last = pos + blockSize == rawData.Length;
-				if (first ^ last)
-					flags |= PacketFlags.Fragmented;
-				if (first)
-				{
-					flags |= addFlags;
-					first = false;
-				}
-
-				Debug.Assert(!NeedsSplitting(blockSize));
-				if (!SendOutgoingData(rawData.Slice(pos, blockSize), packetType, flags).GetOk(out var error))
-					return error;
-
-				pos += blockSize;
-			} while (!last);
-
+			pingCheckRunning = 0;
+			pingCheck = Tools.Now;
+			if (resendTimer == null)
+				resendTimer = new Timer((_) => { using (MappedDiagnosticsLogicalContext.SetScoped("BotId", id)) ResendLoop(); }, null, ClockResolution, ClockResolution);
 			return R.Ok;
 		}
+	}
 
-		// is always locked on 'sendLoopLock' from a higher call
-		private E<string> SendOutgoingData(ReadOnlySpan<byte> data, PacketType packetType, PacketFlags flags = PacketFlags.None)
+	public void Stop() => Stop(null);
+	private void Stop(Reason? closeReason)
+	{
+		var wasClosed = Interlocked.Exchange(ref closed, 1);
+		if (wasClosed != 0)
+			return;
+		Log.Debug("Stopping PacketHandler {0}", closeReason);
+
+		lock (sendLoopLock)
 		{
-			var ids = GetPacketCounter(packetType);
-			IncPacketCounter(packetType);
+			resendTimer?.Dispose();
+			socket?.Dispose();
+			PacketEvent = null;
+		}
+		StopEvent?.Invoke(closeReason);
+	}
 
-			var packet = new Packet<TOut>(data, packetType, ids.Id, ids.Generation) { PacketType = packetType };
-			if (typeof(TOut) == typeof(C2S)) // TODO: XXX
+	public E<string> AddOutgoingPacket(ReadOnlySpan<byte> packet, PacketType packetType, PacketFlags addFlags = PacketFlags.None)
+	{
+		lock (sendLoopLock)
+		{
+			if (closed != 0)
+				return "Connection closed";
+
+			if (NeedsSplitting(packet.Length) && packetType != PacketType.VoiceWhisper)
 			{
-				var meta = (C2S)(object)packet.HeaderExt!;
-				meta.ClientId = ClientId.Value;
-				packet.HeaderExt = (TOut)(object)meta;
-			}
-			packet.PacketFlags |= flags;
+				// VoiceWhisper packets are excluded for some reason
+				if (packetType == PacketType.Voice)
+					return "Voice packet too big"; // This happens when a voice packet is bigger than the allowed size
 
-			switch (packet.PacketType)
+				var tmpCompress = QuickerLz.Compress(packet, 1);
+				if (tmpCompress.Length < packet.Length)
+				{
+					packet = tmpCompress;
+					addFlags |= PacketFlags.Compressed;
+				}
+
+				if (NeedsSplitting(packet.Length))
+				{
+					return AddOutgoingSplitData(packet, packetType, addFlags);
+				}
+			}
+			return SendOutgoingData(packet, packetType, addFlags);
+		}
+	}
+
+	private E<string> AddOutgoingSplitData(ReadOnlySpan<byte> rawData, PacketType packetType, PacketFlags addFlags = PacketFlags.None)
+	{
+		int pos = 0;
+		bool first = true;
+		bool last;
+
+		// TODO check if "packBuffer.FreeSlots >= packetSplit.Count"
+
+		do
+		{
+			int blockSize = Math.Min(MaxOutContentSize, rawData.Length - pos);
+			if (blockSize <= 0) break;
+
+			var flags = PacketFlags.None;
+			last = pos + blockSize == rawData.Length;
+			if (first ^ last)
+				flags |= PacketFlags.Fragmented;
+			if (first)
 			{
-			case PacketType.Voice:
-			case PacketType.VoiceWhisper:
-				BinaryPrimitives.WriteUInt16BigEndian(packet.Data, packet.PacketId);
-				LogRawVoice.Trace("[O] {0}", packet);
-				break;
-
-			case PacketType.Command:
-			case PacketType.CommandLow:
-				packet.PacketFlags |= PacketFlags.Newprotocol;
-				var resendPacket = new ResendPacket<TOut>(packet);
-				packetAckManager.Add(packet.PacketId, resendPacket);
-				LogRaw.Debug("[O] {0}", packet);
-				break;
-
-			case PacketType.Ping:
-				lastSentPingId = packet.PacketId;
-				packet.PacketFlags |= PacketFlags.Unencrypted;
-				LogRaw.Trace("[O] Ping {0}", packet.PacketId);
-				break;
-
-			case PacketType.Pong:
-				packet.PacketFlags |= PacketFlags.Unencrypted;
-				LogRaw.Trace("[O] Pong {0}", BinaryPrimitives.ReadUInt16BigEndian(packet.Data));
-				break;
-
-			case PacketType.Ack:
-				LogRaw.Debug("[O] Acking Ack: {0}", BinaryPrimitives.ReadUInt16BigEndian(packet.Data));
-				break;
-
-			case PacketType.AckLow:
-				LogRaw.Debug("[O] Acking AckLow: {0}", BinaryPrimitives.ReadUInt16BigEndian(packet.Data));
-				break;
-
-			case PacketType.Init1:
-				packet.PacketFlags |= PacketFlags.Unencrypted;
-				initPacketCheck = new ResendPacket<TOut>(packet);
-				LogRaw.Debug("[O] InitID: {0}", packet.Data[4]);
-				LogRaw.Trace("[O] {0}", packet);
-				break;
-
-			case var _unhandled:
-				throw Tools.UnhandledDefault(_unhandled);
+				flags |= addFlags;
+				first = false;
 			}
 
-			tsCrypt.Encrypt(ref packet);
+			Debug.Assert(!NeedsSplitting(blockSize));
+			if (!SendOutgoingData(rawData.Slice(pos, blockSize), packetType, flags).GetOk(out var error))
+				return error;
 
-			return SendRaw(ref packet);
+			pos += blockSize;
+		} while (!last);
+
+		return R.Ok;
+	}
+
+	// is always locked on 'sendLoopLock' from a higher call
+	private E<string> SendOutgoingData(ReadOnlySpan<byte> data, PacketType packetType, PacketFlags flags = PacketFlags.None)
+	{
+		var ids = GetPacketCounter(packetType);
+		IncPacketCounter(packetType);
+
+		var packet = new Packet<TOut>(data, packetType, ids.Id, ids.Generation) { PacketType = packetType };
+		if (typeof(TOut) == typeof(C2S)) // TODO: XXX
+		{
+			var meta = (C2S)(object)packet.HeaderExt!;
+			meta.ClientId = ClientId.Value;
+			packet.HeaderExt = (TOut)(object)meta;
+		}
+		packet.PacketFlags |= flags;
+
+		switch (packet.PacketType)
+		{
+		case PacketType.Voice:
+		case PacketType.VoiceWhisper:
+			BinaryPrimitives.WriteUInt16BigEndian(packet.Data, packet.PacketId);
+			LogRawVoice.Trace("[O] {0}", packet);
+			break;
+
+		case PacketType.Command:
+		case PacketType.CommandLow:
+			packet.PacketFlags |= PacketFlags.Newprotocol;
+			var resendPacket = new ResendPacket<TOut>(packet);
+			packetAckManager.Add(packet.PacketId, resendPacket);
+			LogRaw.Debug("[O] {0}", packet);
+			break;
+
+		case PacketType.Ping:
+			lastSentPingId = packet.PacketId;
+			packet.PacketFlags |= PacketFlags.Unencrypted;
+			LogRaw.Trace("[O] Ping {0}", packet.PacketId);
+			break;
+
+		case PacketType.Pong:
+			packet.PacketFlags |= PacketFlags.Unencrypted;
+			LogRaw.Trace("[O] Pong {0}", BinaryPrimitives.ReadUInt16BigEndian(packet.Data));
+			break;
+
+		case PacketType.Ack:
+			LogRaw.Debug("[O] Acking Ack: {0}", BinaryPrimitives.ReadUInt16BigEndian(packet.Data));
+			break;
+
+		case PacketType.AckLow:
+			LogRaw.Debug("[O] Acking AckLow: {0}", BinaryPrimitives.ReadUInt16BigEndian(packet.Data));
+			break;
+
+		case PacketType.Init1:
+			packet.PacketFlags |= PacketFlags.Unencrypted;
+			initPacketCheck = new ResendPacket<TOut>(packet);
+			LogRaw.Debug("[O] InitID: {0}", packet.Data[4]);
+			LogRaw.Trace("[O] {0}", packet);
+			break;
+
+		case var _unhandled:
+			throw Tools.UnhandledDefault(_unhandled);
 		}
 
-		private (ushort Id, uint Generation) GetPacketCounter(PacketType packetType)
-			=> (packetType != PacketType.Init1)
-				? (packetCounter[(int)packetType], generationCounter[(int)packetType])
-				: (101, 0);
+		tsCrypt.Encrypt(ref packet);
 
-		private void IncPacketCounter(PacketType packetType)
+		return SendRaw(ref packet);
+	}
+
+	private (ushort Id, uint Generation) GetPacketCounter(PacketType packetType)
+		=> (packetType != PacketType.Init1)
+			? (packetCounter[(int)packetType], generationCounter[(int)packetType])
+			: (101, 0);
+
+	private void IncPacketCounter(PacketType packetType)
+	{
+		unchecked { packetCounter[(int)packetType]++; }
+		if (packetCounter[(int)packetType] == 0)
+			generationCounter[(int)packetType]++;
+	}
+
+	private static bool NeedsSplitting(int dataSize) => dataSize + OutHeaderSize > MaxOutPacketSize;
+
+	private static void FetchPacketEvent(object? selfObj, SocketAsyncEventArgs args)
+	{
+		var self = (PacketHandler<TIn, TOut>?)args.UserToken;
+		if (self is null) { Trace.Fail("SocketEvent self is null"); return; }
+
+		bool isAsync;
+		using (MappedDiagnosticsLogicalContext.SetScoped("BotId", self.id))
 		{
-			unchecked { packetCounter[(int)packetType]++; }
-			if (packetCounter[(int)packetType] == 0)
-				generationCounter[(int)packetType]++;
-		}
-
-		private static bool NeedsSplitting(int dataSize) => dataSize + OutHeaderSize > MaxOutPacketSize;
-
-		private static void FetchPacketEvent(object? selfObj, SocketAsyncEventArgs args)
-		{
-			var self = (PacketHandler<TIn, TOut>?)args.UserToken;
-			if (self is null) { Trace.Fail("SocketEvent self is null"); return; }
-
-			bool isAsync;
-			using (MappedDiagnosticsLogicalContext.SetScoped("BotId", self.id))
+			do
 			{
-				do
+				if (self.closed != 0)
+					return;
+
+				if (args.SocketError == SocketError.Success)
+				{
+					self.FetchPackets(args.Buffer.AsSpan(0, args.BytesTransferred));
+				}
+				else
+				{
+					Log.Debug("Socket error: {@args}", args);
+					if (args.SocketError == SocketError.ConnectionReset)
+					{
+						self.Stop(Reason.SocketError);
+					}
+				}
+
+				lock (self.sendLoopLock)
 				{
 					if (self.closed != 0)
 						return;
 
-					if (args.SocketError == SocketError.Success)
-					{
-						self.FetchPackets(args.Buffer.AsSpan(0, args.BytesTransferred));
-					}
-					else
-					{
-						Log.Debug("Socket error: {@args}", args);
-						if (args.SocketError == SocketError.ConnectionReset)
-						{
-							self.Stop(Reason.SocketError);
-						}
-					}
+					Trace.Assert(self.socket != null, nameof(self.socket) + " is null");
+					try { isAsync = self.socket!.ReceiveFromAsync(args); }
+					catch (Exception ex) { Log.Debug(ex, "Error starting socket receive"); return; }
+				}
+			} while (!isAsync);
+		}
+	}
 
-					lock (self.sendLoopLock)
-					{
-						if (self.closed != 0)
-							return;
-
-						Trace.Assert(self.socket != null, nameof(self.socket) + " is null");
-						try { isAsync = self.socket!.ReceiveFromAsync(args); }
-						catch (Exception ex) { Log.Debug(ex, "Error starting socket receive"); return; }
-					}
-				} while (!isAsync);
-			}
+	private void FetchPackets(Span<byte> buffer)
+	{
+		if (Packet<TIn>.FromRaw(buffer) is not { } packet)
+		{
+			// Invalid packet, ignore
+			LogRaw.Warn("Dropping invalid packet: {0}", DebugUtil.DebugToHex(buffer));
+			return;
 		}
 
-		private void FetchPackets(Span<byte> buffer)
+		// DebugToHex is costly and allocates, precheck before logging
+		if (LogRaw.IsTraceEnabled)
+			LogRaw.Trace("[I] Raw {0}", DebugUtil.DebugToHex(packet.Raw));
+
+		FindIncomingGenerationId(ref packet);
+		if (!tsCrypt.Decrypt(ref packet))
 		{
-			if (Packet<TIn>.FromRaw(buffer) is not { } packet)
-			{
-				// Invalid packet, ignore
-				LogRaw.Warn("Dropping invalid packet: {0}", DebugUtil.DebugToHex(buffer));
-				return;
-			}
-
-			// DebugToHex is costly and allocates, precheck before logging
-			if (LogRaw.IsTraceEnabled)
-				LogRaw.Trace("[I] Raw {0}", DebugUtil.DebugToHex(packet.Raw));
-
-			FindIncomingGenerationId(ref packet);
-			if (!tsCrypt.Decrypt(ref packet))
-			{
-				LogRaw.Warn("Dropping not decryptable packet: {0}", DebugUtil.DebugToHex(packet.Raw));
-				return;
-			}
-
-			lastMessageTimer.Restart();
-			NetworkStats.LogInPacket(ref packet);
-
-			bool passPacketToEvent = true;
-			switch (packet.PacketType)
-			{
-			case PacketType.Voice:
-				LogRawVoice.Trace("[I] {0}", packet);
-				passPacketToEvent = ReceiveVoice(ref packet, receiveWindowVoice);
-				break;
-			case PacketType.VoiceWhisper:
-				LogRawVoice.Trace("[I] {0}", packet);
-				passPacketToEvent = ReceiveVoice(ref packet, receiveWindowVoiceWhisper);
-				break;
-			case PacketType.Command:
-				LogRaw.Debug("[I] {0}", packet);
-				passPacketToEvent = ReceiveCommand(ref packet, receiveQueueCommand, PacketType.Ack);
-				break;
-			case PacketType.CommandLow:
-				LogRaw.Debug("[I] {0}", packet);
-				passPacketToEvent = ReceiveCommand(ref packet, receiveQueueCommandLow, PacketType.AckLow);
-				break;
-			case PacketType.Ping:
-				LogRaw.Trace("[I] Ping {0}", packet.PacketId);
-				ReceivePing(ref packet);
-				break;
-			case PacketType.Pong:
-				LogRaw.Trace("[I] Pong {0}", BinaryPrimitives.ReadUInt16BigEndian(packet.Data));
-				passPacketToEvent = ReceivePong(ref packet);
-				break;
-			case PacketType.Ack:
-				LogRaw.Debug("[I] Acking: {0}", BinaryPrimitives.ReadUInt16BigEndian(packet.Data));
-				passPacketToEvent = ReceiveAck(ref packet);
-				break;
-			case PacketType.AckLow: break;
-			case PacketType.Init1:
-				if (!LogRaw.IsTraceEnabled) LogRaw.Debug("[I] InitID: {0}", packet.Data[0]);
-				if (!LogRaw.IsDebugEnabled) LogRaw.Trace("[I] {0}", packet);
-				passPacketToEvent = ReceiveInitAck(ref packet);
-				break;
-			case var _unhandled:
-				throw Tools.UnhandledDefault(_unhandled);
-			}
-
-			if (passPacketToEvent)
-				PacketEvent?.Invoke(ref packet);
+			LogRaw.Warn("Dropping not decryptable packet: {0}", DebugUtil.DebugToHex(packet.Raw));
+			return;
 		}
 
-		#region Packet checking
-		// These methods are for low level packet processing which the
-		// rather high level TS3FullClient should not worry about.
+		lastMessageTimer.Restart();
+		NetworkStats.LogInPacket(ref packet);
 
-		private void FindIncomingGenerationId(ref Packet<TIn> packet)
+		bool passPacketToEvent = true;
+		switch (packet.PacketType)
 		{
-			GenerationWindow window;
-			switch (packet.PacketType)
-			{
-			case PacketType.Voice: window = receiveWindowVoice; break;
-			case PacketType.VoiceWhisper: window = receiveWindowVoiceWhisper; break;
-			case PacketType.Command: window = receiveQueueCommand.Window; break;
-			case PacketType.CommandLow: window = receiveQueueCommandLow.Window; break;
-			default: return;
-			}
-
-			packet.GenerationId = window.GetGeneration(packet.PacketId);
+		case PacketType.Voice:
+			LogRawVoice.Trace("[I] {0}", packet);
+			passPacketToEvent = ReceiveVoice(ref packet, receiveWindowVoice);
+			break;
+		case PacketType.VoiceWhisper:
+			LogRawVoice.Trace("[I] {0}", packet);
+			passPacketToEvent = ReceiveVoice(ref packet, receiveWindowVoiceWhisper);
+			break;
+		case PacketType.Command:
+			LogRaw.Debug("[I] {0}", packet);
+			passPacketToEvent = ReceiveCommand(ref packet, receiveQueueCommand, PacketType.Ack);
+			break;
+		case PacketType.CommandLow:
+			LogRaw.Debug("[I] {0}", packet);
+			passPacketToEvent = ReceiveCommand(ref packet, receiveQueueCommandLow, PacketType.AckLow);
+			break;
+		case PacketType.Ping:
+			LogRaw.Trace("[I] Ping {0}", packet.PacketId);
+			ReceivePing(ref packet);
+			break;
+		case PacketType.Pong:
+			LogRaw.Trace("[I] Pong {0}", BinaryPrimitives.ReadUInt16BigEndian(packet.Data));
+			passPacketToEvent = ReceivePong(ref packet);
+			break;
+		case PacketType.Ack:
+			LogRaw.Debug("[I] Acking: {0}", BinaryPrimitives.ReadUInt16BigEndian(packet.Data));
+			passPacketToEvent = ReceiveAck(ref packet);
+			break;
+		case PacketType.AckLow: break;
+		case PacketType.Init1:
+			if (!LogRaw.IsTraceEnabled) LogRaw.Debug("[I] InitID: {0}", packet.Data[0]);
+			if (!LogRaw.IsDebugEnabled) LogRaw.Trace("[I] {0}", packet);
+			passPacketToEvent = ReceiveInitAck(ref packet);
+			break;
+		case var _unhandled:
+			throw Tools.UnhandledDefault(_unhandled);
 		}
 
-		private static bool ReceiveVoice(ref Packet<TIn> packet, GenerationWindow window)
-			=> window.SetAndDrag(packet.PacketId);
+		if (passPacketToEvent)
+			PacketEvent?.Invoke(ref packet);
+	}
 
-		private bool ReceiveCommand(ref Packet<TIn> packet, RingQueue<Packet<TIn>> packetQueue, PacketType ackType)
+	#region Packet checking
+	// These methods are for low level packet processing which the
+	// rather high level TS3FullClient should not worry about.
+
+	private void FindIncomingGenerationId(ref Packet<TIn> packet)
+	{
+		GenerationWindow window;
+		switch (packet.PacketType)
 		{
-			var setStatus = packetQueue.IsSet(packet.PacketId);
+		case PacketType.Voice: window = receiveWindowVoice; break;
+		case PacketType.VoiceWhisper: window = receiveWindowVoiceWhisper; break;
+		case PacketType.Command: window = receiveQueueCommand.Window; break;
+		case PacketType.CommandLow: window = receiveQueueCommandLow.Window; break;
+		default: return;
+		}
 
-			// Check if we cannot accept this packet since it doesn't fit into the receive window
-			if (setStatus == ItemSetStatus.OutOfWindowNotSet)
-				return false;
+		packet.GenerationId = window.GetGeneration(packet.PacketId);
+	}
 
-			SendAck(packet.PacketId, ackType);
+	private static bool ReceiveVoice(ref Packet<TIn> packet, GenerationWindow window)
+		=> window.SetAndDrag(packet.PacketId);
 
-			// Check if we already have this packet and only need to ack it.
-			if (setStatus.HasFlag(ItemSetStatus.Set))
-				return false;
+	private bool ReceiveCommand(ref Packet<TIn> packet, RingQueue<Packet<TIn>> packetQueue, PacketType ackType)
+	{
+		var setStatus = packetQueue.IsSet(packet.PacketId);
 
-			packetQueue.Set(packet.PacketId, packet);
-			while (TryGetCommand(packetQueue, out packet))
-				PacketEvent?.Invoke(ref packet);
-
+		// Check if we cannot accept this packet since it doesn't fit into the receive window
+		if (setStatus == ItemSetStatus.OutOfWindowNotSet)
 			return false;
-		}
 
-		private static bool TryGetCommand(RingQueue<Packet<TIn>> packetQueue, out Packet<TIn> packet)
+		SendAck(packet.PacketId, ackType);
+
+		// Check if we already have this packet and only need to ack it.
+		if (setStatus.HasFlag(ItemSetStatus.Set))
+			return false;
+
+		packetQueue.Set(packet.PacketId, packet);
+		while (TryGetCommand(packetQueue, out packet))
+			PacketEvent?.Invoke(ref packet);
+
+		return false;
+	}
+
+	private static bool TryGetCommand(RingQueue<Packet<TIn>> packetQueue, out Packet<TIn> packet)
+	{
+		if (packetQueue.Count <= 0) { packet = default; return false; }
+
+		int take = 0;
+		int takeLen = 0;
+		bool hasStart = false;
+		bool hasEnd = false;
+		for (int i = 0; i < packetQueue.Count; i++)
 		{
-			if (packetQueue.Count <= 0) { packet = default; return false; }
-
-			int take = 0;
-			int takeLen = 0;
-			bool hasStart = false;
-			bool hasEnd = false;
-			for (int i = 0; i < packetQueue.Count; i++)
+			if (packetQueue.TryPeekStart(i, out var peekPacket))
 			{
-				if (packetQueue.TryPeekStart(i, out var peekPacket))
+				take++;
+				takeLen += peekPacket.Size;
+				if (peekPacket.FragmentedFlag)
 				{
-					take++;
-					takeLen += peekPacket.Size;
-					if (peekPacket.FragmentedFlag)
-					{
-						if (!hasStart) { hasStart = true; }
-						else { hasEnd = true; break; }
-					}
-					else
-					{
-						if (!hasStart) { hasStart = true; hasEnd = true; break; }
-					}
+					if (!hasStart) { hasStart = true; }
+					else { hasEnd = true; break; }
 				}
 				else
 				{
-					break;
+					if (!hasStart) { hasStart = true; hasEnd = true; break; }
 				}
 			}
-
-			if (!hasStart || !hasEnd) { packet = default; return false; }
-
-			// GET
-			if (!packetQueue.TryDequeue(out packet))
-				Trace.Fail("Packet in queue got missing (?)");
-
-			// MERGE
-			if (take > 1)
-			{
-				var preFinalArray = new byte[takeLen];
-
-				// for loop at 0th element
-				int curCopyPos = packet.Size;
-				packet.Data.CopyTo(preFinalArray.AsSpan(0, packet.Size));
-
-				for (int i = 1; i < take; i++)
-				{
-					if (!packetQueue.TryDequeue(out var nextPacket))
-						Trace.Fail("Packet in queue got missing (?)");
-
-					nextPacket.Data.CopyTo(preFinalArray.AsSpan(curCopyPos, nextPacket.Size));
-					curCopyPos += nextPacket.Size;
-				}
-				packet.Data = preFinalArray;
-			}
-
-			// DECOMPRESS
-			if (packet.CompressedFlag)
-			{
-				try
-				{
-					packet.Data = QuickerLz.Decompress(packet.Data, MaxDecompressedSize);
-				}
-				catch (Exception ex)
-				{
-					LogRaw.Warn(ex, "Got invalid compressed data.");
-					return false;
-				}
-			}
-			return true;
-		}
-
-		private void SendAck(ushort ackId, PacketType ackType)
-		{
-			Span<byte> ackData = stackalloc byte[2];
-			BinaryPrimitives.WriteUInt16BigEndian(ackData, ackId);
-			Trace.Assert(ackType == PacketType.Ack || ackType == PacketType.AckLow, "Packet type is not an Ack-type");
-			AddOutgoingPacket(ackData, ackType);
-		}
-
-		private bool ReceiveAck(ref Packet<TIn> packet)
-		{
-			if (!BinaryPrimitives.TryReadUInt16BigEndian(packet.Data, out var packetId))
-				return false;
-
-			lock (sendLoopLock)
-			{
-				if (packetAckManager.TryGetValue(packetId, out var ackPacket))
-				{
-					UpdateRto(Tools.Now - ackPacket.LastSendTime);
-					packetAckManager.Remove(packetId);
-				}
-			}
-			return true;
-		}
-
-		private void SendPing()
-		{
-			pingTimer.Restart();
-			AddOutgoingPacket(Array.Empty<byte>(), PacketType.Ping);
-		}
-
-		private void ReceivePing(ref Packet<TIn> packet)
-		{
-			var idDiff = packet.PacketId - lastReceivedPingId;
-			if (idDiff > 1 && idDiff < ReceivePacketWindowSize)
-				NetworkStats.LogLostPings(idDiff - 1);
-			if (idDiff > 0 || idDiff < -ReceivePacketWindowSize)
-				lastReceivedPingId = packet.PacketId;
-			Span<byte> pongData = stackalloc byte[2];
-			BinaryPrimitives.WriteUInt16BigEndian(pongData, packet.PacketId);
-			AddOutgoingPacket(pongData, PacketType.Pong);
-		}
-
-		private bool ReceivePong(ref Packet<TIn> packet)
-		{
-			if (!BinaryPrimitives.TryReadUInt16BigEndian(packet.Data, out var answerId))
-				return false;
-
-			if (lastSentPingId == answerId)
-			{
-				var rtt = pingTimer.Elapsed;
-				UpdateRto(rtt);
-				NetworkStats.AddPing(rtt);
-			}
-			return true;
-		}
-
-		public void ReceivedFinalInitAck()
-		{
-			initPacketCheck = null;
-		}
-
-		private bool ReceiveInitAck(ref Packet<TIn> packet)
-		{
-			lock (sendLoopLock)
-			{
-				if (initPacketCheck is null)
-					return true;
-				// optional: add random number check from init data
-				if (!tsCrypt.ProcessInit1<TIn>(packet.Data).Get(out var forwardData, out var error))
-				{
-					LogRaw.Debug("Error init: {0}", error);
-					return false;
-				}
-				initPacketCheck = null;
-				if (forwardData.Length == 0) // TODO XXX
-					return true;
-				AddOutgoingPacket(forwardData, PacketType.Init1);
-				return true;
-			}
-		}
-
-		#endregion
-
-		private void UpdateRto(TimeSpan sampleRtt)
-		{
-			// Timeout calculation (see: https://tools.ietf.org/html/rfc6298)
-			// SRTT_{i+1}    = (1-a) * SRTT_i   + a * RTT
-			// DevRTT_{i+1}  = (1-b) * DevRTT_i + b * | RTT - SRTT_{i+1} |
-			// Timeout_{i+1} = SRTT_{i+1} + max(ClockRes, 4 * DevRTT_{i+1})
-			if (smoothedRtt < TimeSpan.Zero)
-				smoothedRtt = sampleRtt;
 			else
-				smoothedRtt = TimeSpan.FromTicks((long)((1 - AlphaSmooth) * smoothedRtt.Ticks + AlphaSmooth * sampleRtt.Ticks));
-			smoothedRttVar = TimeSpan.FromTicks((long)((1 - BetaSmooth) * smoothedRttVar.Ticks + BetaSmooth * Math.Abs(sampleRtt.Ticks - smoothedRtt.Ticks)));
-			currentRto = smoothedRtt + Tools.Max(ClockResolution, TimeSpan.FromTicks(4 * smoothedRttVar.Ticks));
-			LogRtt.Debug("RTT SRTT:{0} RTTVAR:{1} RTO:{2}", smoothedRtt, smoothedRttVar, currentRto);
+			{
+				break;
+			}
 		}
 
-		/// <summary>
-		/// ResendLoop will regularly check if a packet has be acknowledged and tries to send it again
-		/// if the timeout for a packet ran out.
-		/// </summary>
-		private void ResendLoop()
+		if (!hasStart || !hasEnd) { packet = default; return false; }
+
+		// GET
+		if (!packetQueue.TryDequeue(out packet))
+			Trace.Fail("Packet in queue got missing (?)");
+
+		// MERGE
+		if (take > 1)
 		{
-			var wasRunning = Interlocked.Exchange(ref pingCheckRunning, 1);
-			if (wasRunning != 0)
+			var preFinalArray = new byte[takeLen];
+
+			// for loop at 0th element
+			int curCopyPos = packet.Size;
+			packet.Data.CopyTo(preFinalArray.AsSpan(0, packet.Size));
+
+			for (int i = 1; i < take; i++)
 			{
-				Log.Warn("Previous resend tick didn't finish");
+				if (!packetQueue.TryDequeue(out var nextPacket))
+					Trace.Fail("Packet in queue got missing (?)");
+
+				nextPacket.Data.CopyTo(preFinalArray.AsSpan(curCopyPos, nextPacket.Size));
+				curCopyPos += nextPacket.Size;
+			}
+			packet.Data = preFinalArray;
+		}
+
+		// DECOMPRESS
+		if (packet.CompressedFlag)
+		{
+			try
+			{
+				packet.Data = QuickerLz.Decompress(packet.Data, MaxDecompressedSize);
+			}
+			catch (Exception ex)
+			{
+				LogRaw.Warn(ex, "Got invalid compressed data.");
+				return false;
+			}
+		}
+		return true;
+	}
+
+	private void SendAck(ushort ackId, PacketType ackType)
+	{
+		Span<byte> ackData = stackalloc byte[2];
+		BinaryPrimitives.WriteUInt16BigEndian(ackData, ackId);
+		Trace.Assert(ackType == PacketType.Ack || ackType == PacketType.AckLow, "Packet type is not an Ack-type");
+		AddOutgoingPacket(ackData, ackType);
+	}
+
+	private bool ReceiveAck(ref Packet<TIn> packet)
+	{
+		if (!BinaryPrimitives.TryReadUInt16BigEndian(packet.Data, out var packetId))
+			return false;
+
+		lock (sendLoopLock)
+		{
+			if (packetAckManager.TryGetValue(packetId, out var ackPacket))
+			{
+				UpdateRto(Tools.Now - ackPacket.LastSendTime);
+				packetAckManager.Remove(packetId);
+			}
+		}
+		return true;
+	}
+
+	private void SendPing()
+	{
+		pingTimer.Restart();
+		AddOutgoingPacket(Array.Empty<byte>(), PacketType.Ping);
+	}
+
+	private void ReceivePing(ref Packet<TIn> packet)
+	{
+		var idDiff = packet.PacketId - lastReceivedPingId;
+		if (idDiff > 1 && idDiff < ReceivePacketWindowSize)
+			NetworkStats.LogLostPings(idDiff - 1);
+		if (idDiff > 0 || idDiff < -ReceivePacketWindowSize)
+			lastReceivedPingId = packet.PacketId;
+		Span<byte> pongData = stackalloc byte[2];
+		BinaryPrimitives.WriteUInt16BigEndian(pongData, packet.PacketId);
+		AddOutgoingPacket(pongData, PacketType.Pong);
+	}
+
+	private bool ReceivePong(ref Packet<TIn> packet)
+	{
+		if (!BinaryPrimitives.TryReadUInt16BigEndian(packet.Data, out var answerId))
+			return false;
+
+		if (lastSentPingId == answerId)
+		{
+			var rtt = pingTimer.Elapsed;
+			UpdateRto(rtt);
+			NetworkStats.AddPing(rtt);
+		}
+		return true;
+	}
+
+	public void ReceivedFinalInitAck()
+	{
+		initPacketCheck = null;
+	}
+
+	private bool ReceiveInitAck(ref Packet<TIn> packet)
+	{
+		lock (sendLoopLock)
+		{
+			if (initPacketCheck is null)
+				return true;
+			// optional: add random number check from init data
+			if (!tsCrypt.ProcessInit1<TIn>(packet.Data).Get(out var forwardData, out var error))
+			{
+				LogRaw.Debug("Error init: {0}", error);
+				return false;
+			}
+			initPacketCheck = null;
+			if (forwardData.Length == 0) // TODO XXX
+				return true;
+			AddOutgoingPacket(forwardData, PacketType.Init1);
+			return true;
+		}
+	}
+
+	#endregion
+
+	private void UpdateRto(TimeSpan sampleRtt)
+	{
+		// Timeout calculation (see: https://tools.ietf.org/html/rfc6298)
+		// SRTT_{i+1}    = (1-a) * SRTT_i   + a * RTT
+		// DevRTT_{i+1}  = (1-b) * DevRTT_i + b * | RTT - SRTT_{i+1} |
+		// Timeout_{i+1} = SRTT_{i+1} + max(ClockRes, 4 * DevRTT_{i+1})
+		if (smoothedRtt < TimeSpan.Zero)
+			smoothedRtt = sampleRtt;
+		else
+			smoothedRtt = TimeSpan.FromTicks((long)((1 - AlphaSmooth) * smoothedRtt.Ticks + AlphaSmooth * sampleRtt.Ticks));
+		smoothedRttVar = TimeSpan.FromTicks((long)((1 - BetaSmooth) * smoothedRttVar.Ticks + BetaSmooth * Math.Abs(sampleRtt.Ticks - smoothedRtt.Ticks)));
+		currentRto = smoothedRtt + Tools.Max(ClockResolution, TimeSpan.FromTicks(4 * smoothedRttVar.Ticks));
+		LogRtt.Debug("RTT SRTT:{0} RTTVAR:{1} RTO:{2}", smoothedRtt, smoothedRttVar, currentRto);
+	}
+
+	/// <summary>
+	/// ResendLoop will regularly check if a packet has be acknowledged and tries to send it again
+	/// if the timeout for a packet ran out.
+	/// </summary>
+	private void ResendLoop()
+	{
+		var wasRunning = Interlocked.Exchange(ref pingCheckRunning, 1);
+		if (wasRunning != 0)
+		{
+			Log.Warn("Previous resend tick didn't finish");
+			return;
+		}
+
+		try
+		{
+			bool close = false;
+			var now = Tools.Now;
+			lock (sendLoopLock)
+			{
+				if (closed != 0)
+					return;
+
+				close = (packetAckManager.Count > 0 && ResendPackets(packetAckManager.Values, now))
+					|| (initPacketCheck != null && ResendPacket(initPacketCheck, now));
+			}
+			if (close)
+			{
+				Stop(Reason.Timeout);
 				return;
 			}
 
-			try
+			var nextTest = now - pingCheck - PingInterval;
+			// we need to check if CryptoInitComplete because while false packet ids won't be incremented
+			if (nextTest > TimeSpan.Zero && tsCrypt.CryptoInitComplete)
 			{
-				bool close = false;
-				var now = Tools.Now;
-				lock (sendLoopLock)
-				{
-					if (closed != 0)
-						return;
-
-					close = (packetAckManager.Count > 0 && ResendPackets(packetAckManager.Values, now))
-						|| (initPacketCheck != null && ResendPacket(initPacketCheck, now));
-				}
-				if (close)
-				{
-					Stop(Reason.Timeout);
-					return;
-				}
-
-				var nextTest = now - pingCheck - PingInterval;
-				// we need to check if CryptoInitComplete because while false packet ids won't be incremented
-				if (nextTest > TimeSpan.Zero && tsCrypt.CryptoInitComplete)
-				{
-					// Check that the last ping is more than PingInterval but not more than
-					// 2*PingInterval away. This might happen for e.g. when the process was
-					// suspended. If it was too long ago, reset the ping tick to now.
-					if (nextTest > PingInterval)
-						pingCheck = now;
-					else
-						pingCheck += PingInterval;
-					SendPing();
-				}
-
-				var elapsed = lastMessageTimer.Elapsed;
-				if (elapsed > PacketTimeout)
-				{
-					LogTimeout.Debug("TIMEOUT: Got no ping packet response for {0}", elapsed);
-					Stop(Reason.Timeout);
-					return;
-				}
+				// Check that the last ping is more than PingInterval but not more than
+				// 2*PingInterval away. This might happen for e.g. when the process was
+				// suspended. If it was too long ago, reset the ping tick to now.
+				if (nextTest > PingInterval)
+					pingCheck = now;
+				else
+					pingCheck += PingInterval;
+				SendPing();
 			}
-			finally
+
+			var elapsed = lastMessageTimer.Elapsed;
+			if (elapsed > PacketTimeout)
 			{
-				Interlocked.Exchange(ref pingCheckRunning, 0);
+				LogTimeout.Debug("TIMEOUT: Got no ping packet response for {0}", elapsed);
+				Stop(Reason.Timeout);
+				return;
 			}
 		}
-
-		private bool ResendPackets(IEnumerable<ResendPacket<TOut>> packetList, DateTime now)
+		finally
 		{
-			foreach (var outgoingPacket in packetList)
-				if (ResendPacket(outgoingPacket, now))
-					return true;
-			return false;
-		}
-
-		private bool ResendPacket(ResendPacket<TOut> packet, DateTime now)
-		{
-			// Check if the packet timed out completely
-			if (packet.FirstSendTime < now - PacketTimeout)
-			{
-				LogTimeout.Debug("TIMEOUT: {0}", packet);
-				return true;
-			}
-
-			// Check if we should retransmit a packet because it probably got lost
-			if (packet.LastSendTime < now - currentRto)
-			{
-				LogTimeout.Debug("RESEND: {0}", packet);
-				currentRto += currentRto;
-				if (currentRto > MaxRetryInterval)
-					currentRto = MaxRetryInterval;
-				packet.LastSendTime = Tools.Now;
-				SendRaw(ref packet.Packet);
-			}
-
-			return false;
-		}
-
-		private E<string> SendRaw(ref Packet<TOut> packet)
-		{
-			Trace.Assert(socket != null, nameof(socket) + " is null");
-			Trace.Assert(packet.Raw != null, nameof(packet.Raw) + " is null");
-			Trace.Assert(remoteAddress != null, nameof(remoteAddress) + " is null");
-
-			NetworkStats.LogOutPacket(ref packet);
-
-			// DebugToHex is costly and allocates, precheck before logging
-			if (LogRaw.IsTraceEnabled)
-				LogRaw.Trace("[O] Raw: {0}", DebugUtil.DebugToHex(packet.Raw));
-
-			try
-			{
-				var sw = Stopwatch.StartNew();
-				socket!.SendTo(packet.Raw, packet.Raw.Length, SocketFlags.None, remoteAddress!);
-				var elap = sw.ElapsedMilliseconds;
-				if (elap > 100)
-				{
-					LogRaw.Warn("Raw LONG: {0}ms", elap);
-				}
-				return R.Ok;
-			}
-			catch (SocketException ex)
-			{
-				LogRaw.Warn(ex, "Failed to deliver packet (Err:{0})", ex.SocketErrorCode);
-				return "Socket send error";
-			}
+			Interlocked.Exchange(ref pingCheckRunning, 0);
 		}
 	}
 
-	internal static class PacketHandlerConst
+	private bool ResendPackets(IEnumerable<ResendPacket<TOut>> packetList, DateTime now)
 	{
-		public static readonly Logger Log = LogManager.GetLogger("TSLib.PacketHandler");
-		public static readonly Logger LogRtt = LogManager.GetLogger("TSLib.PacketHandler.Rtt");
-		public static readonly Logger LogRaw = LogManager.GetLogger("TSLib.PacketHandler.Raw");
-		public static readonly Logger LogRawVoice = LogManager.GetLogger("TSLib.PacketHandler.Raw.Voice");
-		public static readonly Logger LogTimeout = LogManager.GetLogger("TSLib.PacketHandler.Timeout");
-
-		/// <summary>Elapsed time since first send timestamp until the connection is considered lost.</summary>
-		public static readonly TimeSpan PacketTimeout = TimeSpan.FromSeconds(30);
-		/// <summary>Smoothing factor for the SmoothedRtt.</summary>
-		public const float AlphaSmooth = 0.125f;
-		/// <summary>Smoothing factor for the SmoothedRttDev.</summary>
-		public const float BetaSmooth = 0.25f;
-		/// <summary>The maximum wait time to retransmit a packet.</summary>
-		public static readonly TimeSpan MaxRetryInterval = TimeSpan.FromMilliseconds(1000);
-		/// <summary>The timeout check loop interval.</summary>
-		public static readonly TimeSpan ClockResolution = TimeSpan.FromMilliseconds(100);
-		public static readonly TimeSpan PingInterval = TimeSpan.FromSeconds(1);
-
-		/// <summary>Greatest allowed packet size, including the complete header.</summary>
-		public const int MaxOutPacketSize = 500;
-		public const int MaxDecompressedSize = 1024 * 1024; // ServerDefault: 40000 (check original code again)
-		public const int ReceivePacketWindowSize = 128;
+		foreach (var outgoingPacket in packetList)
+			if (ResendPacket(outgoingPacket, now))
+				return true;
+		return false;
 	}
 
-	internal delegate void PacketEvent<TDir>(ref Packet<TDir> packet);
+	private bool ResendPacket(ResendPacket<TOut> packet, DateTime now)
+	{
+		// Check if the packet timed out completely
+		if (packet.FirstSendTime < now - PacketTimeout)
+		{
+			LogTimeout.Debug("TIMEOUT: {0}", packet);
+			return true;
+		}
+
+		// Check if we should retransmit a packet because it probably got lost
+		if (packet.LastSendTime < now - currentRto)
+		{
+			LogTimeout.Debug("RESEND: {0}", packet);
+			currentRto += currentRto;
+			if (currentRto > MaxRetryInterval)
+				currentRto = MaxRetryInterval;
+			packet.LastSendTime = Tools.Now;
+			SendRaw(ref packet.Packet);
+		}
+
+		return false;
+	}
+
+	private E<string> SendRaw(ref Packet<TOut> packet)
+	{
+		Trace.Assert(socket != null, nameof(socket) + " is null");
+		Trace.Assert(packet.Raw != null, nameof(packet.Raw) + " is null");
+		Trace.Assert(remoteAddress != null, nameof(remoteAddress) + " is null");
+
+		NetworkStats.LogOutPacket(ref packet);
+
+		// DebugToHex is costly and allocates, precheck before logging
+		if (LogRaw.IsTraceEnabled)
+			LogRaw.Trace("[O] Raw: {0}", DebugUtil.DebugToHex(packet.Raw));
+
+		try
+		{
+			var sw = Stopwatch.StartNew();
+			socket!.SendTo(packet.Raw, packet.Raw.Length, SocketFlags.None, remoteAddress!);
+			var elap = sw.ElapsedMilliseconds;
+			if (elap > 100)
+			{
+				LogRaw.Warn("Raw LONG: {0}ms", elap);
+			}
+			return R.Ok;
+		}
+		catch (SocketException ex)
+		{
+			LogRaw.Warn(ex, "Failed to deliver packet (Err:{0})", ex.SocketErrorCode);
+			return "Socket send error";
+		}
+	}
 }
+
+internal static class PacketHandlerConst
+{
+	public static readonly Logger Log = LogManager.GetLogger("TSLib.PacketHandler");
+	public static readonly Logger LogRtt = LogManager.GetLogger("TSLib.PacketHandler.Rtt");
+	public static readonly Logger LogRaw = LogManager.GetLogger("TSLib.PacketHandler.Raw");
+	public static readonly Logger LogRawVoice = LogManager.GetLogger("TSLib.PacketHandler.Raw.Voice");
+	public static readonly Logger LogTimeout = LogManager.GetLogger("TSLib.PacketHandler.Timeout");
+
+	/// <summary>Elapsed time since first send timestamp until the connection is considered lost.</summary>
+	public static readonly TimeSpan PacketTimeout = TimeSpan.FromSeconds(30);
+	/// <summary>Smoothing factor for the SmoothedRtt.</summary>
+	public const float AlphaSmooth = 0.125f;
+	/// <summary>Smoothing factor for the SmoothedRttDev.</summary>
+	public const float BetaSmooth = 0.25f;
+	/// <summary>The maximum wait time to retransmit a packet.</summary>
+	public static readonly TimeSpan MaxRetryInterval = TimeSpan.FromMilliseconds(1000);
+	/// <summary>The timeout check loop interval.</summary>
+	public static readonly TimeSpan ClockResolution = TimeSpan.FromMilliseconds(100);
+	public static readonly TimeSpan PingInterval = TimeSpan.FromSeconds(1);
+
+	/// <summary>Greatest allowed packet size, including the complete header.</summary>
+	public const int MaxOutPacketSize = 500;
+	public const int MaxDecompressedSize = 1024 * 1024; // ServerDefault: 40000 (check original code again)
+	public const int ReceivePacketWindowSize = 128;
+}
+
+internal delegate void PacketEvent<TDir>(ref Packet<TDir> packet);

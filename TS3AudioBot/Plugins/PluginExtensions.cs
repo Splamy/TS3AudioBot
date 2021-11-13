@@ -11,15 +11,14 @@ using NLog;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 
-namespace TS3AudioBot.Plugins
+namespace TS3AudioBot.Plugins;
+
+public static class PluginExtensions
 {
-	public static class PluginExtensions
+	[MethodImpl(MethodImplOptions.NoInlining)]
+	public static Logger GetLogger()
 	{
-		[MethodImpl(MethodImplOptions.NoInlining)]
-		public static Logger GetLogger()
-		{
-			var cls = new StackTrace()?.GetFrame(1)?.GetMethod()?.DeclaringType?.Name ?? "Unknown";
-			return LogManager.GetLogger($"TS3AudioBot.Plugins.{cls}");
-		}
+		var cls = new StackTrace()?.GetFrame(1)?.GetMethod()?.DeclaringType?.Name ?? "Unknown";
+		return LogManager.GetLogger($"TS3AudioBot.Plugins.{cls}");
 	}
 }

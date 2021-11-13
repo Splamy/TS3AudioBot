@@ -13,132 +13,131 @@ using System.Threading.Tasks;
 using TSLib.Full;
 using TSLib.Messages;
 
-namespace TSLib
+namespace TSLib;
+
+/// <summary>
+/// Synchronizes data between the receiving packet Thread and the waiting dispatcher Thread.
+/// </summary>
+internal sealed class WaitBlock : IDisposable
 {
-	/// <summary>
-	/// Synchronizes data between the receiving packet Thread and the waiting dispatcher Thread.
-	/// </summary>
-	internal sealed class WaitBlock : IDisposable
+	private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
+	private const string NotANotifyBlock = "This waitblock has no dependent notification";
+	private const string NotifyListEmpty = "Depending notification array must not be empty";
+	private const string NotifyDoesNotMatch = "The notification does not match this waitblock";
+	private static readonly TimeSpan CommandTimeout = PacketHandlerConst.PacketTimeout.Divide(2);
+
+	private bool isDisposed;
+	private readonly Deserializer deserializer;
+	private readonly TaskCompletionSource<R<ReadOnlyMemory<byte>, CommandError>> answerWaiterAsync;
+	private readonly TaskCompletionSource<LazyNotification>? notificationWaiterAsync;
+
+	public NotificationType[]? DependsOn { get; }
+
+	public WaitBlock(Deserializer deserializer, NotificationType[]? dependsOn = null)
 	{
-		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
-		private const string NotANotifyBlock = "This waitblock has no dependent notification";
-		private const string NotifyListEmpty = "Depending notification array must not be empty";
-		private const string NotifyDoesNotMatch = "The notification does not match this waitblock";
-		private static readonly TimeSpan CommandTimeout = PacketHandlerConst.PacketTimeout.Divide(2);
+		this.deserializer = deserializer;
+		isDisposed = false;
+		DependsOn = dependsOn;
 
-		private bool isDisposed;
-		private readonly Deserializer deserializer;
-		private readonly TaskCompletionSource<R<ReadOnlyMemory<byte>, CommandError>> answerWaiterAsync;
-		private readonly TaskCompletionSource<LazyNotification>? notificationWaiterAsync;
-
-		public NotificationType[]? DependsOn { get; }
-
-		public WaitBlock(Deserializer deserializer, NotificationType[]? dependsOn = null)
+		answerWaiterAsync = new TaskCompletionSource<R<ReadOnlyMemory<byte>, CommandError>>();
+		if (dependsOn != null)
 		{
-			this.deserializer = deserializer;
-			isDisposed = false;
-			DependsOn = dependsOn;
-
-			answerWaiterAsync = new TaskCompletionSource<R<ReadOnlyMemory<byte>, CommandError>>();
-			if (dependsOn != null)
-			{
-				if (dependsOn.Length == 0)
-					throw new InvalidOperationException(NotifyListEmpty);
-				notificationWaiterAsync = new TaskCompletionSource<LazyNotification>();
-			}
+			if (dependsOn.Length == 0)
+				throw new InvalidOperationException(NotifyListEmpty);
+			notificationWaiterAsync = new TaskCompletionSource<LazyNotification>();
 		}
+	}
 
-		public void SetError(CommandError commandError)
+	public void SetError(CommandError commandError)
+	{
+		if (commandError.Id == TsErrorCode.ok)
+			throw new ArgumentException("Passed explicit error without error code", nameof(commandError));
+		SetAnswerAuto(commandError, null);
+	}
+
+	public void SetAnswer(ReadOnlyMemory<byte> commandLine) => SetAnswerAuto(null, commandLine);
+
+	public void SetAnswerAuto(CommandError? commandError, ReadOnlyMemory<byte>? commandLine)
+	{
+		if (isDisposed)
+			return;
+
+		if (commandError != null && commandError.Id != TsErrorCode.ok)
 		{
-			if (commandError.Id == TsErrorCode.ok)
-				throw new ArgumentException("Passed explicit error without error code", nameof(commandError));
-			SetAnswerAuto(commandError, null);
+			answerWaiterAsync.SetResult(commandError);
 		}
-
-		public void SetAnswer(ReadOnlyMemory<byte> commandLine) => SetAnswerAuto(null, commandLine);
-
-		public void SetAnswerAuto(CommandError? commandError, ReadOnlyMemory<byte>? commandLine)
+		else if (commandLine.HasValue)
 		{
-			if (isDisposed)
-				return;
-
-			if (commandError != null && commandError.Id != TsErrorCode.ok)
-			{
-				answerWaiterAsync.SetResult(commandError);
-			}
-			else if (commandLine.HasValue)
-			{
-				answerWaiterAsync.SetResult(commandLine.GetValueOrDefault());
-			}
-			else
-			{
-				answerWaiterAsync.SetResult(ReadOnlyMemory<byte>.Empty);
-			}
+			answerWaiterAsync.SetResult(commandLine.GetValueOrDefault());
 		}
-
-		public void SetNotification(LazyNotification notification)
+		else
 		{
-			if (isDisposed)
-				return;
-			if (notificationWaiterAsync is null || DependsOn is null)
-				throw new InvalidOperationException(NotANotifyBlock);
-			if (Array.IndexOf(DependsOn, notification.NotifyType) < 0)
-				throw new ArgumentException(NotifyDoesNotMatch);
-			notificationWaiterAsync.SetResult(notification);
+			answerWaiterAsync.SetResult(ReadOnlyMemory<byte>.Empty);
 		}
+	}
 
-		public async Task<R<T[], CommandError>> WaitForMessageAsync<T>() where T : IResponse, new()
-		{
-			if (isDisposed)
-				throw new ObjectDisposedException(nameof(WaitBlock));
+	public void SetNotification(LazyNotification notification)
+	{
+		if (isDisposed)
+			return;
+		if (notificationWaiterAsync is null || DependsOn is null)
+			throw new InvalidOperationException(NotANotifyBlock);
+		if (Array.IndexOf(DependsOn, notification.NotifyType) < 0)
+			throw new ArgumentException(NotifyDoesNotMatch);
+		notificationWaiterAsync.SetResult(notification);
+	}
 
-			var timeOut = Task.Delay(CommandTimeout);
-			var res = await Task.WhenAny(answerWaiterAsync.Task, timeOut);
-			if (res == timeOut)
-				return CommandError.CommandTimeout;
-			Trace.Assert(answerWaiterAsync.Task.IsCompleted);
+	public async Task<R<T[], CommandError>> WaitForMessageAsync<T>() where T : IResponse, new()
+	{
+		if (isDisposed)
+			throw new ObjectDisposedException(nameof(WaitBlock));
 
-			if (!(await answerWaiterAsync.Task).Get(out var value, out var error))
-				return error;
+		var timeOut = Task.Delay(CommandTimeout);
+		var res = await Task.WhenAny(answerWaiterAsync.Task, timeOut);
+		if (res == timeOut)
+			return CommandError.CommandTimeout;
+		Trace.Assert(answerWaiterAsync.Task.IsCompleted);
 
-			var response = deserializer.GenerateResponse<T>(value.Span);
-			if (response is null)
-				return CommandError.Parser;
-			else
-				return response;
-		}
+		if (!(await answerWaiterAsync.Task).Get(out var value, out var error))
+			return error;
 
-		public async Task<R<LazyNotification, CommandError>> WaitForNotificationAsync()
-		{
-			if (isDisposed)
-				throw new ObjectDisposedException(nameof(WaitBlock));
-			if (notificationWaiterAsync is null)
-				throw new InvalidOperationException(NotANotifyBlock);
+		var response = deserializer.GenerateResponse<T>(value.Span);
+		if (response is null)
+			return CommandError.Parser;
+		else
+			return response;
+	}
 
-			var timeOut = Task.Delay(CommandTimeout);
-			if (await Task.WhenAny(answerWaiterAsync.Task, timeOut) == timeOut)
-				return CommandError.CommandTimeout;
-			Trace.Assert(answerWaiterAsync.Task.IsCompleted);
+	public async Task<R<LazyNotification, CommandError>> WaitForNotificationAsync()
+	{
+		if (isDisposed)
+			throw new ObjectDisposedException(nameof(WaitBlock));
+		if (notificationWaiterAsync is null)
+			throw new InvalidOperationException(NotANotifyBlock);
 
-			if (!(await answerWaiterAsync.Task).OnlyError().GetOk(out var error))
-				return error;
+		var timeOut = Task.Delay(CommandTimeout);
+		if (await Task.WhenAny(answerWaiterAsync.Task, timeOut) == timeOut)
+			return CommandError.CommandTimeout;
+		Trace.Assert(answerWaiterAsync.Task.IsCompleted);
 
-			if (await Task.WhenAny(notificationWaiterAsync.Task, timeOut) == timeOut)
-				return CommandError.CommandTimeout;
-			Trace.Assert(notificationWaiterAsync.Task.IsCompleted);
+		if (!(await answerWaiterAsync.Task).OnlyError().GetOk(out var error))
+			return error;
 
-			return await notificationWaiterAsync.Task;
-		}
+		if (await Task.WhenAny(notificationWaiterAsync.Task, timeOut) == timeOut)
+			return CommandError.CommandTimeout;
+		Trace.Assert(notificationWaiterAsync.Task.IsCompleted);
 
-		public void Dispose()
-		{
-			if (isDisposed)
-				return;
+		return await notificationWaiterAsync.Task;
+	}
 
-			answerWaiterAsync.TrySetResult(CommandError.ConnectionClosed);
-			notificationWaiterAsync?.TrySetCanceled();
+	public void Dispose()
+	{
+		if (isDisposed)
+			return;
 
-			isDisposed = true;
-		}
+		answerWaiterAsync.TrySetResult(CommandError.ConnectionClosed);
+		notificationWaiterAsync?.TrySetCanceled();
+
+		isDisposed = true;
 	}
 }

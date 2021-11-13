@@ -10,29 +10,28 @@
 using System;
 using System.Buffers.Binary;
 
-namespace TSLib.Audio
+namespace TSLib.Audio;
+
+public class AudioPacketReader : IAudioPipe
 {
-	public class AudioPacketReader : IAudioPipe
+	public bool Active => OutStream?.Active ?? false;
+	public IAudioPassiveConsumer? OutStream { get; set; }
+
+	public void Write(Span<byte> data, Meta? meta)
 	{
-		public bool Active => OutStream?.Active ?? false;
-		public IAudioPassiveConsumer? OutStream { get; set; }
+		if (OutStream is null || meta is null)
+			return;
 
-		public void Write(Span<byte> data, Meta? meta)
-		{
-			if (OutStream is null || meta is null)
-				return;
+		// End of stream is signalled with no data or a single byte.
+		// The header has 5 bytes, so check for 6.
+		if (data.Length < 6)
+			return;
 
-			// End of stream is signalled with no data or a single byte.
-			// The header has 5 bytes, so check for 6.
-			if (data.Length < 6)
-				return;
-
-			// Skip [0,2) Voice Packet Id for now
-			// TODO add packet id order checking
-			// TODO add defragment start
-			meta.In.Sender = (ClientId)BinaryPrimitives.ReadUInt16BigEndian(data.Slice(2, 2));
-			meta.Codec = (Codec)data[4];
-			OutStream?.Write(data[5..], meta);
-		}
+		// Skip [0,2) Voice Packet Id for now
+		// TODO add packet id order checking
+		// TODO add defragment start
+		meta.In.Sender = (ClientId)BinaryPrimitives.ReadUInt16BigEndian(data.Slice(2, 2));
+		meta.Codec = (Codec)data[4];
+		OutStream?.Write(data[5..], meta);
 	}
 }

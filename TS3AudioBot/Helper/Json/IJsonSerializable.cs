@@ -10,12 +10,11 @@
 using System;
 using System.Text.Json;
 
-namespace TS3AudioBot.Helper.Json
+namespace TS3AudioBot.Helper.Json;
+
+public interface IJsonSerializable
 {
-	public interface IJsonSerializable
-	{
-		bool ExpectsString { get; }
-		void ToJson(Utf8JsonWriter writer, JsonSerializerOptions options);
-		E<string> FromJson(ref Utf8JsonReader reader, JsonSerializerOptions options);
-	}
+	bool ExpectsString { get; }
+	void ToJson(Utf8JsonWriter writer, JsonSerializerOptions options);
+	E<string> FromJson(ref Utf8JsonReader reader, JsonSerializerOptions options);
 }

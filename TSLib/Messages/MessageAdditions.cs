@@ -7,14 +7,13 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
-namespace TSLib.Messages
+namespace TSLib.Messages;
+
+public interface IChannelCreateResponse
 {
-	public interface IChannelCreateResponse
-	{
-		ChannelId ChannelId { get; set; }
-	}
-
-	partial class ChannelCreateResponse : IChannelCreateResponse { }
-
-	partial class ChannelCreated : IChannelCreateResponse { }
+	ChannelId ChannelId { get; set; }
 }
+
+partial class ChannelCreateResponse : IChannelCreateResponse { }
+
+partial class ChannelCreated : IChannelCreateResponse { }

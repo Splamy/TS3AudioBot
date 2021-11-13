@@ -13,55 +13,54 @@ using System.Linq;
 using System.Text;
 using TSLib;
 
-namespace TS3AudioBot.Rights
+namespace TS3AudioBot.Rights;
+
+internal class ParseContext
 {
-	internal class ParseContext
+	public List<RightsDecl> Declarations { get; }
+	public RightsGroup[] Groups { get; private set; }
+	public RightsRule[] Rules { get; private set; }
+	public List<string> Errors { get; }
+	public List<string> Warnings { get; }
+	public ISet<string> RegisteredRights { get; }
+
+	public RightsRule RootRule { get; }
+	public bool NeedsAvailableGroups { get; set; } = false;
+	public bool NeedsAvailableChanGroups { get; set; } = false;
+	public HashSet<TsPermission> NeedsPermOverview { get; set; } = new();
+
+	public ParseContext(ISet<string> registeredRights)
 	{
-		public List<RightsDecl> Declarations { get; }
-		public RightsGroup[] Groups { get; private set; }
-		public RightsRule[] Rules { get; private set; }
-		public List<string> Errors { get; }
-		public List<string> Warnings { get; }
-		public ISet<string> RegisteredRights { get; }
+		Declarations = new List<RightsDecl>();
+		RootRule = new RightsRule();
+		Errors = new List<string>();
+		Warnings = new List<string>();
+		RegisteredRights = registeredRights;
+		Groups = Array.Empty<RightsGroup>();
+		Rules = Array.Empty<RightsRule>();
+	}
 
-		public RightsRule RootRule { get; }
-		public bool NeedsAvailableGroups { get; set; } = false;
-		public bool NeedsAvailableChanGroups { get; set; } = false;
-		public HashSet<TsPermission> NeedsPermOverview { get; set; } = new();
+	public void SplitDeclarations()
+	{
+		Groups = Declarations.OfType<RightsGroup>().ToArray();
+		Rules = Declarations.OfType<RightsRule>().ToArray();
+	}
 
-		public ParseContext(ISet<string> registeredRights)
+	public (bool hasErrors, string info) AsResult()
+	{
+		var strb = new StringBuilder();
+		foreach (var warn in Warnings)
+			strb.Append("WRN: ").AppendLine(warn);
+		if (Errors.Count == 0)
 		{
-			Declarations = new List<RightsDecl>();
-			RootRule = new RightsRule();
-			Errors = new List<string>();
-			Warnings = new List<string>();
-			RegisteredRights = registeredRights;
-			Groups = Array.Empty<RightsGroup>();
-			Rules = Array.Empty<RightsRule>();
+			strb.Append(string.Join("\n", Rules.Select(x => x.ToString())));
+			return (true, strb.ToString());
 		}
-
-		public void SplitDeclarations()
+		else
 		{
-			Groups = Declarations.OfType<RightsGroup>().ToArray();
-			Rules = Declarations.OfType<RightsRule>().ToArray();
-		}
-
-		public (bool hasErrors, string info) AsResult()
-		{
-			var strb = new StringBuilder();
-			foreach (var warn in Warnings)
-				strb.Append("WRN: ").AppendLine(warn);
-			if (Errors.Count == 0)
-			{
-				strb.Append(string.Join("\n", Rules.Select(x => x.ToString())));
-				return (true, strb.ToString());
-			}
-			else
-			{
-				foreach (var err in Errors)
-					strb.Append("ERR: ").AppendLine(err);
-				return (false, strb.ToString());
-			}
+			foreach (var err in Errors)
+				strb.Append("ERR: ").AppendLine(err);
+			return (false, strb.ToString());
 		}
 	}
 }

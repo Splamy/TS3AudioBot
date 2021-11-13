@@ -9,10 +9,9 @@
 
 using System;
 
-namespace TS3AudioBot.Audio
+namespace TS3AudioBot.Audio;
+
+public class SongInfoChanged : EventArgs
 {
-	public class SongInfoChanged : EventArgs
-	{
-		public string? Title { get; set; }
-	}
+	public string? Title { get; set; }
 }

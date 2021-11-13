@@ -12,35 +12,34 @@ using System.Linq;
 using System.Threading.Tasks;
 using TS3AudioBot.Dependency;
 
-namespace TS3AudioBot.CommandSystem.Commands
+namespace TS3AudioBot.CommandSystem.Commands;
+
+/// <summary>
+/// A special group founction that extracts the root group from the current execution context
+/// </summary>
+public class RootCommand : ICommand
 {
-	/// <summary>
-	/// A special group founction that extracts the root group from the current execution context
-	/// </summary>
-	public class RootCommand : ICommand
+	private readonly IReadOnlyList<ICommand> internArguments;
+
+	public RootCommand(IReadOnlyList<ICommand> arguments)
 	{
-		private readonly IReadOnlyList<ICommand> internArguments;
-
-		public RootCommand(IReadOnlyList<ICommand> arguments)
-		{
-			internArguments = arguments;
-		}
-
-		public virtual async ValueTask<object?> Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments)
-		{
-			if (!info.TryGet<CommandManager>(out var cmdSys))
-				throw new CommandException("Could not find local commandsystem tree", CommandExceptionReason.MissingContext);
-
-			IReadOnlyList<ICommand> merged;
-			if (arguments.Count == 0)
-				merged = internArguments;
-			else if (internArguments.Count == 0)
-				merged = arguments;
-			else
-				merged = internArguments.Concat(arguments).ToArray();
-			return await cmdSys.RootGroup.Execute(info, merged);
-		}
-
-		public override string ToString() => $"RootCmd({string.Join(", ", internArguments)})";
+		internArguments = arguments;
 	}
+
+	public virtual async ValueTask<object?> Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments)
+	{
+		if (!info.TryGet<CommandManager>(out var cmdSys))
+			throw new CommandException("Could not find local commandsystem tree", CommandExceptionReason.MissingContext);
+
+		IReadOnlyList<ICommand> merged;
+		if (arguments.Count == 0)
+			merged = internArguments;
+		else if (internArguments.Count == 0)
+			merged = arguments;
+		else
+			merged = internArguments.Concat(arguments).ToArray();
+		return await cmdSys.RootGroup.Execute(info, merged);
+	}
+
+	public override string ToString() => $"RootCmd({string.Join(", ", internArguments)})";
 }

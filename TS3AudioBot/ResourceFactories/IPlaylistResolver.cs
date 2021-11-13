@@ -11,12 +11,11 @@ using System.Threading;
 using System.Threading.Tasks;
 using TS3AudioBot.Playlists;
 
-namespace TS3AudioBot.ResourceFactories
-{
-	public interface IPlaylistResolver : IResolver
-	{
-		MatchCertainty MatchPlaylist(ResolveContext ctx, string uri);
+namespace TS3AudioBot.ResourceFactories;
 
-		Task<Playlist> GetPlaylist(ResolveContext ctx, string url, CancellationToken cancellationToken);
-	}
+public interface IPlaylistResolver : IResolver
+{
+	MatchCertainty MatchPlaylist(ResolveContext ctx, string uri);
+
+	Task<Playlist> GetPlaylist(ResolveContext ctx, string url, CancellationToken cancellationToken);
 }

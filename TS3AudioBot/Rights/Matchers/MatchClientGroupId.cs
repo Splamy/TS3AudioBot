@@ -10,16 +10,15 @@
 using System.Collections.Generic;
 using TSLib;
 
-namespace TS3AudioBot.Rights.Matchers
+namespace TS3AudioBot.Rights.Matchers;
+
+internal class MatchServerGroupId : Matcher
 {
-	internal class MatchServerGroupId : Matcher
-	{
-		private readonly HashSet<ServerGroupId> serverGroupIds;
+	private readonly HashSet<ServerGroupId> serverGroupIds;
 
-		public MatchServerGroupId(IEnumerable<ServerGroupId> serverGroupIds) => this.serverGroupIds = new HashSet<ServerGroupId>(serverGroupIds);
+	public MatchServerGroupId(IEnumerable<ServerGroupId> serverGroupIds) => this.serverGroupIds = new HashSet<ServerGroupId>(serverGroupIds);
 
-		public override bool Matches(ExecuteContext ctx) => ctx.ServerGroups?.Length > 0 && serverGroupIds.Overlaps(ctx.ServerGroups);
+	public override bool Matches(ExecuteContext ctx) => ctx.ServerGroups?.Length > 0 && serverGroupIds.Overlaps(ctx.ServerGroups);
 
-		public override void SetRequiredFeatures(ParseContext ctx) => ctx.NeedsAvailableGroups = true;
-	}
+	public override void SetRequiredFeatures(ParseContext ctx) => ctx.NeedsAvailableGroups = true;
 }

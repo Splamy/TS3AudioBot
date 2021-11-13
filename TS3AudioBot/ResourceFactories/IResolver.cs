@@ -9,10 +9,9 @@
 
 using System;
 
-namespace TS3AudioBot.ResourceFactories
+namespace TS3AudioBot.ResourceFactories;
+
+public interface IResolver : IDisposable
 {
-	public interface IResolver : IDisposable
-	{
-		string ResolverFor { get; }
-	}
+	string ResolverFor { get; }
 }

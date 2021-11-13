@@ -10,55 +10,54 @@
 using System;
 using TSLib.Audio;
 
-namespace TS3AudioBot.Audio
+namespace TS3AudioBot.Audio;
+
+public class StallCheckPipe : IAudioPipe
 {
-	public class StallCheckPipe : IAudioPipe
+	private const uint StallCountInterval = 10;
+	private const uint StallNoErrorCountMax = 5;
+
+	public bool Active => OutStream?.Active ?? false;
+	public IAudioPassiveConsumer? OutStream { get; set; }
+
+	private bool isStall;
+	private uint stallCount;
+	private uint stallNoErrorCount;
+
+	public StallCheckPipe()
 	{
-		private const uint StallCountInterval = 10;
-		private const uint StallNoErrorCountMax = 5;
+		isStall = false;
+		stallCount = 0;
+	}
 
-		public bool Active => OutStream?.Active ?? false;
-		public IAudioPassiveConsumer? OutStream { get; set; }
+	public void Write(Span<byte> data, Meta? meta)
+	{
+		if (OutStream is null) return;
 
-		private bool isStall;
-		private uint stallCount;
-		private uint stallNoErrorCount;
-
-		public StallCheckPipe()
+		if (isStall)
 		{
-			isStall = false;
-			stallCount = 0;
-		}
-
-		public void Write(Span<byte> data, Meta? meta)
-		{
-			if (OutStream is null) return;
-
-			if (isStall)
+			// TODO maybe do time-cooldown instead of call-count-cooldown
+			if (++stallCount % StallCountInterval == 0)
 			{
-				// TODO maybe do time-cooldown instead of call-count-cooldown
-				if (++stallCount % StallCountInterval == 0)
+				stallNoErrorCount++;
+				if (stallNoErrorCount > StallNoErrorCountMax)
 				{
-					stallNoErrorCount++;
-					if (stallNoErrorCount > StallNoErrorCountMax)
-					{
-						stallCount = 0;
-						isStall = false;
-					}
-				}
-				else
-				{
-					return;
+					stallCount = 0;
+					isStall = false;
 				}
 			}
-
-			OutStream?.Write(data, meta);
+			else
+			{
+				return;
+			}
 		}
 
-		public void SetStall()
-		{
-			stallNoErrorCount = 0;
-			isStall = true;
-		}
+		OutStream?.Write(data, meta);
+	}
+
+	public void SetStall()
+	{
+		stallNoErrorCount = 0;
+		isStall = true;
 	}
 }

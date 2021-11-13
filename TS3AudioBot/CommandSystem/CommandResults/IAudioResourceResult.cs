@@ -9,10 +9,9 @@
 
 using TS3AudioBot.ResourceFactories;
 
-namespace TS3AudioBot.CommandSystem.CommandResults
+namespace TS3AudioBot.CommandSystem.CommandResults;
+
+public interface IAudioResourceResult
 {
-	public interface IAudioResourceResult
-	{
-		AudioResource AudioResource { get; }
-	}
+	AudioResource AudioResource { get; }
 }

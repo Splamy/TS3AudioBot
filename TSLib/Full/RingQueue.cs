@@ -10,172 +10,171 @@
 using System;
 using System.Diagnostics.CodeAnalysis;
 
-namespace TSLib.Full
+namespace TSLib.Full;
+
+/// <summary>Provides a ring queue with packet offset and direct item access functionality.</summary>
+/// <typeparam name="T">Item type</typeparam>
+public sealed class RingQueue<T> where T : notnull
 {
-	/// <summary>Provides a ring queue with packet offset and direct item access functionality.</summary>
-	/// <typeparam name="T">Item type</typeparam>
-	public sealed class RingQueue<T> where T : notnull
+	private const int InitialBufferSize = 16;
+
+	private int currentStart;
+	private (bool set, T value)[] ringBuffer;
+
+	public int Count { get; private set; } // = currentLength
+	public int MaxBufferSize { get; }
+	public GenerationWindow Window { get; }
+
+	public RingQueue(int maxBufferSize, int mod)
 	{
-		private const int InitialBufferSize = 16;
+		if (maxBufferSize >= mod)
+			throw new ArgumentOutOfRangeException(nameof(mod), "Modulo must be bigger than buffer size");
+		MaxBufferSize = maxBufferSize;
+		var setBufferSize = Math.Min(InitialBufferSize, MaxBufferSize);
+		ringBuffer = new (bool, T)[setBufferSize];
+		Window = new GenerationWindow(mod, MaxBufferSize);
+		Clear();
+	}
 
-		private int currentStart;
-		private (bool set, T value)[] ringBuffer;
+	#region mapping ring array to flat [0 - size] array
 
-		public int Count { get; private set; } // = currentLength
-		public int MaxBufferSize { get; }
-		public GenerationWindow Window { get; }
+	private void BufferSet(int index, T value)
+	{
+		BufferExtend(index);
+		int local = IndexToLocal(index);
+		int newLength = local - currentStart + 1 + (local >= currentStart ? 0 : ringBuffer.Length);
+		Count = Math.Max(Count, newLength);
+		ringBuffer[local] = (true, value);
+	}
 
-		public RingQueue(int maxBufferSize, int mod)
+	private ref T BufferGet(int index)
+	{
+		BufferExtend(index);
+		int local = IndexToLocal(index);
+		return ref ringBuffer[local].value;
+	}
+
+	private bool StateGet(int index)
+	{
+		BufferExtend(index);
+		int local = IndexToLocal(index);
+		return ringBuffer[local].set;
+	}
+
+	private void BufferPop()
+	{
+		ringBuffer[currentStart] = (false, default!);
+		currentStart = (currentStart + 1) % ringBuffer.Length;
+		Count--;
+	}
+
+	private void BufferExtend(int index)
+	{
+		if (index < ringBuffer.Length)
+			return;
+		if (index >= MaxBufferSize)
+			throw new ArgumentOutOfRangeException(nameof(index), "The index does not fit into the maximal buffer size");
+		int extendTo = index < ringBuffer.Length * 2
+			? Math.Min(ringBuffer.Length * 2, MaxBufferSize)
+			: Math.Min(index + ringBuffer.Length, MaxBufferSize);
+		var extRingBuffer = new (bool, T)[extendTo];
+		Array.Copy(ringBuffer, currentStart, extRingBuffer, 0, ringBuffer.Length - currentStart);
+		Array.Copy(ringBuffer, 0, extRingBuffer, ringBuffer.Length - currentStart, currentStart);
+		currentStart = 0;
+		ringBuffer = extRingBuffer;
+	}
+
+	private int IndexToLocal(int index) => (currentStart + index) % ringBuffer.Length;
+
+	#endregion
+
+	public void Set(int mappedValue, T value)
+	{
+		int index = Window.MappedToIndex(mappedValue);
+		if (IsSetIndex(index) != ItemSetStatus.InWindowNotSet)
+			throw new ArgumentOutOfRangeException(nameof(mappedValue), "Object cannot be set.");
+
+		BufferSet(index, value);
+	}
+
+	public ItemSetStatus IsSet(int mappedValue)
+	{
+		int index = Window.MappedToIndex(mappedValue);
+		return IsSetIndex(index);
+	}
+
+	private ItemSetStatus IsSetIndex(int index)
+	{
+		if (index < 0)
+			return ItemSetStatus.OutOfWindowSet;
+		if (index > Count && index < MaxBufferSize)
+			return ItemSetStatus.InWindowNotSet;
+		if (index >= MaxBufferSize)
+			return ItemSetStatus.OutOfWindowNotSet;
+		return StateGet(index) ? ItemSetStatus.InWindowSet : ItemSetStatus.InWindowNotSet;
+	}
+
+	public bool TryDequeue([MaybeNullWhen(false)] out T value)
+	{
+		if (!TryPeekStart(0, out value)) return false;
+		BufferPop();
+		Window.Advance(1);
+		return true;
+	}
+
+	public (bool set, T value) Dequeue()
+	{
+		var ret = TryPeekStart(0, out var value) ? (true, value) : (false, default!);
+		BufferPop();
+		Window.Advance(1);
+		return ret;
+	}
+
+	public bool TryPeekStart(int index, [MaybeNullWhen(false)] out T value)
+	{
+		if (index < 0)
+			throw new ArgumentOutOfRangeException(nameof(index));
+
+		if (index >= Count || Count <= 0 || !StateGet(index))
 		{
-			if (maxBufferSize >= mod)
-				throw new ArgumentOutOfRangeException(nameof(mod), "Modulo must be bigger than buffer size");
-			MaxBufferSize = maxBufferSize;
-			var setBufferSize = Math.Min(InitialBufferSize, MaxBufferSize);
-			ringBuffer = new (bool, T)[setBufferSize];
-			Window = new GenerationWindow(mod, MaxBufferSize);
-			Clear();
+			value = default!;
+			return false;
 		}
-
-		#region mapping ring array to flat [0 - size] array
-
-		private void BufferSet(int index, T value)
+		else
 		{
-			BufferExtend(index);
-			int local = IndexToLocal(index);
-			int newLength = local - currentStart + 1 + (local >= currentStart ? 0 : ringBuffer.Length);
-			Count = Math.Max(Count, newLength);
-			ringBuffer[local] = (true, value);
-		}
-
-		private ref T BufferGet(int index)
-		{
-			BufferExtend(index);
-			int local = IndexToLocal(index);
-			return ref ringBuffer[local].value;
-		}
-
-		private bool StateGet(int index)
-		{
-			BufferExtend(index);
-			int local = IndexToLocal(index);
-			return ringBuffer[local].set;
-		}
-
-		private void BufferPop()
-		{
-			ringBuffer[currentStart] = (false, default!);
-			currentStart = (currentStart + 1) % ringBuffer.Length;
-			Count--;
-		}
-
-		private void BufferExtend(int index)
-		{
-			if (index < ringBuffer.Length)
-				return;
-			if (index >= MaxBufferSize)
-				throw new ArgumentOutOfRangeException(nameof(index), "The index does not fit into the maximal buffer size");
-			int extendTo = index < ringBuffer.Length * 2
-				? Math.Min(ringBuffer.Length * 2, MaxBufferSize)
-				: Math.Min(index + ringBuffer.Length, MaxBufferSize);
-			var extRingBuffer = new (bool, T)[extendTo];
-			Array.Copy(ringBuffer, currentStart, extRingBuffer, 0, ringBuffer.Length - currentStart);
-			Array.Copy(ringBuffer, 0, extRingBuffer, ringBuffer.Length - currentStart, currentStart);
-			currentStart = 0;
-			ringBuffer = extRingBuffer;
-		}
-
-		private int IndexToLocal(int index) => (currentStart + index) % ringBuffer.Length;
-
-		#endregion
-
-		public void Set(int mappedValue, T value)
-		{
-			int index = Window.MappedToIndex(mappedValue);
-			if (IsSetIndex(index) != ItemSetStatus.InWindowNotSet)
-				throw new ArgumentOutOfRangeException(nameof(mappedValue), "Object cannot be set.");
-
-			BufferSet(index, value);
-		}
-
-		public ItemSetStatus IsSet(int mappedValue)
-		{
-			int index = Window.MappedToIndex(mappedValue);
-			return IsSetIndex(index);
-		}
-
-		private ItemSetStatus IsSetIndex(int index)
-		{
-			if (index < 0)
-				return ItemSetStatus.OutOfWindowSet;
-			if (index > Count && index < MaxBufferSize)
-				return ItemSetStatus.InWindowNotSet;
-			if (index >= MaxBufferSize)
-				return ItemSetStatus.OutOfWindowNotSet;
-			return StateGet(index) ? ItemSetStatus.InWindowSet : ItemSetStatus.InWindowNotSet;
-		}
-
-		public bool TryDequeue([MaybeNullWhen(false)] out T value)
-		{
-			if (!TryPeekStart(0, out value)) return false;
-			BufferPop();
-			Window.Advance(1);
+			value = BufferGet(index);
 			return true;
 		}
-
-		public (bool set, T value) Dequeue()
-		{
-			var ret = TryPeekStart(0, out var value) ? (true, value) : (false, default!);
-			BufferPop();
-			Window.Advance(1);
-			return ret;
-		}
-
-		public bool TryPeekStart(int index, [MaybeNullWhen(false)] out T value)
-		{
-			if (index < 0)
-				throw new ArgumentOutOfRangeException(nameof(index));
-
-			if (index >= Count || Count <= 0 || !StateGet(index))
-			{
-				value = default!;
-				return false;
-			}
-			else
-			{
-				value = BufferGet(index);
-				return true;
-			}
-		}
-
-		public void Clear()
-		{
-			currentStart = 0;
-			Count = 0;
-			Array.Clear(ringBuffer, 0, ringBuffer.Length);
-			Window.Reset();
-		}
 	}
 
-	//  X   |OXXOOOOOO|  X
-	//  |     |   |      |
-	//  |     |   |      OutOfWindowNotSet
-	//  |     |   InWindowNotSet
-	//  |     InWindowSet
-	//  OutOfWindowSet
-
-	[Flags]
-	public enum ItemSetStatus
+	public void Clear()
 	{
-#pragma warning disable // Enums values should not be duplicated
-		NotSet = 0b00,
-		Set = 0b01,
-		OutOfWindow = 0b00,
-		InWindow = 0b10,
-
-		OutOfWindowNotSet = OutOfWindow | NotSet,
-		OutOfWindowSet = OutOfWindow | Set,
-		InWindowNotSet = InWindow | NotSet,
-		InWindowSet = InWindow | Set,
-#pragma warning restore // Enums values should not be duplicated
+		currentStart = 0;
+		Count = 0;
+		Array.Clear(ringBuffer, 0, ringBuffer.Length);
+		Window.Reset();
 	}
+}
+
+//  X   |OXXOOOOOO|  X
+//  |     |   |      |
+//  |     |   |      OutOfWindowNotSet
+//  |     |   InWindowNotSet
+//  |     InWindowSet
+//  OutOfWindowSet
+
+[Flags]
+public enum ItemSetStatus
+{
+#pragma warning disable // Enums values should not be duplicated
+	NotSet = 0b00,
+	Set = 0b01,
+	OutOfWindow = 0b00,
+	InWindow = 0b10,
+
+	OutOfWindowNotSet = OutOfWindow | NotSet,
+	OutOfWindowSet = OutOfWindow | Set,
+	InWindowNotSet = InWindow | NotSet,
+	InWindowSet = InWindow | Set,
+#pragma warning restore // Enums values should not be duplicated
 }

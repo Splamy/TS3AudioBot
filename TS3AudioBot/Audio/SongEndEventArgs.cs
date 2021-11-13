@@ -9,11 +9,10 @@
 
 using System;
 
-namespace TS3AudioBot.Audio
+namespace TS3AudioBot.Audio;
+
+public class SongEndEventArgs : EventArgs
 {
-	public class SongEndEventArgs : EventArgs
-	{
-		public bool SongEndedByCallback { get; }
-		public SongEndEventArgs(bool songEndedByCallback) { SongEndedByCallback = songEndedByCallback; }
-	}
+	public bool SongEndedByCallback { get; }
+	public SongEndEventArgs(bool songEndedByCallback) { SongEndedByCallback = songEndedByCallback; }
 }

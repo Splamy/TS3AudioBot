@@ -9,27 +9,26 @@
 
 using System;
 
-namespace TS3AudioBot.Plugins
+namespace TS3AudioBot.Plugins;
+
+public interface ITabPlugin : IDisposable
 {
-	public interface ITabPlugin : IDisposable
-	{
-		void Initialize();
-	}
-
-	public interface ICorePlugin : ITabPlugin { }
-
-	public interface IBotPlugin : ITabPlugin { }
-
-	public interface IPluginMeta
-	{
-		string Name { get; }
-		string Description { get; }
-		string Author { get; }
-		Uri ProjectUrl { get; }
-		Version Version { get; }
-	}
-
-	[AttributeUsage(AttributeTargets.Class, Inherited = false)]
-	[Obsolete("Static Plugins are deprecated, use an ICorePlugin instead")]
-	public sealed class StaticPluginAttribute : Attribute { }
+	void Initialize();
 }
+
+public interface ICorePlugin : ITabPlugin { }
+
+public interface IBotPlugin : ITabPlugin { }
+
+public interface IPluginMeta
+{
+	string Name { get; }
+	string Description { get; }
+	string Author { get; }
+	Uri ProjectUrl { get; }
+	Version Version { get; }
+}
+
+[AttributeUsage(AttributeTargets.Class, Inherited = false)]
+[Obsolete("Static Plugins are deprecated, use an ICorePlugin instead")]
+public sealed class StaticPluginAttribute : Attribute { }

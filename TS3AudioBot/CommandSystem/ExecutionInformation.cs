@@ -9,14 +9,13 @@
 
 using TS3AudioBot.Dependency;
 
-namespace TS3AudioBot.CommandSystem
+namespace TS3AudioBot.CommandSystem;
+
+public class ExecutionInformation : ChainedInjector<BasicInjector>
 {
-	public class ExecutionInformation : ChainedInjector<BasicInjector>
+	public ExecutionInformation() : this(NullInjector.Instance) { }
+	public ExecutionInformation(IInjector parent) : base(parent, new BasicInjector())
 	{
-		public ExecutionInformation() : this(NullInjector.Instance) { }
-		public ExecutionInformation(IInjector parent) : base(parent, new BasicInjector())
-		{
-			this.AddModule(this);
-		}
+		this.AddModule(this);
 	}
 }

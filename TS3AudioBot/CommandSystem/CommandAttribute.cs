@@ -9,39 +9,38 @@
 
 using System;
 
-namespace TS3AudioBot.CommandSystem
+namespace TS3AudioBot.CommandSystem;
+
+/// <summary>
+/// Marks a method as callable from the CommandSystem.
+/// The containing class must be registered in the CommandSystem to use this method.
+/// </summary>
+[AttributeUsage(AttributeTargets.Method, Inherited = false)]
+public sealed class CommandAttribute : Attribute
 {
-	/// <summary>
-	/// Marks a method as callable from the CommandSystem.
-	/// The containing class must be registered in the CommandSystem to use this method.
-	/// </summary>
-	[AttributeUsage(AttributeTargets.Method, Inherited = false)]
-	public sealed class CommandAttribute : Attribute
-	{
-		public string CommandNameSpace { get; }
-		public string? OverrideHelpName { get; }
+	public string CommandNameSpace { get; }
+	public string? OverrideHelpName { get; }
 
-		public CommandAttribute(string commandNameSpace, string? overrideHelpName = null)
-		{
-			CommandNameSpace = commandNameSpace;
-			OverrideHelpName = overrideHelpName;
-		}
+	public CommandAttribute(string commandNameSpace, string? overrideHelpName = null)
+	{
+		CommandNameSpace = commandNameSpace;
+		OverrideHelpName = overrideHelpName;
 	}
+}
 
-	/// <summary>
-	/// Gives an example on how to use this method.
-	/// Can be used to clarify different functionality from various overloads.
-	/// </summary>
-	[AttributeUsage(AttributeTargets.Method, Inherited = false, AllowMultiple = true)]
-	public sealed class UsageAttribute : Attribute
+/// <summary>
+/// Gives an example on how to use this method.
+/// Can be used to clarify different functionality from various overloads.
+/// </summary>
+[AttributeUsage(AttributeTargets.Method, Inherited = false, AllowMultiple = true)]
+public sealed class UsageAttribute : Attribute
+{
+	public string UsageSyntax { get; }
+	public string UsageHelp { get; }
+
+	public UsageAttribute(string syntax, string help)
 	{
-		public string UsageSyntax { get; }
-		public string UsageHelp { get; }
-
-		public UsageAttribute(string syntax, string help)
-		{
-			UsageSyntax = syntax;
-			UsageHelp = help;
-		}
+		UsageSyntax = syntax;
+		UsageHelp = help;
 	}
 }

@@ -14,136 +14,135 @@ using System.Diagnostics;
 using System.Text.Json;
 using TS3AudioBot.Helper;
 
-namespace TS3AudioBot.Config
+namespace TS3AudioBot.Config;
+
+[DebuggerDisplay("{Key}:{Value}")]
+public class ConfigValue<T> : ConfigPart where T : notnull
 {
-	[DebuggerDisplay("{Key}:{Value}")]
-	public class ConfigValue<T> : ConfigPart where T : notnull
+	public override bool ExpectsString => typeof(T) == typeof(string) || typeof(T) == typeof(TimeSpan) || typeof(T).IsEnum;
+	private ConfigValue<T>? backingValue;
+	private bool hasValue = false;
+	public T Default { get; }
+	private T value;
+	public T Value
 	{
-		public override bool ExpectsString => typeof(T) == typeof(string) || typeof(T) == typeof(TimeSpan) || typeof(T).IsEnum;
-		private ConfigValue<T>? backingValue;
-		private bool hasValue = false;
-		public T Default { get; }
-		private T value;
-		public T Value
+		get
 		{
-			get
-			{
-				if (hasValue)
-					return value;
-				if (backingValue != null)
-					return backingValue.Value;
-				return Default;
-			}
-			set
-			{
-				hasValue = true;
-				if (EqualityComparer<T>.Default.Equals(this.value, value))
-					return;
-				this.value = value;
-				if (Changed != null)
-				{
-					var args = new ConfigChangedEventArgs<T>(value);
-					Changed?.Invoke(this, args);
-				}
-			}
+			if (hasValue)
+				return value;
+			if (backingValue != null)
+				return backingValue.Value;
+			return Default;
 		}
-		public Func<T, E<string>>? Validator { get; set; }
-
-		public event EventHandler<ConfigChangedEventArgs<T>>? Changed;
-
-		public ConfigValue(string key, T defaultVal, string doc = "") : base(key)
+		set
 		{
-			Documentation = doc;
-			Default = defaultVal;
-			value = default!;
-		}
-
-		private void InvokeChange(object? sender, ConfigChangedEventArgs<T> args) => Changed?.Invoke(sender, args);
-
-		public override void ClearEvents() => Changed = null;
-
-		public override void FromToml(TomlObject? tomlObject)
-		{
-			if (tomlObject == null)
+			hasValue = true;
+			if (EqualityComparer<T>.Default.Equals(this.value, value))
 				return;
-
-			if (!tomlObject.TryGetValue<T>(out var tomlValue))
+			this.value = value;
+			if (Changed != null)
 			{
-				Log.Warn("Failed to read '{0}', got {1} with {2}", Key, tomlObject.ReadableTypeName, tomlObject.DumpToJson());
-				return;
-			}
-
-			var validate = Validator?.Invoke(tomlValue) ?? R.Ok;
-			if (!validate.Ok)
-			{
-				Log.Warn("Invalid value in '{0}', {1}", Key, validate.Error);
-				return;
-			}
-
-			Value = tomlValue;
-		}
-
-		public override void ToToml(bool writeDefaults, bool writeDocumentation)
-		{
-			// Keys with underscore are read-only
-			if (Key.StartsWith("_", StringComparison.Ordinal))
-				return;
-
-			if (Parent is null)
-				throw new InvalidOperationException("Value is not in a tree");
-
-			// Set field if either
-			// - this value is set
-			// - or we explicitly want to write out default values
-			var selfToml = Parent.TomlObject.TryGetValue(Key);
-			if (hasValue || (writeDefaults && selfToml is null))
-			{
-				selfToml = Parent.TomlObject.Set(Key, Value);
-			}
-			if (writeDocumentation && selfToml != null)
-			{
-				CreateDocumentation(selfToml);
+				var args = new ConfigChangedEventArgs<T>(value);
+				Changed?.Invoke(this, args);
 			}
 		}
+	}
+	public Func<T, E<string>>? Validator { get; set; }
 
-		public override void Derive(ConfigPart derived)
-		{
-			if (derived is ConfigValue<T> derivedValue)
-			{
-				derivedValue.backingValue = this;
-				Changed -= derivedValue.InvokeChange;
-				Changed += derivedValue.InvokeChange;
-			}
-		}
+	public event EventHandler<ConfigChangedEventArgs<T>>? Changed;
 
-		public override void ToJson(Utf8JsonWriter writer, JsonSerializerOptions options)
-		{
-			JsonSerializer.Serialize(writer, Value, options);
-		}
-
-		public override E<string> FromJson(ref Utf8JsonReader reader, JsonSerializerOptions options)
-		{
-			try
-			{
-				var value = JsonSerializer.Deserialize<T>(ref reader, options);
-				if (value is null)
-					return "Value is empty";
-				Value = value;
-				return R.Ok;
-			}
-			catch (JsonException ex) { return $"Could not read value: {ex.Message}"; }
-		}
-
-		public static implicit operator T(ConfigValue<T> conf) => conf.Value;
+	public ConfigValue(string key, T defaultVal, string doc = "") : base(key)
+	{
+		Documentation = doc;
+		Default = defaultVal;
+		value = default!;
 	}
 
-	public class ConfigChangedEventArgs<T> : EventArgs
-	{
-		public T NewValue { get; }
+	private void InvokeChange(object? sender, ConfigChangedEventArgs<T> args) => Changed?.Invoke(sender, args);
 
-		public ConfigChangedEventArgs(T newValue)
+	public override void ClearEvents() => Changed = null;
+
+	public override void FromToml(TomlObject? tomlObject)
+	{
+		if (tomlObject == null)
+			return;
+
+		if (!tomlObject.TryGetValue<T>(out var tomlValue))
 		{
-			NewValue = newValue;
+			Log.Warn("Failed to read '{0}', got {1} with {2}", Key, tomlObject.ReadableTypeName, tomlObject.DumpToJson());
+			return;
 		}
+
+		var validate = Validator?.Invoke(tomlValue) ?? R.Ok;
+		if (!validate.Ok)
+		{
+			Log.Warn("Invalid value in '{0}', {1}", Key, validate.Error);
+			return;
+		}
+
+		Value = tomlValue;
+	}
+
+	public override void ToToml(bool writeDefaults, bool writeDocumentation)
+	{
+		// Keys with underscore are read-only
+		if (Key.StartsWith("_", StringComparison.Ordinal))
+			return;
+
+		if (Parent is null)
+			throw new InvalidOperationException("Value is not in a tree");
+
+		// Set field if either
+		// - this value is set
+		// - or we explicitly want to write out default values
+		var selfToml = Parent.TomlObject.TryGetValue(Key);
+		if (hasValue || (writeDefaults && selfToml is null))
+		{
+			selfToml = Parent.TomlObject.Set(Key, Value);
+		}
+		if (writeDocumentation && selfToml != null)
+		{
+			CreateDocumentation(selfToml);
+		}
+	}
+
+	public override void Derive(ConfigPart derived)
+	{
+		if (derived is ConfigValue<T> derivedValue)
+		{
+			derivedValue.backingValue = this;
+			Changed -= derivedValue.InvokeChange;
+			Changed += derivedValue.InvokeChange;
+		}
+	}
+
+	public override void ToJson(Utf8JsonWriter writer, JsonSerializerOptions options)
+	{
+		JsonSerializer.Serialize(writer, Value, options);
+	}
+
+	public override E<string> FromJson(ref Utf8JsonReader reader, JsonSerializerOptions options)
+	{
+		try
+		{
+			var value = JsonSerializer.Deserialize<T>(ref reader, options);
+			if (value is null)
+				return "Value is empty";
+			Value = value;
+			return R.Ok;
+		}
+		catch (JsonException ex) { return $"Could not read value: {ex.Message}"; }
+	}
+
+	public static implicit operator T(ConfigValue<T> conf) => conf.Value;
+}
+
+public class ConfigChangedEventArgs<T> : EventArgs
+{
+	public T NewValue { get; }
+
+	public ConfigChangedEventArgs(T newValue)
+	{
+		NewValue = newValue;
 	}
 }

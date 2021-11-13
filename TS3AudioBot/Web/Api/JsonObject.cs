@@ -12,26 +12,25 @@ using System.Text.Json;
 using TS3AudioBot.CommandSystem.CommandResults;
 using TS3AudioBot.Helper.Json;
 
-namespace TS3AudioBot.Web.Api
+namespace TS3AudioBot.Web.Api;
+
+public abstract class JsonObject : IWrappedResult
 {
-	public abstract class JsonObject : IWrappedResult
+	protected static readonly JsonSerializerOptions DefaultJsonOptions = new()
 	{
-		protected static readonly JsonSerializerOptions DefaultJsonOptions = new()
-		{
-			Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
-		};
+		Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+	};
 
-		static JsonObject()
-		{
-			DefaultJsonOptions.Converters.Add(new IJsonSerializableConverter());
-			DefaultJsonOptions.Converters.Add(new TimeSpanConverter(TimeSpanFormatting.Seconds));
-		}
-
-		protected JsonObject() { }
-
-		object? IWrappedResult.Content => GetSerializeObject();
-		public virtual object GetSerializeObject() => this;
-		public virtual string Serialize() => JsonSerializer.Serialize(GetSerializeObject(), DefaultJsonOptions);
-		public override abstract string ToString();
+	static JsonObject()
+	{
+		DefaultJsonOptions.Converters.Add(new IJsonSerializableConverter());
+		DefaultJsonOptions.Converters.Add(new TimeSpanConverter(TimeSpanFormatting.Seconds));
 	}
+
+	protected JsonObject() { }
+
+	object? IWrappedResult.Content => GetSerializeObject();
+	public virtual object GetSerializeObject() => this;
+	public virtual string Serialize() => JsonSerializer.Serialize(GetSerializeObject(), DefaultJsonOptions);
+	public override abstract string ToString();
 }

@@ -10,19 +10,18 @@
 using TS3AudioBot.ResourceFactories;
 using TS3AudioBot.Web.Model;
 
-namespace TS3AudioBot.Playlists
+namespace TS3AudioBot.Playlists;
+
+public static class PlaylistApiExtensions
 {
-	public static class PlaylistApiExtensions
+	public static PlaylistItemGetData ToApiFormat(this ResolveContext resourceFactory, PlaylistItem item)
 	{
-		public static PlaylistItemGetData ToApiFormat(this ResolveContext resourceFactory, PlaylistItem item)
+		var resource = item.AudioResource;
+		return new PlaylistItemGetData
 		{
-			var resource = item.AudioResource;
-			return new PlaylistItemGetData
-			{
-				Link = resourceFactory.RestoreLink(resource),
-				Title = resource.ResourceTitle,
-				AudioType = resource.AudioType,
-			};
-		}
+			Link = resourceFactory.RestoreLink(resource),
+			Title = resource.ResourceTitle,
+			AudioType = resource.AudioType,
+		};
 	}
 }

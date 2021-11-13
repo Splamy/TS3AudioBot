@@ -11,32 +11,31 @@ using System.Collections.Generic;
 using TSLib;
 using TSLib.Audio;
 
-namespace TS3AudioBot.Audio
+namespace TS3AudioBot.Audio;
+
+/// <summary>Used to specify playing mode and active targets to send to.</summary>
+public interface IVoiceTarget
 {
-	/// <summary>Used to specify playing mode and active targets to send to.</summary>
-	public interface IVoiceTarget
-	{
-		TargetSendMode SendMode { get; set; }
-		ulong GroupWhisperTargetId { get; }
-		GroupWhisperType GroupWhisperType { get; }
-		GroupWhisperTarget GroupWhisperTarget { get; }
-		void SetGroupWhisper(GroupWhisperType type, GroupWhisperTarget target, ulong targetId);
+	TargetSendMode SendMode { get; set; }
+	ulong GroupWhisperTargetId { get; }
+	GroupWhisperType GroupWhisperType { get; }
+	GroupWhisperTarget GroupWhisperTarget { get; }
+	void SetGroupWhisper(GroupWhisperType type, GroupWhisperTarget target, ulong targetId);
 
-		IReadOnlyCollection<ClientId> WhisperClients { get; }
-		IReadOnlyCollection<ChannelId> WhisperChannel { get; }
+	IReadOnlyCollection<ClientId> WhisperClients { get; }
+	IReadOnlyCollection<ChannelId> WhisperChannel { get; }
 
-		/// <summary>Adds a channel to the audio streaming list.</summary>
-		/// <param name="temp">When set to true this channel will be cleared with
-		/// the next <see cref="ClearTemporary"/> call (unless overwritten with false).</param>
-		/// <param name="channel">The id of the channel.</param>
-		void WhisperChannelSubscribe(bool temp, params ChannelId[] channel);
-		/// <summary>Removes a channel from the audio streaming list.</summary>
-		/// <param name="temp">When set to true this channel will be cleared with
-		/// the next <see cref="ClearTemporary"/> call (unless overwritten with false).</param>
-		/// <param name="channel">The id of the channel.</param>
-		void WhisperChannelUnsubscribe(bool temp, params ChannelId[] channel);
-		void ClearTemporary();
-		void WhisperClientSubscribe(params ClientId[] userId);
-		void WhisperClientUnsubscribe(params ClientId[] userId);
-	}
+	/// <summary>Adds a channel to the audio streaming list.</summary>
+	/// <param name="temp">When set to true this channel will be cleared with
+	/// the next <see cref="ClearTemporary"/> call (unless overwritten with false).</param>
+	/// <param name="channel">The id of the channel.</param>
+	void WhisperChannelSubscribe(bool temp, params ChannelId[] channel);
+	/// <summary>Removes a channel from the audio streaming list.</summary>
+	/// <param name="temp">When set to true this channel will be cleared with
+	/// the next <see cref="ClearTemporary"/> call (unless overwritten with false).</param>
+	/// <param name="channel">The id of the channel.</param>
+	void WhisperChannelUnsubscribe(bool temp, params ChannelId[] channel);
+	void ClearTemporary();
+	void WhisperClientSubscribe(params ClientId[] userId);
+	void WhisperClientUnsubscribe(params ClientId[] userId);
 }

@@ -7,20 +7,19 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
-namespace TS3AudioBot.CommandSystem.CommandResults
+namespace TS3AudioBot.CommandSystem.CommandResults;
+
+public class TailString : IWrappedResult
 {
-	public class TailString : IWrappedResult
+	public string Content { get; }
+	public string Tail { get; }
+	object? IWrappedResult.Content => Content;
+
+	public TailString(string contentArg, string tailArg)
 	{
-		public string Content { get; }
-		public string Tail { get; }
-		object? IWrappedResult.Content => Content;
-
-		public TailString(string contentArg, string tailArg)
-		{
-			Content = contentArg;
-			Tail = tailArg;
-		}
-
-		public override string ToString() => Content;
+		Content = contentArg;
+		Tail = tailArg;
 	}
+
+	public override string ToString() => Content;
 }

@@ -13,35 +13,34 @@ using System.Collections.Generic;
 using System.Text.Json;
 using TS3AudioBot.Helper;
 
-namespace TS3AudioBot.Config
+namespace TS3AudioBot.Config;
+
+public class ConfigArray<T> : ConfigValue<IReadOnlyList<T>> where T : notnull
 {
-	public class ConfigArray<T> : ConfigValue<IReadOnlyList<T>> where T : notnull
+	public ConfigArray(string key, IReadOnlyList<T> defaultVal, string doc = "") : base(key, defaultVal, doc) { }
+
+	public override void FromToml(TomlObject? tomlObject)
 	{
-		public ConfigArray(string key, IReadOnlyList<T> defaultVal, string doc = "") : base(key, defaultVal, doc) { }
-
-		public override void FromToml(TomlObject? tomlObject)
+		if (tomlObject != null && tomlObject.TryGetValueArray<T>(out var array))
 		{
-			if (tomlObject != null && tomlObject.TryGetValueArray<T>(out var array))
-			{
-				Value = array;
-			}
+			Value = array;
 		}
+	}
 
-		public override void ToJson(Utf8JsonWriter writer, JsonSerializerOptions options)
-		{
-			JsonSerializer.Serialize(writer, Value, options);
-		}
+	public override void ToJson(Utf8JsonWriter writer, JsonSerializerOptions options)
+	{
+		JsonSerializer.Serialize(writer, Value, options);
+	}
 
-		public override E<string> FromJson(ref Utf8JsonReader reader, JsonSerializerOptions options)
+	public override E<string> FromJson(ref Utf8JsonReader reader, JsonSerializerOptions options)
+	{
+		try
 		{
-			try
-			{
-				var value = JsonSerializer.Deserialize<T[]>(ref reader, options);
-				value ??= Array.Empty<T>();
-				Value = value;
-				return R.Ok;
-			}
-			catch (JsonException ex) { return $"Could not read value: {ex.Message}"; }
+			var value = JsonSerializer.Deserialize<T[]>(ref reader, options);
+			value ??= Array.Empty<T>();
+			Value = value;
+			return R.Ok;
 		}
+		catch (JsonException ex) { return $"Could not read value: {ex.Message}"; }
 	}
 }

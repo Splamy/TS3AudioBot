@@ -13,108 +13,107 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
 
-namespace TSLib.Audio
+namespace TSLib.Audio;
+
+public class PassiveMergePipe : IAudioPassiveProducer, ICollection<IAudioPassiveProducer>
 {
-	public class PassiveMergePipe : IAudioPassiveProducer, ICollection<IAudioPassiveProducer>
+	private IAudioPassiveProducer[] safeProducerList = Array.Empty<IAudioPassiveProducer>();
+	private readonly List<IAudioPassiveProducer> producerList = new();
+	private readonly object listLock = new();
+	private bool changed;
+	private readonly int[] accBuffer = new int[4096];
+
+	public int Count => safeProducerList.Length;
+	public bool IsReadOnly => false;
+
+	public void Add(IAudioPassiveProducer addProducer)
 	{
-		private IAudioPassiveProducer[] safeProducerList = Array.Empty<IAudioPassiveProducer>();
-		private readonly List<IAudioPassiveProducer> producerList = new();
-		private readonly object listLock = new();
-		private bool changed;
-		private readonly int[] accBuffer = new int[4096];
-
-		public int Count => safeProducerList.Length;
-		public bool IsReadOnly => false;
-
-		public void Add(IAudioPassiveProducer addProducer)
-		{
-			if (!producerList.Contains(addProducer) && addProducer != this)
-			{
-				lock (listLock)
-				{
-					if (!producerList.Contains(addProducer))
-					{
-						producerList.Add(addProducer);
-						changed = true;
-					}
-				}
-			}
-		}
-
-		public bool Remove(IAudioPassiveProducer removeProducer)
-		{
-			if (producerList.Contains(removeProducer) && removeProducer != this)
-			{
-				lock (listLock)
-				{
-					var removed = producerList.Remove(removeProducer);
-					changed |= removed;
-					return removed;
-				}
-			}
-			return false;
-		}
-
-		public void Clear()
+		if (!producerList.Contains(addProducer) && addProducer != this)
 		{
 			lock (listLock)
 			{
-				producerList.Clear();
-				changed = true;
-			}
-		}
-
-		public int Read(Span<byte> data, out Meta? meta)
-		{
-			if (changed)
-			{
-				lock (listLock)
+				if (!producerList.Contains(addProducer))
 				{
-					if (changed)
-					{
-						safeProducerList = producerList.ToArray();
-						changed = false;
-					}
+					producerList.Add(addProducer);
+					changed = true;
 				}
 			}
+		}
+	}
 
-			meta = null;
-
-			if (safeProducerList.Length == 0)
-				return 0;
-
-			if (safeProducerList.Length == 1)
-				return safeProducerList[0].Read(data, out _);
-
-			int maxReadLength = Math.Min(accBuffer.Length, data.Length);
-			Array.Clear(accBuffer, 0, maxReadLength);
-
-			var pcmBuffer = MemoryMarshal.Cast<byte, short>(data);
-			int read = 0;
-
-			foreach (var producer in safeProducerList)
+	public bool Remove(IAudioPassiveProducer removeProducer)
+	{
+		if (producerList.Contains(removeProducer) && removeProducer != this)
+		{
+			lock (listLock)
 			{
-				int ppread = producer.Read(data[..maxReadLength], out meta);
-				if (ppread == 0)
-					continue;
-
-				read = Math.Max(read, ppread);
-				for (int i = 0; i < ppread / 2; i++)
-					accBuffer[i] += pcmBuffer[i];
+				var removed = producerList.Remove(removeProducer);
+				changed |= removed;
+				return removed;
 			}
+		}
+		return false;
+	}
 
-			for (int i = 0; i < read / 2; i++)
-				pcmBuffer[i] = (short)Math.Max(Math.Min(accBuffer[i], short.MaxValue), short.MinValue);
+	public void Clear()
+	{
+		lock (listLock)
+		{
+			producerList.Clear();
+			changed = true;
+		}
+	}
 
-			return read;
+	public int Read(Span<byte> data, out Meta? meta)
+	{
+		if (changed)
+		{
+			lock (listLock)
+			{
+				if (changed)
+				{
+					safeProducerList = producerList.ToArray();
+					changed = false;
+				}
+			}
 		}
 
-		IEnumerator<IAudioPassiveProducer> IEnumerable<IAudioPassiveProducer>.GetEnumerator() => ((IEnumerable<IAudioPassiveProducer>)safeProducerList).GetEnumerator();
+		meta = null;
 
-		IEnumerator IEnumerable.GetEnumerator() => safeProducerList.GetEnumerator();
+		if (safeProducerList.Length == 0)
+			return 0;
 
-		public bool Contains(IAudioPassiveProducer item) => safeProducerList.Contains(item);
+		if (safeProducerList.Length == 1)
+			return safeProducerList[0].Read(data, out _);
 
-		public void CopyTo(IAudioPassiveProducer[] array, int arrayIndex) => Array.Copy(safeProducerList, 0, array, arrayIndex, array.Length);
+		int maxReadLength = Math.Min(accBuffer.Length, data.Length);
+		Array.Clear(accBuffer, 0, maxReadLength);
+
+		var pcmBuffer = MemoryMarshal.Cast<byte, short>(data);
+		int read = 0;
+
+		foreach (var producer in safeProducerList)
+		{
+			int ppread = producer.Read(data[..maxReadLength], out meta);
+			if (ppread == 0)
+				continue;
+
+			read = Math.Max(read, ppread);
+			for (int i = 0; i < ppread / 2; i++)
+				accBuffer[i] += pcmBuffer[i];
+		}
+
+		for (int i = 0; i < read / 2; i++)
+			pcmBuffer[i] = (short)Math.Max(Math.Min(accBuffer[i], short.MaxValue), short.MinValue);
+
+		return read;
 	}
+
+	IEnumerator<IAudioPassiveProducer> IEnumerable<IAudioPassiveProducer>.GetEnumerator() => ((IEnumerable<IAudioPassiveProducer>)safeProducerList).GetEnumerator();
+
+	IEnumerator IEnumerable.GetEnumerator() => safeProducerList.GetEnumerator();
+
+	public bool Contains(IAudioPassiveProducer item) => safeProducerList.Contains(item);
+
+	public void CopyTo(IAudioPassiveProducer[] array, int arrayIndex) => Array.Copy(safeProducerList, 0, array, arrayIndex, array.Length);
 }

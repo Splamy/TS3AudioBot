@@ -7,12 +7,11 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
-namespace TS3AudioBot.Rights.Matchers
-{
-	internal abstract class Matcher
-	{
-		public abstract bool Matches(ExecuteContext ctx);
+namespace TS3AudioBot.Rights.Matchers;
 
-		public virtual void SetRequiredFeatures(ParseContext ctx) { }
-	}
+internal abstract class Matcher
+{
+	public abstract bool Matches(ExecuteContext ctx);
+
+	public virtual void SetRequiredFeatures(ParseContext ctx) { }
 }

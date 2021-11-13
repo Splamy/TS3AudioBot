@@ -10,14 +10,13 @@
 using System.Collections.Generic;
 using System.Net;
 
-namespace TS3AudioBot.Rights.Matchers
+namespace TS3AudioBot.Rights.Matchers;
+
+internal class MatchApiCallerIp : Matcher
 {
-	internal class MatchApiCallerIp : Matcher
-	{
-		private readonly HashSet<IPAddress> requestIps;
+	private readonly HashSet<IPAddress> requestIps;
 
-		public MatchApiCallerIp(IEnumerable<IPAddress> requestIps) => this.requestIps = new HashSet<IPAddress>(requestIps);
+	public MatchApiCallerIp(IEnumerable<IPAddress> requestIps) => this.requestIps = new HashSet<IPAddress>(requestIps);
 
-		public override bool Matches(ExecuteContext ctx) => ctx.ApiCallerIp != null && requestIps.Contains(ctx.ApiCallerIp);
-	}
+	public override bool Matches(ExecuteContext ctx) => ctx.ApiCallerIp != null && requestIps.Contains(ctx.ApiCallerIp);
 }

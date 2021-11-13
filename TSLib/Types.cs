@@ -9,25 +9,24 @@
 
 using TSLib.Full;
 
-namespace TSLib
+namespace TSLib;
+
+public partial struct Uid
 {
-	public partial struct Uid
-	{
-		/// <summary>Unofficial type</summary>
-		public static readonly Uid Anonymous = new("anonymous");
-		public static readonly Uid ServerAdmin = new("serveradmin");
+	/// <summary>Unofficial type</summary>
+	public static readonly Uid Anonymous = new("anonymous");
+	public static readonly Uid ServerAdmin = new("serveradmin");
 
-		public static bool IsValid(string uid)
-		{
-			if (uid == Anonymous.Value || uid == ServerAdmin.Value)
-				return true;
-			var result = TsCrypt.Base64Decode(uid);
-			return result != null && result.Length == 20;
-		}
-	}
-
-	public partial struct ChannelId
+	public static bool IsValid(string uid)
 	{
-		public string ToPath() => $"/{Value}";
+		if (uid == Anonymous.Value || uid == ServerAdmin.Value)
+			return true;
+		var result = TsCrypt.Base64Decode(uid);
+		return result != null && result.Length == 20;
 	}
+}
+
+public partial struct ChannelId
+{
+	public string ToPath() => $"/{Value}";
 }

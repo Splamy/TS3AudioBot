@@ -17,247 +17,246 @@ using TS3AudioBot.CommandSystem.Commands;
 using TS3AudioBot.Helper.Json;
 using TSLib.Helper;
 
-namespace TS3AudioBot.Web.Api
+namespace TS3AudioBot.Web.Api;
+
+public static class OpenApiGenerator
 {
-	public static class OpenApiGenerator
+	private static readonly JsonSerializerOptions JsonOptions = new()
 	{
-		private static readonly JsonSerializerOptions JsonOptions = new()
+		DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
+	};
+
+	public static JObject Generate(CommandManager commandManager, BotInfo[] bots)
+	{
+		var paths = new JObject();
+
+		var addedCommandPaths = new HashSet<string>();
+
+		foreach (var command in commandManager.AllCommands)
 		{
-			DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull
-		};
-
-		public static JObject Generate(CommandManager commandManager, BotInfo[] bots)
-		{
-			var paths = new JObject();
-
-			var addedCommandPaths = new HashSet<string>();
-
-			foreach (var command in commandManager.AllCommands)
-			{
-				var token = GenerateCommand(commandManager, command, addedCommandPaths);
-				if (token != null)
-					paths.Add(token);
-			}
-
-			const string defaultAuthSchemeName = "default_basic";
-
-			return
-			new JObject(
-				new JProperty("openapi", "3.0.0"),
-				JPropObj("info",
-					new JProperty("version", "1.0.0"),
-					new JProperty("title", "Ts3AudioBot API"),
-					new JProperty("description", "The Ts3AudioBot api interface.")
-				),
-				new JProperty("paths",
-					paths
-				),
-				new JProperty("servers",
-					new JArray(
-						new JObject(
-							new JProperty("url", "/api"),
-							new JProperty("description", "Your Ts3AudioBot server.")
-						)
-					).Chain(x =>
-					{
-						foreach (var bot in bots)
-						{
-							x.Add(new JObject(
-								new JProperty("url", $"/api/bot/use/{bot.Id}/(/"),
-								new JProperty("description", $"Bot {bot.Name}")
-							));
-						}
-					})
-				),
-				JPropObj("components",
-					JPropObj("securitySchemes",
-						JPropObj(defaultAuthSchemeName,
-							new JProperty("type", "http"),
-							new JProperty("scheme", "basic")
-						)
-					)
-				),
-				new JProperty("security",
-					new JArray(
-						new JObject(
-							new JProperty(defaultAuthSchemeName, new JArray())
-						)
-					)
-				)
-			).CustomJsonOptions(JsonOptions);
+			var token = GenerateCommand(commandManager, command, addedCommandPaths);
+			if (token != null)
+				paths.Add(token);
 		}
 
-		private static JProperty? GenerateCommand(CommandManager commandManager, BotCommand command, HashSet<string> addedCommandPaths)
-		{
-			var parameters = new JArray();
+		const string defaultAuthSchemeName = "default_basic";
 
-			var pathBuilder = new StringBuilder();
-			pathBuilder.Append('/');
-			pathBuilder.Append(command.InvokeName.Replace(' ', '/'));
-			foreach (var param in command.CommandParameter)
-			{
-				switch (param.Kind)
+		return
+		new JObject(
+			new JProperty("openapi", "3.0.0"),
+			JPropObj("info",
+				new JProperty("version", "1.0.0"),
+				new JProperty("title", "Ts3AudioBot API"),
+				new JProperty("description", "The Ts3AudioBot api interface.")
+			),
+			new JProperty("paths",
+				paths
+			),
+			new JProperty("servers",
+				new JArray(
+					new JObject(
+						new JProperty("url", "/api"),
+						new JProperty("description", "Your Ts3AudioBot server.")
+					)
+				).Chain(x =>
 				{
-				case ParamKind.Unknown:
-					break;
-				case ParamKind.SpecialArguments:
-					break;
-				case ParamKind.Dependency:
-					break;
-				case ParamKind.NormalCommand:
-				case ParamKind.NormalParam:
-				case ParamKind.NormalArray:
-				case ParamKind.NormalTailString:
-					if (param.Kind == ParamKind.NormalArray)
-						pathBuilder.Append("/{").Append(param.Name).Append("}...");
-					else
-						pathBuilder.Append("/{").Append(param.Name).Append('}');
+					foreach (var bot in bots)
+					{
+						x.Add(new JObject(
+							new JProperty("url", $"/api/bot/use/{bot.Id}/(/"),
+							new JProperty("description", $"Bot {bot.Name}")
+						));
+					}
+				})
+			),
+			JPropObj("components",
+				JPropObj("securitySchemes",
+					JPropObj(defaultAuthSchemeName,
+						new JProperty("type", "http"),
+						new JProperty("scheme", "basic")
+					)
+				)
+			),
+			new JProperty("security",
+				new JArray(
+					new JObject(
+						new JProperty(defaultAuthSchemeName, new JArray())
+					)
+				)
+			)
+		).CustomJsonOptions(JsonOptions);
+	}
 
-					var addparam = new JObject(
-						new JProperty("name", param.Name),
-						new JProperty("in", "path"),
-						new JProperty("description", "useful help"),
-						new JProperty("required", true) // param.optional
-					);
+	private static JProperty? GenerateCommand(CommandManager commandManager, BotCommand command, HashSet<string> addedCommandPaths)
+	{
+		var parameters = new JArray();
 
-					var paramschema = TypeToSchema(param.Type);
-					if (paramschema != null)
-						addparam.Add(new JProperty("schema", paramschema));
-					parameters.Add(addparam);
-					break;
-				case var _unhandled:
-					throw Tools.UnhandledDefault(_unhandled);
-				}
-			}
-
-			var path = pathBuilder.ToString();
-
-			if (addedCommandPaths.Contains(path))
-				return null;
-			addedCommandPaths.Add(path);
-
-			// check tag
-
-			var tags = new JArray();
-			int spaceIndex = command.InvokeName.IndexOf(' ');
-			string baseName = spaceIndex >= 0 ? command.InvokeName.Substring(0, spaceIndex) : command.InvokeName;
-			var commandroot = commandManager.RootGroup.GetCommand(baseName);
-			switch (commandroot)
+		var pathBuilder = new StringBuilder();
+		pathBuilder.Append('/');
+		pathBuilder.Append(command.InvokeName.Replace(' ', '/'));
+		foreach (var param in command.CommandParameter)
+		{
+			switch (param.Kind)
 			{
-			case null:
+			case ParamKind.Unknown:
 				break;
-			case CommandGroup group:
-				tags.Add(baseName);
+			case ParamKind.SpecialArguments:
 				break;
+			case ParamKind.Dependency:
+				break;
+			case ParamKind.NormalCommand:
+			case ParamKind.NormalParam:
+			case ParamKind.NormalArray:
+			case ParamKind.NormalTailString:
+				if (param.Kind == ParamKind.NormalArray)
+					pathBuilder.Append("/{").Append(param.Name).Append("}...");
+				else
+					pathBuilder.Append("/{").Append(param.Name).Append('}');
+
+				var addparam = new JObject(
+					new JProperty("name", param.Name),
+					new JProperty("in", "path"),
+					new JProperty("description", "useful help"),
+					new JProperty("required", true) // param.optional
+				);
+
+				var paramschema = TypeToSchema(param.Type);
+				if (paramschema != null)
+					addparam.Add(new JProperty("schema", paramschema));
+				parameters.Add(addparam);
+				break;
+			case var _unhandled:
+				throw Tools.UnhandledDefault(_unhandled);
 			}
+		}
 
-			// build final command
+		var path = pathBuilder.ToString();
 
-			var reponseschema = TypeToSchema(command.CommandReturn);
+		if (addedCommandPaths.Contains(path))
+			return null;
+		addedCommandPaths.Add(path);
 
-			return
-			JPropObj(path,
-				JPropObj("get",
-					new JProperty("tags", tags),
-					new JProperty("description", command.Description),
-					new JProperty("parameters", parameters),
-					new JProperty("responses",
-						new JObject().Chain(r =>
+		// check tag
+
+		var tags = new JArray();
+		int spaceIndex = command.InvokeName.IndexOf(' ');
+		string baseName = spaceIndex >= 0 ? command.InvokeName.Substring(0, spaceIndex) : command.InvokeName;
+		var commandroot = commandManager.RootGroup.GetCommand(baseName);
+		switch (commandroot)
+		{
+		case null:
+			break;
+		case CommandGroup group:
+			tags.Add(baseName);
+			break;
+		}
+
+		// build final command
+
+		var reponseschema = TypeToSchema(command.CommandReturn);
+
+		return
+		JPropObj(path,
+			JPropObj("get",
+				new JProperty("tags", tags),
+				new JProperty("description", command.Description),
+				new JProperty("parameters", parameters),
+				new JProperty("responses",
+					new JObject().Chain(r =>
+					{
+						if (reponseschema != null)
 						{
-							if (reponseschema != null)
-							{
-								r.Add(
-									JPropObj("200",
-										new JProperty("description", "Successful"),
-										new JProperty("content",
-											new JObject(
-												JPropObj("application/json",
-													new JProperty("schema", reponseschema)
-												)
+							r.Add(
+								JPropObj("200",
+									new JProperty("description", "Successful"),
+									new JProperty("content",
+										new JObject(
+											JPropObj("application/json",
+												new JProperty("schema", reponseschema)
 											)
 										)
 									)
-								);
-							}
-							else
-							{
-								r.Add(
-									JPropObj("204",
-										new JProperty("description", "Successful")
-									)
-								);
-							}
-						})
-					)
+								)
+							);
+						}
+						else
+						{
+							r.Add(
+								JPropObj("204",
+									new JProperty("description", "Successful")
+								)
+							);
+						}
+					})
 				)
-			);
-		}
+			)
+		);
+	}
 
-		private static T Chain<T>(this T token, Action<T> func)
+	private static T Chain<T>(this T token, Action<T> func)
+	{
+		func.Invoke(token);
+		return token;
+	}
+
+	private static JProperty JPropObj(string name, params object[] token)
+	{
+		return new JProperty(name, new JObject(token));
+	}
+
+	private static OApiSchema? TypeToSchema(Type type)
+	{
+		type = FunctionCommand.UnwrapReturnType(type);
+
+		if (type.IsArray)
 		{
-			func.Invoke(token);
-			return token;
-		}
-
-		private static JProperty JPropObj(string name, params object[] token)
-		{
-			return new JProperty(name, new JObject(token));
-		}
-
-		private static OApiSchema? TypeToSchema(Type type)
-		{
-			type = FunctionCommand.UnwrapReturnType(type);
-
-			if (type.IsArray)
+			return new OApiSchema("array")
 			{
-				return new OApiSchema("array")
-				{
-					Items = TypeToSchema(type.GetElementType()!)
-				};
-			}
-
-			if (type == typeof(bool)) return OApiSchema.FromBasic("boolean");
-			else if (type == typeof(sbyte)) return OApiSchema.FromBasic("integer", "int8");
-			else if (type == typeof(byte)) return OApiSchema.FromBasic("integer", "uint8");
-			else if (type == typeof(short)) return OApiSchema.FromBasic("integer", "int16");
-			else if (type == typeof(ushort)) return OApiSchema.FromBasic("integer", "uint16");
-			else if (type == typeof(int)) return OApiSchema.FromBasic("integer", "int32");
-			else if (type == typeof(uint)) return OApiSchema.FromBasic("integer", "uint32");
-			else if (type == typeof(long)) return OApiSchema.FromBasic("integer", "int64");
-			else if (type == typeof(ulong)) return OApiSchema.FromBasic("integer", "uint64");
-			else if (type == typeof(float)) return OApiSchema.FromBasic("number", "float");
-			else if (type == typeof(double)) return OApiSchema.FromBasic("number", "double");
-			else if (type == typeof(TimeSpan)) return OApiSchema.FromBasic("string", "duration");
-			else if (type == typeof(DateTime)) return OApiSchema.FromBasic("string", "date-time");
-			else if (type == typeof(string)) return OApiSchema.FromBasic("string", null);
-			else if (type == typeof(JsonEmpty) || type == typeof(void)) return null;
-			else if (type == typeof(JsonObject) || type == typeof(object)) return OApiSchema.FromBasic("object");
-			else if (type == typeof(ICommand)) return OApiSchema.FromBasic("λ");
-			else
-			{
-				return OApiSchema.FromBasic(type.Name);
-			}
+				Items = TypeToSchema(type.GetElementType()!)
+			};
 		}
 
-		private class OApiSchema
+		if (type == typeof(bool)) return OApiSchema.FromBasic("boolean");
+		else if (type == typeof(sbyte)) return OApiSchema.FromBasic("integer", "int8");
+		else if (type == typeof(byte)) return OApiSchema.FromBasic("integer", "uint8");
+		else if (type == typeof(short)) return OApiSchema.FromBasic("integer", "int16");
+		else if (type == typeof(ushort)) return OApiSchema.FromBasic("integer", "uint16");
+		else if (type == typeof(int)) return OApiSchema.FromBasic("integer", "int32");
+		else if (type == typeof(uint)) return OApiSchema.FromBasic("integer", "uint32");
+		else if (type == typeof(long)) return OApiSchema.FromBasic("integer", "int64");
+		else if (type == typeof(ulong)) return OApiSchema.FromBasic("integer", "uint64");
+		else if (type == typeof(float)) return OApiSchema.FromBasic("number", "float");
+		else if (type == typeof(double)) return OApiSchema.FromBasic("number", "double");
+		else if (type == typeof(TimeSpan)) return OApiSchema.FromBasic("string", "duration");
+		else if (type == typeof(DateTime)) return OApiSchema.FromBasic("string", "date-time");
+		else if (type == typeof(string)) return OApiSchema.FromBasic("string", null);
+		else if (type == typeof(JsonEmpty) || type == typeof(void)) return null;
+		else if (type == typeof(JsonObject) || type == typeof(object)) return OApiSchema.FromBasic("object");
+		else if (type == typeof(ICommand)) return OApiSchema.FromBasic("λ");
+		else
 		{
-			[JsonPropertyName("type")]
-			public string Type { get; set; }
-			[JsonPropertyName("format")]
-			public string? Format { get; set; }
-			[JsonPropertyName("additionalProperties")]
-			public OApiSchema? AdditionalProperties { get; set; }
-			[JsonPropertyName("items")]
-			public OApiSchema? Items { get; set; }
-
-			public OApiSchema(string type)
-			{
-				Type = type;
-			}
-
-			public static OApiSchema FromBasic(string type, string? format = null) => new(type) { Format = format };
-
-			public OApiSchema ObjWrap() => new("object") { AdditionalProperties = this };
+			return OApiSchema.FromBasic(type.Name);
 		}
+	}
+
+	private class OApiSchema
+	{
+		[JsonPropertyName("type")]
+		public string Type { get; set; }
+		[JsonPropertyName("format")]
+		public string? Format { get; set; }
+		[JsonPropertyName("additionalProperties")]
+		public OApiSchema? AdditionalProperties { get; set; }
+		[JsonPropertyName("items")]
+		public OApiSchema? Items { get; set; }
+
+		public OApiSchema(string type)
+		{
+			Type = type;
+		}
+
+		public static OApiSchema FromBasic(string type, string? format = null) => new(type) { Format = format };
+
+		public OApiSchema ObjWrap() => new("object") { AdditionalProperties = this };
 	}
 }

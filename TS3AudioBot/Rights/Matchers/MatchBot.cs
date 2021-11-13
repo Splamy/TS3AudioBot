@@ -9,14 +9,13 @@
 
 using System.Collections.Generic;
 
-namespace TS3AudioBot.Rights.Matchers
+namespace TS3AudioBot.Rights.Matchers;
+
+internal class MatchBot : Matcher
 {
-	internal class MatchBot : Matcher
-	{
-		private readonly HashSet<string> bots;
+	private readonly HashSet<string> bots;
 
-		public MatchBot(IEnumerable<string> bots) => this.bots = new HashSet<string>(bots);
+	public MatchBot(IEnumerable<string> bots) => this.bots = new HashSet<string>(bots);
 
-		public override bool Matches(ExecuteContext ctx) => ctx.Bot != null && bots.Contains(ctx.Bot);
-	}
+	public override bool Matches(ExecuteContext ctx) => ctx.Bot != null && bots.Contains(ctx.Bot);
 }

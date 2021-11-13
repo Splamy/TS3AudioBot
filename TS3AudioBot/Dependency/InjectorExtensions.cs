@@ -12,83 +12,82 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Reflection;
 
-namespace TS3AudioBot.Dependency
+namespace TS3AudioBot.Dependency;
+
+public static class InjectorExtensions
 {
-	public static class InjectorExtensions
+	public static T? GetModule<T>(this IInjector injector) where T : class
 	{
-		public static T? GetModule<T>(this IInjector injector) where T : class
-		{
-			return (T?)injector.GetModule(typeof(T));
-		}
+		return (T?)injector.GetModule(typeof(T));
+	}
 
-		public static T GetModuleOrThrow<T>(this IInjector injector) where T : class
-		{
-			var t = (T?)injector.GetModule(typeof(T));
-			if (t is null) throw new Exception($"{typeof(T).Name} was not found");
-			return t;
-		}
+	public static T GetModuleOrThrow<T>(this IInjector injector) where T : class
+	{
+		var t = (T?)injector.GetModule(typeof(T));
+		if (t is null) throw new Exception($"{typeof(T).Name} was not found");
+		return t;
+	}
 
-		public static bool TryGet<T>(this IInjector injector, [NotNullWhen(true)] out T? obj) where T : class
-		{
-			obj = injector.GetModule<T>();
-			return obj != null;
-		}
+	public static bool TryGet<T>(this IInjector injector, [NotNullWhen(true)] out T? obj) where T : class
+	{
+		obj = injector.GetModule<T>();
+		return obj != null;
+	}
 
-		public static bool TryGet(this IInjector injector, Type t, [NotNullWhen(true)] out object? obj)
-		{
-			obj = injector.GetModule(t);
-			return obj != null;
-		}
+	public static bool TryGet(this IInjector injector, Type t, [NotNullWhen(true)] out object? obj)
+	{
+		obj = injector.GetModule(t);
+		return obj != null;
+	}
 
-		public static void AddModule<T>(this IInjector injector, T obj) where T : notnull
-		{
-			injector.AddModule(typeof(T), obj);
-		}
+	public static void AddModule<T>(this IInjector injector, T obj) where T : notnull
+	{
+		injector.AddModule(typeof(T), obj);
+	}
 
-		public static bool TryCreate<T>(this IInjector injector, [NotNullWhen(true)] out T? obj) where T : class
+	public static bool TryCreate<T>(this IInjector injector, [NotNullWhen(true)] out T? obj) where T : class
+	{
+		if (injector.TryCreate(typeof(T), out var oobj))
 		{
-			if (injector.TryCreate(typeof(T), out var oobj))
-			{
-				obj = (T)oobj;
-				return true;
-			}
-			else
+			obj = (T)oobj;
+			return true;
+		}
+		else
+		{
+			obj = default;
+			return false;
+		}
+	}
+
+	public static bool TryCreate(this IInjector injector, Type type, [NotNullWhen(true)] out object? obj)
+	{
+		var param = DependencyBuilder.GetConstructorParam(type);
+		if (param == null)
+			throw new ArgumentException("Invalid type, no constructors");
+
+		var call = new object[param.Length];
+		for (int i = 0; i < param.Length; i++)
+		{
+			if (!injector.TryGet(param[i], out var dep))
 			{
 				obj = default;
 				return false;
 			}
+			call[i] = dep;
 		}
+		obj = Activator.CreateInstance(type, call) ?? throw new ArgumentException("Activator didn't do his job...");
+		return true;
+	}
 
-		public static bool TryCreate(this IInjector injector, Type type, [NotNullWhen(true)] out object? obj)
+	public static void FillProperties(this IInjector injector, object obj)
+	{
+		var type = obj.GetType();
+		var props = type.GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
+			.Where(p => p.CanRead && p.CanWrite);
+		foreach (var prop in props)
 		{
-			var param = DependencyBuilder.GetConstructorParam(type);
-			if (param == null)
-				throw new ArgumentException("Invalid type, no constructors");
-
-			var call = new object[param.Length];
-			for (int i = 0; i < param.Length; i++)
-			{
-				if (!injector.TryGet(param[i], out var dep))
-				{
-					obj = default;
-					return false;
-				}
-				call[i] = dep;
-			}
-			obj = Activator.CreateInstance(type, call) ?? throw new ArgumentException("Activator didn't do his job...");
-			return true;
-		}
-
-		public static void FillProperties(this IInjector injector, object obj)
-		{
-			var type = obj.GetType();
-			var props = type.GetProperties(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
-				.Where(p => p.CanRead && p.CanWrite);
-			foreach (var prop in props)
-			{
-				if (injector.TryGet(prop.PropertyType, out var dep))
-					prop.SetValue(obj, dep);
-			}
+			if (injector.TryGet(prop.PropertyType, out var dep))
+				prop.SetValue(obj, dep);
 		}
 	}
 }

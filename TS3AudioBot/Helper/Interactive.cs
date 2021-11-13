@@ -10,48 +10,47 @@
 using System;
 using System.Threading.Tasks;
 
-namespace TS3AudioBot.Helper
+namespace TS3AudioBot.Helper;
+
+public static class Interactive
 {
-	public static class Interactive
+	public static bool UserAgree(bool defaultTo = true)
 	{
-		public static bool UserAgree(bool defaultTo = true)
+		while (true)
 		{
-			while (true)
-			{
-				var key = Console.ReadKey(true).Key;
-				if (key == ConsoleKey.Y || (defaultTo && key == ConsoleKey.Enter))
-					return true;
-				if (key == ConsoleKey.N || (!defaultTo && key == ConsoleKey.Enter))
-					return false;
-			}
+			var key = Console.ReadKey(true).Key;
+			if (key == ConsoleKey.Y || (defaultTo && key == ConsoleKey.Enter))
+				return true;
+			if (key == ConsoleKey.N || (!defaultTo && key == ConsoleKey.Enter))
+				return false;
 		}
+	}
 
-		public static string? LoopAction(string question, Func<string, bool> action)
+	public static string? LoopAction(string question, Func<string, bool> action)
+	{
+		string? text;
+		do
 		{
-			string? text;
-			do
-			{
-				Console.WriteLine(question);
-				text = Console.ReadLine();
-				if (text is null)
-					return null;
-			}
-			while (!action(text));
-			return text;
+			Console.WriteLine(question);
+			text = Console.ReadLine();
+			if (text is null)
+				return null;
 		}
+		while (!action(text));
+		return text;
+	}
 
-		public static async Task<string?> LoopActionAsync(string question, Func<string, Task<bool>> action)
+	public static async Task<string?> LoopActionAsync(string question, Func<string, Task<bool>> action)
+	{
+		string? text;
+		do
 		{
-			string? text;
-			do
-			{
-				Console.WriteLine(question);
-				text = Console.ReadLine();
-				if (text is null)
-					return null;
-			}
-			while (!await action(text));
-			return text;
+			Console.WriteLine(question);
+			text = Console.ReadLine();
+			if (text is null)
+				return null;
 		}
+		while (!await action(text));
+		return text;
 	}
 }

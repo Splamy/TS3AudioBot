@@ -10,27 +10,26 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace TS3AudioBot.CommandSystem.Commands
+namespace TS3AudioBot.CommandSystem.Commands;
+
+public class AppliedCommand : ICommand
 {
-	public class AppliedCommand : ICommand
+	private readonly ICommand internCommand;
+	private readonly IReadOnlyList<ICommand> internArguments;
+
+	public AppliedCommand(ICommand command, IReadOnlyList<ICommand> arguments)
 	{
-		private readonly ICommand internCommand;
-		private readonly IReadOnlyList<ICommand> internArguments;
-
-		public AppliedCommand(ICommand command, IReadOnlyList<ICommand> arguments)
-		{
-			internCommand = command;
-			internArguments = arguments;
-		}
-
-		public virtual async ValueTask<object?> Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments)
-		{
-			var merged = new ICommand[internArguments.Count + arguments.Count];
-			internArguments.CopyTo(0, merged, 0);
-			arguments.CopyTo(0, merged, internArguments.Count);
-			return await internCommand.Execute(info, merged);
-		}
-
-		public override string ToString() => $"F\"{internCommand}\"({string.Join(", ", internArguments)})";
+		internCommand = command;
+		internArguments = arguments;
 	}
+
+	public virtual async ValueTask<object?> Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments)
+	{
+		var merged = new ICommand[internArguments.Count + arguments.Count];
+		internArguments.CopyTo(0, merged, 0);
+		arguments.CopyTo(0, merged, internArguments.Count);
+		return await internCommand.Execute(info, merged);
+	}
+
+	public override string ToString() => $"F\"{internCommand}\"({string.Join(", ", internArguments)})";
 }

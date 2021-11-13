@@ -13,56 +13,55 @@ using System.Text.Json.Serialization;
 using System.Xml;
 using TSLib.Helper;
 
-namespace TS3AudioBot.Helper.Json
+namespace TS3AudioBot.Helper.Json;
+
+internal class TimeSpanConverter : JsonConverter<TimeSpan>
 {
-	internal class TimeSpanConverter : JsonConverter<TimeSpan>
+	private readonly TimeSpanFormatting format;
+
+	public TimeSpanConverter(TimeSpanFormatting format)
 	{
-		private readonly TimeSpanFormatting format;
+		this.format = format;
+	}
 
-		public TimeSpanConverter(TimeSpanFormatting format)
+	public override void Write(Utf8JsonWriter writer, TimeSpan value, JsonSerializerOptions options)
+	{
+		switch (format)
 		{
-			this.format = format;
-		}
-
-		public override void Write(Utf8JsonWriter writer, TimeSpan value, JsonSerializerOptions options)
-		{
-			switch (format)
-			{
-			case TimeSpanFormatting.Simple:
-				writer.WriteStringValue(TextUtil.FormatTimeAsSimple(value));
-				break;
-			case TimeSpanFormatting.Seconds:
-				writer.WriteNumberValue(value.TotalSeconds);
-				break;
-			case TimeSpanFormatting.Xml:
-				writer.WriteStringValue(XmlConvert.ToString(value));
-				break;
-			case var _unhandled:
-				throw Tools.UnhandledDefault(_unhandled);
-			}
-		}
-
-		public override TimeSpan Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
-		{
-			switch (reader.TokenType)
-			{
-			case JsonTokenType.String:
-			case JsonTokenType.Null:
-				var str = reader.GetString() ?? throw new JsonException("TimeSpan value is empty");
-				return TextUtil.ParseTime(str) ?? throw new JsonException("Invalid TimeSpan");
-			case JsonTokenType.Number:
-				var secs = reader.GetDouble();
-				return TimeSpan.FromSeconds(secs);
-			default:
-				throw new JsonException($"Invalid token type '{reader.TokenType}' for TimeSpan");
-			}
+		case TimeSpanFormatting.Simple:
+			writer.WriteStringValue(TextUtil.FormatTimeAsSimple(value));
+			break;
+		case TimeSpanFormatting.Seconds:
+			writer.WriteNumberValue(value.TotalSeconds);
+			break;
+		case TimeSpanFormatting.Xml:
+			writer.WriteStringValue(XmlConvert.ToString(value));
+			break;
+		case var _unhandled:
+			throw Tools.UnhandledDefault(_unhandled);
 		}
 	}
 
-	enum TimeSpanFormatting
+	public override TimeSpan Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
 	{
-		Simple,
-		Seconds,
-		Xml,
+		switch (reader.TokenType)
+		{
+		case JsonTokenType.String:
+		case JsonTokenType.Null:
+			var str = reader.GetString() ?? throw new JsonException("TimeSpan value is empty");
+			return TextUtil.ParseTime(str) ?? throw new JsonException("Invalid TimeSpan");
+		case JsonTokenType.Number:
+			var secs = reader.GetDouble();
+			return TimeSpan.FromSeconds(secs);
+		default:
+			throw new JsonException($"Invalid token type '{reader.TokenType}' for TimeSpan");
+		}
 	}
+}
+
+enum TimeSpanFormatting
+{
+	Simple,
+	Seconds,
+	Xml,
 }

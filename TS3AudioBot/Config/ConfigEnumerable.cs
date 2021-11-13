@@ -12,147 +12,146 @@ using System;
 using System.Collections.Generic;
 using System.Text.Json;
 
-namespace TS3AudioBot.Config
+namespace TS3AudioBot.Config;
+
+public abstract class ConfigEnumerable : ConfigPart
 {
-	public abstract class ConfigEnumerable : ConfigPart
-	{
-		private static readonly object EmptyObject = new();
+	private static readonly object EmptyObject = new();
 
-		protected virtual TomlTable.TableTypes TableType { get => TomlTable.TableTypes.Default; }
+	protected virtual TomlTable.TableTypes TableType { get => TomlTable.TableTypes.Default; }
 #pragma warning disable CS8618 // !NRT loaded in FromToml
-		public TomlTable TomlObject { get; set; }
+	public TomlTable TomlObject { get; set; }
 #pragma warning restore CS8618
-		public override bool ExpectsString => false;
+	public override bool ExpectsString => false;
 
-		public override void ClearEvents()
-		{
-			foreach (var child in GetAllChildren())
-				child.ClearEvents();
-		}
+	public override void ClearEvents()
+	{
+		foreach (var child in GetAllChildren())
+			child.ClearEvents();
+	}
 
-		public override void FromToml(TomlObject? tomlObject)
+	public override void FromToml(TomlObject? tomlObject)
+	{
+		if (tomlObject is null)
 		{
-			if (tomlObject is null)
-			{
-				if (Parent is null)
-					TomlObject = Toml.Create();
-				else
-					TomlObject = Parent.TomlObject.Add(Key, EmptyObject, TableType).Added;
-			}
+			if (Parent is null)
+				TomlObject = Toml.Create();
 			else
-			{
-				if (tomlObject is TomlTable tomlTable)
-					TomlObject = tomlTable;
-				else
-					throw new InvalidCastException();
-			}
+				TomlObject = Parent.TomlObject.Add(Key, EmptyObject, TableType).Added;
 		}
-
-		public override void ToToml(bool writeDefaults, bool writeDocumentation)
+		else
 		{
-			if (writeDocumentation)
-				CreateDocumentation(TomlObject);
-			foreach (var part in GetAllChildren())
-			{
-				part.ToToml(writeDefaults, writeDocumentation);
-			}
+			if (tomlObject is TomlTable tomlTable)
+				TomlObject = tomlTable;
+			else
+				throw new InvalidCastException();
 		}
+	}
 
-		public override void ToJson(Utf8JsonWriter writer, JsonSerializerOptions options)
+	public override void ToToml(bool writeDefaults, bool writeDocumentation)
+	{
+		if (writeDocumentation)
+			CreateDocumentation(TomlObject);
+		foreach (var part in GetAllChildren())
 		{
-			writer.WriteStartObject();
-			foreach (var item in GetAllChildren())
-			{
-				writer.WritePropertyName(item.Key);
-				item.ToJson(writer, options);
-			}
-			writer.WriteEndObject();
+			part.ToToml(writeDefaults, writeDocumentation);
 		}
+	}
 
-		public override E<string> FromJson(ref Utf8JsonReader reader, JsonSerializerOptions options)
+	public override void ToJson(Utf8JsonWriter writer, JsonSerializerOptions options)
+	{
+		writer.WriteStartObject();
+		foreach (var item in GetAllChildren())
 		{
-			try
-			{
-				if (!reader.Read() || (reader.TokenType != JsonTokenType.StartObject))
-					return $"Wrong type, expected start of object but found {reader.TokenType}";
+			writer.WritePropertyName(item.Key);
+			item.ToJson(writer, options);
+		}
+		writer.WriteEndObject();
+	}
 
-				while (reader.Read()
-					&& (reader.TokenType == JsonTokenType.PropertyName))
+	public override E<string> FromJson(ref Utf8JsonReader reader, JsonSerializerOptions options)
+	{
+		try
+		{
+			if (!reader.Read() || (reader.TokenType != JsonTokenType.StartObject))
+				return $"Wrong type, expected start of object but found {reader.TokenType}";
+
+			while (reader.Read()
+				&& (reader.TokenType == JsonTokenType.PropertyName))
+			{
+				var childName = reader.GetString();
+				if (childName is null)
+					return "No child found";
+				var child = GetChild(childName);
+				if (child is null)
 				{
-					var childName = reader.GetString();
-					if (childName is null)
+					if (this is IDynamicTable dynTable)
+						child = dynTable.GetOrCreateChild(childName);
+					else
 						return "No child found";
-					var child = GetChild(childName);
-					if (child is null)
-					{
-						if (this is IDynamicTable dynTable)
-							child = dynTable.GetOrCreateChild(childName);
-						else
-							return "No child found";
-					}
-
-					child.FromJson(ref reader, options);
 				}
 
-				if (reader.TokenType != JsonTokenType.EndObject)
-					return $"Expected end of array but found {reader.TokenType}";
-
-				return R.Ok;
+				child.FromJson(ref reader, options);
 			}
-			catch (JsonException ex) { return $"Could not read value: {ex.Message}"; }
-		}
 
-		// Virtual table methods
+			if (reader.TokenType != JsonTokenType.EndObject)
+				return $"Expected end of array but found {reader.TokenType}";
 
-		public abstract ConfigPart? GetChild(string key);
-
-		public abstract IEnumerable<ConfigPart> GetAllChildren();
-
-		// Static factory methods
-
-		protected static T Create<T>(string key, string doc = "") where T : ConfigEnumerable, new()
-		{
-			return new T
-			{
-				Key = key,
-				Documentation = doc,
-			};
-		}
-
-		protected static T Create<T>(string key, ConfigEnumerable? parent, TomlObject? fromToml, string doc = "") where T : ConfigEnumerable, new()
-		{
-			return Init(Create<T>(key, doc), parent, fromToml);
-		}
-
-		protected static T Init<T>(T part, ConfigEnumerable? parent, TomlObject? fromToml) where T : ConfigPart
-		{
-			part.Parent = parent;
-			part.FromToml(fromToml);
-			return part;
-		}
-
-		public static T CreateRoot<T>() where T : ConfigEnumerable, new() => Create<T>(null!, null, null, "");
-
-		public static R<T, Exception> Load<T>(string path) where T : ConfigEnumerable, new()
-		{
-			TomlTable rootToml;
-			try { rootToml = Toml.ReadFile(path); }
-			catch (Exception ex) { return ex; }
-			return Create<T>(null!, null, rootToml);
-		}
-
-		public E<Exception> Save(string path, bool writeDefaults, bool writeDocumentation = true)
-		{
-			try
-			{
-				lock (this)
-				{
-					ToToml(writeDefaults, writeDocumentation);
-					Toml.WriteFile(TomlObject, path);
-				}
-			}
-			catch (Exception ex) { return ex; }
 			return R.Ok;
 		}
+		catch (JsonException ex) { return $"Could not read value: {ex.Message}"; }
+	}
+
+	// Virtual table methods
+
+	public abstract ConfigPart? GetChild(string key);
+
+	public abstract IEnumerable<ConfigPart> GetAllChildren();
+
+	// Static factory methods
+
+	protected static T Create<T>(string key, string doc = "") where T : ConfigEnumerable, new()
+	{
+		return new T
+		{
+			Key = key,
+			Documentation = doc,
+		};
+	}
+
+	protected static T Create<T>(string key, ConfigEnumerable? parent, TomlObject? fromToml, string doc = "") where T : ConfigEnumerable, new()
+	{
+		return Init(Create<T>(key, doc), parent, fromToml);
+	}
+
+	protected static T Init<T>(T part, ConfigEnumerable? parent, TomlObject? fromToml) where T : ConfigPart
+	{
+		part.Parent = parent;
+		part.FromToml(fromToml);
+		return part;
+	}
+
+	public static T CreateRoot<T>() where T : ConfigEnumerable, new() => Create<T>(null!, null, null, "");
+
+	public static R<T, Exception> Load<T>(string path) where T : ConfigEnumerable, new()
+	{
+		TomlTable rootToml;
+		try { rootToml = Toml.ReadFile(path); }
+		catch (Exception ex) { return ex; }
+		return Create<T>(null!, null, rootToml);
+	}
+
+	public E<Exception> Save(string path, bool writeDefaults, bool writeDocumentation = true)
+	{
+		try
+		{
+			lock (this)
+			{
+				ToToml(writeDefaults, writeDocumentation);
+				Toml.WriteFile(TomlObject, path);
+			}
+		}
+		catch (Exception ex) { return ex; }
+		return R.Ok;
 	}
 }

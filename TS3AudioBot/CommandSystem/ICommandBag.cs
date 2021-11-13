@@ -9,11 +9,10 @@
 
 using System.Collections.Generic;
 
-namespace TS3AudioBot.CommandSystem
+namespace TS3AudioBot.CommandSystem;
+
+public interface ICommandBag
 {
-	public interface ICommandBag
-	{
-		IReadOnlyCollection<BotCommand> BagCommands { get; }
-		IReadOnlyCollection<string> AdditionalRights { get; }
-	}
+	IReadOnlyCollection<BotCommand> BagCommands { get; }
+	IReadOnlyCollection<string> AdditionalRights { get; }
 }

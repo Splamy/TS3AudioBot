@@ -7,21 +7,20 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
-namespace TS3AudioBot.Plugins
+namespace TS3AudioBot.Plugins;
+
+public enum PluginResponse
 {
-	public enum PluginResponse
-	{
-		Ok,
-		Crash,
-		MissingDependency,
-		MissingContext,
-		InvalidBinary,
-		NoTypeMatch,
-		TooManyPlugins,
-		UnknownError,
-		PluginNotFound,
-		CompileError,
-		Disabled,
-		NotSupported,
-	}
+	Ok,
+	Crash,
+	MissingDependency,
+	MissingContext,
+	InvalidBinary,
+	NoTypeMatch,
+	TooManyPlugins,
+	UnknownError,
+	PluginNotFound,
+	CompileError,
+	Disabled,
+	NotSupported,
 }

@@ -12,70 +12,69 @@ using System;
 using System.IO;
 using TS3AudioBot.Config;
 
-namespace TS3AudioBot
+namespace TS3AudioBot;
+
+public sealed class DbStore : IDisposable
 {
-	public sealed class DbStore : IDisposable
+	private const string DbMetaInformationTable = "dbmeta";
+
+	private readonly LiteDatabase database;
+	private readonly ILiteCollection<DbMetaData> metaTable;
+
+	public DbStore(ConfDb config)
 	{
-		private const string DbMetaInformationTable = "dbmeta";
-
-		private readonly LiteDatabase database;
-		private readonly ILiteCollection<DbMetaData> metaTable;
-
-		public DbStore(ConfDb config)
+		var historyFile = Path.GetFullPath(config.Path);
+		database = new LiteDatabase(new ConnectionString()
 		{
-			var historyFile = Path.GetFullPath(config.Path);
-			database = new LiteDatabase(new ConnectionString()
-			{
-				Filename = historyFile,
-				Upgrade = true,
-			});
-			if (database.CheckpointSize == 0)
-			{
-				database.CheckpointSize = 1000;
-				database.Checkpoint();
-			}
-
-			metaTable = database.GetCollection<DbMetaData>(DbMetaInformationTable);
+			Filename = historyFile,
+			Upgrade = true,
+		});
+		if (database.CheckpointSize == 0)
+		{
+			database.CheckpointSize = 1000;
+			database.Checkpoint();
 		}
 
-		public DbMetaData GetMetaData(string table)
-		{
-			var meta = metaTable.FindById(table);
-			if (meta is null)
-			{
-				meta = new DbMetaData { Id = table, Version = 0, CustomData = null };
-				metaTable.Insert(meta);
-			}
-			return meta;
-		}
-
-		public void UpdateMetaData(DbMetaData metaData)
-		{
-			metaTable.Upsert(metaData);
-		}
-
-		public ILiteCollection<T> GetCollection<T>(string name)
-		{
-			return database.GetCollection<T>(name);
-		}
-
-		public void DropCollection(string name) => database.DropCollection(name);
-
-		public void CleanFile()
-		{
-			database.Rebuild();
-		}
-
-		public void Dispose()
-		{
-			database.Dispose();
-		}
+		metaTable = database.GetCollection<DbMetaData>(DbMetaInformationTable);
 	}
 
-	public class DbMetaData
+	public DbMetaData GetMetaData(string table)
 	{
-		public string? Id { get; set; }
-		public int Version { get; set; }
-		public string? CustomData { get; set; }
+		var meta = metaTable.FindById(table);
+		if (meta is null)
+		{
+			meta = new DbMetaData { Id = table, Version = 0, CustomData = null };
+			metaTable.Insert(meta);
+		}
+		return meta;
 	}
+
+	public void UpdateMetaData(DbMetaData metaData)
+	{
+		metaTable.Upsert(metaData);
+	}
+
+	public ILiteCollection<T> GetCollection<T>(string name)
+	{
+		return database.GetCollection<T>(name);
+	}
+
+	public void DropCollection(string name) => database.DropCollection(name);
+
+	public void CleanFile()
+	{
+		database.Rebuild();
+	}
+
+	public void Dispose()
+	{
+		database.Dispose();
+	}
+}
+
+public class DbMetaData
+{
+	public string? Id { get; set; }
+	public int Version { get; set; }
+	public string? CustomData { get; set; }
 }

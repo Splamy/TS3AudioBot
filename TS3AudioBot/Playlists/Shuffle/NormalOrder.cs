@@ -9,24 +9,23 @@
 
 using TSLib.Helper;
 
-namespace TS3AudioBot.Playlists.Shuffle
+namespace TS3AudioBot.Playlists.Shuffle;
+
+public class NormalOrder : IShuffleAlgorithm
 {
-	public class NormalOrder : IShuffleAlgorithm
+	public int Seed { get; set; }
+	public int Length { get; set; }
+	public int Index { get; set; }
+
+	public bool Next()
 	{
-		public int Seed { get; set; }
-		public int Length { get; set; }
-		public int Index { get; set; }
+		Index = Tools.MathMod(Index + 1, Length);
+		return Index == 0;
+	}
 
-		public bool Next()
-		{
-			Index = Tools.MathMod(Index + 1, Length);
-			return Index == 0;
-		}
-
-		public bool Prev()
-		{
-			Index = Tools.MathMod(Index - 1, Length);
-			return Index == Length - 1;
-		}
+	public bool Prev()
+	{
+		Index = Tools.MathMod(Index - 1, Length);
+		return Index == Length - 1;
 	}
 }

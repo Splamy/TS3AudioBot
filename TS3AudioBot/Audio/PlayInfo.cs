@@ -11,50 +11,49 @@ using System;
 using System.Diagnostics.CodeAnalysis;
 using TSLib;
 
-namespace TS3AudioBot.Audio
+namespace TS3AudioBot.Audio;
+
+public sealed class PlayInfo
 {
-	public sealed class PlayInfo
+	/// <summary>Defaults to: invoker.Uid - Can be set if the owner of a song differs from the invoker.</summary>
+	public Uid? ResourceOwnerUid { get; set; }
+	/// <summary>Starts the song at the specified time if set.</summary>
+	public TimeSpan? StartOffset { get; set; }
+
+	public PlayInfo(TimeSpan? startOffset = null)
 	{
-		/// <summary>Defaults to: invoker.Uid - Can be set if the owner of a song differs from the invoker.</summary>
-		public Uid? ResourceOwnerUid { get; set; }
-		/// <summary>Starts the song at the specified time if set.</summary>
-		public TimeSpan? StartOffset { get; set; }
+		StartOffset = startOffset;
+	}
 
-		public PlayInfo(TimeSpan? startOffset = null)
-		{
-			StartOffset = startOffset;
-		}
+	public PlayInfo Merge(PlayInfo other) => Merge(this, other);
 
-		public PlayInfo Merge(PlayInfo other) => Merge(this, other);
-
-		[return: NotNullIfNotNull("self")]
-		[return: NotNullIfNotNull("other")]
-		public static PlayInfo? Merge(PlayInfo? self, PlayInfo? other)
-		{
-			if (other is null)
-				return self;
-			if (self is null)
-				return other;
-			self.ResourceOwnerUid ??= other.ResourceOwnerUid;
-			self.StartOffset ??= other.StartOffset;
+	[return: NotNullIfNotNull("self")]
+	[return: NotNullIfNotNull("other")]
+	public static PlayInfo? Merge(PlayInfo? self, PlayInfo? other)
+	{
+		if (other is null)
 			return self;
-		}
-
-		public static PlayInfo MergeDefault(PlayInfo? self, PlayInfo? other)
-			=> Merge(self, other) ?? new PlayInfo();
+		if (self is null)
+			return other;
+		self.ResourceOwnerUid ??= other.ResourceOwnerUid;
+		self.StartOffset ??= other.StartOffset;
+		return self;
 	}
 
-	public interface IMetaContainer
-	{
-		public PlayInfo? PlayInfo { get; set; }
-	}
+	public static PlayInfo MergeDefault(PlayInfo? self, PlayInfo? other)
+		=> Merge(self, other) ?? new PlayInfo();
+}
 
-	public static class MetaContainerExtensions
+public interface IMetaContainer
+{
+	public PlayInfo? PlayInfo { get; set; }
+}
+
+public static class MetaContainerExtensions
+{
+	public static T MergeMeta<T>(this T container, PlayInfo? other) where T : IMetaContainer
 	{
-		public static T MergeMeta<T>(this T container, PlayInfo? other) where T : IMetaContainer
-		{
-			container.PlayInfo = PlayInfo.Merge(container.PlayInfo, other);
-			return container;
-		}
+		container.PlayInfo = PlayInfo.Merge(container.PlayInfo, other);
+		return container;
 	}
 }

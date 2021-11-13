@@ -9,38 +9,37 @@
 
 using System;
 
-namespace TSLib.Messages
+namespace TSLib.Messages;
+
+public interface IPermissionTransform
 {
-	public interface IPermissionTransform
+	ushort GetId(TsPermission name);
+	TsPermission GetName(ushort id);
+}
+
+public class DummyPermissionTransform : IPermissionTransform
+{
+	public static readonly IPermissionTransform Instance = new DummyPermissionTransform();
+
+	public ushort GetId(TsPermission name) => 0;
+	public TsPermission GetName(ushort id) => TsPermission.undefined;
+}
+
+public class TablePermissionTransform : IPermissionTransform
+{
+	private readonly TsPermission[] nameTable;
+	private readonly ushort[] idTable;
+
+	public TablePermissionTransform(TsPermission[] nameTable)
 	{
-		ushort GetId(TsPermission name);
-		TsPermission GetName(ushort id);
-	}
-
-	public class DummyPermissionTransform : IPermissionTransform
-	{
-		public static readonly IPermissionTransform Instance = new DummyPermissionTransform();
-
-		public ushort GetId(TsPermission name) => 0;
-		public TsPermission GetName(ushort id) => TsPermission.undefined;
-	}
-
-	public class TablePermissionTransform : IPermissionTransform
-	{
-		private readonly TsPermission[] nameTable;
-		private readonly ushort[] idTable;
-
-		public TablePermissionTransform(TsPermission[] nameTable)
+		this.nameTable = nameTable;
+		idTable = new ushort[Enum.GetValues(typeof(TsPermission)).Length];
+		for (ushort i = 0; i < nameTable.Length; i++)
 		{
-			this.nameTable = nameTable;
-			idTable = new ushort[Enum.GetValues(typeof(TsPermission)).Length];
-			for (ushort i = 0; i < nameTable.Length; i++)
-			{
-				idTable[(int)nameTable[i]] = i;
-			}
+			idTable[(int)nameTable[i]] = i;
 		}
-
-		public ushort GetId(TsPermission name) => (int)name < idTable.Length ? idTable[(int)name] : (ushort)0;
-		public TsPermission GetName(ushort id) => id < nameTable.Length ? nameTable[id] : TsPermission.undefined;
 	}
+
+	public ushort GetId(TsPermission name) => (int)name < idTable.Length ? idTable[(int)name] : (ushort)0;
+	public TsPermission GetName(ushort id) => id < nameTable.Length ? nameTable[id] : TsPermission.undefined;
 }

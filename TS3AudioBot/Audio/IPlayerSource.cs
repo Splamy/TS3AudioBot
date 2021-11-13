@@ -11,16 +11,15 @@ using System;
 using System.Threading.Tasks;
 using TSLib.Audio;
 
-namespace TS3AudioBot.Audio
+namespace TS3AudioBot.Audio;
+
+public interface IPlayerSource : IAudioPassiveProducer, IDisposable
 {
-	public interface IPlayerSource : IAudioPassiveProducer, IDisposable
-	{
-		event EventHandler OnSongEnd;
-		event EventHandler<SongInfoChanged> OnSongUpdated;
+	event EventHandler OnSongEnd;
+	event EventHandler<SongInfoChanged> OnSongUpdated;
 
-		TimeSpan? Length { get; }
-		TimeSpan? Position { get; }
+	TimeSpan? Length { get; }
+	TimeSpan? Position { get; }
 
-		Task Seek(TimeSpan position);
-	}
+	Task Seek(TimeSpan position);
 }

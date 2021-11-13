@@ -13,23 +13,22 @@ using System.Net;
 using TSLib;
 using TSLib.Messages;
 
-namespace TS3AudioBot.Rights
+namespace TS3AudioBot.Rights;
+
+internal class ExecuteContext
 {
-	internal class ExecuteContext
-	{
-		public string? Host { get; set; }
-		public ServerGroupId[]? ServerGroups { get; set; } = Array.Empty<ServerGroupId>();
-		public ChannelGroupId? ChannelGroupId { get; set; }
-		public Uid? ClientUid { get; set; }
-		public bool IsApi { get; set; }
-		public IPAddress? ApiCallerIp { get; set; }
-		public string? ApiToken { get; set; }
-		public string? Bot { get; set; }
-		public TextMessageTargetMode? Visibility { get; set; }
-		public PermOverview[]? Permissions { get; set; }
+	public string? Host { get; set; }
+	public ServerGroupId[]? ServerGroups { get; set; } = Array.Empty<ServerGroupId>();
+	public ChannelGroupId? ChannelGroupId { get; set; }
+	public Uid? ClientUid { get; set; }
+	public bool IsApi { get; set; }
+	public IPAddress? ApiCallerIp { get; set; }
+	public string? ApiToken { get; set; }
+	public string? Bot { get; set; }
+	public TextMessageTargetMode? Visibility { get; set; }
+	public PermOverview[]? Permissions { get; set; }
 
-		public List<RightsRule> MatchingRules { get; } = new List<RightsRule>();
+	public List<RightsRule> MatchingRules { get; } = new List<RightsRule>();
 
-		public HashSet<string> DeclAdd { get; } = new HashSet<string>();
-	}
+	public HashSet<string> DeclAdd { get; } = new HashSet<string>();
 }

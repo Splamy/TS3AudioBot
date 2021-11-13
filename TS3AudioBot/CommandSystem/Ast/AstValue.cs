@@ -9,43 +9,42 @@
 
 using System.Text;
 
-namespace TS3AudioBot.CommandSystem.Ast
+namespace TS3AudioBot.CommandSystem.Ast;
+
+internal class AstValue : AstNode
 {
-	internal class AstValue : AstNode
+	private string? value;
+	private string? tailString;
+
+	public override AstType Type => AstType.Value;
+	public StringType StringType { get; }
+	public int TailLength { get; set; }
+
+	public string Value
 	{
-		private string? value;
-		private string? tailString;
-
-		public override AstType Type => AstType.Value;
-		public StringType StringType { get; }
-		public int TailLength { get; set; }
-
-		public string Value
-		{
-			get => value ??= FullRequest.Substring(Position, Length);
-			set { this.value = value; tailString = value; }
-		}
-
-		public string TailString
-		{
-			get
-			{
-				if (tailString is null)
-				{
-					if (TailLength == 0)
-						tailString = FullRequest[Position..];
-					else
-						tailString = FullRequest.Substring(Position, TailLength);
-				}
-				return tailString;
-			}
-		}
-
-		public AstValue(string fullRequest, StringType stringType) : base(fullRequest)
-		{
-			StringType = stringType;
-		}
-
-		public override void Write(StringBuilder strb, int depth) => strb.Space(depth).Append(Value);
+		get => value ??= FullRequest.Substring(Position, Length);
+		set { this.value = value; tailString = value; }
 	}
+
+	public string TailString
+	{
+		get
+		{
+			if (tailString is null)
+			{
+				if (TailLength == 0)
+					tailString = FullRequest[Position..];
+				else
+					tailString = FullRequest.Substring(Position, TailLength);
+			}
+			return tailString;
+		}
+	}
+
+	public AstValue(string fullRequest, StringType stringType) : base(fullRequest)
+	{
+		StringType = stringType;
+	}
+
+	public override void Write(StringBuilder strb, int depth) => strb.Space(depth).Append(Value);
 }

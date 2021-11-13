@@ -9,21 +9,20 @@
 
 using System;
 
-namespace TS3AudioBot.History
-{
-	public class SearchQuery
-	{
-		public string? TitlePart { get; set; }
-		public string? UserUid { get; set; }
-		public DateTime? LastInvokedAfter { get; set; }
-		public int MaxResults { get; set; }
+namespace TS3AudioBot.History;
 
-		public SearchQuery()
-		{
-			TitlePart = null;
-			UserUid = null;
-			LastInvokedAfter = null;
-			MaxResults = 10;
-		}
+public class SearchQuery
+{
+	public string? TitlePart { get; set; }
+	public string? UserUid { get; set; }
+	public DateTime? LastInvokedAfter { get; set; }
+	public int MaxResults { get; set; }
+
+	public SearchQuery()
+	{
+		TitlePart = null;
+		UserUid = null;
+		LastInvokedAfter = null;
+		MaxResults = 10;
 	}
 }

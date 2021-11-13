@@ -10,100 +10,99 @@
 using System;
 using TSLib.Audio.Opus;
 
-namespace TSLib.Audio
+namespace TSLib.Audio;
+
+public sealed class EncoderPipe : IAudioPipe, IDisposable
 {
-	public sealed class EncoderPipe : IAudioPipe, IDisposable
+	public bool Active => OutStream?.Active ?? false;
+	public IAudioPassiveConsumer? OutStream { get; set; }
+
+	public Codec Codec { get; }
+	public SampleInfo SampleInfo { get; }
+
+	public int PacketSize { get; }
+	public int Bitrate { get => opusEncoder.Bitrate; set => opusEncoder.Bitrate = value; }
+
+	// opus
+	private readonly OpusEncoder opusEncoder;
+
+	private const int SegmentFrames = 960;
+	// todo add upper limit to buffer size and drop everying over
+	private byte[] notEncodedBuffer = Array.Empty<byte>();
+	private int notEncodedLength;
+	// https://tools.ietf.org/html/rfc6716#section-3.2.1
+	private const int max_encoded_size = 255 * 4 + 255;
+	private readonly byte[] encodedBuffer = new byte[max_encoded_size];
+
+	public EncoderPipe(Codec codec)
 	{
-		public bool Active => OutStream?.Active ?? false;
-		public IAudioPassiveConsumer? OutStream { get; set; }
+		Codec = codec;
 
-		public Codec Codec { get; }
-		public SampleInfo SampleInfo { get; }
-
-		public int PacketSize { get; }
-		public int Bitrate { get => opusEncoder.Bitrate; set => opusEncoder.Bitrate = value; }
-
-		// opus
-		private readonly OpusEncoder opusEncoder;
-
-		private const int SegmentFrames = 960;
-		// todo add upper limit to buffer size and drop everying over
-		private byte[] notEncodedBuffer = Array.Empty<byte>();
-		private int notEncodedLength;
-		// https://tools.ietf.org/html/rfc6716#section-3.2.1
-		private const int max_encoded_size = 255 * 4 + 255;
-		private readonly byte[] encodedBuffer = new byte[max_encoded_size];
-
-		public EncoderPipe(Codec codec)
+		switch (codec)
 		{
-			Codec = codec;
+		case Codec.Raw:
+			throw new InvalidOperationException("Raw is not a valid encoding target");
+		case Codec.SpeexNarrowband:
+			throw new NotSupportedException();
+		case Codec.SpeexWideband:
+			throw new NotSupportedException();
+		case Codec.SpeexUltraWideband:
+			throw new NotSupportedException();
+		case Codec.CeltMono:
+			throw new NotSupportedException();
 
-			switch (codec)
-			{
-			case Codec.Raw:
-				throw new InvalidOperationException("Raw is not a valid encoding target");
-			case Codec.SpeexNarrowband:
-				throw new NotSupportedException();
-			case Codec.SpeexWideband:
-				throw new NotSupportedException();
-			case Codec.SpeexUltraWideband:
-				throw new NotSupportedException();
-			case Codec.CeltMono:
-				throw new NotSupportedException();
+		case Codec.OpusVoice:
+			SampleInfo = SampleInfo.OpusVoice;
+			opusEncoder = OpusEncoder.Create(SampleInfo, Application.Voip);
+			Bitrate = 8192 * 2;
+			break;
 
-			case Codec.OpusVoice:
-				SampleInfo = SampleInfo.OpusVoice;
-				opusEncoder = OpusEncoder.Create(SampleInfo, Application.Voip);
-				Bitrate = 8192 * 2;
-				break;
+		case Codec.OpusMusic:
+			SampleInfo = SampleInfo.OpusMusic;
+			opusEncoder = OpusEncoder.Create(SampleInfo, Application.Audio);
+			Bitrate = 8192 * 4;
+			break;
 
-			case Codec.OpusMusic:
-				SampleInfo = SampleInfo.OpusMusic;
-				opusEncoder = OpusEncoder.Create(SampleInfo, Application.Audio);
-				Bitrate = 8192 * 4;
-				break;
-
-			default:
-				throw new ArgumentOutOfRangeException(nameof(codec));
-			}
-
-			PacketSize = opusEncoder.FrameByteCount(SegmentFrames);
+		default:
+			throw new ArgumentOutOfRangeException(nameof(codec));
 		}
 
-		public void Write(Span<byte> data, Meta? meta)
+		PacketSize = opusEncoder.FrameByteCount(SegmentFrames);
+	}
+
+	public void Write(Span<byte> data, Meta? meta)
+	{
+		if (OutStream is null)
+			return;
+
+		int newSoundBufferLength = data.Length + notEncodedLength;
+		if (newSoundBufferLength > notEncodedBuffer.Length)
 		{
-			if (OutStream is null)
-				return;
-
-			int newSoundBufferLength = data.Length + notEncodedLength;
-			if (newSoundBufferLength > notEncodedBuffer.Length)
-			{
-				var tmpSoundBuffer = new byte[newSoundBufferLength];
-				Array.Copy(notEncodedBuffer, 0, tmpSoundBuffer, 0, notEncodedLength);
-				notEncodedBuffer = tmpSoundBuffer;
-			}
-
-			var soundBuffer = notEncodedBuffer.AsSpan();
-			data.CopyTo(soundBuffer[notEncodedLength..]);
-
-			int segmentCount = newSoundBufferLength / PacketSize;
-			int segmentsEnd = segmentCount * PacketSize;
-			notEncodedLength = newSoundBufferLength - segmentsEnd;
-
-			for (int i = 0; i < segmentCount; i++)
-			{
-				var encodedData = opusEncoder.Encode(soundBuffer.Slice(i * PacketSize, PacketSize), PacketSize, encodedBuffer);
-				meta ??= new Meta();
-				meta.Codec = Codec; // TODO copy ?
-				OutStream?.Write(encodedData, meta);
-			}
-
-			soundBuffer.Slice(segmentsEnd, notEncodedLength).CopyTo(soundBuffer);
+			var tmpSoundBuffer = new byte[newSoundBufferLength];
+			Array.Copy(notEncodedBuffer, 0, tmpSoundBuffer, 0, notEncodedLength);
+			notEncodedBuffer = tmpSoundBuffer;
 		}
 
-		public void Dispose()
+		var soundBuffer = notEncodedBuffer.AsSpan();
+		data.CopyTo(soundBuffer[notEncodedLength..]);
+
+		int segmentCount = newSoundBufferLength / PacketSize;
+		int segmentsEnd = segmentCount * PacketSize;
+		notEncodedLength = newSoundBufferLength - segmentsEnd;
+
+		for (int i = 0; i < segmentCount; i++)
 		{
-			opusEncoder?.Dispose();
+			var encodedData = opusEncoder.Encode(soundBuffer.Slice(i * PacketSize, PacketSize), PacketSize, encodedBuffer);
+			meta ??= new Meta();
+			meta.Codec = Codec; // TODO copy ?
+			OutStream?.Write(encodedData, meta);
 		}
+
+		soundBuffer.Slice(segmentsEnd, notEncodedLength).CopyTo(soundBuffer);
+	}
+
+	public void Dispose()
+	{
+		opusEncoder?.Dispose();
 	}
 }

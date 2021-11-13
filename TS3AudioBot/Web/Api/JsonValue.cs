@@ -11,63 +11,62 @@ using System;
 using System.Text.Json;
 using TS3AudioBot.CommandSystem;
 
-namespace TS3AudioBot.Web.Api
+namespace TS3AudioBot.Web.Api;
+
+public class JsonValue<T> : JsonValue where T : notnull
 {
-	public class JsonValue<T> : JsonValue where T : notnull
+	protected Func<T, string>? AsString { get; }
+
+	new public T Value => (T)base.Value;
+
+	public JsonValue(T value) : base(value) { }
+	public JsonValue(T value, string msg) : base(value, msg) { }
+	public JsonValue(T value, Func<T, string>? asString) : base(value)
 	{
-		protected Func<T, string>? AsString { get; }
-
-		new public T Value => (T)base.Value;
-
-		public JsonValue(T value) : base(value) { }
-		public JsonValue(T value, string msg) : base(value, msg) { }
-		public JsonValue(T value, Func<T, string>? asString) : base(value)
-		{
-			AsString = asString;
-		}
-
-		public override string ToString()
-		{
-			if (AsStringResult is null)
-			{
-				if (AsString != null)
-					AsStringResult = AsString.Invoke(Value);
-				else
-					AsStringResult = Value?.ToString() ?? string.Empty;
-			}
-			return AsStringResult;
-		}
+		AsString = asString;
 	}
 
-	public abstract class JsonValue : JsonObject
+	public override string ToString()
 	{
-		protected string? AsStringResult { get; set; }
-		public object Value { get; }
-
-		protected JsonValue(object value) { Value = value; AsStringResult = null; }
-		protected JsonValue(object value, string msg) { Value = value; AsStringResult = msg ?? string.Empty; }
-
-		public override object GetSerializeObject() => Value;
-
-		public override string Serialize()
+		if (AsStringResult is null)
 		{
-			var seriObj = GetSerializeObject();
-			if (seriObj != null && CommandSystemTypes.BasicTypes.Contains(seriObj.GetType()))
-				return JsonSerializer.Serialize(this, DefaultJsonOptions);
-			return base.Serialize();
-		}
-
-		public override string ToString()
-		{
-			if (AsStringResult is null)
+			if (AsString != null)
+				AsStringResult = AsString.Invoke(Value);
+			else
 				AsStringResult = Value?.ToString() ?? string.Empty;
-			return AsStringResult;
 		}
-
-		// static creator methods for anonymous stuff
-
-		public static JsonValue<T> Create<T>(T anon) where T : notnull => new(anon);
-		public static JsonValue<T> Create<T>(T anon, string msg) where T : notnull => new(anon, msg);
-		public static JsonValue<T> Create<T>(T anon, Func<T, string>? asString) where T : notnull => new(anon, asString);
+		return AsStringResult;
 	}
+}
+
+public abstract class JsonValue : JsonObject
+{
+	protected string? AsStringResult { get; set; }
+	public object Value { get; }
+
+	protected JsonValue(object value) { Value = value; AsStringResult = null; }
+	protected JsonValue(object value, string msg) { Value = value; AsStringResult = msg ?? string.Empty; }
+
+	public override object GetSerializeObject() => Value;
+
+	public override string Serialize()
+	{
+		var seriObj = GetSerializeObject();
+		if (seriObj != null && CommandSystemTypes.BasicTypes.Contains(seriObj.GetType()))
+			return JsonSerializer.Serialize(this, DefaultJsonOptions);
+		return base.Serialize();
+	}
+
+	public override string ToString()
+	{
+		if (AsStringResult is null)
+			AsStringResult = Value?.ToString() ?? string.Empty;
+		return AsStringResult;
+	}
+
+	// static creator methods for anonymous stuff
+
+	public static JsonValue<T> Create<T>(T anon) where T : notnull => new(anon);
+	public static JsonValue<T> Create<T>(T anon, string msg) where T : notnull => new(anon, msg);
+	public static JsonValue<T> Create<T>(T anon, Func<T, string>? asString) where T : notnull => new(anon, asString);
 }

@@ -14,23 +14,22 @@ using TS3AudioBot.Algorithm;
 using TS3AudioBot.CommandSystem.Commands;
 using TS3AudioBot.Dependency;
 
-namespace TS3AudioBot.CommandSystem
+namespace TS3AudioBot.CommandSystem;
+
+public static class CommandSystemExtensions
 {
-	public static class CommandSystemExtensions
+	public static IFilter GetFilter(this IInjector injector)
 	{
-		public static IFilter GetFilter(this IInjector injector)
-		{
-			if (injector.TryGet<IFilter>(out var filter))
-				return filter;
-			return Filter.DefaultFilter;
-		}
+		if (injector.TryGet<IFilter>(out var filter))
+			return filter;
+		return Filter.DefaultFilter;
+	}
 
-		public static Lazy<IFilter> GetFilterLazy(this IInjector injector) => new(() => injector.GetFilter(), false);
+	public static Lazy<IFilter> GetFilterLazy(this IInjector injector) => new(() => injector.GetFilter(), false);
 
-		public static async ValueTask<string> ExecuteToString(this ICommand com, ExecutionInformation info, IReadOnlyList<ICommand> arguments)
-		{
-			var res = await com.Execute(info, arguments);
-			return res?.ToString() ?? "";
-		}
+	public static async ValueTask<string> ExecuteToString(this ICommand com, ExecutionInformation info, IReadOnlyList<ICommand> arguments)
+	{
+		var res = await com.Execute(info, arguments);
+		return res?.ToString() ?? "";
 	}
 }

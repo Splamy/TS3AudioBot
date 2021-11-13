@@ -7,10 +7,9 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
-namespace TS3AudioBot.Helper
+namespace TS3AudioBot.Helper;
+
+internal static class AttributeStrings
 {
-	internal static class AttributeStrings
-	{
-		public const string UnderDevelopment = "This feature is unstable and might change";
-	}
+	public const string UnderDevelopment = "This feature is unstable and might change";
 }

@@ -12,16 +12,15 @@ using System.Collections.Generic;
 using System.Linq;
 using TS3AudioBot.CommandSystem;
 
-namespace TS3AudioBot.Plugins
-{
-	internal class PluginCommandBag : ICommandBag
-	{
-		public IReadOnlyCollection<BotCommand> BagCommands { get; }
-		public IReadOnlyCollection<string> AdditionalRights => Array.Empty<string>();
+namespace TS3AudioBot.Plugins;
 
-		public PluginCommandBag(object? obj, Type t)
-		{
-			BagCommands = CommandManager.GetBotCommands(obj, t).ToArray();
-		}
+internal class PluginCommandBag : ICommandBag
+{
+	public IReadOnlyCollection<BotCommand> BagCommands { get; }
+	public IReadOnlyCollection<string> AdditionalRights => Array.Empty<string>();
+
+	public PluginCommandBag(object? obj, Type t)
+	{
+		BagCommands = CommandManager.GetBotCommands(obj, t).ToArray();
 	}
 }

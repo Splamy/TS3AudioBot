@@ -13,117 +13,116 @@ using System.Linq;
 using TSLib.Commands;
 using TSLib.Helper;
 
-namespace TS3AudioBot.CommandSystem.Text
+namespace TS3AudioBot.CommandSystem.Text;
+
+public static class LongTextTransform
 {
-	public static class LongTextTransform
+	private static ReadOnlySpan<byte> SeparatorWeight { get => new byte[] { (byte)'\n', (byte)',', (byte)' ' }; }
+
+	public static IEnumerable<string> Split(string text, LongTextBehaviour behaviour, int maxMessageSize, int limit = int.MaxValue)
 	{
-		private static ReadOnlySpan<byte> SeparatorWeight { get => new byte[] { (byte)'\n', (byte)',', (byte)' ' }; }
+		if (maxMessageSize < 4)
+			throw new ArgumentOutOfRangeException(nameof(maxMessageSize), "The minimum split length must be at least 4 bytes to fit all utf8 characters");
+		if (limit <= 0)
+			throw new ArgumentOutOfRangeException(nameof(limit), "Limit must be at least 1");
 
-		public static IEnumerable<string> Split(string text, LongTextBehaviour behaviour, int maxMessageSize, int limit = int.MaxValue)
+		// Calculates an upper bound by the following assumptions
+		// - Since dotnet uses Unicode strings, any single char can be at max 3 bytes long in UTF8
+		// - All TS escaped characters are ASCII, so 1 byte character + 1 byte escape = 2
+		// so each char '?' => max( MAX_UTF8 = 3, MAX_ASCII_TS_ESCAPED = 2 ) = 3
+		if (text.Length * 3 <= maxMessageSize)
+			return new[] { text };
+
+		// If the entire text UTF-8 encoded (*2 since each char could be TS-escaped) fits in one message we can return early.
+		var encodedSize = Tools.Utf8Encoder.GetByteCount(text);
+		if (encodedSize * 2 <= maxMessageSize)
+			return new[] { text };
+
+		var list = new List<string>();
+		Span<Ind> splitIndices = stackalloc Ind[SeparatorWeight.Length];
+
+		var block = new byte[encodedSize].AsSpan(0, encodedSize);
+		encodedSize = Tools.Utf8Encoder.GetBytes(text, block);
+		if (block.Length != encodedSize) System.Diagnostics.Debug.Fail("Encoding is weird");
+
+		while (block.Length > 0)
 		{
-			if (maxMessageSize < 4)
-				throw new ArgumentOutOfRangeException(nameof(maxMessageSize), "The minimum split length must be at least 4 bytes to fit all utf8 characters");
-			if (limit <= 0)
-				throw new ArgumentOutOfRangeException(nameof(limit), "Limit must be at least 1");
+			int tokenCnt = 0;
+			int i = 0;
+			bool filled = false;
 
-			// Calculates an upper bound by the following assumptions
-			// - Since dotnet uses Unicode strings, any single char can be at max 3 bytes long in UTF8
-			// - All TS escaped characters are ASCII, so 1 byte character + 1 byte escape = 2
-			// so each char '?' => max( MAX_UTF8 = 3, MAX_ASCII_TS_ESCAPED = 2 ) = 3
-			if (text.Length * 3 <= maxMessageSize)
-				return new[] { text };
-
-			// If the entire text UTF-8 encoded (*2 since each char could be TS-escaped) fits in one message we can return early.
-			var encodedSize = Tools.Utf8Encoder.GetByteCount(text);
-			if (encodedSize * 2 <= maxMessageSize)
-				return new[] { text };
-
-			var list = new List<string>();
-			Span<Ind> splitIndices = stackalloc Ind[SeparatorWeight.Length];
-
-			var block = new byte[encodedSize].AsSpan(0, encodedSize);
-			encodedSize = Tools.Utf8Encoder.GetBytes(text, block);
-			if (block.Length != encodedSize) System.Diagnostics.Debug.Fail("Encoding is weird");
-
-			while (block.Length > 0)
+			for (; i < block.Length; i++)
 			{
-				int tokenCnt = 0;
-				int i = 0;
-				bool filled = false;
+				tokenCnt += TsString.IsDoubleChar(block[i]) ? 2 : 1;
 
-				for (; i < block.Length; i++)
+				if (tokenCnt > maxMessageSize)
 				{
-					tokenCnt += TsString.IsDoubleChar(block[i]) ? 2 : 1;
+					if (behaviour == LongTextBehaviour.Drop)
+						return Enumerable.Empty<string>();
 
-					if (tokenCnt > maxMessageSize)
-					{
-						if (behaviour == LongTextBehaviour.Drop)
-							return Enumerable.Empty<string>();
-
-						filled = true;
-						break;
-					}
-
-					for (int j = 0; j < SeparatorWeight.Length; j++)
-					{
-						if (block[i] == SeparatorWeight[j])
-						{
-							splitIndices[j] = new Ind(i, tokenCnt);
-						}
-					}
-				}
-
-				if (!filled)
-				{
-					list.Add(block.NewUtf8String());
+					filled = true;
 					break;
 				}
 
-				bool hasSplit = false;
-				if (behaviour != LongTextBehaviour.SplitHard)
+				for (int j = 0; j < SeparatorWeight.Length; j++)
 				{
-					for (int j = 0; j < SeparatorWeight.Length; j++)
+					if (block[i] == SeparatorWeight[j])
 					{
-						if (!hasSplit && splitIndices[j].i > 0)
-						{
-							var (left, right) = block.SplitAt(splitIndices[j].i + 1);
-							list.Add(left.NewUtf8String());
-							block = right;
-							hasSplit = true;
-						}
+						splitIndices[j] = new Ind(i, tokenCnt);
 					}
-					splitIndices.Fill(new Ind());
 				}
-
-				if (!hasSplit)
-				{
-					// UTF-8 adjustment
-					while (i > 0 && (block[i] & 0xC0) == 0x80)
-						i--;
-
-					var (left, right) = block.SplitAt(i);
-					list.Add(left.NewUtf8String());
-					block = right;
-				}
-
-				if (--limit == 0)
-					break;
 			}
-			return list;
-		}
 
-		private readonly struct Ind
-		{
-			public readonly int i;
-			public readonly int tok;
-
-			public Ind(int i, int tok)
+			if (!filled)
 			{
-				this.i = i;
-				this.tok = tok;
+				list.Add(block.NewUtf8String());
+				break;
 			}
 
-			public override readonly string ToString() => $"i:{i} tok:{tok}";
+			bool hasSplit = false;
+			if (behaviour != LongTextBehaviour.SplitHard)
+			{
+				for (int j = 0; j < SeparatorWeight.Length; j++)
+				{
+					if (!hasSplit && splitIndices[j].i > 0)
+					{
+						var (left, right) = block.SplitAt(splitIndices[j].i + 1);
+						list.Add(left.NewUtf8String());
+						block = right;
+						hasSplit = true;
+					}
+				}
+				splitIndices.Fill(new Ind());
+			}
+
+			if (!hasSplit)
+			{
+				// UTF-8 adjustment
+				while (i > 0 && (block[i] & 0xC0) == 0x80)
+					i--;
+
+				var (left, right) = block.SplitAt(i);
+				list.Add(left.NewUtf8String());
+				block = right;
+			}
+
+			if (--limit == 0)
+				break;
 		}
+		return list;
+	}
+
+	private readonly struct Ind
+	{
+		public readonly int i;
+		public readonly int tok;
+
+		public Ind(int i, int tok)
+		{
+			this.i = i;
+			this.tok = tok;
+		}
+
+		public override readonly string ToString() => $"i:{i} tok:{tok}";
 	}
 }

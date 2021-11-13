@@ -9,43 +9,42 @@
 
 using System;
 
-namespace TS3AudioBot.CommandSystem.Text
+namespace TS3AudioBot.CommandSystem.Text;
+
+public readonly struct TextMod : IEquatable<TextMod>
 {
-	public readonly struct TextMod : IEquatable<TextMod>
+	public static readonly TextMod None = new(0, null);
+
+	public TextModFlag Flags { get; }
+	public Color? HasColor { get; }
+
+	public TextMod(TextModFlag flags, Color? color = null)
 	{
-		public static readonly TextMod None = new(0, null);
-
-		public TextModFlag Flags { get; }
-		public Color? HasColor { get; }
-
-		public TextMod(TextModFlag flags, Color? color = null)
-		{
-			Flags = flags;
-			HasColor = color;
-		}
-
-		public readonly TextMod Color(Color color) => new(Flags | TextModFlag.Color, color);
-		public readonly TextMod Bold() => new(Flags | TextModFlag.Bold, HasColor);
-		public readonly TextMod Italic() => new(Flags | TextModFlag.Italic, HasColor);
-		public readonly TextMod Strike() => new(Flags | TextModFlag.Strike, HasColor);
-		public readonly TextMod Underline() => new(Flags | TextModFlag.Underline, HasColor);
-
-		public static string Format(AppliedTextMod format, params AppliedTextMod[] para)
-			=> new TextModBuilder().AppendFormat(format, para).ToString();
-
-		public static string Format(bool color, AppliedTextMod format, params AppliedTextMod[] para)
-		{
-			if (color)
-				return Format(format, para);
-			if (string.IsNullOrEmpty(format.Text))
-				return string.Empty;
-			return string.Format(format.Text, para);
-		}
-
-		public readonly bool Equals(TextMod other) => Flags == other.Flags && HasColor == other.HasColor;
-		public override readonly bool Equals(object? obj) => obj is TextMod tm && Equals(tm);
-		public static bool operator ==(TextMod a, TextMod b) => a.Flags == b.Flags && a.HasColor == b.HasColor;
-		public static bool operator !=(TextMod a, TextMod b) => a.Flags != b.Flags || a.HasColor != b.HasColor;
-		public override readonly int GetHashCode() => ((int)Flags << 28) | HasColor.GetHashCode();
+		Flags = flags;
+		HasColor = color;
 	}
+
+	public readonly TextMod Color(Color color) => new(Flags | TextModFlag.Color, color);
+	public readonly TextMod Bold() => new(Flags | TextModFlag.Bold, HasColor);
+	public readonly TextMod Italic() => new(Flags | TextModFlag.Italic, HasColor);
+	public readonly TextMod Strike() => new(Flags | TextModFlag.Strike, HasColor);
+	public readonly TextMod Underline() => new(Flags | TextModFlag.Underline, HasColor);
+
+	public static string Format(AppliedTextMod format, params AppliedTextMod[] para)
+		=> new TextModBuilder().AppendFormat(format, para).ToString();
+
+	public static string Format(bool color, AppliedTextMod format, params AppliedTextMod[] para)
+	{
+		if (color)
+			return Format(format, para);
+		if (string.IsNullOrEmpty(format.Text))
+			return string.Empty;
+		return string.Format(format.Text, para);
+	}
+
+	public readonly bool Equals(TextMod other) => Flags == other.Flags && HasColor == other.HasColor;
+	public override readonly bool Equals(object? obj) => obj is TextMod tm && Equals(tm);
+	public static bool operator ==(TextMod a, TextMod b) => a.Flags == b.Flags && a.HasColor == b.HasColor;
+	public static bool operator !=(TextMod a, TextMod b) => a.Flags != b.Flags || a.HasColor != b.HasColor;
+	public override readonly int GetHashCode() => ((int)Flags << 28) | HasColor.GetHashCode();
 }

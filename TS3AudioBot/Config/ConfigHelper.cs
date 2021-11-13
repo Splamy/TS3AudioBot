@@ -11,20 +11,19 @@ using System;
 using System.Linq;
 using TS3AudioBot.CommandSystem;
 
-namespace TS3AudioBot.Config
+namespace TS3AudioBot.Config;
+
+public static class ConfigHelper
 {
-	public static class ConfigHelper
+	public static ConfigPart[] ByPathAsArray(this ConfigPart config, string path)
 	{
-		public static ConfigPart[] ByPathAsArray(this ConfigPart config, string path)
+		try
 		{
-			try
-			{
-				return config.ByPath(path).ToArray();
-			}
-			catch (Exception ex)
-			{
-				throw new CommandException("Invalid TomlPath expression", ex, CommandExceptionReason.CommandError);
-			}
+			return config.ByPath(path).ToArray();
+		}
+		catch (Exception ex)
+		{
+			throw new CommandException("Invalid TomlPath expression", ex, CommandExceptionReason.CommandError);
 		}
 	}
 }

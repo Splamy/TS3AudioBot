@@ -11,95 +11,94 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace TSLib.Audio
+namespace TSLib.Audio;
+
+public class PassiveSplitterPipe : IAudioPipe
 {
-	public class PassiveSplitterPipe : IAudioPipe
+	public bool Active => consumerList.Count > 0 && consumerList.Any(x => x.Active);
+	private readonly List<IAudioPassiveConsumer> safeConsumerList = new();
+	private readonly List<IAudioPassiveConsumer> consumerList = new();
+	private bool changed;
+	private readonly object listLock = new();
+	private byte[] buffer = Array.Empty<byte>();
+
+	public bool CloneMeta { get; set; } = false;
+
+	public IAudioPassiveConsumer? OutStream
 	{
-		public bool Active => consumerList.Count > 0 && consumerList.Any(x => x.Active);
-		private readonly List<IAudioPassiveConsumer> safeConsumerList = new();
-		private readonly List<IAudioPassiveConsumer> consumerList = new();
-		private bool changed;
-		private readonly object listLock = new();
-		private byte[] buffer = Array.Empty<byte>();
-
-		public bool CloneMeta { get; set; } = false;
-
-		public IAudioPassiveConsumer? OutStream
+		get => this;
+		set
 		{
-			get => this;
-			set
+			if (value is null)
+				Clear();
+			else
+				Add(value);
+		}
+	}
+
+	public void Add(IAudioPassiveConsumer consumer)
+	{
+		lock (listLock)
+		{
+			if (!consumerList.Contains(consumer) && consumer != this)
 			{
-				if (value is null)
-					Clear();
-				else
-					Add(value);
+				consumerList.Add(consumer);
+				changed = true;
 			}
 		}
+	}
 
-		public void Add(IAudioPassiveConsumer consumer)
+	public void Remove(IAudioPassiveConsumer consumer)
+	{
+		lock (listLock)
+		{
+			changed |= consumerList.Remove(consumer);
+		}
+	}
+
+	public void Clear()
+	{
+		lock (listLock)
+		{
+			changed |= consumerList.Count > 0;
+			consumerList.Clear();
+		}
+	}
+
+	public void Write(Span<byte> data, Meta? meta)
+	{
+		if (changed)
 		{
 			lock (listLock)
 			{
-				if (!consumerList.Contains(consumer) && consumer != this)
+				if (changed)
 				{
-					consumerList.Add(consumer);
-					changed = true;
+					safeConsumerList.Clear();
+					safeConsumerList.AddRange(consumerList);
+					changed = false;
 				}
 			}
 		}
 
-		public void Remove(IAudioPassiveConsumer consumer)
+		if (safeConsumerList.Count == 0)
+			return;
+
+		if (safeConsumerList.Count == 1)
 		{
-			lock (listLock)
-			{
-				changed |= consumerList.Remove(consumer);
-			}
+			safeConsumerList[0].Write(data, meta);
+			return;
 		}
 
-		public void Clear()
+		if (buffer.Length < data.Length)
+			buffer = new byte[data.Length];
+
+		var bufSpan = buffer.AsSpan(0, data.Length);
+		for (int i = 0; i < safeConsumerList.Count - 1; i++)
 		{
-			lock (listLock)
-			{
-				changed |= consumerList.Count > 0;
-				consumerList.Clear();
-			}
+			data.CopyTo(bufSpan);
+			safeConsumerList[i].Write(bufSpan, meta);
 		}
-
-		public void Write(Span<byte> data, Meta? meta)
-		{
-			if (changed)
-			{
-				lock (listLock)
-				{
-					if (changed)
-					{
-						safeConsumerList.Clear();
-						safeConsumerList.AddRange(consumerList);
-						changed = false;
-					}
-				}
-			}
-
-			if (safeConsumerList.Count == 0)
-				return;
-
-			if (safeConsumerList.Count == 1)
-			{
-				safeConsumerList[0].Write(data, meta);
-				return;
-			}
-
-			if (buffer.Length < data.Length)
-				buffer = new byte[data.Length];
-
-			var bufSpan = buffer.AsSpan(0, data.Length);
-			for (int i = 0; i < safeConsumerList.Count - 1; i++)
-			{
-				data.CopyTo(bufSpan);
-				safeConsumerList[i].Write(bufSpan, meta);
-			}
-			// safe one memcopy call by passing the last one our original data
-			safeConsumerList[^1].Write(data, meta);
-		}
+		// safe one memcopy call by passing the last one our original data
+		safeConsumerList[^1].Write(data, meta);
 	}
 }

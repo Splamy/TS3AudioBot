@@ -9,21 +9,20 @@
 
 using System.Text.Json.Serialization;
 
-namespace TS3AudioBot.Helper.Diagnose
-{
-	public class SelfDiagnoseMessage
-	{
-		public string Description { get; }
-		public string Category { get; }
-		public string Level => LevelValue.ToString();
-		[JsonIgnore]
-		public SelfDiagnoseLevel LevelValue { get; }
+namespace TS3AudioBot.Helper.Diagnose;
 
-		public SelfDiagnoseMessage(string description, string category, SelfDiagnoseLevel levelValue)
-		{
-			Description = description;
-			Category = category;
-			LevelValue = levelValue;
-		}
+public class SelfDiagnoseMessage
+{
+	public string Description { get; }
+	public string Category { get; }
+	public string Level => LevelValue.ToString();
+	[JsonIgnore]
+	public SelfDiagnoseLevel LevelValue { get; }
+
+	public SelfDiagnoseMessage(string description, string category, SelfDiagnoseLevel levelValue)
+	{
+		Description = description;
+		Category = category;
+		LevelValue = levelValue;
 	}
 }

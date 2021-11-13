@@ -14,24 +14,23 @@ using TS3AudioBot.Config;
 using TS3AudioBot.Helper;
 using TS3AudioBot.Playlists;
 
-namespace TS3AudioBot.ResourceFactories
+namespace TS3AudioBot.ResourceFactories;
+
+public class ResolveContext
 {
-	public class ResolveContext
+	public ResourceResolver Resolver { get; }
+	public ConfBot Config { get; }
+
+	public ResolveContext(ResourceResolver resolver, ConfBot config)
 	{
-		public ResourceResolver Resolver { get; }
-		public ConfBot Config { get; }
-
-		public ResolveContext(ResourceResolver resolver, ConfBot config)
-		{
-			Resolver = resolver;
-			Config = config;
-		}
-
-		public Task<PlayResource> Load(AudioResource resource, CancellationToken cancellationToken) => Resolver.Load(this, resource, cancellationToken);
-		public Task<PlayResource> Load(string message, CancellationToken cancellationToken, string? audioType = null) => Resolver.Load(this, message, audioType, cancellationToken);
-		public Task<Playlist> LoadPlaylistFrom(string message, CancellationToken cancellationToken, string? audioType = null) => Resolver.LoadPlaylistFrom(this, message, audioType, cancellationToken);
-		public string? RestoreLink(AudioResource res) => Resolver.RestoreLink(this, res);
-		public Task GetThumbnail(PlayResource playResource, AsyncStreamAction action, CancellationToken cancellationToken) => Resolver.GetThumbnail(this, playResource, action, cancellationToken);
-		public Task<IList<AudioResource>> Search(string resolverName, string query, CancellationToken cancellationToken) => Resolver.Search(this, resolverName, query, cancellationToken);
+		Resolver = resolver;
+		Config = config;
 	}
+
+	public Task<PlayResource> Load(AudioResource resource, CancellationToken cancellationToken) => Resolver.Load(this, resource, cancellationToken);
+	public Task<PlayResource> Load(string message, CancellationToken cancellationToken, string? audioType = null) => Resolver.Load(this, message, audioType, cancellationToken);
+	public Task<Playlist> LoadPlaylistFrom(string message, CancellationToken cancellationToken, string? audioType = null) => Resolver.LoadPlaylistFrom(this, message, audioType, cancellationToken);
+	public string? RestoreLink(AudioResource res) => Resolver.RestoreLink(this, res);
+	public Task GetThumbnail(PlayResource playResource, AsyncStreamAction action, CancellationToken cancellationToken) => Resolver.GetThumbnail(this, playResource, action, cancellationToken);
+	public Task<IList<AudioResource>> Search(string resolverName, string query, CancellationToken cancellationToken) => Resolver.Search(this, resolverName, query, cancellationToken);
 }

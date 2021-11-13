@@ -10,14 +10,13 @@
 using System.Linq;
 using TSLib;
 
-namespace TS3AudioBot.Rights.Matchers
+namespace TS3AudioBot.Rights.Matchers;
+
+internal class MatchVisibility : Matcher
 {
-	internal class MatchVisibility : Matcher
-	{
-		private readonly TextMessageTargetMode[] visibility;
+	private readonly TextMessageTargetMode[] visibility;
 
-		public MatchVisibility(TextMessageTargetMode[] visibility) => this.visibility = visibility;
+	public MatchVisibility(TextMessageTargetMode[] visibility) => this.visibility = visibility;
 
-		public override bool Matches(ExecuteContext ctx) => ctx.Visibility is { } value && visibility.Contains(value);
-	}
+	public override bool Matches(ExecuteContext ctx) => ctx.Visibility is { } value && visibility.Contains(value);
 }

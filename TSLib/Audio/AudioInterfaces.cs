@@ -9,34 +9,33 @@
 
 using System;
 
-namespace TSLib.Audio
+namespace TSLib.Audio;
+
+public interface IAudioStream { }
+
+/// <summary>Passive producer will serve audio data that must be read.</summary>
+public interface IAudioPassiveProducer : IAudioStream
 {
-	public interface IAudioStream { }
-
-	/// <summary>Passive producer will serve audio data that must be read.</summary>
-	public interface IAudioPassiveProducer : IAudioStream
-	{
-		int Read(Span<byte> data, out Meta? meta);
-	}
-	/// <summary>Active producer will push audio to the out stream.</summary>
-	public interface IAudioActiveProducer : IAudioStream
-	{
-		IAudioPassiveConsumer? OutStream { get; set; }
-	}
-	/// <summary>Passive consumer will wait for manually passed audio data.</summary>
-	public interface IAudioPassiveConsumer : IAudioStream
-	{
-		bool Active { get; }
-		void Write(Span<byte> data, Meta? meta);
-	}
-	/// <summary>Active consumer will pull audio data when required.</summary>
-	public interface IAudioActiveConsumer : IAudioStream
-	{
-		IAudioPassiveProducer? InStream { get; set; }
-	}
-
-	// Best practices for pipes:
-	// - Use Active-Propagiation: `Active => OutStream?.Active ?? false`
-	// - Always check `OutStream != null` at begin of Write(...)
-	public interface IAudioPipe : IAudioPassiveConsumer, IAudioActiveProducer { }
+	int Read(Span<byte> data, out Meta? meta);
 }
+/// <summary>Active producer will push audio to the out stream.</summary>
+public interface IAudioActiveProducer : IAudioStream
+{
+	IAudioPassiveConsumer? OutStream { get; set; }
+}
+/// <summary>Passive consumer will wait for manually passed audio data.</summary>
+public interface IAudioPassiveConsumer : IAudioStream
+{
+	bool Active { get; }
+	void Write(Span<byte> data, Meta? meta);
+}
+/// <summary>Active consumer will pull audio data when required.</summary>
+public interface IAudioActiveConsumer : IAudioStream
+{
+	IAudioPassiveProducer? InStream { get; set; }
+}
+
+// Best practices for pipes:
+// - Use Active-Propagiation: `Active => OutStream?.Active ?? false`
+// - Always check `OutStream != null` at begin of Write(...)
+public interface IAudioPipe : IAudioPassiveConsumer, IAudioActiveProducer { }

@@ -12,45 +12,44 @@ using System.Globalization;
 using TS3AudioBot.CommandSystem.CommandResults;
 using TS3AudioBot.ResourceFactories;
 
-namespace TS3AudioBot.History
+namespace TS3AudioBot.History;
+
+public class AudioLogEntry : IAudioResourceResult
 {
-	public class AudioLogEntry : IAudioResourceResult
+	/// <summary>A unique id for each <see cref="ResourceFactories.AudioResource"/>, given by the history system.</summary>
+	public int Id { get; set; }
+	/// <summary>Left for legacy reasons. The dbid of the teamspeak user, who played this song first.</summary>
+	[Obsolete("Use UserUid instead")]
+	public uint? UserInvokeId { get; set; }
+	/// <summary>The Uid of the teamspeak user, who played this song first.</summary>
+	public string? UserUid { get; set; }
+	/// <summary>How often the song has been played.</summary>
+	public uint PlayCount { get; set; }
+	/// <summary>The last time this song has been played.</summary>
+	public DateTime Timestamp { get; set; }
+
+	public AudioResource AudioResource { get; set; }
+
+	public AudioLogEntry()
 	{
-		/// <summary>A unique id for each <see cref="ResourceFactories.AudioResource"/>, given by the history system.</summary>
-		public int Id { get; set; }
-		/// <summary>Left for legacy reasons. The dbid of the teamspeak user, who played this song first.</summary>
-		[Obsolete("Use UserUid instead")]
-		public uint? UserInvokeId { get; set; }
-		/// <summary>The Uid of the teamspeak user, who played this song first.</summary>
-		public string? UserUid { get; set; }
-		/// <summary>How often the song has been played.</summary>
-		public uint PlayCount { get; set; }
-		/// <summary>The last time this song has been played.</summary>
-		public DateTime Timestamp { get; set; }
+		PlayCount = 0;
+		AudioResource = null!;
+	}
 
-		public AudioResource AudioResource { get; set; }
+	public AudioLogEntry(int id, AudioResource resource, string userUid) : this()
+	{
+		Id = id;
+		AudioResource = resource;
+		UserUid = userUid;
+	}
 
-		public AudioLogEntry()
-		{
-			PlayCount = 0;
-			AudioResource = null!;
-		}
+	public void SetName(string newName)
+	{
+		AudioResource.ResourceTitle = newName;
+	}
 
-		public AudioLogEntry(int id, AudioResource resource, string userUid) : this()
-		{
-			Id = id;
-			AudioResource = resource;
-			UserUid = userUid;
-		}
-
-		public void SetName(string newName)
-		{
-			AudioResource.ResourceTitle = newName;
-		}
-
-		public override string ToString()
-		{
-			return string.Format(CultureInfo.InvariantCulture, "[{0}] @ {1} by {2}: {3}, ({4})", Id, Timestamp, UserUid, AudioResource.ResourceTitle, AudioResource);
-		}
+	public override string ToString()
+	{
+		return string.Format(CultureInfo.InvariantCulture, "[{0}] @ {1} by {2}: {3}, ({4})", Id, Timestamp, UserUid, AudioResource.ResourceTitle, AudioResource);
 	}
 }

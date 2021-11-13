@@ -12,48 +12,47 @@ using System.IO;
 using System.Text.RegularExpressions;
 using TS3AudioBot.Helper;
 
-namespace TS3AudioBot.Config
-{
-	/// <summary>
-	/// Upgrades the /bots/ folder structure from each Bot being a 'bot_(name).toml'
-	/// file to each bot having its own folder with '/(name)/bot.toml'.
-	/// </summary>
-	internal static class ConfigUpgrade2
-	{
-		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
-		private static readonly Regex BotFileMatcher = new(@"^bot_(.+)\.toml$", Util.DefaultRegexConfig);
-		private const string NewBotConfigFileName = "bot.toml";
+namespace TS3AudioBot.Config;
 
-		public static void Upgrade(string path)
+/// <summary>
+/// Upgrades the /bots/ folder structure from each Bot being a 'bot_(name).toml'
+/// file to each bot having its own folder with '/(name)/bot.toml'.
+/// </summary>
+internal static class ConfigUpgrade2
+{
+	private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
+	private static readonly Regex BotFileMatcher = new(@"^bot_(.+)\.toml$", Util.DefaultRegexConfig);
+	private const string NewBotConfigFileName = "bot.toml";
+
+	public static void Upgrade(string path)
+	{
+		string[] files;
+		try
 		{
-			string[] files;
+			files = Directory.GetFiles(path);
+		}
+		catch (Exception ex)
+		{
+			Log.Error(ex, "Failed to get 'Bots' directory. Your bots might not be available. Refer to our GitHub for upgrade actions.");
+			return;
+		}
+
+		foreach (var file in files)
+		{
 			try
 			{
-				files = Directory.GetFiles(path);
+				var fi = new FileInfo(file);
+				var match = BotFileMatcher.Match(fi.Name);
+				if (match.Success)
+				{
+					var name = match.Groups[1].Value;
+					Directory.CreateDirectory(Path.Combine(path, name));
+					fi.MoveTo(Path.Combine(path, name, NewBotConfigFileName));
+				}
 			}
 			catch (Exception ex)
 			{
-				Log.Error(ex, "Failed to get 'Bots' directory. Your bots might not be available. Refer to our GitHub for upgrade actions.");
-				return;
-			}
-
-			foreach (var file in files)
-			{
-				try
-				{
-					var fi = new FileInfo(file);
-					var match = BotFileMatcher.Match(fi.Name);
-					if (match.Success)
-					{
-						var name = match.Groups[1].Value;
-						Directory.CreateDirectory(Path.Combine(path, name));
-						fi.MoveTo(Path.Combine(path, name, NewBotConfigFileName));
-					}
-				}
-				catch (Exception ex)
-				{
-					Log.Error(ex, "Failed to move Bot '{0}' to the new folder structure.", file);
-				}
+				Log.Error(ex, "Failed to move Bot '{0}' to the new folder structure.", file);
 			}
 		}
 	}

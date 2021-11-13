@@ -10,15 +10,14 @@
 using System;
 using System.Text.Json.Serialization;
 
-namespace TS3AudioBot.Web.Model
+namespace TS3AudioBot.Web.Model;
+
+public class CurrentSongInfo : PlaylistItemGetData
 {
-	public class CurrentSongInfo : PlaylistItemGetData
-	{
-		[JsonPropertyName("Position")]
-		public TimeSpan Position { get; set; }
-		[JsonPropertyName("Length")]
-		public TimeSpan Length { get; set; }
-		[JsonPropertyName("Paused")]
-		public bool Paused { get; set; }
-	}
+	[JsonPropertyName("Position")]
+	public TimeSpan Position { get; set; }
+	[JsonPropertyName("Length")]
+	public TimeSpan Length { get; set; }
+	[JsonPropertyName("Paused")]
+	public bool Paused { get; set; }
 }

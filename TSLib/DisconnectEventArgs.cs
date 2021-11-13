@@ -10,17 +10,16 @@
 using System;
 using TSLib.Messages;
 
-namespace TSLib
-{
-	public class DisconnectEventArgs : EventArgs
-	{
-		public Reason ExitReason { get; }
-		public CommandError? Error { get; }
+namespace TSLib;
 
-		public DisconnectEventArgs(Reason exitReason, CommandError? error = null)
-		{
-			ExitReason = exitReason;
-			Error = error;
-		}
+public class DisconnectEventArgs : EventArgs
+{
+	public Reason ExitReason { get; }
+	public CommandError? Error { get; }
+
+	public DisconnectEventArgs(Reason exitReason, CommandError? error = null)
+	{
+		ExitReason = exitReason;
+		Error = error;
 	}
 }

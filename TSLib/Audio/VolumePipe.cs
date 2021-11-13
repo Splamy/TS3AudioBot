@@ -10,56 +10,55 @@
 using System;
 using System.Runtime.InteropServices;
 
-namespace TSLib.Audio
+namespace TSLib.Audio;
+
+public class VolumePipe : IAudioPipe
 {
-	public class VolumePipe : IAudioPipe
+	public bool Active => OutStream?.Active ?? false;
+	private float volume;
+	/// <summary>Values are between including 0 and 1.</summary>
+	public float Volume
 	{
-		public bool Active => OutStream?.Active ?? false;
-		private float volume;
-		/// <summary>Values are between including 0 and 1.</summary>
-		public float Volume
+		get => volume;
+		set
 		{
-			get => volume;
-			set
-			{
-				value = Math.Abs(value);
-				if (IsAbout(value, 1)) volume = 1;
-				else if (IsAbout(value, 0)) volume = 0;
-				else volume = value;
-			}
+			value = Math.Abs(value);
+			if (IsAbout(value, 1)) volume = 1;
+			else if (IsAbout(value, 0)) volume = 0;
+			else volume = value;
 		}
-		public IAudioPassiveConsumer? OutStream { get; set; }
+	}
+	public IAudioPassiveConsumer? OutStream { get; set; }
 
-		public static void AdjustVolume(Span<byte> audioSamples, float volume)
+	public static void AdjustVolume(Span<byte> audioSamples, float volume)
+	{
+		if (volume == 1) { /* Do nothing */ }
+		else if (volume == 0)
 		{
-			if (volume == 1) { /* Do nothing */ }
-			else if (volume == 0)
-			{
-				audioSamples.Fill(0);
-			}
-			else if (volume < 1) // Clipping cannot occur on mult <1
-			{
-				var shortArr = MemoryMarshal.Cast<byte, short>(audioSamples);
-				for (int i = 0; i < shortArr.Length; i++)
-					shortArr[i] = (short)(shortArr[i] * volume);
-			}
-			else
-			{
-				var shortArr = MemoryMarshal.Cast<byte, short>(audioSamples);
-				for (int i = 0; i < shortArr.Length; i++)
-					shortArr[i] = (short)Math.Max(Math.Min(shortArr[i] * volume, short.MaxValue), short.MinValue);
-			}
+			audioSamples.Fill(0);
 		}
-
-		private static bool IsAbout(float value, float compare) => Math.Abs(value - compare) < 1E-04f;
-
-		public void Write(Span<byte> data, Meta? meta)
+		else if (volume < 1) // Clipping cannot occur on mult <1
 		{
-			if (OutStream is null) return;
-
-			AdjustVolume(data, Volume);
-
-			OutStream?.Write(data, meta);
+			var shortArr = MemoryMarshal.Cast<byte, short>(audioSamples);
+			for (int i = 0; i < shortArr.Length; i++)
+				shortArr[i] = (short)(shortArr[i] * volume);
 		}
+		else
+		{
+			var shortArr = MemoryMarshal.Cast<byte, short>(audioSamples);
+			for (int i = 0; i < shortArr.Length; i++)
+				shortArr[i] = (short)Math.Max(Math.Min(shortArr[i] * volume, short.MaxValue), short.MinValue);
+		}
+	}
+
+	private static bool IsAbout(float value, float compare) => Math.Abs(value - compare) < 1E-04f;
+
+	public void Write(Span<byte> data, Meta? meta)
+	{
+		if (OutStream is null) return;
+
+		AdjustVolume(data, Volume);
+
+		OutStream?.Write(data, meta);
 	}
 }

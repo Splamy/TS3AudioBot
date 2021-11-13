@@ -9,37 +9,36 @@
 
 using System;
 
-namespace TSLib.Full.Book
+namespace TSLib.Full.Book;
+
+public readonly struct MaxClients
 {
-	public readonly struct MaxClients
-	{
-		public MaxClientsKind LimitKind { get; init; }
-		public ushort Count { get; init; }
+	public MaxClientsKind LimitKind { get; init; }
+	public ushort Count { get; init; }
 
-		public MaxClients(MaxClientsKind limitKind, ushort count) =>
-			(LimitKind, Count) = (limitKind, count);
+	public MaxClients(MaxClientsKind limitKind, ushort count) =>
+		(LimitKind, Count) = (limitKind, count);
 
-		public static readonly MaxClients Unlimited = new(MaxClientsKind.Unlimited, 0);
-		public static readonly MaxClients Inherited = new(MaxClientsKind.Inherited, 0);
-	}
+	public static readonly MaxClients Unlimited = new(MaxClientsKind.Unlimited, 0);
+	public static readonly MaxClients Inherited = new(MaxClientsKind.Inherited, 0);
+}
 
-	public enum MaxClientsKind
-	{
-		Unlimited,
-		Inherited,
-		Limited,
-	}
+public enum MaxClientsKind
+{
+	Unlimited,
+	Inherited,
+	Limited,
+}
 
-	public enum ChannelType
-	{
-		Temporary,
-		SemiPermanent,
-		Permanent,
-	}
+public enum ChannelType
+{
+	Temporary,
+	SemiPermanent,
+	Permanent,
+}
 
-	public readonly struct TalkPowerRequest
-	{
-		public DateTime Time { get; init; }
-		public string Message { get; init; }
-	}
+public readonly struct TalkPowerRequest
+{
+	public DateTime Time { get; init; }
+	public string Message { get; init; }
 }

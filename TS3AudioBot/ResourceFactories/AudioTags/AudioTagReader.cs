@@ -13,245 +13,244 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
-namespace TS3AudioBot.ResourceFactories.AudioTags
+namespace TS3AudioBot.ResourceFactories.AudioTags;
+
+internal static class AudioTagReader
 {
-	internal static class AudioTagReader
+	private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
+	private static readonly Dictionary<string, ITag> TagDict = new();
+
+	static AudioTagReader()
 	{
-		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
-		private static readonly Dictionary<string, ITag> TagDict = new();
+		Register(new Id3_1());
+		Register(new Id3_2());
+	}
 
-		static AudioTagReader()
-		{
-			Register(new Id3_1());
-			Register(new Id3_2());
-		}
+	private static void Register(ITag tagHeader)
+	{
+		TagDict.Add(tagHeader.TagId, tagHeader);
+	}
 
-		private static void Register(ITag tagHeader)
+	public static HeaderData? GetData(Stream fileStream)
+	{
+		var sr = new BinaryReader(fileStream);
+		string tag = Encoding.ASCII.GetString(sr.ReadBytes(3));
+		if (TagDict.TryGetValue(tag, out var tagHeader))
 		{
-			TagDict.Add(tagHeader.TagId, tagHeader);
-		}
-
-		public static HeaderData? GetData(Stream fileStream)
-		{
-			var sr = new BinaryReader(fileStream);
-			string tag = Encoding.ASCII.GetString(sr.ReadBytes(3));
-			if (TagDict.TryGetValue(tag, out var tagHeader))
+			try
 			{
-				try
-				{
-					var data = tagHeader.GetData(sr);
-					if (data is null)
-						return null;
-					data.Title = data.Title?.TrimEnd('\0');
-					return data;
-				}
-				catch (IOException) { }
-				catch (FormatException fex) { Log.Debug(fex, "Audiotag has an invalid format"); }
-				catch (Exception ex) { Log.Warn(ex, "Unknown error while parsing audiotag"); }
+				var data = tagHeader.GetData(sr);
+				if (data is null)
+					return null;
+				data.Title = data.Title?.TrimEnd('\0');
+				return data;
 			}
-			return null;
+			catch (IOException) { }
+			catch (FormatException fex) { Log.Debug(fex, "Audiotag has an invalid format"); }
+			catch (Exception ex) { Log.Warn(ex, "Unknown error while parsing audiotag"); }
 		}
+		return null;
+	}
 
-		private interface ITag
+	private interface ITag
+	{
+		public abstract string TagId { get; }
+		public abstract HeaderData GetData(BinaryReader fileStream);
+	}
+
+	// ReSharper disable InconsistentNaming
+	private class Id3_1 : ITag
+	{
+		private const int TitleLength = 30;
+		public string TagId => "TAG";
+
+		public HeaderData GetData(BinaryReader fileStream)
 		{
-			public abstract string TagId { get; }
-			public abstract HeaderData GetData(BinaryReader fileStream);
-		}
-
-		// ReSharper disable InconsistentNaming
-		private class Id3_1 : ITag
-		{
-			private const int TitleLength = 30;
-			public string TagId => "TAG";
-
-			public HeaderData GetData(BinaryReader fileStream)
+			// 3 bytes skipped for TagID
+			return new HeaderData
 			{
-				// 3 bytes skipped for TagID
-				return new HeaderData
-				{
-					Title = Encoding.ASCII.GetString(fileStream.ReadBytes(TitleLength)),
-					Picture = null,
-				};
+				Title = Encoding.ASCII.GetString(fileStream.ReadBytes(TitleLength)),
+				Picture = null,
+			};
 
-				// ignore other blocks
-			}
+			// ignore other blocks
 		}
+	}
 
-		private class Id3_2 : ITag
-		{
-			private readonly int v2_TT2 = FrameIdV2("TT2"); // Title
-			private readonly int v2_PIC = FrameIdV2("PIC"); // Picture
-			private readonly uint v3_TIT2 = FrameIdV3("TIT2"); // Title
-			private readonly uint v3_APIC = FrameIdV3("APIC"); // Picture
-			private readonly uint v3_PIC0 = FrameIdV3("PIC\0"); // Picture
+	private class Id3_2 : ITag
+	{
+		private readonly int v2_TT2 = FrameIdV2("TT2"); // Title
+		private readonly int v2_PIC = FrameIdV2("PIC"); // Picture
+		private readonly uint v3_TIT2 = FrameIdV3("TIT2"); // Title
+		private readonly uint v3_APIC = FrameIdV3("APIC"); // Picture
+		private readonly uint v3_PIC0 = FrameIdV3("PIC\0"); // Picture
 
-			public string TagId => "ID3";
+		public string TagId => "ID3";
 
-			// ReSharper disable UnusedVariable
+		// ReSharper disable UnusedVariable
 #pragma warning disable IDE0059 // Unnecessary assignment of a value
-			public HeaderData GetData(BinaryReader fileStream)
+		public HeaderData GetData(BinaryReader fileStream)
+		{
+			var retdata = new HeaderData();
+
+			// using the official id3 tag documentation
+			// http://id3.org/id3v2.3.0#ID3_tag_version_2.3.0
+
+			// read + validate header                                    [10 bytes]
+			// skipped for TagID                                         >03 bytes
+			byte versionMajor = fileStream.ReadByte(); //                >01 bytes
+			byte version_minor = fileStream.ReadByte(); //               >01 bytes
+			byte data_flags = fileStream.ReadByte(); //                  >01 bytes
+			int tagSize = fileStream.ReadId3Int(); //                    >04 bytes
+
+			// start at 0, the header is excluded from `tagSize`
+			int readCount = 0;
+
+			#region ID3v2
+			if (versionMajor == 2)
 			{
-				var retdata = new HeaderData();
-
-				// using the official id3 tag documentation
-				// http://id3.org/id3v2.3.0#ID3_tag_version_2.3.0
-
-				// read + validate header                                    [10 bytes]
-				// skipped for TagID                                         >03 bytes
-				byte versionMajor = fileStream.ReadByte(); //                >01 bytes
-				byte version_minor = fileStream.ReadByte(); //               >01 bytes
-				byte data_flags = fileStream.ReadByte(); //                  >01 bytes
-				int tagSize = fileStream.ReadId3Int(); //                    >04 bytes
-
-				// start at 0, the header is excluded from `tagSize`
-				int readCount = 0;
-
-				#region ID3v2
-				if (versionMajor == 2)
+				while (readCount < tagSize)
 				{
-					while (readCount < tagSize)
+					// frame header                                      [06 bytes]
+					int frameId = fileStream.ReadInt24Be(); //           >03 bytes
+					int frameSize = fileStream.ReadInt24Be(); //         >03 bytes
+					readCount += 6;
+
+					if (readCount + frameSize > tagSize)
+						throw new FormatException("Frame position+size exceedes header size");
+
+					if (frameId == v2_TT2)
 					{
-						// frame header                                      [06 bytes]
-						int frameId = fileStream.ReadInt24Be(); //           >03 bytes
-						int frameSize = fileStream.ReadInt24Be(); //         >03 bytes
-						readCount += 6;
-
-						if (readCount + frameSize > tagSize)
-							throw new FormatException("Frame position+size exceedes header size");
-
-						if (frameId == v2_TT2)
-						{
-							var textBuffer = fileStream.ReadBytes(frameSize);
-							retdata.Title = DecodeString(textBuffer[0], textBuffer, 1, frameSize - 1);
-						}
-						else if (frameId == v2_PIC)
-						{
-							var textEncoding = fileStream.ReadByte();
-							var imageType = fileStream.ReadInt24Be(); // JPG or PNG (or other?)
-							var pictureType = fileStream.ReadByte();
-							var description = new List<byte>();
-							byte textByte;
-							while ((textByte = fileStream.ReadByte()) != 0)
-								description.Add(textByte);
-
-							retdata.Picture = fileStream.ReadBytes(frameSize - (description.Count + 5));
-						}
-						else if (frameId == 0) { break; }
-						else
-						{
-							fileStream.ReadBytes(frameSize);
-							readCount += frameSize;
-						}
+						var textBuffer = fileStream.ReadBytes(frameSize);
+						retdata.Title = DecodeString(textBuffer[0], textBuffer, 1, frameSize - 1);
 					}
-				}
-				#endregion
-				#region ID3v3/4
-				else if (versionMajor == 3 || versionMajor == 4)
-				{
-					while (readCount < tagSize)
+					else if (frameId == v2_PIC)
 					{
-						// frame header                                        [10 bytes]
-						uint frameId = fileStream.ReadUInt32Be(); //           >04 bytes
-						int frameSize = versionMajor == 4 //                   >04 bytes
-							? fileStream.ReadId3Int()
-							: fileStream.ReadInt32Be();
-						ushort frame_flags = fileStream.ReadUInt16Be(); //     >02 bytes
-						readCount += 10;
+						var textEncoding = fileStream.ReadByte();
+						var imageType = fileStream.ReadInt24Be(); // JPG or PNG (or other?)
+						var pictureType = fileStream.ReadByte();
+						var description = new List<byte>();
+						byte textByte;
+						while ((textByte = fileStream.ReadByte()) != 0)
+							description.Add(textByte);
 
-						if ((frameId & 0xFF) == 0)
-						{
-							// legacy tags start here which we don't support
-							break;
-						}
-
-						if (frameSize <= 0 || readCount + frameSize > tagSize)
-							throw new FormatException("Frame position+size exceedes header size");
-
-						// content
-						if (frameId == v3_TIT2)
-						{
-							var textBuffer = fileStream.ReadBytes(frameSize);
-							// is a string, so the first byte is a indicator byte
-							retdata.Title = DecodeString(textBuffer[0], textBuffer, 1, frameSize - 1);
-						}
-						else if (frameId == v3_APIC || frameId == v3_PIC0)
-						{
-							var textEncoding = fileStream.ReadByte(); //                                  >01 bytes
-							var mimeLen = ReadNullTermString(fileStream, 0, null); //                     >?? bytes
-							var pictureType = fileStream.ReadByte(); //                                   >01 bytes
-							var descriptionLen = ReadNullTermString(fileStream, textEncoding, null); //   >?? bytes
-
-							retdata.Picture = fileStream.ReadBytes(frameSize - (mimeLen + descriptionLen + 2));
-						}
-						else if (frameId == 0) { break; }
-						else { fileStream.ReadBytes(frameSize); }
+						retdata.Picture = fileStream.ReadBytes(frameSize - (description.Count + 5));
+					}
+					else if (frameId == 0) { break; }
+					else
+					{
+						fileStream.ReadBytes(frameSize);
 						readCount += frameSize;
 					}
 				}
-				#endregion
-				else
-					throw new FormatException("Major id3 tag version not supported");
-
-				return retdata;
 			}
+			#endregion
+			#region ID3v3/4
+			else if (versionMajor == 3 || versionMajor == 4)
+			{
+				while (readCount < tagSize)
+				{
+					// frame header                                        [10 bytes]
+					uint frameId = fileStream.ReadUInt32Be(); //           >04 bytes
+					int frameSize = versionMajor == 4 //                   >04 bytes
+						? fileStream.ReadId3Int()
+						: fileStream.ReadInt32Be();
+					ushort frame_flags = fileStream.ReadUInt16Be(); //     >02 bytes
+					readCount += 10;
+
+					if ((frameId & 0xFF) == 0)
+					{
+						// legacy tags start here which we don't support
+						break;
+					}
+
+					if (frameSize <= 0 || readCount + frameSize > tagSize)
+						throw new FormatException("Frame position+size exceedes header size");
+
+					// content
+					if (frameId == v3_TIT2)
+					{
+						var textBuffer = fileStream.ReadBytes(frameSize);
+						// is a string, so the first byte is a indicator byte
+						retdata.Title = DecodeString(textBuffer[0], textBuffer, 1, frameSize - 1);
+					}
+					else if (frameId == v3_APIC || frameId == v3_PIC0)
+					{
+						var textEncoding = fileStream.ReadByte(); //                                  >01 bytes
+						var mimeLen = ReadNullTermString(fileStream, 0, null); //                     >?? bytes
+						var pictureType = fileStream.ReadByte(); //                                   >01 bytes
+						var descriptionLen = ReadNullTermString(fileStream, textEncoding, null); //   >?? bytes
+
+						retdata.Picture = fileStream.ReadBytes(frameSize - (mimeLen + descriptionLen + 2));
+					}
+					else if (frameId == 0) { break; }
+					else { fileStream.ReadBytes(frameSize); }
+					readCount += frameSize;
+				}
+			}
+			#endregion
+			else
+				throw new FormatException("Major id3 tag version not supported");
+
+			return retdata;
+		}
 #pragma warning restore IDE0059 // Unnecessary assignment of a value
-			// ReSharper restore UnusedVariable
+		// ReSharper restore UnusedVariable
 
-			private static int ReadNullTermString(BinaryReader fileStream, byte encoding, List<byte>? text)
+		private static int ReadNullTermString(BinaryReader fileStream, byte encoding, List<byte>? text)
+		{
+			bool unicode = encoding == 1 || encoding == 2;
+
+			if (!unicode)
 			{
-				bool unicode = encoding == 1 || encoding == 2;
-
-				if (!unicode)
+				int read = 0;
+				byte textByte;
+				while ((textByte = fileStream.ReadByte()) > 0)
 				{
-					int read = 0;
-					byte textByte;
-					while ((textByte = fileStream.ReadByte()) > 0)
-					{
-						text?.Add(textByte);
-						read++;
-					}
-					return read + 1; // +1 = null-byte
+					text?.Add(textByte);
+					read++;
 				}
-				else
-				{
-					var buffer = new byte[2];
-					int read = 0;
-					while (fileStream.Read(buffer, 0, 2) == 2 && (buffer[0] != 0 || buffer[1] != 0))
-					{
-						text?.AddRange(buffer);
-						read += 2;
-					}
-					return read + 2;
-				}
+				return read + 1; // +1 = null-byte
 			}
-
-			private static readonly Encoding UnicodeBeEncoding = new UnicodeEncoding(true, false);
-			private static Encoding GetEncoding(byte type)
+			else
 			{
-				return type switch
+				var buffer = new byte[2];
+				int read = 0;
+				while (fileStream.Read(buffer, 0, 2) == 2 && (buffer[0] != 0 || buffer[1] != 0))
 				{
-					0 => Encoding.GetEncoding(28591),
-					1 => Encoding.Unicode,
-					2 => UnicodeBeEncoding,
-					3 => Encoding.UTF8,
-					_ => throw new FormatException("The id3 tag is damaged"),
-				};
+					text?.AddRange(buffer);
+					read += 2;
+				}
+				return read + 2;
 			}
-
-			private static string DecodeString(byte type, byte[] textBuffer, int offset, int length)
-				=> GetEncoding(type).GetString(textBuffer, offset, length);
-
-			private static int FrameIdV2(string id) => BinaryPrimitivesExt.ReadInt24BigEndian(Encoding.ASCII.GetBytes(id));
-
-			private static uint FrameIdV3(string id) => BinaryPrimitives.ReadUInt32BigEndian(Encoding.ASCII.GetBytes(id));
 		}
 
-		// ReSharper enable InconsistentNaming
+		private static readonly Encoding UnicodeBeEncoding = new UnicodeEncoding(true, false);
+		private static Encoding GetEncoding(byte type)
+		{
+			return type switch
+			{
+				0 => Encoding.GetEncoding(28591),
+				1 => Encoding.Unicode,
+				2 => UnicodeBeEncoding,
+				3 => Encoding.UTF8,
+				_ => throw new FormatException("The id3 tag is damaged"),
+			};
+		}
+
+		private static string DecodeString(byte type, byte[] textBuffer, int offset, int length)
+			=> GetEncoding(type).GetString(textBuffer, offset, length);
+
+		private static int FrameIdV2(string id) => BinaryPrimitivesExt.ReadInt24BigEndian(Encoding.ASCII.GetBytes(id));
+
+		private static uint FrameIdV3(string id) => BinaryPrimitives.ReadUInt32BigEndian(Encoding.ASCII.GetBytes(id));
 	}
 
-	internal class HeaderData
-	{
-		public string? Title { get; set; }
-		public byte[]? Picture { get; set; }
-	}
+	// ReSharper enable InconsistentNaming
+}
+
+internal class HeaderData
+{
+	public string? Title { get; set; }
+	public byte[]? Picture { get; set; }
 }

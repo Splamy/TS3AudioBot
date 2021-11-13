@@ -7,25 +7,24 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
-namespace TS3AudioBot.Playlists.Shuffle
-{
-	public interface IShuffleAlgorithm
-	{
-		int Seed { get; set; }
-		int Length { get; set; }
-		int Index { get; set; }
-		// Returns true if the step reached the end of the list and wrapped around
-		bool Next();
-		// Returns true if the step reached the end of the list and wrapped around
-		bool Prev();
-	}
+namespace TS3AudioBot.Playlists.Shuffle;
 
-	// Output conventions:
-	//
-	// if Index = x, x >= Length
-	//   => Index = Tools.MathMod(Index, Length)
-	// if Index = x, x < 0
-	//   => Index : undefined
-	// if Index = x, Length < 0
-	//   => Index = -1
+// Output conventions:
+//
+// if Index = x, x >= Length
+//   => Index = Tools.MathMod(Index, Length)
+// if Index = x, x < 0
+//   => Index : undefined
+// if Index = x, Length < 0
+//   => Index = -1
+
+public interface IShuffleAlgorithm
+{
+	int Seed { get; set; }
+	int Length { get; set; }
+	int Index { get; set; }
+	// Returns true if the step reached the end of the list and wrapped around
+	bool Next();
+	// Returns true if the step reached the end of the list and wrapped around
+	bool Prev();
 }

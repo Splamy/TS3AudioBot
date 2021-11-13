@@ -10,25 +10,24 @@
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace TS3AudioBot.ResourceFactories
+namespace TS3AudioBot.ResourceFactories;
+
+public interface IResourceResolver : IResolver
 {
-	public interface IResourceResolver : IResolver
-	{
-		/// <summary>Check method to ask if a factory can load the given link.</summary>
-		/// <param name="uri">Any link or something similar a user can obtain to pass it here.</param>
-		/// <returns>True if the factory thinks it can parse it, false otherwise.</returns>
-		MatchCertainty MatchResource(ResolveContext ctx, string uri);
-		/// <summary>The factory will try to parse the uri and create a playable resource from it.</summary>
-		/// <param name="uri">Any link or something similar a user can obtain to pass it here.</param>
-		/// <returns>The playable resource if successful, or an error message otherwise</returns>
-		Task<PlayResource> GetResource(ResolveContext ctx, string uri, CancellationToken cancellationToken);
-		/// <summary>The factory will try to parse the unique identifier of its scope of responsibility and create a playable resource from it.</summary>
-		/// <param name="resource">A resource containing the unique id for a song this factory is responsible for.</param>
-		/// <returns>The playable resource if successful, or an error message otherwise</returns>
-		Task<PlayResource> GetResourceById(ResolveContext ctx, AudioResource resource, CancellationToken cancellationToken);
-		/// <summary>Gets a link to the original site/location. This may differ from the link the resource was orininally created.</summary>
-		/// <param name="id">The unique id for a song this factory is responsible for.</param>
-		/// <returns>The (close to) original link if successful, null otherwise.</returns>
-		string RestoreLink(ResolveContext ctx, AudioResource resource);
-	}
+	/// <summary>Check method to ask if a factory can load the given link.</summary>
+	/// <param name="uri">Any link or something similar a user can obtain to pass it here.</param>
+	/// <returns>True if the factory thinks it can parse it, false otherwise.</returns>
+	MatchCertainty MatchResource(ResolveContext ctx, string uri);
+	/// <summary>The factory will try to parse the uri and create a playable resource from it.</summary>
+	/// <param name="uri">Any link or something similar a user can obtain to pass it here.</param>
+	/// <returns>The playable resource if successful, or an error message otherwise</returns>
+	Task<PlayResource> GetResource(ResolveContext ctx, string uri, CancellationToken cancellationToken);
+	/// <summary>The factory will try to parse the unique identifier of its scope of responsibility and create a playable resource from it.</summary>
+	/// <param name="resource">A resource containing the unique id for a song this factory is responsible for.</param>
+	/// <returns>The playable resource if successful, or an error message otherwise</returns>
+	Task<PlayResource> GetResourceById(ResolveContext ctx, AudioResource resource, CancellationToken cancellationToken);
+	/// <summary>Gets a link to the original site/location. This may differ from the link the resource was orininally created.</summary>
+	/// <param name="id">The unique id for a song this factory is responsible for.</param>
+	/// <returns>The (close to) original link if successful, null otherwise.</returns>
+	string RestoreLink(ResolveContext ctx, AudioResource resource);
 }

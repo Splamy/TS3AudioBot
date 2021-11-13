@@ -11,29 +11,28 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using TS3AudioBot.CommandSystem;
 
-namespace TS3AudioBot.Web.Api
+namespace TS3AudioBot.Web.Api;
+
+public class JsonError : JsonObject
 {
-	public class JsonError : JsonObject
+	private static readonly JsonSerializerOptions ErrorJsonOptions = new(DefaultJsonOptions)
 	{
-		private static readonly JsonSerializerOptions ErrorJsonOptions = new(DefaultJsonOptions)
-		{
-			DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
-		};
+		DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+	};
 
-		private readonly CommandExceptionReason reason;
-		public int ErrorCode => (int)reason;
-		public string ErrorName => reason.ToString();
-		public string ErrorMessage { get; }
-		public string? HelpMessage { get; set; }
-		public string? HelpLink { get; set; }
+	private readonly CommandExceptionReason reason;
+	public int ErrorCode => (int)reason;
+	public string ErrorName => reason.ToString();
+	public string ErrorMessage { get; }
+	public string? HelpMessage { get; set; }
+	public string? HelpLink { get; set; }
 
-		public JsonError(string msg, CommandExceptionReason reason)
-		{
-			ErrorMessage = msg;
-			this.reason = reason;
-		}
-
-		public override string Serialize() => JsonSerializer.Serialize(GetSerializeObject(), ErrorJsonOptions);
-		public override string ToString() => ErrorMessage;
+	public JsonError(string msg, CommandExceptionReason reason)
+	{
+		ErrorMessage = msg;
+		this.reason = reason;
 	}
+
+	public override string Serialize() => JsonSerializer.Serialize(GetSerializeObject(), ErrorJsonOptions);
+	public override string ToString() => ErrorMessage;
 }

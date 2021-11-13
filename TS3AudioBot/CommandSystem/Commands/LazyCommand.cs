@@ -10,33 +10,32 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace TS3AudioBot.CommandSystem.Commands
+namespace TS3AudioBot.CommandSystem.Commands;
+
+public class LazyCommand : ICommand
 {
-	public class LazyCommand : ICommand
+	private readonly ICommand innerCommand;
+	private bool executed = false;
+	/// <summary>
+	/// The cached result, if available.
+	/// </summary>
+	private object? result;
+
+	public LazyCommand(ICommand innerCommandArg)
 	{
-		private readonly ICommand innerCommand;
-		private bool executed = false;
-		/// <summary>
-		/// The cached result, if available.
-		/// </summary>
-		private object? result;
+		innerCommand = innerCommandArg;
+	}
 
-		public LazyCommand(ICommand innerCommandArg)
+	public virtual async ValueTask<object?> Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments)
+	{
+		if (!executed)
 		{
-			innerCommand = innerCommandArg;
-		}
-
-		public virtual async ValueTask<object?> Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments)
-		{
-			if (!executed)
-			{
-				result = await innerCommand.Execute(info, arguments);
-				executed = true;
-				return result;
-			}
+			result = await innerCommand.Execute(info, arguments);
+			executed = true;
 			return result;
 		}
-
-		public override string ToString() => $"L({innerCommand})";
+		return result;
 	}
+
+	public override string ToString() => $"L({innerCommand})";
 }

@@ -9,43 +9,42 @@
 
 using System.Collections.Generic;
 
-namespace TSLib.Audio
+namespace TSLib.Audio;
+
+public class Meta
 {
-	public class Meta
-	{
-		public Codec? Codec { get; set; }
-		public MetaIn In;
-		public MetaOut? Out { get; set; }
-		//public PipeControl Control { get; set; }
-	}
+	public Codec? Codec { get; set; }
+	public MetaIn In;
+	public MetaOut? Out { get; set; }
+	//public PipeControl Control { get; set; }
+}
 
-	public struct MetaIn
-	{
-		public ClientId Sender { get; set; }
-		public bool Whisper { get; set; }
-	}
+public struct MetaIn
+{
+	public ClientId Sender { get; set; }
+	public bool Whisper { get; set; }
+}
 
-	public class MetaOut
-	{
-		public TargetSendMode SendMode { get; set; }
-		public ulong TargetId { get; set; }
-		public GroupWhisperTarget GroupWhisperTarget { get; set; }
-		public GroupWhisperType GroupWhisperType { get; set; }
-		public IReadOnlyList<ChannelId>? ChannelIds { get; set; }
-		public IReadOnlyList<ClientId>? ClientIds { get; set; }
-	}
+public class MetaOut
+{
+	public TargetSendMode SendMode { get; set; }
+	public ulong TargetId { get; set; }
+	public GroupWhisperTarget GroupWhisperTarget { get; set; }
+	public GroupWhisperType GroupWhisperType { get; set; }
+	public IReadOnlyList<ChannelId>? ChannelIds { get; set; }
+	public IReadOnlyList<ClientId>? ClientIds { get; set; }
+}
 
-	public enum TargetSendMode
-	{
-		None,
-		Voice,
-		Whisper,
-		WhisperGroup,
-	}
+public enum TargetSendMode
+{
+	None,
+	Voice,
+	Whisper,
+	WhisperGroup,
+}
 
-	public enum PipeControl
-	{
-		Data,
-		EmptyTick,
-	}
+public enum PipeControl
+{
+	Data,
+	EmptyTick,
 }

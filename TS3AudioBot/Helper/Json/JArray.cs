@@ -12,36 +12,35 @@ using System.Collections.Generic;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace TS3AudioBot.Helper.Json
+namespace TS3AudioBot.Helper.Json;
+
+[JsonConverter(typeof(Converter))]
+public class JArray
 {
-	[JsonConverter(typeof(Converter))]
-	public class JArray
+	private List<object?>? values;
+
+	public JArray(params object?[] props)
 	{
-		private List<object?>? values;
+		if (props.Length > 0)
+			values = new List<object?>(props);
+	}
 
-		public JArray(params object?[] props)
+	public void Add(object? prop) => (values ??= new()).Add(prop);
+
+	class Converter : JsonConverter<JArray>
+	{
+		public override JArray? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => throw new NotSupportedException();
+		public override void Write(Utf8JsonWriter writer, JArray value, JsonSerializerOptions options)
 		{
-			if (props.Length > 0)
-				values = new List<object?>(props);
-		}
-
-		public void Add(object? prop) => (values ??= new()).Add(prop);
-
-		class Converter : JsonConverter<JArray>
-		{
-			public override JArray? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => throw new NotSupportedException();
-			public override void Write(Utf8JsonWriter writer, JArray value, JsonSerializerOptions options)
+			writer.WriteStartArray();
+			if (value.values != null)
 			{
-				writer.WriteStartArray();
-				if (value.values != null)
+				foreach (var prop in value.values)
 				{
-					foreach (var prop in value.values)
-					{
-						JsonSerializer.Serialize(writer, prop, options);
-					}
+					JsonSerializer.Serialize(writer, prop, options);
 				}
-				writer.WriteEndArray();
 			}
+			writer.WriteEndArray();
 		}
 	}
 }

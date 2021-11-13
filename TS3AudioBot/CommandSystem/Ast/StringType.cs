@@ -7,11 +7,10 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
-namespace TS3AudioBot.CommandSystem.Ast
+namespace TS3AudioBot.CommandSystem.Ast;
+
+internal enum StringType
 {
-	internal enum StringType
-	{
-		FreeString,
-		QuotedString,
-	}
+	FreeString,
+	QuotedString,
 }

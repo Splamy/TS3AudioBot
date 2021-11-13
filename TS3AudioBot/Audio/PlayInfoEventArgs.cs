@@ -11,22 +11,21 @@ using System;
 using TS3AudioBot.ResourceFactories;
 using TSLib;
 
-namespace TS3AudioBot.Audio
-{
-	public sealed class PlayInfoEventArgs : EventArgs
-	{
-		public InvokerData Invoker { get; }
-		public PlayResource PlayResource { get; }
-		public AudioResource ResourceData => PlayResource.AudioResource;
-		public PlayInfo? PlayInfo => PlayResource.PlayInfo;
-		public string? SourceLink { get; }
-		public Uid EffectiveOwnerUid => PlayInfo?.ResourceOwnerUid ?? Invoker.ClientUid;
+namespace TS3AudioBot.Audio;
 
-		public PlayInfoEventArgs(InvokerData invoker, PlayResource playResource, string? sourceLink)
-		{
-			Invoker = invoker;
-			PlayResource = playResource;
-			SourceLink = sourceLink;
-		}
+public sealed class PlayInfoEventArgs : EventArgs
+{
+	public InvokerData Invoker { get; }
+	public PlayResource PlayResource { get; }
+	public AudioResource ResourceData => PlayResource.AudioResource;
+	public PlayInfo? PlayInfo => PlayResource.PlayInfo;
+	public string? SourceLink { get; }
+	public Uid EffectiveOwnerUid => PlayInfo?.ResourceOwnerUid ?? Invoker.ClientUid;
+
+	public PlayInfoEventArgs(InvokerData invoker, PlayResource playResource, string? sourceLink)
+	{
+		Invoker = invoker;
+		PlayResource = playResource;
+		SourceLink = sourceLink;
 	}
 }

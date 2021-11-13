@@ -10,32 +10,31 @@
 using System;
 using System.Runtime.CompilerServices;
 
-namespace TSLib.Helper
+namespace TSLib.Helper;
+
+internal struct SpanSplitter<T> where T : IEquatable<T>
 {
-	internal struct SpanSplitter<T> where T : IEquatable<T>
+	public bool HasNext => NextIndex >= 0;
+	public int NextIndex { get; private set; }
+	private T splitchar;
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public void First(ReadOnlySpan<T> span, T split)
 	{
-		public bool HasNext => NextIndex >= 0;
-		public int NextIndex { get; private set; }
-		private T splitchar;
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public void First(ReadOnlySpan<T> span, T split)
-		{
-			splitchar = split;
-			NextIndex = span.IndexOf(split);
-		}
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public ReadOnlySpan<T> Next(ReadOnlySpan<T> current)
-		{
-			if (!HasNext)
-				throw new InvalidOperationException("No next element in span split");
-			var ret = current.Slice(NextIndex + 1);
-			NextIndex = ret.IndexOf(splitchar);
-			return ret;
-		}
-
-		[MethodImpl(MethodImplOptions.AggressiveInlining)]
-		public ReadOnlySpan<T> Trim(ReadOnlySpan<T> current) => HasNext ? current.Slice(0, NextIndex) : current;
+		splitchar = split;
+		NextIndex = span.IndexOf(split);
 	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public ReadOnlySpan<T> Next(ReadOnlySpan<T> current)
+	{
+		if (!HasNext)
+			throw new InvalidOperationException("No next element in span split");
+		var ret = current.Slice(NextIndex + 1);
+		NextIndex = ret.IndexOf(splitchar);
+		return ret;
+	}
+
+	[MethodImpl(MethodImplOptions.AggressiveInlining)]
+	public ReadOnlySpan<T> Trim(ReadOnlySpan<T> current) => HasNext ? current.Slice(0, NextIndex) : current;
 }

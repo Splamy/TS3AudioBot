@@ -21,482 +21,481 @@ using TSLib.Audio;
 using TSLib.Helper;
 using TSLib.Scheduler;
 
-namespace TS3AudioBot.Audio
+namespace TS3AudioBot.Audio;
+
+public sealed class FfmpegProducer : IPlayerSource, IDisposable
 {
-	public sealed class FfmpegProducer : IPlayerSource, IDisposable
+	private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
+	private readonly Id id;
+	private static readonly Regex FindDurationMatch = new(@"^\s*Duration: (\d+):(\d\d):(\d\d).(\d\d)", Util.DefaultRegexConfig);
+	private static readonly Regex IcyMetadataMacher = new("((\\w+)='(.*?)';\\s*)+", Util.DefaultRegexConfig);
+	private const string PreLinkConf = "-hide_banner -nostats -threads 1 -i \"";
+	private const string PostLinkConf = "\" -ac 2 -ar 48000 -f s16le -acodec pcm_s16le pipe:1";
+	private const string LinkConfIcy = "-hide_banner -nostats -threads 1 -i pipe:0 -ac 2 -ar 48000 -f s16le -acodec pcm_s16le pipe:1";
+	private static readonly TimeSpan retryOnDropBeforeEnd = TimeSpan.FromSeconds(10);
+
+	private readonly ConfToolsFfmpeg config;
+
+	public event EventHandler? OnSongEnd;
+	public event EventHandler<SongInfoChanged>? OnSongUpdated;
+
+	private readonly DedicatedTaskScheduler scheduler;
+	private FfmpegInstance? ffmpegInstance;
+	public SampleInfo SampleInfo { get; } = SampleInfo.OpusMusic;
+
+	public FfmpegProducer(ConfToolsFfmpeg config, DedicatedTaskScheduler scheduler, Id id)
 	{
-		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
-		private readonly Id id;
-		private static readonly Regex FindDurationMatch = new(@"^\s*Duration: (\d+):(\d\d):(\d\d).(\d\d)", Util.DefaultRegexConfig);
-		private static readonly Regex IcyMetadataMacher = new("((\\w+)='(.*?)';\\s*)+", Util.DefaultRegexConfig);
-		private const string PreLinkConf = "-hide_banner -nostats -threads 1 -i \"";
-		private const string PostLinkConf = "\" -ac 2 -ar 48000 -f s16le -acodec pcm_s16le pipe:1";
-		private const string LinkConfIcy = "-hide_banner -nostats -threads 1 -i pipe:0 -ac 2 -ar 48000 -f s16le -acodec pcm_s16le pipe:1";
-		private static readonly TimeSpan retryOnDropBeforeEnd = TimeSpan.FromSeconds(10);
+		this.config = config;
+		this.scheduler = scheduler;
+		this.id = id;
+	}
 
-		private readonly ConfToolsFfmpeg config;
+	public Task AudioStart(string url, TimeSpan? startOff = null)
+	{
+		StartFfmpegProcess(url, startOff ?? TimeSpan.Zero);
+		return Task.CompletedTask;
+	}
 
-		public event EventHandler? OnSongEnd;
-		public event EventHandler<SongInfoChanged>? OnSongUpdated;
-
-		private readonly DedicatedTaskScheduler scheduler;
-		private FfmpegInstance? ffmpegInstance;
-		public SampleInfo SampleInfo { get; } = SampleInfo.OpusMusic;
-
-		public FfmpegProducer(ConfToolsFfmpeg config, DedicatedTaskScheduler scheduler, Id id)
+	public async Task AudioStartIcy(string url)
+	{
+		if (!(await StartFfmpegProcessIcy(url)).Get(out _, out var error))
 		{
-			this.config = config;
-			this.scheduler = scheduler;
-			this.id = id;
+			Log.Warn("Failed to start icy stream: {0}", error);
+		}
+	}
+
+	public void AudioStop()
+	{
+		StopFfmpegProcess();
+	}
+
+	public TimeSpan? Length => GetCurrentSongLength();
+
+	public TimeSpan? Position => ffmpegInstance?.AudioTimer.SongPosition;
+
+	public Task Seek(TimeSpan position) { SetPosition(position); return Task.CompletedTask; }
+
+	public int Read(Span<byte> data, out Meta? meta)
+	{
+		meta = default;
+		int read;
+
+		var instance = ffmpegInstance;
+
+		if (instance is null)
+			return 0;
+
+		try
+		{
+			read = instance.FfmpegProcess.StandardOutput.BaseStream.Read(data);
+		}
+		catch (Exception ex)
+		{
+			read = 0;
+			Log.Debug(ex, "Can't read ffmpeg");
 		}
 
-		public Task AudioStart(string url, TimeSpan? startOff = null)
-		{
-			StartFfmpegProcess(url, startOff ?? TimeSpan.Zero);
-			return Task.CompletedTask;
-		}
-
-		public async Task AudioStartIcy(string url)
-		{
-			if (!(await StartFfmpegProcessIcy(url)).Get(out _, out var error))
-			{
-				Log.Warn("Failed to start icy stream: {0}", error);
-			}
-		}
-
-		public void AudioStop()
-		{
-			StopFfmpegProcess();
-		}
-
-		public TimeSpan? Length => GetCurrentSongLength();
-
-		public TimeSpan? Position => ffmpegInstance?.AudioTimer.SongPosition;
-
-		public Task Seek(TimeSpan position) { SetPosition(position); return Task.CompletedTask; }
-
-		public int Read(Span<byte> data, out Meta? meta)
-		{
-			meta = default;
-			int read;
-
-			var instance = ffmpegInstance;
-
-			if (instance is null)
-				return 0;
-
-			try
-			{
-				read = instance.FfmpegProcess.StandardOutput.BaseStream.Read(data);
-			}
-			catch (Exception ex)
-			{
-				read = 0;
-				Log.Debug(ex, "Can't read ffmpeg");
-			}
-
-			if (read == 0)
-			{
-				AssertNotMainScheduler();
-
-				var (ret, triggerEndSafe) = instance.IsIcyStream
-					? OnReadEmptyIcy(instance)
-					: OnReadEmpty(instance);
-				if (ret)
-					return 0;
-
-				if (instance.FfmpegProcess.HasExitedSafe())
-				{
-					Log.Trace("Ffmpeg has exited");
-					AudioStop();
-					triggerEndSafe = true;
-				}
-
-				if (triggerEndSafe)
-				{
-					OnSongEnd?.Invoke(this, EventArgs.Empty);
-					return 0;
-				}
-			}
-
-			instance.HasTriedToReconnect = false;
-			instance.AudioTimer.PushBytes(read);
-			return read;
-		}
-
-		private (bool ret, bool trigger) OnReadEmpty(FfmpegInstance instance)
-		{
-			if (instance.FfmpegProcess.HasExitedSafe() && !instance.HasTriedToReconnect)
-			{
-				var expectedStopLength = GetCurrentSongLength();
-				Log.Trace("Expected song length {0}", expectedStopLength);
-				if (expectedStopLength != TimeSpan.Zero)
-				{
-					var actualStopPosition = instance.AudioTimer.SongPosition;
-					Log.Trace("Actual song position {0}", actualStopPosition);
-					if (actualStopPosition + retryOnDropBeforeEnd < expectedStopLength)
-					{
-						Log.Debug("Connection to song lost, retrying at {0}", actualStopPosition);
-						instance.HasTriedToReconnect = true;
-						if (SetPosition(actualStopPosition).Get(out var newInstance, out var error))
-						{
-							newInstance.HasTriedToReconnect = true;
-							return (true, false);
-						}
-						else
-						{
-							Log.Debug("Retry failed {0}", error);
-							return (false, true);
-						}
-					}
-				}
-			}
-			return (false, false);
-		}
-
-		private (bool ret, bool trigger) OnReadEmptyIcy(FfmpegInstance instance)
+		if (read == 0)
 		{
 			AssertNotMainScheduler();
 
-			if (instance.FfmpegProcess.HasExitedSafe() && !instance.HasTriedToReconnect)
+			var (ret, triggerEndSafe) = instance.IsIcyStream
+				? OnReadEmptyIcy(instance)
+				: OnReadEmpty(instance);
+			if (ret)
+				return 0;
+
+			if (instance.FfmpegProcess.HasExitedSafe())
 			{
-				Log.Debug("Connection to stream lost, retrying...");
-				instance.HasTriedToReconnect = true;
-				var newInstance = StartFfmpegProcessIcy(instance.ReconnectUrl).Result;
-				if (newInstance.Ok)
+				Log.Trace("Ffmpeg has exited");
+				AudioStop();
+				triggerEndSafe = true;
+			}
+
+			if (triggerEndSafe)
+			{
+				OnSongEnd?.Invoke(this, EventArgs.Empty);
+				return 0;
+			}
+		}
+
+		instance.HasTriedToReconnect = false;
+		instance.AudioTimer.PushBytes(read);
+		return read;
+	}
+
+	private (bool ret, bool trigger) OnReadEmpty(FfmpegInstance instance)
+	{
+		if (instance.FfmpegProcess.HasExitedSafe() && !instance.HasTriedToReconnect)
+		{
+			var expectedStopLength = GetCurrentSongLength();
+			Log.Trace("Expected song length {0}", expectedStopLength);
+			if (expectedStopLength != TimeSpan.Zero)
+			{
+				var actualStopPosition = instance.AudioTimer.SongPosition;
+				Log.Trace("Actual song position {0}", actualStopPosition);
+				if (actualStopPosition + retryOnDropBeforeEnd < expectedStopLength)
 				{
-					newInstance.Value.HasTriedToReconnect = true;
-					return (true, false);
-				}
-				else
-				{
-					Log.Debug("Retry failed {0}", newInstance.Error);
-					return (false, true);
+					Log.Debug("Connection to song lost, retrying at {0}", actualStopPosition);
+					instance.HasTriedToReconnect = true;
+					if (SetPosition(actualStopPosition).Get(out var newInstance, out var error))
+					{
+						newInstance.HasTriedToReconnect = true;
+						return (true, false);
+					}
+					else
+					{
+						Log.Debug("Retry failed {0}", error);
+						return (false, true);
+					}
 				}
 			}
-			return (false, false);
 		}
+		return (false, false);
+	}
 
-		private R<FfmpegInstance, string> SetPosition(TimeSpan value)
+	private (bool ret, bool trigger) OnReadEmptyIcy(FfmpegInstance instance)
+	{
+		AssertNotMainScheduler();
+
+		if (instance.FfmpegProcess.HasExitedSafe() && !instance.HasTriedToReconnect)
 		{
-			if (value < TimeSpan.Zero)
-				throw new ArgumentOutOfRangeException(nameof(value));
-			var instance = ffmpegInstance;
-			if (instance is null)
-				return "No instance running";
-			if (instance.IsIcyStream)
-				return "Cannot seek icy stream";
-			var lastLink = instance.ReconnectUrl;
-			if (lastLink is null)
-				return "No current url active";
-			return StartFfmpegProcess(lastLink, value);
-		}
-
-		private R<FfmpegInstance, string> StartFfmpegProcess(string url, TimeSpan? offsetOpt)
-		{
-			StopFfmpegProcess();
-			Log.Trace("Start request {0}", url);
-
-			string arguments;
-			var offset = offsetOpt ?? TimeSpan.Zero;
-			if (offset > TimeSpan.Zero)
+			Log.Debug("Connection to stream lost, retrying...");
+			instance.HasTriedToReconnect = true;
+			var newInstance = StartFfmpegProcessIcy(instance.ReconnectUrl).Result;
+			if (newInstance.Ok)
 			{
-				var seek = string.Format(CultureInfo.InvariantCulture, @"-ss {0:hh\:mm\:ss\.fff}", offset);
-				arguments = string.Concat(seek, " ", PreLinkConf, url, PostLinkConf, " ", seek);
+				newInstance.Value.HasTriedToReconnect = true;
+				return (true, false);
 			}
 			else
 			{
-				arguments = string.Concat(PreLinkConf, url, PostLinkConf);
+				Log.Debug("Retry failed {0}", newInstance.Error);
+				return (false, true);
+			}
+		}
+		return (false, false);
+	}
+
+	private R<FfmpegInstance, string> SetPosition(TimeSpan value)
+	{
+		if (value < TimeSpan.Zero)
+			throw new ArgumentOutOfRangeException(nameof(value));
+		var instance = ffmpegInstance;
+		if (instance is null)
+			return "No instance running";
+		if (instance.IsIcyStream)
+			return "Cannot seek icy stream";
+		var lastLink = instance.ReconnectUrl;
+		if (lastLink is null)
+			return "No current url active";
+		return StartFfmpegProcess(lastLink, value);
+	}
+
+	private R<FfmpegInstance, string> StartFfmpegProcess(string url, TimeSpan? offsetOpt)
+	{
+		StopFfmpegProcess();
+		Log.Trace("Start request {0}", url);
+
+		string arguments;
+		var offset = offsetOpt ?? TimeSpan.Zero;
+		if (offset > TimeSpan.Zero)
+		{
+			var seek = string.Format(CultureInfo.InvariantCulture, @"-ss {0:hh\:mm\:ss\.fff}", offset);
+			arguments = string.Concat(seek, " ", PreLinkConf, url, PostLinkConf, " ", seek);
+		}
+		else
+		{
+			arguments = string.Concat(PreLinkConf, url, PostLinkConf);
+		}
+
+		var newInstance = new FfmpegInstance(
+			url,
+			new PreciseAudioTimer(SampleInfo)
+			{
+				SongPositionOffset = offset,
+			});
+
+		return StartFfmpegProcessInternal(newInstance, arguments);
+	}
+
+	private async Task<R<FfmpegInstance, string>> StartFfmpegProcessIcy(string url)
+	{
+		StopFfmpegProcess();
+		Log.Trace("Start icy-stream request {0}", url);
+
+		try
+		{
+			var response = await WebWrapper
+				.Request(url)
+				.WithHeader("Icy-MetaData", "1")
+				.UnsafeResponse();
+
+			if (!int.TryParse(response.Headers.GetSingle("icy-metaint"), out var metaint))
+			{
+				response.Dispose();
+				return "Invalid icy stream tags";
 			}
 
+			var stream = await response.Content.ReadAsStreamAsync();
 			var newInstance = new FfmpegInstance(
 				url,
-				new PreciseAudioTimer(SampleInfo)
-				{
-					SongPositionOffset = offset,
-				});
+				new PreciseAudioTimer(SampleInfo),
+				stream,
+				metaint)
+			{
+				OnMetaUpdated = e => OnSongUpdated?.Invoke(this, e)
+			};
 
-			return StartFfmpegProcessInternal(newInstance, arguments);
+			new Thread(() => newInstance.ReadStreamLoop(id))
+			{
+				Name = $"IcyStreamReader[{id}]",
+			}.Start();
+
+			return StartFfmpegProcessInternal(newInstance, LinkConfIcy);
+		}
+		catch (Exception ex)
+		{
+			var error = $"Unable to create icy-stream ({ex.Message})";
+			Log.Warn(ex, error);
+			return error;
+		}
+	}
+
+	private R<FfmpegInstance, string> StartFfmpegProcessInternal(FfmpegInstance instance, string arguments)
+	{
+		try
+		{
+			instance.FfmpegProcess.StartInfo = new ProcessStartInfo
+			{
+				FileName = config.Path.Value,
+				Arguments = arguments,
+				RedirectStandardOutput = true,
+				RedirectStandardInput = true,
+				RedirectStandardError = true,
+				UseShellExecute = false,
+				CreateNoWindow = true,
+			};
+			instance.FfmpegProcess.EnableRaisingEvents = true;
+
+			Log.Debug("Starting ffmpeg with {0}", arguments);
+			instance.FfmpegProcess.ErrorDataReceived += instance.FfmpegProcess_ErrorDataReceived;
+			instance.FfmpegProcess.Start();
+			instance.FfmpegProcess.BeginErrorReadLine();
+
+			instance.AudioTimer.Start();
+
+			var oldInstance = Interlocked.Exchange(ref ffmpegInstance, instance);
+			oldInstance?.Close();
+
+			return instance;
+		}
+		catch (Exception ex)
+		{
+			var error = ex is Win32Exception
+				? $"Ffmpeg could not be found ({ex.Message})"
+				: $"Unable to create stream ({ex.Message})";
+			Log.Error(ex, error);
+			instance.Close();
+			StopFfmpegProcess();
+			return error;
+		}
+	}
+
+	private void StopFfmpegProcess()
+	{
+		var oldInstance = Interlocked.Exchange(ref ffmpegInstance, null);
+		if (oldInstance != null)
+		{
+			oldInstance.OnMetaUpdated = null;
+			oldInstance.Close();
+		}
+	}
+
+	private TimeSpan? GetCurrentSongLength() => ffmpegInstance?.ParsedSongLength;
+
+	private void AssertNotMainScheduler()
+	{
+		if (TaskScheduler.Current == scheduler)
+			throw new Exception("Cannot read on own scheduler. Throwing to prevent deadlock");
+	}
+
+	public void Dispose()
+	{
+		StopFfmpegProcess();
+	}
+
+	private class FfmpegInstance
+	{
+		public Process FfmpegProcess { get; }
+		public bool HasTriedToReconnect { get; set; }
+		public string ReconnectUrl { get; }
+		public bool IsIcyStream => IcyStream != null;
+
+		public PreciseAudioTimer AudioTimer { get; }
+		public TimeSpan? ParsedSongLength { get; set; } = null;
+
+		public Stream? IcyStream { get; }
+		public int IcyMetaInt { get; }
+		public bool Closed { get; set; }
+
+		public Action<SongInfoChanged>? OnMetaUpdated;
+
+		public FfmpegInstance(string url, PreciseAudioTimer timer) : this(url, timer, null!, 0) { }
+		public FfmpegInstance(string url, PreciseAudioTimer timer, Stream icyStream, int icyMetaInt)
+		{
+			FfmpegProcess = new Process();
+			ReconnectUrl = url;
+			AudioTimer = timer;
+			IcyStream = icyStream;
+			IcyMetaInt = icyMetaInt;
+
+			HasTriedToReconnect = false;
 		}
 
-		private async Task<R<FfmpegInstance, string>> StartFfmpegProcessIcy(string url)
+		public void Close()
 		{
-			StopFfmpegProcess();
-			Log.Trace("Start icy-stream request {0}", url);
+			Closed = true;
 
 			try
 			{
-				var response = await WebWrapper
-					.Request(url)
-					.WithHeader("Icy-MetaData", "1")
-					.UnsafeResponse();
-
-				if (!int.TryParse(response.Headers.GetSingle("icy-metaint"), out var metaint))
-				{
-					response.Dispose();
-					return "Invalid icy stream tags";
-				}
-
-				var stream = await response.Content.ReadAsStreamAsync();
-				var newInstance = new FfmpegInstance(
-					url,
-					new PreciseAudioTimer(SampleInfo),
-					stream,
-					metaint)
-				{
-					OnMetaUpdated = e => OnSongUpdated?.Invoke(this, e)
-				};
-
-				new Thread(() => newInstance.ReadStreamLoop(id))
-				{
-					Name = $"IcyStreamReader[{id}]",
-				}.Start();
-
-				return StartFfmpegProcessInternal(newInstance, LinkConfIcy);
+				if (!FfmpegProcess.HasExitedSafe())
+					FfmpegProcess.Kill();
 			}
-			catch (Exception ex)
-			{
-				var error = $"Unable to create icy-stream ({ex.Message})";
-				Log.Warn(ex, error);
-				return error;
-			}
+			catch (Exception ex) { Log.Debug(ex, "Failed killing ffmpeg"); }
+			try { FfmpegProcess.Dispose(); } catch { }
+
+			IcyStream?.Dispose();
 		}
 
-		private R<FfmpegInstance, string> StartFfmpegProcessInternal(FfmpegInstance instance, string arguments)
+		public void FfmpegProcess_ErrorDataReceived(object sender, DataReceivedEventArgs e)
 		{
-			try
+			if (e.Data is null)
+				return;
+
+			if (sender != FfmpegProcess)
+				throw new InvalidOperationException("Wrong process associated to event");
+
+			if (ParsedSongLength is null)
 			{
-				instance.FfmpegProcess.StartInfo = new ProcessStartInfo
-				{
-					FileName = config.Path.Value,
-					Arguments = arguments,
-					RedirectStandardOutput = true,
-					RedirectStandardInput = true,
-					RedirectStandardError = true,
-					UseShellExecute = false,
-					CreateNoWindow = true,
-				};
-				instance.FfmpegProcess.EnableRaisingEvents = true;
-
-				Log.Debug("Starting ffmpeg with {0}", arguments);
-				instance.FfmpegProcess.ErrorDataReceived += instance.FfmpegProcess_ErrorDataReceived;
-				instance.FfmpegProcess.Start();
-				instance.FfmpegProcess.BeginErrorReadLine();
-
-				instance.AudioTimer.Start();
-
-				var oldInstance = Interlocked.Exchange(ref ffmpegInstance, instance);
-				oldInstance?.Close();
-
-				return instance;
-			}
-			catch (Exception ex)
-			{
-				var error = ex is Win32Exception
-					? $"Ffmpeg could not be found ({ex.Message})"
-					: $"Unable to create stream ({ex.Message})";
-				Log.Error(ex, error);
-				instance.Close();
-				StopFfmpegProcess();
-				return error;
-			}
-		}
-
-		private void StopFfmpegProcess()
-		{
-			var oldInstance = Interlocked.Exchange(ref ffmpegInstance, null);
-			if (oldInstance != null)
-			{
-				oldInstance.OnMetaUpdated = null;
-				oldInstance.Close();
-			}
-		}
-
-		private TimeSpan? GetCurrentSongLength() => ffmpegInstance?.ParsedSongLength;
-
-		private void AssertNotMainScheduler()
-		{
-			if (TaskScheduler.Current == scheduler)
-				throw new Exception("Cannot read on own scheduler. Throwing to prevent deadlock");
-		}
-
-		public void Dispose()
-		{
-			StopFfmpegProcess();
-		}
-
-		private class FfmpegInstance
-		{
-			public Process FfmpegProcess { get; }
-			public bool HasTriedToReconnect { get; set; }
-			public string ReconnectUrl { get; }
-			public bool IsIcyStream => IcyStream != null;
-
-			public PreciseAudioTimer AudioTimer { get; }
-			public TimeSpan? ParsedSongLength { get; set; } = null;
-
-			public Stream? IcyStream { get; }
-			public int IcyMetaInt { get; }
-			public bool Closed { get; set; }
-
-			public Action<SongInfoChanged>? OnMetaUpdated;
-
-			public FfmpegInstance(string url, PreciseAudioTimer timer) : this(url, timer, null!, 0) { }
-			public FfmpegInstance(string url, PreciseAudioTimer timer, Stream icyStream, int icyMetaInt)
-			{
-				FfmpegProcess = new Process();
-				ReconnectUrl = url;
-				AudioTimer = timer;
-				IcyStream = icyStream;
-				IcyMetaInt = icyMetaInt;
-
-				HasTriedToReconnect = false;
-			}
-
-			public void Close()
-			{
-				Closed = true;
-
-				try
-				{
-					if (!FfmpegProcess.HasExitedSafe())
-						FfmpegProcess.Kill();
-				}
-				catch (Exception ex) { Log.Debug(ex, "Failed killing ffmpeg"); }
-				try { FfmpegProcess.Dispose(); } catch { }
-
-				IcyStream?.Dispose();
-			}
-
-			public void FfmpegProcess_ErrorDataReceived(object sender, DataReceivedEventArgs e)
-			{
-				if (e.Data is null)
+				var match = FindDurationMatch.Match(e.Data);
+				if (!match.Success)
 					return;
 
-				if (sender != FfmpegProcess)
-					throw new InvalidOperationException("Wrong process associated to event");
-
-				if (ParsedSongLength is null)
-				{
-					var match = FindDurationMatch.Match(e.Data);
-					if (!match.Success)
-						return;
-
-					int hours = int.Parse(match.Groups[1].Value, CultureInfo.InvariantCulture);
-					int minutes = int.Parse(match.Groups[2].Value, CultureInfo.InvariantCulture);
-					int seconds = int.Parse(match.Groups[3].Value, CultureInfo.InvariantCulture);
-					int millisec = int.Parse(match.Groups[4].Value, CultureInfo.InvariantCulture) * 10;
-					ParsedSongLength = new TimeSpan(0, hours, minutes, seconds, millisec);
-				}
-
-				//if (!HasIcyTag && e.Data.AsSpan().TrimStart().StartsWith("icy-".AsSpan()))
-				//{
-				//	HasIcyTag = true;
-				//}
+				int hours = int.Parse(match.Groups[1].Value, CultureInfo.InvariantCulture);
+				int minutes = int.Parse(match.Groups[2].Value, CultureInfo.InvariantCulture);
+				int seconds = int.Parse(match.Groups[3].Value, CultureInfo.InvariantCulture);
+				int millisec = int.Parse(match.Groups[4].Value, CultureInfo.InvariantCulture) * 10;
+				ParsedSongLength = new TimeSpan(0, hours, minutes, seconds, millisec);
 			}
 
-			public void ReadStreamLoop(Id id)
+			//if (!HasIcyTag && e.Data.AsSpan().TrimStart().StartsWith("icy-".AsSpan()))
+			//{
+			//	HasIcyTag = true;
+			//}
+		}
+
+		public void ReadStreamLoop(Id id)
+		{
+			if (IcyStream is null)
+				throw new InvalidOperationException("Instance is not an icy stream");
+
+			Tools.SetLogId(id.ToString());
+			const int IcyMaxMeta = 255 * 16;
+			const int ReadBufferSize = 4096;
+
+			int errorCount = 0;
+			var buffer = new byte[Math.Max(ReadBufferSize, IcyMaxMeta)];
+			int readCount = 0;
+
+			while (!Closed)
 			{
-				if (IcyStream is null)
-					throw new InvalidOperationException("Instance is not an icy stream");
-
-				Tools.SetLogId(id.ToString());
-				const int IcyMaxMeta = 255 * 16;
-				const int ReadBufferSize = 4096;
-
-				int errorCount = 0;
-				var buffer = new byte[Math.Max(ReadBufferSize, IcyMaxMeta)];
-				int readCount = 0;
-
-				while (!Closed)
+				try
 				{
-					try
+					while (readCount < IcyMetaInt)
 					{
-						while (readCount < IcyMetaInt)
+						int read = IcyStream.Read(buffer, 0, Math.Min(ReadBufferSize, IcyMetaInt - readCount));
+						if (read == 0)
 						{
-							int read = IcyStream.Read(buffer, 0, Math.Min(ReadBufferSize, IcyMetaInt - readCount));
+							Close();
+							return;
+						}
+						readCount += read;
+						FfmpegProcess.StandardInput.BaseStream.Write(buffer, 0, read);
+						errorCount = 0;
+					}
+					readCount = 0;
+
+					var metaByte = IcyStream.ReadByte();
+					if (metaByte < 0)
+					{
+						Close();
+						return;
+					}
+
+					if (metaByte > 0)
+					{
+						metaByte *= 16;
+						while (readCount < metaByte)
+						{
+							int read = IcyStream.Read(buffer, 0, metaByte - readCount);
 							if (read == 0)
 							{
 								Close();
 								return;
 							}
 							readCount += read;
-							FfmpegProcess.StandardInput.BaseStream.Write(buffer, 0, read);
-							errorCount = 0;
 						}
 						readCount = 0;
 
-						var metaByte = IcyStream.ReadByte();
-						if (metaByte < 0)
-						{
-							Close();
-							return;
-						}
-
-						if (metaByte > 0)
-						{
-							metaByte *= 16;
-							while (readCount < metaByte)
-							{
-								int read = IcyStream.Read(buffer, 0, metaByte - readCount);
-								if (read == 0)
-								{
-									Close();
-									return;
-								}
-								readCount += read;
-							}
-							readCount = 0;
-
-							var metaString = Tools.Utf8Encoder.GetString(buffer, 0, metaByte).TrimEnd('\0');
-							Log.Debug("Meta: {0}", metaString);
-							OnMetaUpdated?.Invoke(ParseIcyMeta(metaString));
-						}
-					}
-					catch (Exception ex)
-					{
-						errorCount++;
-						if (errorCount >= 50)
-						{
-							Log.Error(ex, "Failed too many times trying to access ffmpeg. Closing stream.");
-							Close();
-							return;
-						}
-
-						if (ex is InvalidOperationException)
-						{
-							Log.Debug(ex, "Waiting for ffmpeg");
-							Thread.Sleep(100);
-						}
-						else
-						{
-							Log.Debug(ex, "Stream read/write error");
-						}
+						var metaString = Tools.Utf8Encoder.GetString(buffer, 0, metaByte).TrimEnd('\0');
+						Log.Debug("Meta: {0}", metaString);
+						OnMetaUpdated?.Invoke(ParseIcyMeta(metaString));
 					}
 				}
-			}
-
-			private static SongInfoChanged ParseIcyMeta(string metaString)
-			{
-				var songInfo = new SongInfoChanged();
-				var match = IcyMetadataMacher.Match(metaString);
-				if (match.Success)
+				catch (Exception ex)
 				{
-					for (int i = 0; i < match.Groups[1].Captures.Count; i++)
+					errorCount++;
+					if (errorCount >= 50)
 					{
-						switch (match.Groups[2].Captures[i].Value.ToUpperInvariant())
-						{
-						case "STREAMTITLE":
-							songInfo.Title = match.Groups[3].Captures[i].Value;
-							break;
-						}
+						Log.Error(ex, "Failed too many times trying to access ffmpeg. Closing stream.");
+						Close();
+						return;
+					}
+
+					if (ex is InvalidOperationException)
+					{
+						Log.Debug(ex, "Waiting for ffmpeg");
+						Thread.Sleep(100);
+					}
+					else
+					{
+						Log.Debug(ex, "Stream read/write error");
 					}
 				}
-				return songInfo;
 			}
 		}
-	}
 
-	// Icy: IcyLoop +=> FFmpeg -=> Buffer -=> TimePipe
-	// Nrm:             FFmpeg -=> Buffer -=> TimePipe
+		private static SongInfoChanged ParseIcyMeta(string metaString)
+		{
+			var songInfo = new SongInfoChanged();
+			var match = IcyMetadataMacher.Match(metaString);
+			if (match.Success)
+			{
+				for (int i = 0; i < match.Groups[1].Captures.Count; i++)
+				{
+					switch (match.Groups[2].Captures[i].Value.ToUpperInvariant())
+					{
+					case "STREAMTITLE":
+						songInfo.Title = match.Groups[3].Captures[i].Value;
+						break;
+					}
+				}
+			}
+			return songInfo;
+		}
+	}
 }
+
+// Icy: IcyLoop +=> FFmpeg -=> Buffer -=> TimePipe
+// Nrm:             FFmpeg -=> Buffer -=> TimePipe

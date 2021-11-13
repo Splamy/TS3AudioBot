@@ -9,43 +9,42 @@
 
 using TS3AudioBot.Dependency;
 
-namespace TS3AudioBot
+namespace TS3AudioBot;
+
+internal static class Upgrader
 {
-	internal static class Upgrader
+	private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
+	private const string CoreTable = "core";
+	private const int CurrentVersion = 1;
+
+	public static void PerformUpgrades(CoreInjector injector)
 	{
-		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
-		private const string CoreTable = "core";
-		private const int CurrentVersion = 1;
+		var database = injector.GetModuleOrThrow<DbStore>();
+		var meta = database.GetMetaData(CoreTable);
 
-		public static void PerformUpgrades(CoreInjector injector)
+		void Advance(int version, string? explanation)
 		{
-			var database = injector.GetModuleOrThrow<DbStore>();
-			var meta = database.GetMetaData(CoreTable);
+			meta.Version = version;
+			database.UpdateMetaData(meta);
+			if (explanation != null)
+				Log.Info("Upgrading data to ver {0}. {1}", version, explanation);
+		}
 
-			void Advance(int version, string? explanation)
-			{
-				meta.Version = version;
-				database.UpdateMetaData(meta);
-				if (explanation != null)
-					Log.Info("Upgrading data to ver {0}. {1}", version, explanation);
-			}
+		switch (meta.Version)
+		{
+		case 0:
+			// Case 0 should always jump to the latest version, since it gets created on first start.
+			Advance(CurrentVersion, null);
+			goto case CurrentVersion;
 
-			switch (meta.Version)
-			{
-			case 0:
-				// Case 0 should always jump to the latest version, since it gets created on first start.
-				Advance(CurrentVersion, null);
-				goto case CurrentVersion;
+		case CurrentVersion:
+			break;
 
-			case CurrentVersion:
-				break;
-
-			default:
-				Log.Warn("It seems that you downgraded your TS3AB version. " +
-					"Due to automatic upgrades some stuff might not work anymore, be advised. " +
-					"It is recommended to backup data before upgrading to unstable/beta builds if you intend to downgrade again.");
-				break;
-			}
+		default:
+			Log.Warn("It seems that you downgraded your TS3AB version. " +
+				"Due to automatic upgrades some stuff might not work anymore, be advised. " +
+				"It is recommended to backup data before upgrading to unstable/beta builds if you intend to downgrade again.");
+			break;
 		}
 	}
 }

@@ -9,14 +9,13 @@
 
 using System.Collections.Generic;
 
-namespace TS3AudioBot.Rights.Matchers
+namespace TS3AudioBot.Rights.Matchers;
+
+internal class MatchToken : Matcher
 {
-	internal class MatchToken : Matcher
-	{
-		private readonly HashSet<string> tokens;
+	private readonly HashSet<string> tokens;
 
-		public MatchToken(IEnumerable<string> tokens) => this.tokens = new HashSet<string>(tokens);
+	public MatchToken(IEnumerable<string> tokens) => this.tokens = new HashSet<string>(tokens);
 
-		public override bool Matches(ExecuteContext ctx) => ctx.ApiToken != null && tokens.Contains(ctx.ApiToken);
-	}
+	public override bool Matches(ExecuteContext ctx) => ctx.ApiToken != null && tokens.Contains(ctx.ApiToken);
 }

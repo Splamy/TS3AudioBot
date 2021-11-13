@@ -10,21 +10,20 @@
 using System;
 using System.Linq;
 
-namespace TS3AudioBot.Dependency
+namespace TS3AudioBot.Dependency;
+
+internal class Module
 {
-	internal class Module
+	public Type TImplementation { get; }
+	public Type TService { get; }
+	public Type[] ConstructorParam { get; }
+
+	public Module(Type tService, Type tImplementation)
 	{
-		public Type TImplementation { get; }
-		public Type TService { get; }
-		public Type[] ConstructorParam { get; }
-
-		public Module(Type tService, Type tImplementation)
-		{
-			TService = tService;
-			TImplementation = tImplementation;
-			ConstructorParam = DependencyBuilder.GetConstructorParam(TImplementation) ?? throw new ArgumentException("Invalid type");
-		}
-
-		public override string ToString() => $"{TService.Name}({(TService != TImplementation ? TImplementation.Name : "-")}) => {string.Join(",", ConstructorParam.Select(x => x.Name))}";
+		TService = tService;
+		TImplementation = tImplementation;
+		ConstructorParam = DependencyBuilder.GetConstructorParam(TImplementation) ?? throw new ArgumentException("Invalid type");
 	}
+
+	public override string ToString() => $"{TService.Name}({(TService != TImplementation ? TImplementation.Name : "-")}) => {string.Join(",", ConstructorParam.Select(x => x.Name))}";
 }

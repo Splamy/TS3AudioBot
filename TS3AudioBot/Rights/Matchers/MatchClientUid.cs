@@ -10,14 +10,13 @@
 using System.Collections.Generic;
 using TSLib;
 
-namespace TS3AudioBot.Rights.Matchers
+namespace TS3AudioBot.Rights.Matchers;
+
+internal class MatchClientUid : Matcher
 {
-	internal class MatchClientUid : Matcher
-	{
-		private readonly HashSet<Uid> clientUids;
+	private readonly HashSet<Uid> clientUids;
 
-		public MatchClientUid(IEnumerable<Uid> clientUids) => this.clientUids = new HashSet<Uid>(clientUids);
+	public MatchClientUid(IEnumerable<Uid> clientUids) => this.clientUids = new HashSet<Uid>(clientUids);
 
-		public override bool Matches(ExecuteContext ctx) => ctx.ClientUid is { } uid && clientUids.Contains(uid);
-	}
+	public override bool Matches(ExecuteContext ctx) => ctx.ClientUid is { } uid && clientUids.Contains(uid);
 }

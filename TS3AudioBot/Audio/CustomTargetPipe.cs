@@ -15,180 +15,179 @@ using TSLib.Audio;
 using TSLib.Full;
 using TSLib.Helper;
 
-namespace TS3AudioBot.Audio
+namespace TS3AudioBot.Audio;
+
+internal class CustomTargetPipe : IVoiceTarget, IAudioPassiveConsumer
 {
-	internal class CustomTargetPipe : IVoiceTarget, IAudioPassiveConsumer
+	public TargetSendMode SendMode { get; set; } = TargetSendMode.Voice;
+	public ulong GroupWhisperTargetId { get; private set; }
+	public GroupWhisperType GroupWhisperType { get; private set; }
+	public GroupWhisperTarget GroupWhisperTarget { get; private set; }
+	public bool Alone { get; set; }
+
+	public IReadOnlyCollection<ClientId> WhisperClients
 	{
-		public TargetSendMode SendMode { get; set; } = TargetSendMode.Voice;
-		public ulong GroupWhisperTargetId { get; private set; }
-		public GroupWhisperType GroupWhisperType { get; private set; }
-		public GroupWhisperTarget GroupWhisperTarget { get; private set; }
-		public bool Alone { get; set; }
+		get { lock (subscriptionLockObj) { return clientSubscriptionsSetup.ToArray(); } }
+	}
+	public IReadOnlyCollection<ChannelId> WhisperChannel
+	{
+		get { lock (subscriptionLockObj) { return channelSubscriptionsSetup.Keys.ToArray(); } }
+	}
 
-		public IReadOnlyCollection<ClientId> WhisperClients
+	public bool Active
+	{
+		get
 		{
-			get { lock (subscriptionLockObj) { return clientSubscriptionsSetup.ToArray(); } }
-		}
-		public IReadOnlyCollection<ChannelId> WhisperChannel
-		{
-			get { lock (subscriptionLockObj) { return channelSubscriptionsSetup.Keys.ToArray(); } }
-		}
-
-		public bool Active
-		{
-			get
-			{
-				switch (SendMode)
-				{
-				case TargetSendMode.None:
-					return false;
-				case TargetSendMode.Voice:
-					return !Alone;
-				case TargetSendMode.Whisper:
-					UpdatedSubscriptionCache();
-					return channelSubscriptionsCache.Length > 0 || clientSubscriptionsCache.Length > 0;
-				default:
-					return true;
-				}
-			}
-		}
-
-		private readonly Dictionary<ChannelId, bool> channelSubscriptionsSetup = new();
-		private readonly HashSet<ClientId> clientSubscriptionsSetup = new();
-		private ChannelId[] channelSubscriptionsCache = Array.Empty<ChannelId>();
-		private ClientId[] clientSubscriptionsCache = Array.Empty<ClientId>();
-		private bool subscriptionSetupChanged;
-		private readonly object subscriptionLockObj = new();
-
-		private readonly TsFullClient client;
-
-		public CustomTargetPipe(TsFullClient client)
-		{
-			this.client = client;
-			subscriptionSetupChanged = true;
-		}
-
-		public void Write(Span<byte> data, Meta? meta)
-		{
-			UpdatedSubscriptionCache();
-
-			var codec = meta?.Codec ?? Codec.OpusMusic; // XXX a bit hacky
 			switch (SendMode)
 			{
 			case TargetSendMode.None:
-				break;
+				return false;
 			case TargetSendMode.Voice:
-				client.SendAudio(data, codec);
-				break;
+				return !Alone;
 			case TargetSendMode.Whisper:
-				client.SendAudioWhisper(data, codec, channelSubscriptionsCache, clientSubscriptionsCache);
-				break;
-			case TargetSendMode.WhisperGroup:
-				client.SendAudioGroupWhisper(data, codec, GroupWhisperType, GroupWhisperTarget, GroupWhisperTargetId);
-				break;
-			case var _unhandled:
-				throw Tools.UnhandledDefault(_unhandled);
+				UpdatedSubscriptionCache();
+				return channelSubscriptionsCache.Length > 0 || clientSubscriptionsCache.Length > 0;
+			default:
+				return true;
 			}
 		}
+	}
 
-		#region ITargetManager
+	private readonly Dictionary<ChannelId, bool> channelSubscriptionsSetup = new();
+	private readonly HashSet<ClientId> clientSubscriptionsSetup = new();
+	private ChannelId[] channelSubscriptionsCache = Array.Empty<ChannelId>();
+	private ClientId[] clientSubscriptionsCache = Array.Empty<ClientId>();
+	private bool subscriptionSetupChanged;
+	private readonly object subscriptionLockObj = new();
 
-		public void SetGroupWhisper(GroupWhisperType type, GroupWhisperTarget target, ulong targetId = 0)
+	private readonly TsFullClient client;
+
+	public CustomTargetPipe(TsFullClient client)
+	{
+		this.client = client;
+		subscriptionSetupChanged = true;
+	}
+
+	public void Write(Span<byte> data, Meta? meta)
+	{
+		UpdatedSubscriptionCache();
+
+		var codec = meta?.Codec ?? Codec.OpusMusic; // XXX a bit hacky
+		switch (SendMode)
 		{
-			GroupWhisperType = type;
-			GroupWhisperTarget = target;
-			GroupWhisperTargetId = targetId;
+		case TargetSendMode.None:
+			break;
+		case TargetSendMode.Voice:
+			client.SendAudio(data, codec);
+			break;
+		case TargetSendMode.Whisper:
+			client.SendAudioWhisper(data, codec, channelSubscriptionsCache, clientSubscriptionsCache);
+			break;
+		case TargetSendMode.WhisperGroup:
+			client.SendAudioGroupWhisper(data, codec, GroupWhisperType, GroupWhisperTarget, GroupWhisperTargetId);
+			break;
+		case var _unhandled:
+			throw Tools.UnhandledDefault(_unhandled);
 		}
+	}
 
-		public void WhisperChannelSubscribe(bool temp, params ChannelId[] channels)
+	#region ITargetManager
+
+	public void SetGroupWhisper(GroupWhisperType type, GroupWhisperTarget target, ulong targetId = 0)
+	{
+		GroupWhisperType = type;
+		GroupWhisperTarget = target;
+		GroupWhisperTargetId = targetId;
+	}
+
+	public void WhisperChannelSubscribe(bool temp, params ChannelId[] channels)
+	{
+		lock (subscriptionLockObj)
 		{
-			lock (subscriptionLockObj)
+			foreach (var channel in channels)
 			{
-				foreach (var channel in channels)
+				if (channelSubscriptionsSetup.TryGetValue(channel, out var subscriptionTemp))
 				{
-					if (channelSubscriptionsSetup.TryGetValue(channel, out var subscriptionTemp))
+					channelSubscriptionsSetup[channel] = !subscriptionTemp || !temp;
+				}
+				else
+				{
+					channelSubscriptionsSetup[channel] = !temp;
+					subscriptionSetupChanged = true;
+				}
+			}
+		}
+	}
+
+	public void WhisperChannelUnsubscribe(bool temp, params ChannelId[] channels)
+	{
+		lock (subscriptionLockObj)
+		{
+			foreach (var channel in channels)
+			{
+				if (!temp)
+				{
+					subscriptionSetupChanged |= channelSubscriptionsSetup.Remove(channel);
+				}
+				else
+				{
+					if (channelSubscriptionsSetup.TryGetValue(channel, out bool subscriptionTemp) && subscriptionTemp)
 					{
-						channelSubscriptionsSetup[channel] = !subscriptionTemp || !temp;
-					}
-					else
-					{
-						channelSubscriptionsSetup[channel] = !temp;
+						channelSubscriptionsSetup.Remove(channel);
 						subscriptionSetupChanged = true;
 					}
 				}
 			}
 		}
+	}
 
-		public void WhisperChannelUnsubscribe(bool temp, params ChannelId[] channels)
+	public void WhisperClientSubscribe(params ClientId[] userId)
+	{
+		lock (subscriptionLockObj)
 		{
-			lock (subscriptionLockObj)
-			{
-				foreach (var channel in channels)
-				{
-					if (!temp)
-					{
-						subscriptionSetupChanged |= channelSubscriptionsSetup.Remove(channel);
-					}
-					else
-					{
-						if (channelSubscriptionsSetup.TryGetValue(channel, out bool subscriptionTemp) && subscriptionTemp)
-						{
-							channelSubscriptionsSetup.Remove(channel);
-							subscriptionSetupChanged = true;
-						}
-					}
-				}
-			}
+			clientSubscriptionsSetup.UnionWith(userId);
+			subscriptionSetupChanged = true;
 		}
+	}
 
-		public void WhisperClientSubscribe(params ClientId[] userId)
+	public void WhisperClientUnsubscribe(params ClientId[] userId)
+	{
+		lock (subscriptionLockObj)
 		{
-			lock (subscriptionLockObj)
+			clientSubscriptionsSetup.ExceptWith(userId);
+			subscriptionSetupChanged = true;
+		}
+	}
+
+	public void ClearTemporary()
+	{
+		lock (subscriptionLockObj)
+		{
+			var removeList = channelSubscriptionsSetup
+				.Where(kvp => kvp.Value)
+				.Select(kvp => kvp.Key)
+				.ToArray();
+			foreach (var chan in removeList)
 			{
-				clientSubscriptionsSetup.UnionWith(userId);
+				channelSubscriptionsSetup.Remove(chan);
 				subscriptionSetupChanged = true;
 			}
 		}
+	}
 
-		public void WhisperClientUnsubscribe(params ClientId[] userId)
-		{
-			lock (subscriptionLockObj)
-			{
-				clientSubscriptionsSetup.ExceptWith(userId);
-				subscriptionSetupChanged = true;
-			}
-		}
-
-		public void ClearTemporary()
-		{
-			lock (subscriptionLockObj)
-			{
-				var removeList = channelSubscriptionsSetup
-					.Where(kvp => kvp.Value)
-					.Select(kvp => kvp.Key)
-					.ToArray();
-				foreach (var chan in removeList)
-				{
-					channelSubscriptionsSetup.Remove(chan);
-					subscriptionSetupChanged = true;
-				}
-			}
-		}
-
-		private void UpdatedSubscriptionCache()
+	private void UpdatedSubscriptionCache()
+	{
+		if (!subscriptionSetupChanged)
+			return;
+		lock (subscriptionLockObj)
 		{
 			if (!subscriptionSetupChanged)
 				return;
-			lock (subscriptionLockObj)
-			{
-				if (!subscriptionSetupChanged)
-					return;
-				channelSubscriptionsCache = channelSubscriptionsSetup.Keys.ToArray();
-				clientSubscriptionsCache = clientSubscriptionsSetup.ToArray();
-				subscriptionSetupChanged = false;
-			}
+			channelSubscriptionsCache = channelSubscriptionsSetup.Keys.ToArray();
+			clientSubscriptionsCache = clientSubscriptionsSetup.ToArray();
+			subscriptionSetupChanged = false;
 		}
-
-		#endregion
 	}
+
+	#endregion
 }

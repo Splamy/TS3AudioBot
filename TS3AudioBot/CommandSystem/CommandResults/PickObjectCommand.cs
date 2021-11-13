@@ -9,46 +9,45 @@
 
 using System.Reflection;
 
-namespace TS3AudioBot.CommandSystem.CommandResults
+namespace TS3AudioBot.CommandSystem.CommandResults;
+
+public class Pick<T> : IWrappedResult
 {
-	public class Pick<T> : IWrappedResult
+	private readonly string pickPath;
+	private readonly T baseObj;
+	private bool isPicked;
+	private object? pickedValue;
+
+	public object? Content
 	{
-		private readonly string pickPath;
-		private readonly T baseObj;
-		private bool isPicked;
-		private object? pickedValue;
-
-		public object? Content
+		get
 		{
-			get
+			if (!isPicked)
 			{
-				if (!isPicked)
-				{
-					isPicked = true;
-					pickedValue = null;
-					pickedValue = DoPick();
-				}
-				return pickedValue;
+				isPicked = true;
+				pickedValue = null;
+				pickedValue = DoPick();
 			}
+			return pickedValue;
 		}
+	}
 
-		public Pick(T obj, string pickPath)
-		{
-			baseObj = obj;
-			this.pickPath = pickPath;
-		}
+	public Pick(T obj, string pickPath)
+	{
+		baseObj = obj;
+		this.pickPath = pickPath;
+	}
 
-		private object? DoPick()
-		{
-			if (baseObj == null)
-				return null; // TODO maybe error ?
-			if (string.IsNullOrEmpty(pickPath))
-				return baseObj;
-			var type = baseObj.GetType();
-			var prop = type.GetProperty(pickPath, BindingFlags.Public | BindingFlags.Instance);
-			if (prop is null)
-				throw new CommandException("Property not found" /* TODO LOC */);
-			return prop.GetValue(baseObj);
-		}
+	private object? DoPick()
+	{
+		if (baseObj == null)
+			return null; // TODO maybe error ?
+		if (string.IsNullOrEmpty(pickPath))
+			return baseObj;
+		var type = baseObj.GetType();
+		var prop = type.GetProperty(pickPath, BindingFlags.Public | BindingFlags.Instance);
+		if (prop is null)
+			throw new CommandException("Property not found" /* TODO LOC */);
+		return prop.GetValue(baseObj);
 	}
 }

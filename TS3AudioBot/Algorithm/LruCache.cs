@@ -10,68 +10,67 @@
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 
-namespace TS3AudioBot.Algorithm
+namespace TS3AudioBot.Algorithm;
+
+public class LruCache<TK, TV> where TK : notnull
 {
-	public class LruCache<TK, TV> where TK : notnull
+	private readonly int maxCapacity;
+	private readonly Dictionary<TK, LinkedListNode<(TK key, TV value)>> cacheDict = new();
+	private readonly LinkedList<(TK key, TV value)> lruList = new();
+
+	public LruCache(int capacity)
 	{
-		private readonly int maxCapacity;
-		private readonly Dictionary<TK, LinkedListNode<(TK key, TV value)>> cacheDict = new();
-		private readonly LinkedList<(TK key, TV value)> lruList = new();
+		maxCapacity = capacity;
+	}
 
-		public LruCache(int capacity)
+	public bool TryGetValue(TK key, [MaybeNullWhen(false)] out TV value)
+	{
+		if (cacheDict.TryGetValue(key, out var node))
 		{
-			maxCapacity = capacity;
+			Renew(node);
+			value = node.Value.value;
+			return true;
+		}
+		value = default!;
+		return false;
+	}
+
+	public void Set(TK key, TV value)
+	{
+		if (cacheDict.TryGetValue(key, out var node))
+		{
+			Renew(node);
+			node.Value = (node.Value.key, value);
+			return;
 		}
 
-		public bool TryGetValue(TK key, [MaybeNullWhen(false)] out TV value)
-		{
-			if (cacheDict.TryGetValue(key, out var node))
-			{
-				Renew(node);
-				value = node.Value.value;
-				return true;
-			}
-			value = default!;
-			return false;
-		}
+		if (cacheDict.Count >= maxCapacity)
+			RemoveOldest();
 
-		public void Set(TK key, TV value)
-		{
-			if (cacheDict.TryGetValue(key, out var node))
-			{
-				Renew(node);
-				node.Value = (node.Value.key, value);
-				return;
-			}
+		node = lruList.AddLast((key, value));
+		cacheDict.Add(key, node);
+	}
 
-			if (cacheDict.Count >= maxCapacity)
-				RemoveOldest();
+	public bool Remove(TK key) => cacheDict.Remove(key);
 
-			node = lruList.AddLast((key, value));
-			cacheDict.Add(key, node);
-		}
+	private void Renew(LinkedListNode<(TK, TV)> node)
+	{
+		lruList.Remove(node);
+		lruList.AddLast(node);
+	}
 
-		public bool Remove(TK key) => cacheDict.Remove(key);
+	private void RemoveOldest()
+	{
+		var node = lruList.First;
+		if (node is null)
+			return;
+		lruList.RemoveFirst();
+		cacheDict.Remove(node.Value.key);
+	}
 
-		private void Renew(LinkedListNode<(TK, TV)> node)
-		{
-			lruList.Remove(node);
-			lruList.AddLast(node);
-		}
-
-		private void RemoveOldest()
-		{
-			var node = lruList.First;
-			if (node is null)
-				return;
-			lruList.RemoveFirst();
-			cacheDict.Remove(node.Value.key);
-		}
-
-		public void Clear()
-		{
-			cacheDict.Clear();
-			lruList.Clear();
-		}
+	public void Clear()
+	{
+		cacheDict.Clear();
+		lruList.Clear();
 	}
 }

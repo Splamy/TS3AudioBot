@@ -12,70 +12,69 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace TSLib.Messages
+namespace TSLib.Messages;
+
+public partial class CommandError
 {
-	public partial class CommandError
+	public static CommandError ConnectionClosed { get; } = Custom("Connection closed");
+
+	public static CommandError NoResult { get; } = Custom("Result is empty");
+
+	public static CommandError Parser { get; } = Custom("Result could not be parsed");
+
+	public static CommandError CommandTimeout { get; } = Custom("Command protocol timeout");
+
+	public static CommandError Custom(string message) => new() { Id = TsErrorCode.custom_error, Message = message };
+
+	public string ErrorFormat()
 	{
-		public static CommandError ConnectionClosed { get; } = Custom("Connection closed");
+		if (MissingPermissionId != null
+			&& MissingPermissionId != TsPermission.unknown
+			&& MissingPermissionId != TsPermission.undefined)
+			return $"{Id}: the command failed to execute: {Message} (missing permission:{MissingPermissionId})";
+		else
+			return $"{Id}: the command failed to execute: {Message}";
+	}
+}
 
-		public static CommandError NoResult { get; } = Custom("Result is empty");
-
-		public static CommandError Parser { get; } = Custom("Result could not be parsed");
-
-		public static CommandError CommandTimeout { get; } = Custom("Command protocol timeout");
-
-		public static CommandError Custom(string message) => new() { Id = TsErrorCode.custom_error, Message = message };
-
-		public string ErrorFormat()
-		{
-			if (MissingPermissionId != null
-				&& MissingPermissionId != TsPermission.unknown
-				&& MissingPermissionId != TsPermission.undefined)
-				return $"{Id}: the command failed to execute: {Message} (missing permission:{MissingPermissionId})";
-			else
-				return $"{Id}: the command failed to execute: {Message}";
-		}
+/// <summary>Provides useful extension methods for error formatting.</summary>
+public static class CommandErrorExtensions
+{
+	public static R<T, CommandError> MapToSingle<T>(in this R<T[], CommandError> result) where T : IMessage
+	{
+		if (result.Ok)
+			return MapToSingle(result.Value);
+		return R<T, CommandError>.Err(result.Error);
 	}
 
-	/// <summary>Provides useful extension methods for error formatting.</summary>
-	public static class CommandErrorExtensions
+	public static async Task<R<T, CommandError>> MapToSingle<T>(this Task<R<T[], CommandError>> task) where T : IMessage
+		=> (await task).MapToSingle();
+
+	internal static R<T, CommandError> MapToSingle<T>(this IEnumerable<T> enu) where T : IMessage
 	{
-		public static R<T, CommandError> MapToSingle<T>(in this R<T[], CommandError> result) where T : IMessage
-		{
-			if (result.Ok)
-				return MapToSingle(result.Value);
-			return R<T, CommandError>.Err(result.Error);
-		}
+		var first = enu.FirstOrDefault();
+		if (first != null)
+			return R<T, CommandError>.OkR(first);
+		return R<T, CommandError>.Err(CommandError.NoResult);
+	}
 
-		public static async Task<R<T, CommandError>> MapToSingle<T>(this Task<R<T[], CommandError>> task) where T : IMessage
-			=> (await task).MapToSingle();
+	public static R<T, CommandError> MapToSingle<T>(in this R<LazyNotification, CommandError> result) where T : class, IMessage
+		=> result.UnwrapNotification<T>().MapToSingle();
 
-		internal static R<T, CommandError> MapToSingle<T>(this IEnumerable<T> enu) where T : IMessage
-		{
-			var first = enu.FirstOrDefault();
-			if (first != null)
-				return R<T, CommandError>.OkR(first);
-			return R<T, CommandError>.Err(CommandError.NoResult);
-		}
+	public static async Task<R<T, CommandError>> MapToSingle<T>(this Task<R<LazyNotification, CommandError>> task) where T : class, IMessage
+		=> (await task).MapToSingle<T>();
 
-		public static R<T, CommandError> MapToSingle<T>(in this R<LazyNotification, CommandError> result) where T : class, IMessage
-			=> result.UnwrapNotification<T>().MapToSingle();
+	public static R<T[], CommandError> UnwrapNotification<T>(in this R<LazyNotification, CommandError> result) where T : class, IMessage
+	{
+		if (!result.Ok)
+			return result.Error;
+		return R<T[], CommandError>.OkR((T[])result.Value.Notifications);
+	}
 
-		public static async Task<R<T, CommandError>> MapToSingle<T>(this Task<R<LazyNotification, CommandError>> task) where T : class, IMessage
-			=> (await task).MapToSingle<T>();
-
-		public static R<T[], CommandError> UnwrapNotification<T>(in this R<LazyNotification, CommandError> result) where T : class, IMessage
-		{
-			if (!result.Ok)
-				return result.Error;
-			return R<T[], CommandError>.OkR((T[])result.Value.Notifications);
-		}
-
-		public static R<TI, CommandError> WrapInterface<TC, TI>(in this R<TC, CommandError> result) where TC : notnull, IMessage, TI where TI : notnull
-		{
-			if (!result.Ok)
-				return result.Error;
-			return result.Value;
-		}
+	public static R<TI, CommandError> WrapInterface<TC, TI>(in this R<TC, CommandError> result) where TC : notnull, IMessage, TI where TI : notnull
+	{
+		if (!result.Ok)
+			return result.Error;
+		return result.Value;
 	}
 }

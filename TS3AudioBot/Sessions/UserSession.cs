@@ -12,59 +12,58 @@ using System.Diagnostics.CodeAnalysis;
 using TS3AudioBot.CommandSystem;
 using Response = System.Func<string, System.Threading.Tasks.Task<string?>>;
 
-namespace TS3AudioBot.Sessions
+namespace TS3AudioBot.Sessions;
+
+public class UserSession
 {
-	public class UserSession
+	private const string ResponseKey = "response";
+
+	private Dictionary<string, object>? assocMap;
+	protected bool lockToken;
+
+	public Response? ResponseProcessor => Get<Response>(ResponseKey, out var val) ? val : null;
+
+	public UserSession() { }
+
+	public void SetResponseInstance(Response responseProcessor) => Set(ResponseKey, responseProcessor);
+
+	public void ClearResponse() => Set<Response?>(ResponseKey, null);
+
+	public bool Get<TData>(string key, [MaybeNullWhen(false)] out TData value) where TData : notnull
 	{
-		private const string ResponseKey = "response";
+		value = default!;
 
-		private Dictionary<string, object>? assocMap;
-		protected bool lockToken;
+		if (assocMap is null)
+			return false;
 
-		public Response? ResponseProcessor => Get<Response>(ResponseKey, out var val) ? val : null;
+		if (!assocMap.TryGetValue(key, out var valueObj))
+			return false;
 
-		public UserSession() { }
+		if (valueObj is not TData valueT)
+			return false;
 
-		public void SetResponseInstance(Response responseProcessor) => Set(ResponseKey, responseProcessor);
-
-		public void ClearResponse() => Set<Response?>(ResponseKey, null);
-
-		public bool Get<TData>(string key, [MaybeNullWhen(false)] out TData value) where TData : notnull
-		{
-			value = default!;
-
-			if (assocMap is null)
-				return false;
-
-			if (!assocMap.TryGetValue(key, out var valueObj))
-				return false;
-
-			if (valueObj is not TData valueT)
-				return false;
-
-			value = valueT;
-			return true;
-		}
-
-		public void Set<TData>(string key, TData data)
-		{
-			if (assocMap is null)
-				assocMap = new Dictionary<string, object>();
-
-			if (data is null)
-				assocMap.Remove(key);
-			else
-				assocMap[key] = data;
-		}
+		value = valueT;
+		return true;
 	}
 
-	public static class UserSessionExtensions
+	public void Set<TData>(string key, TData data)
 	{
-		public static void SetResponse(this UserSession? session, Response responseProcessor)
-		{
-			if (session is null)
-				throw new CommandException("No session context", CommandExceptionReason.CommandError);
-			session.SetResponseInstance(responseProcessor);
-		}
+		if (assocMap is null)
+			assocMap = new Dictionary<string, object>();
+
+		if (data is null)
+			assocMap.Remove(key);
+		else
+			assocMap[key] = data;
+	}
+}
+
+public static class UserSessionExtensions
+{
+	public static void SetResponse(this UserSession? session, Response responseProcessor)
+	{
+		if (session is null)
+			throw new CommandException("No session context", CommandExceptionReason.CommandError);
+		session.SetResponseInstance(responseProcessor);
 	}
 }

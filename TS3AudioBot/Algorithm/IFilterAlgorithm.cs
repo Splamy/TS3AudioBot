@@ -11,104 +11,103 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace TS3AudioBot.Algorithm
+namespace TS3AudioBot.Algorithm;
+
+public interface IFilter
 {
-	public interface IFilter
+	IEnumerable<KeyValuePair<string, T>> Filter<T>(IEnumerable<KeyValuePair<string, T>> list, string filter);
+}
+
+public static class Filter
+{
+	public static IFilter DefaultFilter { get; } = Ic3Filter.Instance;
+
+	public static IFilter? GetFilterByName(string filter)
 	{
-		IEnumerable<KeyValuePair<string, T>> Filter<T>(IEnumerable<KeyValuePair<string, T>> list, string filter);
+		return filter switch
+		{
+			"exact" => ExactFilter.Instance,
+			"substring" => SubstringFilter.Instance,
+			"ic3" => Ic3Filter.Instance,
+			"hamming" => HammingFilter.Instance,
+			_ => null,
+		};
 	}
 
-	public static class Filter
-	{
-		public static IFilter DefaultFilter { get; } = Ic3Filter.Instance;
+	public static IFilter GetFilterByNameOrDefault(string filter) => GetFilterByName(filter) ?? DefaultFilter;
+}
 
-		public static IFilter? GetFilterByName(string filter)
+/// <summary>Interleaved continuous character chain.</summary>
+internal sealed class Ic3Filter : IFilter
+{
+	private Ic3Filter() { }
+
+	public static IFilter Instance { get; } = new Ic3Filter();
+
+	IEnumerable<KeyValuePair<string, T>> IFilter.Filter<T>(IEnumerable<KeyValuePair<string, T>> list, string filter)
+	{
+		// Convert result to list because it can be enumerated multiple times
+		var possibilities = list.Select(t => (Name: t.Key, t.Value, Index: 0)).ToList();
+		// Filter matching commands
+		foreach (var c in filter.ToLowerInvariant())
 		{
-			return filter switch
-			{
-				"exact" => ExactFilter.Instance,
-				"substring" => SubstringFilter.Instance,
-				"ic3" => Ic3Filter.Instance,
-				"hamming" => HammingFilter.Instance,
-				_ => null,
-			};
+			var newPossibilities = (from p in possibilities
+									let pos = p.Name.ToLowerInvariant().IndexOf(c, p.Index)
+									where pos != -1
+									select (p.Name, p.Value, Index: pos + 1)).ToList();
+			if (newPossibilities.Count > 0)
+				possibilities = newPossibilities;
 		}
+		// Take command with lowest index
+		int minIndex = possibilities.Min(t => t.Index);
+		var cmds = possibilities.Where(t => t.Index == minIndex).ToArray();
+		// Take the smallest command
+		int minLength = cmds.Min(c => c.Name.Length);
 
-		public static IFilter GetFilterByNameOrDefault(string filter) => GetFilterByName(filter) ?? DefaultFilter;
+		return cmds.Where(c => c.Name.Length == minLength).Select(fi => new KeyValuePair<string, T>(fi.Name, fi.Value));
 	}
+}
 
-	/// <summary>Interleaved continuous character chain.</summary>
-	internal sealed class Ic3Filter : IFilter
+internal sealed class ExactFilter : IFilter
+{
+	private ExactFilter() { }
+
+	public static IFilter Instance { get; } = new ExactFilter();
+
+	IEnumerable<KeyValuePair<string, T>> IFilter.Filter<T>(IEnumerable<KeyValuePair<string, T>> list, string filter)
 	{
-		private Ic3Filter() { }
-
-		public static IFilter Instance { get; } = new Ic3Filter();
-
-		IEnumerable<KeyValuePair<string, T>> IFilter.Filter<T>(IEnumerable<KeyValuePair<string, T>> list, string filter)
-		{
-			// Convert result to list because it can be enumerated multiple times
-			var possibilities = list.Select(t => (Name: t.Key, t.Value, Index: 0)).ToList();
-			// Filter matching commands
-			foreach (var c in filter.ToLowerInvariant())
-			{
-				var newPossibilities = (from p in possibilities
-										let pos = p.Name.ToLowerInvariant().IndexOf(c, p.Index)
-										where pos != -1
-										select (p.Name, p.Value, Index: pos + 1)).ToList();
-				if (newPossibilities.Count > 0)
-					possibilities = newPossibilities;
-			}
-			// Take command with lowest index
-			int minIndex = possibilities.Min(t => t.Index);
-			var cmds = possibilities.Where(t => t.Index == minIndex).ToArray();
-			// Take the smallest command
-			int minLength = cmds.Min(c => c.Name.Length);
-
-			return cmds.Where(c => c.Name.Length == minLength).Select(fi => new KeyValuePair<string, T>(fi.Name, fi.Value));
-		}
+		return list.Where(x => x.Key == filter);
 	}
+}
 
-	internal sealed class ExactFilter : IFilter
+internal sealed class HammingFilter : IFilter
+{
+	private HammingFilter() { }
+
+	public static IFilter Instance { get; } = new HammingFilter();
+
+	IEnumerable<KeyValuePair<string, T>> IFilter.Filter<T>(IEnumerable<KeyValuePair<string, T>> list, string filter)
 	{
-		private ExactFilter() { }
-
-		public static IFilter Instance { get; } = new ExactFilter();
-
-		IEnumerable<KeyValuePair<string, T>> IFilter.Filter<T>(IEnumerable<KeyValuePair<string, T>> list, string filter)
-		{
-			return list.Where(x => x.Key == filter);
-		}
+		throw new System.NotImplementedException();
 	}
+}
 
-	internal sealed class HammingFilter : IFilter
+internal sealed class SubstringFilter : IFilter
+{
+	private SubstringFilter() { }
+
+	public static IFilter Instance { get; } = new SubstringFilter();
+
+	IEnumerable<KeyValuePair<string, T>> IFilter.Filter<T>(IEnumerable<KeyValuePair<string, T>> list, string filter)
 	{
-		private HammingFilter() { }
-
-		public static IFilter Instance { get; } = new HammingFilter();
-
-		IEnumerable<KeyValuePair<string, T>> IFilter.Filter<T>(IEnumerable<KeyValuePair<string, T>> list, string filter)
-		{
-			throw new System.NotImplementedException();
-		}
-	}
-
-	internal sealed class SubstringFilter : IFilter
-	{
-		private SubstringFilter() { }
-
-		public static IFilter Instance { get; } = new SubstringFilter();
-
-		IEnumerable<KeyValuePair<string, T>> IFilter.Filter<T>(IEnumerable<KeyValuePair<string, T>> list, string filter)
-		{
-			var result = list.Where(x => x.Key.StartsWith(filter, StringComparison.Ordinal));
-			using var enu = result.GetEnumerator();
-			if (!enu.MoveNext())
-				yield break;
+		var result = list.Where(x => x.Key.StartsWith(filter, StringComparison.Ordinal));
+		using var enu = result.GetEnumerator();
+		if (!enu.MoveNext())
+			yield break;
+		yield return enu.Current;
+		if (enu.Current.Key == filter)
+			yield break;
+		while (enu.MoveNext())
 			yield return enu.Current;
-			if (enu.Current.Key == filter)
-				yield break;
-			while (enu.MoveNext())
-				yield return enu.Current;
-		}
 	}
 }

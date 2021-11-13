@@ -12,15 +12,15 @@ using System.Linq;
 using TS3AudioBot.CommandSystem.CommandResults;
 using TSLib;
 
-namespace TS3AudioBot.CommandSystem
+namespace TS3AudioBot.CommandSystem;
+
+public static class CommandSystemTypes
 {
-	public static class CommandSystemTypes
-	{
-		/// <summary>
-		/// The order of types, the first item has the highest priority,
-		/// items not in the list have higher priority as they are special types.
-		/// </summary>
-		public static readonly Type[] TypeOrder = {
+	/// <summary>
+	/// The order of types, the first item has the highest priority,
+	/// items not in the list have higher priority as they are special types.
+	/// </summary>
+	public static readonly Type[] TypeOrder = {
 			typeof(bool),
 			typeof(sbyte), typeof(byte),
 			typeof(short), typeof(ushort),
@@ -29,14 +29,13 @@ namespace TS3AudioBot.CommandSystem
 			typeof(float), typeof(double),
 			typeof(TimeSpan), typeof(DateTime),
 			typeof(string) };
-		public static readonly HashSet<Type> BasicTypes = new(TypeOrder);
+	public static readonly HashSet<Type> BasicTypes = new(TypeOrder);
 
-		public static readonly HashSet<Type> AdvancedTypes = new(new Type[] {
+	public static readonly HashSet<Type> AdvancedTypes = new(new Type[] {
 			typeof(IAudioResourceResult),
 			typeof(System.Collections.IEnumerable),
 			typeof(ResourceFactories.AudioResource),
 			typeof(History.AudioLogEntry),
 			typeof(Playlists.PlaylistItem),
 		}.Concat(TsTypes.All));
-	}
 }

@@ -13,57 +13,56 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using TSLib.Helper;
 
-namespace TS3AudioBot.Algorithm
+namespace TS3AudioBot.Algorithm;
+
+public class TimedCache<TK, TV> where TK : notnull
 {
-	public class TimedCache<TK, TV> where TK : notnull
+	public TimeSpan Timeout { get; }
+	private readonly ConcurrentDictionary<TK, TimedData> cachedData;
+
+	public TimedCache() : this(TimeSpan.FromSeconds(3)) { }
+
+	public TimedCache(TimeSpan timeout)
 	{
-		public TimeSpan Timeout { get; }
-		private readonly ConcurrentDictionary<TK, TimedData> cachedData;
+		Timeout = timeout;
+		cachedData = new ConcurrentDictionary<TK, TimedData>();
+	}
 
-		public TimedCache() : this(TimeSpan.FromSeconds(3)) { }
-
-		public TimedCache(TimeSpan timeout)
+	public bool TryGetValue(TK key, [MaybeNullWhen(false)] out TV value)
+	{
+		if (!cachedData.TryGetValue(key, out var data)
+			|| Tools.Now - Timeout > data.Timestamp)
 		{
-			Timeout = timeout;
-			cachedData = new ConcurrentDictionary<TK, TimedData>();
+			CleanCache();
+			value = default!;
+			return false;
 		}
+		value = data.Data;
+		return true;
+	}
 
-		public bool TryGetValue(TK key, [MaybeNullWhen(false)] out TV value)
-		{
-			if (!cachedData.TryGetValue(key, out var data)
-				|| Tools.Now - Timeout > data.Timestamp)
-			{
-				CleanCache();
-				value = default!;
-				return false;
-			}
-			value = data.Data;
-			return true;
-		}
+	public void Set(TK key, TV value)
+	{
+		cachedData[key] = new TimedData { Data = value, Timestamp = Tools.Now };
+	}
 
-		public void Set(TK key, TV value)
-		{
-			cachedData[key] = new TimedData { Data = value, Timestamp = Tools.Now };
-		}
+	public void Clear()
+	{
+		cachedData.Clear();
+	}
 
-		public void Clear()
+	private void CleanCache()
+	{
+		var now = Tools.Now - Timeout;
+		foreach (var item in cachedData.Where(kvp => now > kvp.Value.Timestamp).ToList())
 		{
-			cachedData.Clear();
+			cachedData.TryRemove(item.Key, out _);
 		}
+	}
 
-		private void CleanCache()
-		{
-			var now = Tools.Now - Timeout;
-			foreach (var item in cachedData.Where(kvp => now > kvp.Value.Timestamp).ToList())
-			{
-				cachedData.TryRemove(item.Key, out _);
-			}
-		}
-
-		private struct TimedData
-		{
-			public TV Data;
-			public DateTime Timestamp;
-		}
+	private struct TimedData
+	{
+		public TV Data;
+		public DateTime Timestamp;
 	}
 }

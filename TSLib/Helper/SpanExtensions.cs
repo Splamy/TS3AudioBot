@@ -9,20 +9,20 @@
 
 using System;
 
-namespace TSLib.Helper
+namespace TSLib.Helper;
+
+public static class SpanExtensions
 {
-	public static class SpanExtensions
+	public static string NewUtf8String(this ReadOnlySpan<byte> span)
 	{
-		public static string NewUtf8String(this ReadOnlySpan<byte> span)
-		{
 #if NETSTANDARD2_0
 			return Tools.Utf8Encoder.GetString(span.ToArray());
 #else
-			return Tools.Utf8Encoder.GetString(span);
+		return Tools.Utf8Encoder.GetString(span);
 #endif
-		}
+	}
 
-		public static string NewUtf8String(this Span<byte> span) => ((ReadOnlySpan<byte>)span).NewUtf8String();
+	public static string NewUtf8String(this Span<byte> span) => ((ReadOnlySpan<byte>)span).NewUtf8String();
 
 #if !NETCOREAPP3_0_OR_GREATER
 		public static ReadOnlySpan<byte> Trim(this ReadOnlySpan<byte> span, byte elem) => span.TrimStart(elem).TrimEnd(elem);
@@ -50,50 +50,49 @@ namespace TSLib.Helper
 		}
 #endif
 
-		public static SpanTuple<T> SplitAt<T>(this Span<T> span, int index)
-		{
-			return new(span[..index], span[index..]);
-		}
-
-		public static ReadOnlySpanTuple<T> SplitAt<T>(this ReadOnlySpan<T> span, int index)
-		{
-			return new(span[..index], span[index..]);
-		}
+	public static SpanTuple<T> SplitAt<T>(this Span<T> span, int index)
+	{
+		return new(span[..index], span[index..]);
 	}
 
-	public ref struct SpanTuple<T>
+	public static ReadOnlySpanTuple<T> SplitAt<T>(this ReadOnlySpan<T> span, int index)
 	{
-		public Span<T> left;
-		public Span<T> right;
+		return new(span[..index], span[index..]);
+	}
+}
 
-		public SpanTuple(Span<T> left, Span<T> right)
-		{
-			this.left = left;
-			this.right = right;
-		}
+public ref struct SpanTuple<T>
+{
+	public Span<T> left;
+	public Span<T> right;
 
-		public void Deconstruct(out Span<T> left, out Span<T> right)
-		{
-			left = this.left;
-			right = this.right;
-		}
+	public SpanTuple(Span<T> left, Span<T> right)
+	{
+		this.left = left;
+		this.right = right;
 	}
 
-	public ref struct ReadOnlySpanTuple<T>
+	public void Deconstruct(out Span<T> left, out Span<T> right)
 	{
-		public ReadOnlySpan<T> left;
-		public ReadOnlySpan<T> right;
+		left = this.left;
+		right = this.right;
+	}
+}
 
-		public ReadOnlySpanTuple(ReadOnlySpan<T> left, ReadOnlySpan<T> right)
-		{
-			this.left = left;
-			this.right = right;
-		}
+public ref struct ReadOnlySpanTuple<T>
+{
+	public ReadOnlySpan<T> left;
+	public ReadOnlySpan<T> right;
 
-		public void Deconstruct(out ReadOnlySpan<T> left, out ReadOnlySpan<T> right)
-		{
-			left = this.left;
-			right = this.right;
-		}
+	public ReadOnlySpanTuple(ReadOnlySpan<T> left, ReadOnlySpan<T> right)
+	{
+		this.left = left;
+		this.right = right;
+	}
+
+	public void Deconstruct(out ReadOnlySpan<T> left, out ReadOnlySpan<T> right)
+	{
+		left = this.left;
+		right = this.right;
 	}
 }

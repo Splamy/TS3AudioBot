@@ -11,24 +11,23 @@ using System;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace TS3AudioBot.Helper.Json
+namespace TS3AudioBot.Helper.Json;
+
+public class IJsonSerializableConverter : JsonConverter<IJsonSerializable>
 {
-	public class IJsonSerializableConverter : JsonConverter<IJsonSerializable>
+	public override bool CanConvert(Type objectType) => typeof(IJsonSerializable).IsAssignableFrom(objectType);
+
+	public override IJsonSerializable? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => throw new NotImplementedException();
+
+	public override void Write(Utf8JsonWriter writer, IJsonSerializable value, JsonSerializerOptions options)
 	{
-		public override bool CanConvert(Type objectType) => typeof(IJsonSerializable).IsAssignableFrom(objectType);
-
-		public override IJsonSerializable? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => throw new NotImplementedException();
-
-		public override void Write(Utf8JsonWriter writer, IJsonSerializable value, JsonSerializerOptions options)
+		if (value is null)
 		{
-			if (value is null)
-			{
-				writer.WriteNullValue();
-			}
-			else
-			{
-				value.ToJson(writer, options);
-			}
+			writer.WriteNullValue();
+		}
+		else
+		{
+			value.ToJson(writer, options);
 		}
 	}
 }

@@ -12,27 +12,26 @@ using System.Diagnostics;
 using System.Globalization;
 using TSLib.Helper;
 
-namespace TSLib.Commands
-{
-	/// <summary>Simple parameter which will be expanded to "Key=Value" and automatically escaped.</summary>
-	public sealed partial class CommandParameter : ICommandPart
-	{
-		public string Key { get; }
-		public string Value { get; }
-		public CommandPartType Type => CommandPartType.SingleParameter;
+namespace TSLib.Commands;
 
-		[DebuggerStepThrough] public static string Serialize(bool value) => value ? "1" : "0";
-		[DebuggerStepThrough] public static string Serialize(sbyte value) => value.ToString(CultureInfo.InvariantCulture);
-		[DebuggerStepThrough] public static string Serialize(byte value) => value.ToString(CultureInfo.InvariantCulture);
-		[DebuggerStepThrough] public static string Serialize(short value) => value.ToString(CultureInfo.InvariantCulture);
-		[DebuggerStepThrough] public static string Serialize(ushort value) => value.ToString(CultureInfo.InvariantCulture);
-		[DebuggerStepThrough] public static string Serialize(int value) => value.ToString(CultureInfo.InvariantCulture);
-		[DebuggerStepThrough] public static string Serialize(uint value) => value.ToString(CultureInfo.InvariantCulture);
-		[DebuggerStepThrough] public static string Serialize(long value) => value.ToString(CultureInfo.InvariantCulture);
-		[DebuggerStepThrough] public static string Serialize(ulong value) => value.ToString(CultureInfo.InvariantCulture);
-		[DebuggerStepThrough] public static string Serialize(float value) => value.ToString(CultureInfo.InvariantCulture);
-		[DebuggerStepThrough] public static string Serialize(double value) => value.ToString(CultureInfo.InvariantCulture);
-		[DebuggerStepThrough] public static string Serialize(string value) => TsString.Escape(value);
-		[DebuggerStepThrough] public static string Serialize(DateTime value) => value.ToUnix().ToString(CultureInfo.InvariantCulture);
-	}
+/// <summary>Simple parameter which will be expanded to "Key=Value" and automatically escaped.</summary>
+public sealed partial class CommandParameter : ICommandPart
+{
+	public string Key { get; }
+	public string Value { get; }
+	public CommandPartType Type => CommandPartType.SingleParameter;
+
+	[DebuggerStepThrough] public static string Serialize(bool value) => value ? "1" : "0";
+	[DebuggerStepThrough] public static string Serialize(sbyte value) => value.ToString(CultureInfo.InvariantCulture);
+	[DebuggerStepThrough] public static string Serialize(byte value) => value.ToString(CultureInfo.InvariantCulture);
+	[DebuggerStepThrough] public static string Serialize(short value) => value.ToString(CultureInfo.InvariantCulture);
+	[DebuggerStepThrough] public static string Serialize(ushort value) => value.ToString(CultureInfo.InvariantCulture);
+	[DebuggerStepThrough] public static string Serialize(int value) => value.ToString(CultureInfo.InvariantCulture);
+	[DebuggerStepThrough] public static string Serialize(uint value) => value.ToString(CultureInfo.InvariantCulture);
+	[DebuggerStepThrough] public static string Serialize(long value) => value.ToString(CultureInfo.InvariantCulture);
+	[DebuggerStepThrough] public static string Serialize(ulong value) => value.ToString(CultureInfo.InvariantCulture);
+	[DebuggerStepThrough] public static string Serialize(float value) => value.ToString(CultureInfo.InvariantCulture);
+	[DebuggerStepThrough] public static string Serialize(double value) => value.ToString(CultureInfo.InvariantCulture);
+	[DebuggerStepThrough] public static string Serialize(string value) => TsString.Escape(value);
+	[DebuggerStepThrough] public static string Serialize(DateTime value) => value.ToUnix().ToString(CultureInfo.InvariantCulture);
 }

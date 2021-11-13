@@ -11,10 +11,9 @@ using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace TS3AudioBot.ResourceFactories
+namespace TS3AudioBot.ResourceFactories;
+
+public interface ISearchResolver : IResolver
 {
-	public interface ISearchResolver : IResolver
-	{
-		Task<IList<AudioResource>> Search(ResolveContext ctx, string keyword, CancellationToken cancellationToken);
-	}
+	Task<IList<AudioResource>> Search(ResolveContext ctx, string keyword, CancellationToken cancellationToken);
 }

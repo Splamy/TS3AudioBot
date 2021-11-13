@@ -7,10 +7,9 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
-namespace TS3AudioBot.CommandSystem.Text
+namespace TS3AudioBot.CommandSystem.Text;
+
+public static class TextModHelper
 {
-	public static class TextModHelper
-	{
-		public static AppliedTextMod Mod(this string str) => str;
-	}
+	public static AppliedTextMod Mod(this string str) => str;
 }

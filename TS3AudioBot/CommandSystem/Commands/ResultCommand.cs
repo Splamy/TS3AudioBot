@@ -10,27 +10,26 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace TS3AudioBot.CommandSystem.Commands
-{
-	/// <summary>
-	/// A command that stores a result and returns it.
-	/// </summary>
-	public class ResultCommand : ICommand
-	{
-		public object? Content { get; }
+namespace TS3AudioBot.CommandSystem.Commands;
 
-		public ResultCommand(object? contentArg)
-		{
-			Content = contentArg;
-		}
+/// <summary>
+/// A command that stores a result and returns it.
+/// </summary>
+public class ResultCommand : ICommand
+{
+	public object? Content { get; }
+
+	public ResultCommand(object? contentArg)
+	{
+		Content = contentArg;
+	}
 
 #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
-		public virtual async ValueTask<object?> Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments)
+	public virtual async ValueTask<object?> Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments)
 #pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
-		{
-			return Content;
-		}
-
-		public override string ToString() => "<result>";
+	{
+		return Content;
 	}
+
+	public override string ToString() => "<result>";
 }

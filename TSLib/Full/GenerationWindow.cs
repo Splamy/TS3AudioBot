@@ -9,98 +9,97 @@
 
 using System;
 
-namespace TSLib.Full
+namespace TSLib.Full;
+
+public sealed class GenerationWindow
 {
-	public sealed class GenerationWindow
+	public int MappedBaseOffset { get; set; }
+	public uint Generation { get; set; }
+	public int Mod { get; }
+	public int ReceiveWindow { get; }
+
+	public GenerationWindow(int mod) : this(mod, mod / 2) { }
+
+	public GenerationWindow(int mod, int windowSize)
 	{
-		public int MappedBaseOffset { get; set; }
-		public uint Generation { get; set; }
-		public int Mod { get; }
-		public int ReceiveWindow { get; }
+		Mod = mod;
+		ReceiveWindow = windowSize;
+	}
 
-		public GenerationWindow(int mod) : this(mod, mod / 2) { }
+	public bool SetAndDrag(int mappedValue)
+	{
+		var inWindow = IsInWindow(mappedValue);
+		if (inWindow)
+			AdvanceToExcluded(mappedValue);
+		return inWindow;
+	}
 
-		public GenerationWindow(int mod, int windowSize)
+	public void Advance(int amount)
+	{
+		if (amount > Mod)
+			throw new Exception("Cannot advance more than one generation");
+		if (amount < 0)
+			throw new Exception("Cannot advance backwards");
+		if (amount == 0)
+			return;
+		int newBaseOffset = MappedBaseOffset + amount;
+		if (newBaseOffset >= Mod)
 		{
-			Mod = mod;
-			ReceiveWindow = windowSize;
+			Generation += (uint)(newBaseOffset / Mod);
+			newBaseOffset %= Mod;
 		}
+		MappedBaseOffset = newBaseOffset;
+	}
 
-		public bool SetAndDrag(int mappedValue)
+	public void AdvanceToExcluded(int mappedValue)
+	{
+		var moveDist = (mappedValue - MappedBaseOffset) + 1;
+		if (moveDist <= 0)
+			return;
+		Advance(moveDist);
+	}
+
+	public bool IsInWindow(int mappedValue)
+	{
+		int maxOffset = MappedBaseOffset + ReceiveWindow;
+		if (maxOffset < Mod)
 		{
-			var inWindow = IsInWindow(mappedValue);
-			if (inWindow)
-				AdvanceToExcluded(mappedValue);
-			return inWindow;
+			return mappedValue >= MappedBaseOffset && mappedValue < maxOffset;
 		}
-
-		public void Advance(int amount)
+		else
 		{
-			if (amount > Mod)
-				throw new Exception("Cannot advance more than one generation");
-			if (amount < 0)
-				throw new Exception("Cannot advance backwards");
-			if (amount == 0)
-				return;
-			int newBaseOffset = MappedBaseOffset + amount;
-			if (newBaseOffset >= Mod)
-			{
-				Generation += (uint)(newBaseOffset / Mod);
-				newBaseOffset %= Mod;
-			}
-			MappedBaseOffset = newBaseOffset;
+			return mappedValue >= MappedBaseOffset || mappedValue < maxOffset - Mod;
 		}
+	}
 
-		public void AdvanceToExcluded(int mappedValue)
+	public bool IsNextGen(int mappedValue) =>
+		   MappedBaseOffset > (Mod - ReceiveWindow)
+		&& mappedValue < (MappedBaseOffset + ReceiveWindow) - Mod;
+
+	public uint GetGeneration(int mappedValue) => (uint)(Generation + (IsNextGen(mappedValue) ? 1 : 0));
+
+	public int MappedToIndex(int mappedValue)
+	{
+		if (mappedValue >= Mod)
+			throw new ArgumentOutOfRangeException(nameof(mappedValue));
+
+		if (IsNextGen(mappedValue))
 		{
-			var moveDist = (mappedValue - MappedBaseOffset) + 1;
-			if (moveDist <= 0)
-				return;
-			Advance(moveDist);
+			// | XX             X>    | <= The part from BaseOffset to MappedMod is small enough to consider packets with wrapped numbers again
+			//   /\ NewValue    /\ BaseOffset
+			return (mappedValue + Mod) - MappedBaseOffset;
 		}
-
-		public bool IsInWindow(int mappedValue)
+		else
 		{
-			int maxOffset = MappedBaseOffset + ReceiveWindow;
-			if (maxOffset < Mod)
-			{
-				return mappedValue >= MappedBaseOffset && mappedValue < maxOffset;
-			}
-			else
-			{
-				return mappedValue >= MappedBaseOffset || mappedValue < maxOffset - Mod;
-			}
+			// |  X>             XX   |
+			//    /\ BaseOffset  /\ NewValue    // normal case
+			return mappedValue - MappedBaseOffset;
 		}
+	}
 
-		public bool IsNextGen(int mappedValue) =>
-			   MappedBaseOffset > (Mod - ReceiveWindow)
-			&& mappedValue < (MappedBaseOffset + ReceiveWindow) - Mod;
-
-		public uint GetGeneration(int mappedValue) => (uint)(Generation + (IsNextGen(mappedValue) ? 1 : 0));
-
-		public int MappedToIndex(int mappedValue)
-		{
-			if (mappedValue >= Mod)
-				throw new ArgumentOutOfRangeException(nameof(mappedValue));
-
-			if (IsNextGen(mappedValue))
-			{
-				// | XX             X>    | <= The part from BaseOffset to MappedMod is small enough to consider packets with wrapped numbers again
-				//   /\ NewValue    /\ BaseOffset
-				return (mappedValue + Mod) - MappedBaseOffset;
-			}
-			else
-			{
-				// |  X>             XX   |
-				//    /\ BaseOffset  /\ NewValue    // normal case
-				return mappedValue - MappedBaseOffset;
-			}
-		}
-
-		public void Reset()
-		{
-			MappedBaseOffset = 0;
-			Generation = 0;
-		}
+	public void Reset()
+	{
+		MappedBaseOffset = 0;
+		Generation = 0;
 	}
 }

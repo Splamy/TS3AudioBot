@@ -7,12 +7,11 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
-namespace TS3AudioBot.Playlists
+namespace TS3AudioBot.Playlists;
+
+public enum LoopMode
 {
-	public enum LoopMode
-	{
-		Off,
-		One,
-		All,
-	}
+	Off,
+	One,
+	All,
 }

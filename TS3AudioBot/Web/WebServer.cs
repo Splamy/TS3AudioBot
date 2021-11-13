@@ -20,177 +20,176 @@ using System.Threading.Tasks;
 using TS3AudioBot.Config;
 using TS3AudioBot.Dependency;
 
-namespace TS3AudioBot.Web
+namespace TS3AudioBot.Web;
+
+public sealed class WebServer : IDisposable
 {
-	public sealed class WebServer : IDisposable
+	private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
+	private const string DefaultFrontendFolder = "WebInterface";
+
+	private CancellationTokenSource? cancelToken;
+	private readonly ConfWeb config;
+	private readonly CoreInjector coreInjector;
+	private Api.WebApi? api;
+
+	public WebServer(ConfWeb config, CoreInjector coreInjector)
 	{
-		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
-		private const string DefaultFrontendFolder = "WebInterface";
+		this.config = config;
+		this.coreInjector = coreInjector;
+	}
 
-		private CancellationTokenSource? cancelToken;
-		private readonly ConfWeb config;
-		private readonly CoreInjector coreInjector;
-		private Api.WebApi? api;
+	// TODO write server to be reload-able
+	public void StartWebServer()
+	{
+		var startWebServer = false;
 
-		public WebServer(ConfWeb config, CoreInjector coreInjector)
+		if (config.Api.Enabled || config.Interface.Enabled)
 		{
-			this.config = config;
-			this.coreInjector = coreInjector;
+			if (!config.Api.Enabled)
+				Log.Warn("The api is required for the webinterface to work properly; The api is now implicitly enabled. Enable the api in the config to remove this warning.");
+
+			if (!coreInjector.TryCreate<Api.WebApi>(out var api))
+				throw new Exception("Could not create Api object.");
+
+			this.api = api;
+			startWebServer = true;
 		}
 
-		// TODO write server to be reload-able
-		public void StartWebServer()
+		if (startWebServer)
 		{
-			var startWebServer = false;
+			StartWebServerInternal();
+		}
+	}
 
-			if (config.Api.Enabled || config.Interface.Enabled)
+	public string? FindWebFolder()
+	{
+		var webData = config.Interface;
+		if (string.IsNullOrEmpty(webData.Path))
+		{
+			for (int i = 0; i < 5; i++)
 			{
-				if (!config.Api.Enabled)
-					Log.Warn("The api is required for the webinterface to work properly; The api is now implicitly enabled. Enable the api in the config to remove this warning.");
-
-				if (!coreInjector.TryCreate<Api.WebApi>(out var api))
-					throw new Exception("Could not create Api object.");
-
-				this.api = api;
-				startWebServer = true;
+				var up = Path.Combine(Enumerable.Repeat("..", i).ToArray());
+				var checkDir = Path.Combine(up, DefaultFrontendFolder);
+				if (Directory.Exists(checkDir))
+					return Path.GetFullPath(checkDir);
 			}
 
-			if (startWebServer)
-			{
-				StartWebServerInternal();
-			}
+			var asmWebPath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, DefaultFrontendFolder));
+			if (Directory.Exists(asmWebPath))
+				return asmWebPath;
+		}
+		else if (Directory.Exists(webData.Path))
+		{
+			return Path.GetFullPath(webData.Path);
 		}
 
-		public string? FindWebFolder()
-		{
-			var webData = config.Interface;
-			if (string.IsNullOrEmpty(webData.Path))
+		return null;
+	}
+
+	private void StartWebServerInternal()
+	{
+		cancelToken?.Cancel();
+		cancelToken?.Dispose();
+		cancelToken = new CancellationTokenSource();
+
+		var host = new WebHostBuilder()
+			.SuppressStatusMessages(true)
+			.ConfigureLogging((context, logging) =>
 			{
-				for (int i = 0; i < 5; i++)
-				{
-					var up = Path.Combine(Enumerable.Repeat("..", i).ToArray());
-					var checkDir = Path.Combine(up, DefaultFrontendFolder);
-					if (Directory.Exists(checkDir))
-						return Path.GetFullPath(checkDir);
-				}
-
-				var asmWebPath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, DefaultFrontendFolder));
-				if (Directory.Exists(asmWebPath))
-					return asmWebPath;
-			}
-			else if (Directory.Exists(webData.Path))
+				logging.ClearProviders();
+			})
+			.UseKestrel(kestrel =>
 			{
-				return Path.GetFullPath(webData.Path);
-			}
-
-			return null;
-		}
-
-		private void StartWebServerInternal()
-		{
-			cancelToken?.Cancel();
-			cancelToken?.Dispose();
-			cancelToken = new CancellationTokenSource();
-
-			var host = new WebHostBuilder()
-				.SuppressStatusMessages(true)
-				.ConfigureLogging((context, logging) =>
-				{
-					logging.ClearProviders();
+				kestrel.Limits.MaxRequestBodySize = 3_000_000; // 3 MiB should be enough
 				})
-				.UseKestrel(kestrel =>
+			.ConfigureServices(services =>
+			{
+				services.AddCors(options =>
 				{
-					kestrel.Limits.MaxRequestBodySize = 3_000_000; // 3 MiB should be enough
-				})
-				.ConfigureServices(services =>
-				{
-					services.AddCors(options =>
+					options.AddPolicy("TS3AB", builder =>
 					{
-						options.AddPolicy("TS3AB", builder =>
+						builder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader();
+					});
+				});
+			})
+			.Configure(app =>
+			{
+				app.UseCors("TS3AB");
+
+				if (api != null) // api enabled
+					{
+					app.Map(new PathString("/api"), map =>
+					{
+						map.Run(async ctx =>
 						{
-							builder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader();
+							using var _ = NLog.MappedDiagnosticsLogicalContext.SetScoped("BotId", "Api");
+							await Log.SwallowAsync(() => api.ProcessApiV1Call(ctx));
 						});
 					});
-				})
-				.Configure(app =>
-				{
-					app.UseCors("TS3AB");
-
-					if (api != null) // api enabled
-					{
-						app.Map(new PathString("/api"), map =>
-						{
-							map.Run(async ctx =>
-							{
-								using var _ = NLog.MappedDiagnosticsLogicalContext.SetScoped("BotId", "Api");
-								await Log.SwallowAsync(() => api.ProcessApiV1Call(ctx));
-							});
-						});
-					}
-
-					if (config.Interface.Enabled)
-					{
-						app.UseFileServer();
-					}
-
-					var applicationLifetime = app.ApplicationServices.GetRequiredService<IApplicationLifetime>();
-					applicationLifetime.ApplicationStopping.Register(OnShutdown);
-				});
-
-			if (config.Interface.Enabled)
-			{
-				var baseDir = FindWebFolder();
-				if (baseDir is null)
-				{
-					Log.Error("Can't find a WebInterface path to host. Try specifying the path to host in the config");
 				}
-				else
-				{
-					host.UseWebRoot(baseDir);
-				}
-			}
 
-			var addrs = config.Hosts.Value;
-			if (addrs.Contains("*"))
+				if (config.Interface.Enabled)
+				{
+					app.UseFileServer();
+				}
+
+				var applicationLifetime = app.ApplicationServices.GetRequiredService<IApplicationLifetime>();
+				applicationLifetime.ApplicationStopping.Register(OnShutdown);
+			});
+
+		if (config.Interface.Enabled)
+		{
+			var baseDir = FindWebFolder();
+			if (baseDir is null)
 			{
-				host.ConfigureKestrel(kestrel => { kestrel.ListenAnyIP(config.Port.Value); });
-			}
-			else if (addrs.Count == 1 && addrs[0] == "localhost")
-			{
-				host.ConfigureKestrel(kestrel => { kestrel.ListenLocalhost(config.Port.Value); });
+				Log.Error("Can't find a WebInterface path to host. Try specifying the path to host in the config");
 			}
 			else
 			{
-				host.UseUrls(addrs.Select(uri => new UriBuilder(uri) { Port = config.Port }.Uri.AbsoluteUri).ToArray());
+				host.UseWebRoot(baseDir);
 			}
+		}
 
-			Log.Info("Starting Webserver on port {0}", config.Port.Value);
-			new Func<Task>(async () =>
+		var addrs = config.Hosts.Value;
+		if (addrs.Contains("*"))
+		{
+			host.ConfigureKestrel(kestrel => { kestrel.ListenAnyIP(config.Port.Value); });
+		}
+		else if (addrs.Count == 1 && addrs[0] == "localhost")
+		{
+			host.ConfigureKestrel(kestrel => { kestrel.ListenLocalhost(config.Port.Value); });
+		}
+		else
+		{
+			host.UseUrls(addrs.Select(uri => new UriBuilder(uri) { Port = config.Port }.Uri.AbsoluteUri).ToArray());
+		}
+
+		Log.Info("Starting Webserver on port {0}", config.Port.Value);
+		new Func<Task>(async () =>
+		{
+			try
 			{
-				try
-				{
-					await host.Build().RunAsync(cancelToken.Token);
-				}
-				catch (Exception ex)
-				{
-					Log.Error(ex, "The webserver could not be started");
-					return;
-				}
-			})();
-		}
+				await host.Build().RunAsync(cancelToken.Token);
+			}
+			catch (Exception ex)
+			{
+				Log.Error(ex, "The webserver could not be started");
+				return;
+			}
+		})();
+	}
 
-		public static void OnShutdown()
-		{
-			Log.Info("WebServer has closed");
-		}
+	public static void OnShutdown()
+	{
+		Log.Info("WebServer has closed");
+	}
 
-		public void Dispose()
-		{
-			Log.Info("WebServer is closing");
+	public void Dispose()
+	{
+		Log.Info("WebServer is closing");
 
-			cancelToken?.Cancel();
-			cancelToken?.Dispose();
-			cancelToken = null;
-		}
+		cancelToken?.Cancel();
+		cancelToken?.Dispose();
+		cancelToken = null;
 	}
 }

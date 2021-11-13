@@ -13,170 +13,169 @@ using System.Collections.Generic;
 using TSLib.Helper;
 using TSLib.Messages;
 
-namespace TSLib
+namespace TSLib;
+
+internal abstract class BaseMessageProcessor
 {
-	internal abstract class BaseMessageProcessor
+	protected static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
+	protected readonly List<WaitBlock>[] dependingBlocks;
+	private readonly Func<string, NotificationType> findTypeOfNotification;
+	public Deserializer Deserializer { get; } = new();
+
+	protected ReadOnlyMemory<byte>? cmdLineBuffer;
+	private const byte AsciiSpace = (byte)' ';
+
+	protected BaseMessageProcessor(Func<string, NotificationType> findTypeOfNotification)
 	{
-		protected static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
-		protected readonly List<WaitBlock>[] dependingBlocks;
-		private readonly Func<string, NotificationType> findTypeOfNotification;
-		public Deserializer Deserializer { get; } = new();
+		dependingBlocks = new List<WaitBlock>[Enum.GetValues(typeof(NotificationType)).Length];
+		this.findTypeOfNotification = findTypeOfNotification;
+	}
 
-		protected ReadOnlyMemory<byte>? cmdLineBuffer;
-		private const byte AsciiSpace = (byte)' ';
+	public LazyNotification? PushMessage(ReadOnlyMemory<byte> message)
+	{
+		var msgSpan = message.Span;
+		string notifyname;
+		int splitindex = msgSpan.IndexOf(AsciiSpace);
+		if (splitindex < 0)
+			notifyname = msgSpan.TrimEnd(AsciiSpace).NewUtf8String();
+		else
+			notifyname = msgSpan.Slice(0, splitindex).NewUtf8String();
 
-		protected BaseMessageProcessor(Func<string, NotificationType> findTypeOfNotification)
+		bool hasEqual = notifyname.Contains('=');
+		NotificationType ntfyType;
+		if (hasEqual || (ntfyType = findTypeOfNotification(notifyname)) == NotificationType.Unknown)
 		{
-			dependingBlocks = new List<WaitBlock>[Enum.GetValues(typeof(NotificationType)).Length];
-			this.findTypeOfNotification = findTypeOfNotification;
+			if (!hasEqual)
+				Log.Debug("Maybe unknown notification: {0}", notifyname);
+			cmdLineBuffer = message;
+			return null;
 		}
 
-		public LazyNotification? PushMessage(ReadOnlyMemory<byte> message)
-		{
-			var msgSpan = message.Span;
-			string notifyname;
-			int splitindex = msgSpan.IndexOf(AsciiSpace);
-			if (splitindex < 0)
-				notifyname = msgSpan.TrimEnd(AsciiSpace).NewUtf8String();
-			else
-				notifyname = msgSpan.Slice(0, splitindex).NewUtf8String();
+		var lineDataPart = splitindex < 0 ? ReadOnlySpan<byte>.Empty : msgSpan[splitindex..];
 
-			bool hasEqual = notifyname.Contains('=');
-			NotificationType ntfyType;
-			if (hasEqual || (ntfyType = findTypeOfNotification(notifyname)) == NotificationType.Unknown)
+		// if it's not an error it is a notification
+		if (ntfyType != NotificationType.CommandError)
+		{
+			var notification = Deserializer.GenerateNotification(lineDataPart, ntfyType);
+			if (notification is null)
 			{
-				if (!hasEqual)
-					Log.Debug("Maybe unknown notification: {0}", notifyname);
-				cmdLineBuffer = message;
+				Log.Warn("Got unparsable message. ({0})", msgSpan.NewUtf8String());
 				return null;
 			}
 
-			var lineDataPart = splitindex < 0 ? ReadOnlySpan<byte>.Empty : msgSpan[splitindex..];
-
-			// if it's not an error it is a notification
-			if (ntfyType != NotificationType.CommandError)
+			var lazyNotification = new LazyNotification(notification, ntfyType);
+			var dependantList = dependingBlocks[(int)ntfyType];
+			if (dependantList != null)
 			{
-				var notification = Deserializer.GenerateNotification(lineDataPart, ntfyType);
-				if (notification is null)
+				foreach (var item in dependantList)
 				{
-					Log.Warn("Got unparsable message. ({0})", msgSpan.NewUtf8String());
-					return null;
-				}
-
-				var lazyNotification = new LazyNotification(notification, ntfyType);
-				var dependantList = dependingBlocks[(int)ntfyType];
-				if (dependantList != null)
-				{
-					foreach (var item in dependantList)
+					item.SetNotification(lazyNotification);
+					if (item.DependsOn != null)
 					{
-						item.SetNotification(lazyNotification);
-						if (item.DependsOn != null)
+						foreach (var otherDepType in item.DependsOn)
 						{
-							foreach (var otherDepType in item.DependsOn)
-							{
-								if (otherDepType == ntfyType)
-									continue;
-								dependingBlocks[(int)otherDepType]?.Remove(item);
-							}
+							if (otherDepType == ntfyType)
+								continue;
+							dependingBlocks[(int)otherDepType]?.Remove(item);
 						}
 					}
-					dependantList.Clear();
 				}
-
-				return lazyNotification;
+				dependantList.Clear();
 			}
 
-			var result = Deserializer.GenerateSingleNotification(lineDataPart, NotificationType.CommandError);
-			var errorStatus = result is null ? CommandError.Custom("Invalid Error code") : (CommandError)result;
-
-			return PushMessageInternal(errorStatus, ntfyType);
+			return lazyNotification;
 		}
 
-		protected abstract LazyNotification? PushMessageInternal(CommandError errorStatus, NotificationType ntfyType);
+		var result = Deserializer.GenerateSingleNotification(lineDataPart, NotificationType.CommandError);
+		var errorStatus = result is null ? CommandError.Custom("Invalid Error code") : (CommandError)result;
 
-		public abstract void DropQueue();
+		return PushMessageInternal(errorStatus, ntfyType);
 	}
 
-	internal sealed class AsyncMessageProcessor : BaseMessageProcessor
+	protected abstract LazyNotification? PushMessageInternal(CommandError errorStatus, NotificationType ntfyType);
+
+	public abstract void DropQueue();
+}
+
+internal sealed class AsyncMessageProcessor : BaseMessageProcessor
+{
+	private readonly Dictionary<string, WaitBlock> requestDict = new();
+
+	public AsyncMessageProcessor(Func<string, NotificationType> findTypeOfNotification) : base(findTypeOfNotification) { }
+	protected override LazyNotification? PushMessageInternal(CommandError errorStatus, NotificationType ntfyType)
 	{
-		private readonly Dictionary<string, WaitBlock> requestDict = new();
-
-		public AsyncMessageProcessor(Func<string, NotificationType> findTypeOfNotification) : base(findTypeOfNotification) { }
-		protected override LazyNotification? PushMessageInternal(CommandError errorStatus, NotificationType ntfyType)
+		if (errorStatus.ReturnCode is null)
 		{
-			if (errorStatus.ReturnCode is null)
-			{
-				return new LazyNotification(new[] { errorStatus }, ntfyType);
-			}
-
-			// otherwise it is the result status code to a request
-			if (requestDict.Remove(errorStatus.ReturnCode, out var waitBlock))
-			{
-				waitBlock.SetAnswerAuto(errorStatus, cmdLineBuffer);
-				cmdLineBuffer = null;
-			}
-			else { /* ??? */ }
-
-			return null;
+			return new LazyNotification(new[] { errorStatus }, ntfyType);
 		}
 
-		public void EnqueueRequest(string returnCode, WaitBlock waitBlock)
+		// otherwise it is the result status code to a request
+		if (requestDict.Remove(errorStatus.ReturnCode, out var waitBlock))
 		{
-			requestDict.Add(returnCode, waitBlock);
-			if (waitBlock.DependsOn != null)
-			{
-				foreach (var dependantType in waitBlock.DependsOn)
-				{
-					var depentantList = dependingBlocks[(int)dependantType];
-					if (depentantList is null)
-						dependingBlocks[(int)dependantType] = depentantList = new List<WaitBlock>();
-
-					depentantList.Add(waitBlock);
-				}
-			}
+			waitBlock.SetAnswerAuto(errorStatus, cmdLineBuffer);
+			cmdLineBuffer = null;
 		}
+		else { /* ??? */ }
 
-		public override void DropQueue()
+		return null;
+	}
+
+	public void EnqueueRequest(string returnCode, WaitBlock waitBlock)
+	{
+		requestDict.Add(returnCode, waitBlock);
+		if (waitBlock.DependsOn != null)
 		{
-			foreach (var wb in requestDict.Values)
-				wb.SetError(CommandError.ConnectionClosed);
-			requestDict.Clear();
-
-			foreach (var block in dependingBlocks)
+			foreach (var dependantType in waitBlock.DependsOn)
 			{
-				block?.ForEach(wb => wb.SetError(CommandError.ConnectionClosed));
-				block?.Clear();
+				var depentantList = dependingBlocks[(int)dependantType];
+				if (depentantList is null)
+					dependingBlocks[(int)dependantType] = depentantList = new List<WaitBlock>();
+
+				depentantList.Add(waitBlock);
 			}
 		}
 	}
 
-	internal sealed class SyncMessageProcessor : BaseMessageProcessor
+	public override void DropQueue()
 	{
-		private readonly ConcurrentQueue<WaitBlock> requestQueue = new();
+		foreach (var wb in requestDict.Values)
+			wb.SetError(CommandError.ConnectionClosed);
+		requestDict.Clear();
 
-		public SyncMessageProcessor(Func<string, NotificationType> findTypeOfNotification) : base(findTypeOfNotification) { }
-
-		protected override LazyNotification? PushMessageInternal(CommandError errorStatus, NotificationType ntfyType)
+		foreach (var block in dependingBlocks)
 		{
-			if (!requestQueue.IsEmpty && requestQueue.TryDequeue(out var waitBlock))
-			{
-				waitBlock.SetAnswerAuto(errorStatus, cmdLineBuffer);
-				cmdLineBuffer = null;
-			}
-			else { /* ??? */ }
-
-			return null;
+			block?.ForEach(wb => wb.SetError(CommandError.ConnectionClosed));
+			block?.Clear();
 		}
+	}
+}
 
-		public void EnqueueRequest(WaitBlock waitBlock)
+internal sealed class SyncMessageProcessor : BaseMessageProcessor
+{
+	private readonly ConcurrentQueue<WaitBlock> requestQueue = new();
+
+	public SyncMessageProcessor(Func<string, NotificationType> findTypeOfNotification) : base(findTypeOfNotification) { }
+
+	protected override LazyNotification? PushMessageInternal(CommandError errorStatus, NotificationType ntfyType)
+	{
+		if (!requestQueue.IsEmpty && requestQueue.TryDequeue(out var waitBlock))
 		{
-			requestQueue.Enqueue(waitBlock);
+			waitBlock.SetAnswerAuto(errorStatus, cmdLineBuffer);
+			cmdLineBuffer = null;
 		}
+		else { /* ??? */ }
 
-		public override void DropQueue()
-		{
-			while (!requestQueue.IsEmpty && requestQueue.TryDequeue(out var waitBlock))
-				waitBlock.SetError(CommandError.ConnectionClosed);
-		}
+		return null;
+	}
+
+	public void EnqueueRequest(WaitBlock waitBlock)
+	{
+		requestQueue.Enqueue(waitBlock);
+	}
+
+	public override void DropQueue()
+	{
+		while (!requestQueue.IsEmpty && requestQueue.TryDequeue(out var waitBlock))
+			waitBlock.SetError(CommandError.ConnectionClosed);
 	}
 }

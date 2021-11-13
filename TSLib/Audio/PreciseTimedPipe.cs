@@ -11,112 +11,111 @@ using System;
 using System.Threading;
 using TSLib.Helper;
 
-namespace TSLib.Audio
+namespace TSLib.Audio;
+
+public sealed class PreciseTimedPipe : IAudioActiveConsumer, IAudioActiveProducer, IDisposable
 {
-	public sealed class PreciseTimedPipe : IAudioActiveConsumer, IAudioActiveProducer, IDisposable
+	public PreciseAudioTimer AudioTimer { get; }
+
+	public IAudioPassiveProducer? InStream { get; set; }
+	public IAudioPassiveConsumer? OutStream { get; set; }
+
+	public TimeSpan AudioBufferLength { get; set; } = TimeSpan.FromMilliseconds(20);
+	public TimeSpan SendCheckInterval { get; set; } = TimeSpan.FromMilliseconds(5);
+	public int ReadBufferSize { get; set; } = 960 * 4;
+	private byte[] readBuffer = Array.Empty<byte>();
+	private readonly Thread tickThread;
+	private bool running;
+
+	private bool paused;
+	public bool Paused
 	{
-		public PreciseAudioTimer AudioTimer { get; }
-
-		public IAudioPassiveProducer? InStream { get; set; }
-		public IAudioPassiveConsumer? OutStream { get; set; }
-
-		public TimeSpan AudioBufferLength { get; set; } = TimeSpan.FromMilliseconds(20);
-		public TimeSpan SendCheckInterval { get; set; } = TimeSpan.FromMilliseconds(5);
-		public int ReadBufferSize { get; set; } = 960 * 4;
-		private byte[] readBuffer = Array.Empty<byte>();
-		private readonly Thread tickThread;
-		private bool running;
-
-		private bool paused;
-		public bool Paused
+		get => paused;
+		set
 		{
-			get => paused;
-			set
+			if (paused != value)
 			{
-				if (paused != value)
+				paused = value;
+				if (value)
 				{
-					paused = value;
-					if (value)
-					{
-						AudioTimer.SongPositionOffset = AudioTimer.SongPosition;
-						AudioTimer.Stop();
-					}
-					else
-						AudioTimer.Start();
+					AudioTimer.SongPositionOffset = AudioTimer.SongPosition;
+					AudioTimer.Stop();
 				}
+				else
+					AudioTimer.Start();
 			}
 		}
+	}
 
-		public PreciseTimedPipe(SampleInfo info, Id id)
+	public PreciseTimedPipe(SampleInfo info, Id id)
+	{
+		running = true;
+		paused = true;
+
+		AudioTimer = new PreciseAudioTimer(info);
+		AudioTimer.Start();
+
+		tickThread = new Thread(() => { Tools.SetLogId(id); ReadLoop(); }) { Name = $"AudioPipe[{id}]" };
+		tickThread.Start();
+	}
+
+	public PreciseTimedPipe(SampleInfo info, Id id, IAudioPassiveProducer inStream) : this(info, id)
+	{
+		InStream = inStream;
+	}
+
+	public PreciseTimedPipe(SampleInfo info, Id id, IAudioPassiveConsumer outStream) : this(info, id)
+	{
+		OutStream = outStream;
+	}
+
+	public PreciseTimedPipe(SampleInfo info, Id id, IAudioPassiveProducer inStream, IAudioPassiveConsumer outStream) : this(info, id)
+	{
+		InStream = inStream;
+		OutStream = outStream;
+	}
+
+	private void ReadLoop()
+	{
+		while (running)
 		{
-			running = true;
-			paused = true;
-
-			AudioTimer = new PreciseAudioTimer(info);
-			AudioTimer.Start();
-
-			tickThread = new Thread(() => { Tools.SetLogId(id); ReadLoop(); }) { Name = $"AudioPipe[{id}]" };
-			tickThread.Start();
+			if (!Paused)
+				ReadTick();
+			Thread.Sleep(SendCheckInterval);
 		}
+	}
 
-		public PreciseTimedPipe(SampleInfo info, Id id, IAudioPassiveProducer inStream) : this(info, id)
-		{
-			InStream = inStream;
-		}
+	private void ReadTick()
+	{
+		var inStream = InStream;
+		if (inStream is null)
+			return;
 
-		public PreciseTimedPipe(SampleInfo info, Id id, IAudioPassiveConsumer outStream) : this(info, id)
-		{
-			OutStream = outStream;
-		}
+		if (readBuffer.Length < ReadBufferSize)
+			readBuffer = new byte[ReadBufferSize];
 
-		public PreciseTimedPipe(SampleInfo info, Id id, IAudioPassiveProducer inStream, IAudioPassiveConsumer outStream) : this(info, id)
+		while (AudioTimer.RemainingBufferDuration < AudioBufferLength)
 		{
-			InStream = inStream;
-			OutStream = outStream;
-		}
-
-		private void ReadLoop()
-		{
-			while (running)
-			{
-				if (!Paused)
-					ReadTick();
-				Thread.Sleep(SendCheckInterval);
-			}
-		}
-
-		private void ReadTick()
-		{
-			var inStream = InStream;
-			if (inStream is null)
+			var readBufferSpan = readBuffer.AsSpan(0, ReadBufferSize);
+			int read = inStream.Read(readBufferSpan, out var meta);
+			if (read == 0)
 				return;
 
-			if (readBuffer.Length < ReadBufferSize)
-				readBuffer = new byte[ReadBufferSize];
+			if (AudioTimer.RemainingBufferDuration < TimeSpan.Zero)
+				AudioTimer.ResetRemoteBuffer();
 
-			while (AudioTimer.RemainingBufferDuration < AudioBufferLength)
-			{
-				var readBufferSpan = readBuffer.AsSpan(0, ReadBufferSize);
-				int read = inStream.Read(readBufferSpan, out var meta);
-				if (read == 0)
-					return;
+			AudioTimer.PushBytes(read);
 
-				if (AudioTimer.RemainingBufferDuration < TimeSpan.Zero)
-					AudioTimer.ResetRemoteBuffer();
-
-				AudioTimer.PushBytes(read);
-
-				OutStream?.Write(readBufferSpan[..read], meta);
-			}
+			OutStream?.Write(readBufferSpan[..read], meta);
 		}
+	}
 
-		public void Dispose()
-		{
-			if (!running)
-				return;
+	public void Dispose()
+	{
+		if (!running)
+			return;
 
-			running = false;
-			tickThread.Join();
-		}
+		running = false;
+		tickThread.Join();
 	}
 }

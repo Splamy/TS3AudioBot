@@ -23,609 +23,608 @@ using TSLib.Full;
 using TSLib.Helper;
 using TSLib.Messages;
 
-namespace TS3AudioBot.Rights
+namespace TS3AudioBot.Rights;
+
+/// <summary>Permission system of the bot.</summary>
+public class RightsManager
 {
-	/// <summary>Permission system of the bot.</summary>
-	public class RightsManager
+	private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
+	private const int RuleLevelSize = 2;
+
+	private bool needsRecalculation;
+	private readonly ConfRights config;
+	private RightsRule? rootRule;
+	private HashSet<string> registeredRights = new();
+	private readonly object rootRuleLock = new();
+
+	// Required Matcher Data:
+	// This variables save whether the current rights setup has at least one rule that
+	// need a certain additional information.
+	// This will save us from making unnecessary query calls.
+	private bool needsAvailableGroups = true;
+	private bool needsAvailableChanGroups = true;
+	private TsPermission[] needsPermOverview = Array.Empty<TsPermission>();
+
+	public RightsManager(ConfRights config)
 	{
-		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
-		private const int RuleLevelSize = 2;
+		this.config = config;
+		needsRecalculation = true;
+	}
 
-		private bool needsRecalculation;
-		private readonly ConfRights config;
-		private RightsRule? rootRule;
-		private HashSet<string> registeredRights = new();
-		private readonly object rootRuleLock = new();
-
-		// Required Matcher Data:
-		// This variables save whether the current rights setup has at least one rule that
-		// need a certain additional information.
-		// This will save us from making unnecessary query calls.
-		private bool needsAvailableGroups = true;
-		private bool needsAvailableChanGroups = true;
-		private TsPermission[] needsPermOverview = Array.Empty<TsPermission>();
-
-		public RightsManager(ConfRights config)
+	public void SetRightsList(IEnumerable<string> rights)
+	{
+		var newRights = new HashSet<string>(rights);
+		if (!registeredRights.SetEquals(newRights))
 		{
-			this.config = config;
+			// TODO validate right names
+			registeredRights = newRights;
 			needsRecalculation = true;
 		}
+	}
 
-		public void SetRightsList(IEnumerable<string> rights)
+	public async ValueTask<bool> HasAllRights(ExecutionInformation info, params string[] requestedRights)
+	{
+		var ctx = await GetRightsContext(info);
+		var normalizedRequest = ExpandRights(registeredRights, requestedRights);
+		return ctx.DeclAdd.IsSupersetOf(normalizedRequest);
+	}
+
+	public async ValueTask<string[]> GetRightsSubset(ExecutionInformation info, params string[] requestedRights)
+	{
+		var ctx = await GetRightsContext(info);
+		var normalizedRequest = ExpandRights(registeredRights, requestedRights);
+		return ctx.DeclAdd.Intersect(normalizedRequest).ToArray();
+	}
+
+	private async ValueTask<ExecuteContext> GetRightsContext(ExecutionInformation info)
+	{
+		var localRootRule = TryGetRootSafe();
+
+		if (info.TryGet<ExecuteContext>(out var execCtx))
+			return execCtx;
+
+		execCtx = new ExecuteContext();
+
+		if (info.TryGet<ClientCall>(out var clientCall))
 		{
-			var newRights = new HashSet<string>(rights);
-			if (!registeredRights.SetEquals(newRights))
+			execCtx.ServerGroups = clientCall.ServerGroups;
+			execCtx.ClientUid = clientCall.ClientUid;
+			execCtx.Visibility = clientCall.Visibility;
+			execCtx.IsApi = false;
+
+			// Get Required Matcher Data:
+			// In this region we will iteratively go through different possibilities to obtain
+			// as much data as we can about our invoker.
+			// For this step we will prefer query calls which can give us more than one information
+			// at once and lazily fall back to other calls as long as needed.
+
+			if (info.TryGet<Ts3Client>(out var ts) && info.TryGet<TsFullClient>(out var tsClient))
 			{
-				// TODO validate right names
-				registeredRights = newRights;
-				needsRecalculation = true;
-			}
-		}
+				ServerGroupId[]? serverGroups = clientCall.ServerGroups;
+				ChannelId? channelId = clientCall.ChannelId;
+				ClientDbId? databaseId = clientCall.DatabaseId;
+				ChannelGroupId? channelGroup = clientCall.ChannelGroup;
 
-		public async ValueTask<bool> HasAllRights(ExecutionInformation info, params string[] requestedRights)
-		{
-			var ctx = await GetRightsContext(info);
-			var normalizedRequest = ExpandRights(registeredRights, requestedRights);
-			return ctx.DeclAdd.IsSupersetOf(normalizedRequest);
-		}
-
-		public async ValueTask<string[]> GetRightsSubset(ExecutionInformation info, params string[] requestedRights)
-		{
-			var ctx = await GetRightsContext(info);
-			var normalizedRequest = ExpandRights(registeredRights, requestedRights);
-			return ctx.DeclAdd.Intersect(normalizedRequest).ToArray();
-		}
-
-		private async ValueTask<ExecuteContext> GetRightsContext(ExecutionInformation info)
-		{
-			var localRootRule = TryGetRootSafe();
-
-			if (info.TryGet<ExecuteContext>(out var execCtx))
-				return execCtx;
-
-			execCtx = new ExecuteContext();
-
-			if (info.TryGet<ClientCall>(out var clientCall))
-			{
-				execCtx.ServerGroups = clientCall.ServerGroups;
-				execCtx.ClientUid = clientCall.ClientUid;
-				execCtx.Visibility = clientCall.Visibility;
-				execCtx.IsApi = false;
-
-				// Get Required Matcher Data:
-				// In this region we will iteratively go through different possibilities to obtain
-				// as much data as we can about our invoker.
-				// For this step we will prefer query calls which can give us more than one information
-				// at once and lazily fall back to other calls as long as needed.
-
-				if (info.TryGet<Ts3Client>(out var ts) && info.TryGet<TsFullClient>(out var tsClient))
-				{
-					ServerGroupId[]? serverGroups = clientCall.ServerGroups;
-					ChannelId? channelId = clientCall.ChannelId;
-					ClientDbId? databaseId = clientCall.DatabaseId;
-					ChannelGroupId? channelGroup = clientCall.ChannelGroup;
-
-					if (clientCall.ClientId != null
-						&& ((needsAvailableGroups && serverGroups is null)
-							|| (needsAvailableChanGroups && channelGroup is null)
-							|| (needsPermOverview.Length > 0 && (databaseId == null || channelId == null))
-						)
+				if (clientCall.ClientId != null
+					&& ((needsAvailableGroups && serverGroups is null)
+						|| (needsAvailableChanGroups && channelGroup is null)
+						|| (needsPermOverview.Length > 0 && (databaseId == null || channelId == null))
 					)
+				)
+				{
+					try
+					{
+						var clientInfo = await ts.GetClientInfoById(clientCall.ClientId.Value);
+						serverGroups = clientInfo.ServerGroups;
+						channelGroup = clientInfo.ChannelGroup;
+						databaseId = clientInfo.DatabaseId;
+						channelId = clientInfo.ChannelId;
+					}
+					catch (AudioBotException) { }
+				}
+
+				if (needsAvailableGroups && serverGroups is null)
+				{
+					if (databaseId == null)
 					{
 						try
 						{
-							var clientInfo = await ts.GetClientInfoById(clientCall.ClientId.Value);
-							serverGroups = clientInfo.ServerGroups;
-							channelGroup = clientInfo.ChannelGroup;
-							databaseId = clientInfo.DatabaseId;
-							channelId = clientInfo.ChannelId;
+							databaseId = await ts.GetClientDbIdByUid(clientCall.ClientUid);
 						}
 						catch (AudioBotException) { }
 					}
 
-					if (needsAvailableGroups && serverGroups is null)
+					if (databaseId != null)
 					{
-						if (databaseId == null)
+						try
 						{
-							try
-							{
-								databaseId = await ts.GetClientDbIdByUid(clientCall.ClientUid);
-							}
-							catch (AudioBotException) { }
+							serverGroups = await ts.GetClientServerGroups(databaseId.Value);
 						}
-
-						if (databaseId != null)
-						{
-							try
-							{
-								serverGroups = await ts.GetClientServerGroups(databaseId.Value);
-							}
-							catch (AudioBotException) { }
-						}
+						catch (AudioBotException) { }
 					}
+				}
 
-					execCtx.ChannelGroupId = channelGroup;
-					execCtx.ServerGroups = serverGroups ?? Array.Empty<ServerGroupId>();
+				execCtx.ChannelGroupId = channelGroup;
+				execCtx.ServerGroups = serverGroups ?? Array.Empty<ServerGroupId>();
 
-					if (needsPermOverview.Length > 0 && databaseId != null && channelId != null)
+				if (needsPermOverview.Length > 0 && databaseId != null && channelId != null)
+				{
+					// TODO check if there is any better way to only get the permissions needed.
+					var result = await tsClient.PermOverview(databaseId.Value, channelId.Value, 0);
+					if (result.GetOk(out var perms))
 					{
-						// TODO check if there is any better way to only get the permissions needed.
-						var result = await tsClient.PermOverview(databaseId.Value, channelId.Value, 0);
-						if (result.GetOk(out var perms))
+						execCtx.Permissions = new PermOverview[Enum.GetValues(typeof(TsPermission)).Length];
+						foreach (var perm in perms)
 						{
-							execCtx.Permissions = new PermOverview[Enum.GetValues(typeof(TsPermission)).Length];
-							foreach (var perm in perms)
-							{
-								if (perm.PermissionId < 0 || (int)perm.PermissionId >= execCtx.Permissions.Length)
-									continue;
-								var cur = execCtx.Permissions[(int)perm.PermissionId];
-								execCtx.Permissions[(int)perm.PermissionId] = cur == null ? perm : cur.Combine(perm);
-							}
+							if (perm.PermissionId < 0 || (int)perm.PermissionId >= execCtx.Permissions.Length)
+								continue;
+							var cur = execCtx.Permissions[(int)perm.PermissionId];
+							execCtx.Permissions[(int)perm.PermissionId] = cur == null ? perm : cur.Combine(perm);
 						}
 					}
 				}
 			}
-			else if (info.TryGet<ApiCall>(out var apiCallData))
-			{
-				execCtx.ClientUid = apiCallData.ClientUid;
-				execCtx.ApiToken = apiCallData.Token;
-				execCtx.ApiCallerIp = apiCallData.IpAddress;
-				execCtx.IsApi = true;
-			}
+		}
+		else if (info.TryGet<ApiCall>(out var apiCallData))
+		{
+			execCtx.ClientUid = apiCallData.ClientUid;
+			execCtx.ApiToken = apiCallData.Token;
+			execCtx.ApiCallerIp = apiCallData.IpAddress;
+			execCtx.IsApi = true;
+		}
 
-			if (info.TryGet<Bot>(out var bot))
-			{
-				var botInfo = bot.GetInfo();
-				execCtx.Bot = botInfo.Name;
-				execCtx.Host = botInfo.Server;
-			}
+		if (info.TryGet<Bot>(out var bot))
+		{
+			var botInfo = bot.GetInfo();
+			execCtx.Bot = botInfo.Name;
+			execCtx.Host = botInfo.Server;
+		}
 
-			if (localRootRule != null)
-				ProcessNode(localRootRule, execCtx);
+		if (localRootRule != null)
+			ProcessNode(localRootRule, execCtx);
 
-			if (execCtx.MatchingRules.Count == 0)
-				return execCtx;
-
-			foreach (var rule in execCtx.MatchingRules)
-				execCtx.DeclAdd.UnionWith(rule.DeclAdd);
-
-			info.AddModule(execCtx);
-
+		if (execCtx.MatchingRules.Count == 0)
 			return execCtx;
-		}
 
-		private RightsRule? TryGetRootSafe()
+		foreach (var rule in execCtx.MatchingRules)
+			execCtx.DeclAdd.UnionWith(rule.DeclAdd);
+
+		info.AddModule(execCtx);
+
+		return execCtx;
+	}
+
+	private RightsRule? TryGetRootSafe()
+	{
+		var localRootRule = rootRule;
+		if (localRootRule != null && !needsRecalculation)
+			return localRootRule;
+
+		lock (rootRuleLock)
 		{
-			var localRootRule = rootRule;
-			if (localRootRule != null && !needsRecalculation)
-				return localRootRule;
-
-			lock (rootRuleLock)
-			{
-				if (rootRule != null && !needsRecalculation)
-					return rootRule;
-
-				rootRule = ReadFile();
+			if (rootRule != null && !needsRecalculation)
 				return rootRule;
+
+			rootRule = ReadFile();
+			return rootRule;
+		}
+	}
+
+	private static bool ProcessNode(RightsRule rule, ExecuteContext ctx)
+	{
+		// check if node matches
+		if (rule.Matches(ctx))
+		{
+			bool hasMatchingChild = false;
+			foreach (var child in rule.ChildrenRules)
+				hasMatchingChild |= ProcessNode(child, ctx);
+
+			if (!hasMatchingChild)
+				ctx.MatchingRules.Add(rule);
+			return true;
+		}
+		return false;
+	}
+
+	public bool Reload()
+	{
+		needsRecalculation = true;
+		return TryGetRootSafe() != null;
+	}
+
+	// Loading and Parsing
+
+	private RightsRule? ReadFile()
+	{
+		try
+		{
+			CreateDefaultConfigIfNotExists();
+
+			var table = Toml.ReadFile(config.Path);
+			var ctx = new ParseContext(registeredRights);
+			RecalculateRights(table, ctx);
+			foreach (var err in ctx.Errors)
+				Log.Error(err);
+			foreach (var warn in ctx.Warnings)
+				Log.Warn(warn);
+
+			if (ctx.Errors.Count == 0)
+			{
+				needsAvailableChanGroups = ctx.NeedsAvailableChanGroups;
+				needsAvailableGroups = ctx.NeedsAvailableGroups;
+				needsPermOverview = ctx.NeedsPermOverview.Count > 0 ? ctx.NeedsPermOverview.ToArray() : Array.Empty<TsPermission>();
+				needsRecalculation = false;
+				return ctx.RootRule;
 			}
 		}
-
-		private static bool ProcessNode(RightsRule rule, ExecuteContext ctx)
+		catch (Exception ex)
 		{
-			// check if node matches
-			if (rule.Matches(ctx))
-			{
-				bool hasMatchingChild = false;
-				foreach (var child in rule.ChildrenRules)
-					hasMatchingChild |= ProcessNode(child, ctx);
+			Log.Error(ex, "The rights file could not be parsed");
+		}
+		return null;
+	}
 
-				if (!hasMatchingChild)
-					ctx.MatchingRules.Add(rule);
-				return true;
-			}
-			return false;
+	public void CreateDefaultConfigIfNotExists()
+	{
+		CreateConfig(new CreateFileSettings { OverwriteIfExists = false });
+	}
+
+	public void CreateConfig(CreateFileSettings settings)
+	{
+		if (!settings.OverwriteIfExists && File.Exists(config.Path))
+			return;
+
+		Log.Info("Creating new permission file ({@settings})", settings);
+
+		string? toml = null;
+		using (var fs = Util.GetEmbeddedFile("TS3AudioBot.Resources.DefaultRights.toml")!)
+		using (var reader = new StreamReader(fs, Tools.Utf8Encoder))
+		{
+			toml = reader.ReadToEnd();
 		}
 
-		public bool Reload()
+		using (var fs = File.Open(config.Path, FileMode.Create, FileAccess.Write, FileShare.None))
+		using (var writer = new StreamWriter(fs, Tools.Utf8Encoder))
 		{
-			needsRecalculation = true;
-			return TryGetRootSafe() != null;
+			string replaceAdminUids = settings.AdminUids != null
+				? string.Join(" ,", settings.AdminUids.Select(x => $"\"{x}\""))
+				: string.Empty;
+			toml = toml.Replace("\"_admin_uid_\"", replaceAdminUids);
+
+			writer.Write(toml);
 		}
+	}
 
-		// Loading and Parsing
+	public void CreateConfigIfNotExists(bool interactive = false)
+	{
+		if (File.Exists(config.Path))
+			return;
 
-		private RightsRule? ReadFile()
+		Log.Warn("No permission file found.");
+
+		var settings = new CreateFileSettings
 		{
-			try
+			OverwriteIfExists = false,
+		};
+
+		if (interactive)
+		{
+			Console.WriteLine("Do you want to set up an admin in the default permission file template? [Y/n]");
+			if (Interactive.UserAgree(defaultTo: true))
 			{
-				CreateDefaultConfigIfNotExists();
-
-				var table = Toml.ReadFile(config.Path);
-				var ctx = new ParseContext(registeredRights);
-				RecalculateRights(table, ctx);
-				foreach (var err in ctx.Errors)
-					Log.Error(err);
-				foreach (var warn in ctx.Warnings)
-					Log.Warn(warn);
-
-				if (ctx.Errors.Count == 0)
+				var adminUid = Interactive.LoopAction("Please enter an admin uid", uid =>
 				{
-					needsAvailableChanGroups = ctx.NeedsAvailableChanGroups;
-					needsAvailableGroups = ctx.NeedsAvailableGroups;
-					needsPermOverview = ctx.NeedsPermOverview.Count > 0 ? ctx.NeedsPermOverview.ToArray() : Array.Empty<TsPermission>();
-					needsRecalculation = false;
-					return ctx.RootRule;
-				}
-			}
-			catch (Exception ex)
-			{
-				Log.Error(ex, "The rights file could not be parsed");
-			}
-			return null;
-		}
-
-		public void CreateDefaultConfigIfNotExists()
-		{
-			CreateConfig(new CreateFileSettings { OverwriteIfExists = false });
-		}
-
-		public void CreateConfig(CreateFileSettings settings)
-		{
-			if (!settings.OverwriteIfExists && File.Exists(config.Path))
-				return;
-
-			Log.Info("Creating new permission file ({@settings})", settings);
-
-			string? toml = null;
-			using (var fs = Util.GetEmbeddedFile("TS3AudioBot.Resources.DefaultRights.toml")!)
-			using (var reader = new StreamReader(fs, Tools.Utf8Encoder))
-			{
-				toml = reader.ReadToEnd();
-			}
-
-			using (var fs = File.Open(config.Path, FileMode.Create, FileAccess.Write, FileShare.None))
-			using (var writer = new StreamWriter(fs, Tools.Utf8Encoder))
-			{
-				string replaceAdminUids = settings.AdminUids != null
-					? string.Join(" ,", settings.AdminUids.Select(x => $"\"{x}\""))
-					: string.Empty;
-				toml = toml.Replace("\"_admin_uid_\"", replaceAdminUids);
-
-				writer.Write(toml);
-			}
-		}
-
-		public void CreateConfigIfNotExists(bool interactive = false)
-		{
-			if (File.Exists(config.Path))
-				return;
-
-			Log.Warn("No permission file found.");
-
-			var settings = new CreateFileSettings
-			{
-				OverwriteIfExists = false,
-			};
-
-			if (interactive)
-			{
-				Console.WriteLine("Do you want to set up an admin in the default permission file template? [Y/n]");
-				if (Interactive.UserAgree(defaultTo: true))
-				{
-					var adminUid = Interactive.LoopAction("Please enter an admin uid", uid =>
+					if (!Uid.IsValid(uid))
 					{
-						if (!Uid.IsValid(uid))
-						{
-							Console.WriteLine("The uid seems to be invalid, continue anyway? [y/N]");
-							return Interactive.UserAgree(defaultTo: false);
-						}
-						return true;
-					});
-					if (adminUid is null)
-						return;
-
-					settings.AdminUids = new[] { adminUid };
-				}
-			}
-
-			CreateConfig(settings);
-		}
-
-		private static void RecalculateRights(TomlTable table, ParseContext parseCtx)
-		{
-			if (!parseCtx.RootRule.ParseChildren(table, parseCtx))
-				return;
-
-			parseCtx.SplitDeclarations();
-
-			if (!ValidateUniqueGroupNames(parseCtx))
-				return;
-
-			if (!ResolveIncludes(parseCtx))
-				return;
-
-			if (!CheckCyclicGroupDependencies(parseCtx))
-				return;
-
-			BuildLevel(parseCtx.RootRule);
-
-			LintDeclarations(parseCtx);
-
-			NormalizeRules(parseCtx);
-
-			FlattenGroups(parseCtx);
-
-			FlattenRules(parseCtx.RootRule);
-
-			CheckRequiredCalls(parseCtx);
-		}
-
-		private static HashSet<string> ExpandRights(ISet<string> registeredRights, IEnumerable<string> rights)
-		{
-			var rightsExpanded = new HashSet<string>();
-			foreach (var right in rights)
-			{
-				ExpandRights(rightsExpanded, registeredRights, right);
-			}
-			return rightsExpanded;
-		}
-
-		private static void ExpandRights(ISet<string> expanded, ISet<string> registeredRights, string right)
-		{
-			int index = right.IndexOf('*');
-			if (index < 0)
-			{
-				// Rule does not contain any wildcards
-				expanded.Add(right);
-				return;
-			}
-
-			if (index == 0 && right.Length == 1) // right == "*"
-			{
-				// We are done here when including every possible right
-				expanded.UnionWith(registeredRights);
-				return;
-			}
-
-			if (right[index - 1] != '.')
-			{
-				// Do not permit misused wildcards
-				throw new ArgumentException($"The right \"{right}\" has a misused wildcard.");
-			}
-
-			// Add all rights which expand from that wildcard
-			var subMatch = right[..(index - 1)];
-			var subMatchWithDot = subMatch + ".";
-			expanded.UnionWith(registeredRights.Where(registeredPerm =>
-			{
-				if (registeredPerm.Length < subMatch.Length) return false;
-				else if (registeredPerm.Length == subMatch.Length) return registeredPerm == subMatch;
-				else return registeredPerm.StartsWith(subMatchWithDot, StringComparison.Ordinal);
-			}));
-		}
-
-		/// <summary>
-		/// Removes rights which are in the Add and Deny category.
-		/// Expands wildcard declarations to all explicit declarations.
-		/// </summary>
-		/// <param name="ctx">The parsing context for the current file processing.</param>
-		private static void NormalizeRules(ParseContext ctx)
-		{
-			foreach (var rule in ctx.Rules)
-			{
-				var denyNormalized = ExpandRights(ctx.RegisteredRights, rule.DeclDeny);
-				rule.DeclDeny = denyNormalized.ToArray();
-				var addNormalized = ExpandRights(ctx.RegisteredRights, rule.DeclAdd);
-				addNormalized.ExceptWith(rule.DeclDeny);
-				rule.DeclAdd = addNormalized.ToArray();
-
-				var undeclared = rule.DeclAdd.Except(ctx.RegisteredRights)
-					.Concat(rule.DeclDeny.Except(ctx.RegisteredRights));
-				foreach (var right in undeclared)
-				{
-					ctx.Warnings.Add($"Right \"{right}\" is not registered.");
-				}
-			}
-		}
-
-		/// <summary>
-		/// Checks that each group name can be uniquely identified when resolving.
-		/// </summary>
-		/// <param name="ctx">The parsing context for the current file processing.</param>
-		private static bool ValidateUniqueGroupNames(ParseContext ctx)
-		{
-			bool hasErrors = false;
-
-			foreach (var checkGroup in ctx.Groups)
-			{
-				// check that the name is unique
-				var parent = checkGroup.Parent;
-				while (parent != null)
-				{
-					foreach (var cmpGroup in parent.ChildrenGroups)
-					{
-						if (cmpGroup != checkGroup
-							&& cmpGroup.Name == checkGroup.Name)
-						{
-							ctx.Errors.Add($"Ambiguous group name: {checkGroup.Name}");
-							hasErrors = true;
-						}
+						Console.WriteLine("The uid seems to be invalid, continue anyway? [y/N]");
+						return Interactive.UserAgree(defaultTo: false);
 					}
-					parent = parent.Parent;
-				}
+					return true;
+				});
+				if (adminUid is null)
+					return;
+
+				settings.AdminUids = new[] { adminUid };
 			}
-
-			return !hasErrors;
 		}
 
-		/// <summary>
-		/// Resolves all include strings to their representative object each.
-		/// </summary>
-		/// <param name="ctx">The parsing context for the current file processing.</param>
-		private static bool ResolveIncludes(ParseContext ctx)
+		CreateConfig(settings);
+	}
+
+	private static void RecalculateRights(TomlTable table, ParseContext parseCtx)
+	{
+		if (!parseCtx.RootRule.ParseChildren(table, parseCtx))
+			return;
+
+		parseCtx.SplitDeclarations();
+
+		if (!ValidateUniqueGroupNames(parseCtx))
+			return;
+
+		if (!ResolveIncludes(parseCtx))
+			return;
+
+		if (!CheckCyclicGroupDependencies(parseCtx))
+			return;
+
+		BuildLevel(parseCtx.RootRule);
+
+		LintDeclarations(parseCtx);
+
+		NormalizeRules(parseCtx);
+
+		FlattenGroups(parseCtx);
+
+		FlattenRules(parseCtx.RootRule);
+
+		CheckRequiredCalls(parseCtx);
+	}
+
+	private static HashSet<string> ExpandRights(ISet<string> registeredRights, IEnumerable<string> rights)
+	{
+		var rightsExpanded = new HashSet<string>();
+		foreach (var right in rights)
 		{
-			bool hasErrors = false;
+			ExpandRights(rightsExpanded, registeredRights, right);
+		}
+		return rightsExpanded;
+	}
 
-			foreach (var decl in ctx.Declarations)
-				hasErrors |= !decl.ResolveIncludes(ctx);
-
-			return !hasErrors;
+	private static void ExpandRights(ISet<string> expanded, ISet<string> registeredRights, string right)
+	{
+		int index = right.IndexOf('*');
+		if (index < 0)
+		{
+			// Rule does not contain any wildcards
+			expanded.Add(right);
+			return;
 		}
 
-		/// <summary>
-		/// Checks if group includes form a cyclic dependency.
-		/// </summary>
-		/// <param name="ctx">The parsing context for the current file processing.</param>
-		private static bool CheckCyclicGroupDependencies(ParseContext ctx)
+		if (index == 0 && right.Length == 1) // right == "*"
 		{
-			bool hasErrors = false;
+			// We are done here when including every possible right
+			expanded.UnionWith(registeredRights);
+			return;
+		}
 
-			foreach (var checkGroup in ctx.Groups)
+		if (right[index - 1] != '.')
+		{
+			// Do not permit misused wildcards
+			throw new ArgumentException($"The right \"{right}\" has a misused wildcard.");
+		}
+
+		// Add all rights which expand from that wildcard
+		var subMatch = right[..(index - 1)];
+		var subMatchWithDot = subMatch + ".";
+		expanded.UnionWith(registeredRights.Where(registeredPerm =>
+		{
+			if (registeredPerm.Length < subMatch.Length) return false;
+			else if (registeredPerm.Length == subMatch.Length) return registeredPerm == subMatch;
+			else return registeredPerm.StartsWith(subMatchWithDot, StringComparison.Ordinal);
+		}));
+	}
+
+	/// <summary>
+	/// Removes rights which are in the Add and Deny category.
+	/// Expands wildcard declarations to all explicit declarations.
+	/// </summary>
+	/// <param name="ctx">The parsing context for the current file processing.</param>
+	private static void NormalizeRules(ParseContext ctx)
+	{
+		foreach (var rule in ctx.Rules)
+		{
+			var denyNormalized = ExpandRights(ctx.RegisteredRights, rule.DeclDeny);
+			rule.DeclDeny = denyNormalized.ToArray();
+			var addNormalized = ExpandRights(ctx.RegisteredRights, rule.DeclAdd);
+			addNormalized.ExceptWith(rule.DeclDeny);
+			rule.DeclAdd = addNormalized.ToArray();
+
+			var undeclared = rule.DeclAdd.Except(ctx.RegisteredRights)
+				.Concat(rule.DeclDeny.Except(ctx.RegisteredRights));
+			foreach (var right in undeclared)
 			{
-				var included = new HashSet<RightsGroup>();
-				var remainingIncludes = new Queue<RightsGroup>();
-				remainingIncludes.Enqueue(checkGroup);
+				ctx.Warnings.Add($"Right \"{right}\" is not registered.");
+			}
+		}
+	}
 
-				while (remainingIncludes.Count > 0)
+	/// <summary>
+	/// Checks that each group name can be uniquely identified when resolving.
+	/// </summary>
+	/// <param name="ctx">The parsing context for the current file processing.</param>
+	private static bool ValidateUniqueGroupNames(ParseContext ctx)
+	{
+		bool hasErrors = false;
+
+		foreach (var checkGroup in ctx.Groups)
+		{
+			// check that the name is unique
+			var parent = checkGroup.Parent;
+			while (parent != null)
+			{
+				foreach (var cmpGroup in parent.ChildrenGroups)
 				{
-					var include = remainingIncludes.Dequeue();
-					included.Add(include);
-					foreach (var newInclude in include.Includes)
+					if (cmpGroup != checkGroup
+						&& cmpGroup.Name == checkGroup.Name)
 					{
-						if (newInclude == checkGroup)
-						{
-							hasErrors = true;
-							ctx.Errors.Add($"Group \"{checkGroup.Name}\" has a cyclic include hierarchy.");
-							break;
-						}
-						if (!included.Contains(newInclude))
-							remainingIncludes.Enqueue(newInclude);
+						ctx.Errors.Add($"Ambiguous group name: {checkGroup.Name}");
+						hasErrors = true;
 					}
 				}
+				parent = parent.Parent;
 			}
-
-			return !hasErrors;
 		}
 
-		/// <summary>
-		/// Generates hierarchical values for the <see cref="RightsDecl.Level"/> field
-		/// for all rules. This value represents which rule is more specified when
-		/// merging two rule in order to prioritize rights.
-		/// </summary>
-		/// <param name="root">The root element of the hierarchy tree.</param>
-		/// <param name="level">The base level for the root element.</param>
-		private static void BuildLevel(RightsDecl root, int level = 0)
+		return !hasErrors;
+	}
+
+	/// <summary>
+	/// Resolves all include strings to their representative object each.
+	/// </summary>
+	/// <param name="ctx">The parsing context for the current file processing.</param>
+	private static bool ResolveIncludes(ParseContext ctx)
+	{
+		bool hasErrors = false;
+
+		foreach (var decl in ctx.Declarations)
+			hasErrors |= !decl.ResolveIncludes(ctx);
+
+		return !hasErrors;
+	}
+
+	/// <summary>
+	/// Checks if group includes form a cyclic dependency.
+	/// </summary>
+	/// <param name="ctx">The parsing context for the current file processing.</param>
+	private static bool CheckCyclicGroupDependencies(ParseContext ctx)
+	{
+		bool hasErrors = false;
+
+		foreach (var checkGroup in ctx.Groups)
 		{
-			root.Level = level;
-			if (root is RightsRule rootRule)
+			var included = new HashSet<RightsGroup>();
+			var remainingIncludes = new Queue<RightsGroup>();
+			remainingIncludes.Enqueue(checkGroup);
+
+			while (remainingIncludes.Count > 0)
 			{
-				foreach (var child in rootRule.Children)
+				var include = remainingIncludes.Dequeue();
+				included.Add(include);
+				foreach (var newInclude in include.Includes)
 				{
-					BuildLevel(child, level + RuleLevelSize);
+					if (newInclude == checkGroup)
+					{
+						hasErrors = true;
+						ctx.Errors.Add($"Group \"{checkGroup.Name}\" has a cyclic include hierarchy.");
+						break;
+					}
+					if (!included.Contains(newInclude))
+						remainingIncludes.Enqueue(newInclude);
 				}
 			}
 		}
 
-		/// <summary>
-		/// Checks groups and rules for common mistakes and unusual declarations.
-		/// Found stuff will be added as warnings.
-		/// </summary>
-		/// <param name="ctx">The parsing context for the current file processing.</param>
-		private static void LintDeclarations(ParseContext ctx)
+		return !hasErrors;
+	}
+
+	/// <summary>
+	/// Generates hierarchical values for the <see cref="RightsDecl.Level"/> field
+	/// for all rules. This value represents which rule is more specified when
+	/// merging two rule in order to prioritize rights.
+	/// </summary>
+	/// <param name="root">The root element of the hierarchy tree.</param>
+	/// <param name="level">The base level for the root element.</param>
+	private static void BuildLevel(RightsDecl root, int level = 0)
+	{
+		root.Level = level;
+		if (root is RightsRule rootRule)
 		{
-			// check if <+> contains <-> decl
-			foreach (var decl in ctx.Declarations)
+			foreach (var child in rootRule.Children)
 			{
-				var uselessAdd = decl.DeclAdd.Intersect(decl.DeclDeny).ToArray();
-				foreach (var uAdd in uselessAdd)
-					ctx.Warnings.Add($"Rule has declaration \"{uAdd}\" in \"+\" and \"-\"");
-			}
-
-			// top level <-> declaration is useless
-			foreach (var decl in ctx.Groups)
-			{
-				if (decl.Includes.Length == 0 && decl.DeclDeny.Length > 0)
-					ctx.Warnings.Add("Rule with \"-\" declaration but no include to override");
-			}
-			var root = ctx.Rules.First(x => x.Parent is null);
-			if (root.Includes.Length == 0 && root.DeclDeny.Length > 0)
-				ctx.Warnings.Add("Root rule \"-\" declaration has no effect");
-
-			// check if rule has no matcher
-			foreach (var rule in ctx.Rules)
-			{
-				if (!rule.HasMatcher() && rule.Parent != null)
-					ctx.Warnings.Add("Rule has no matcher and will always match");
-			}
-
-			// check for impossible combinations uid + uid, server + server, perm + perm ?
-			// TODO
-
-			// check for unused group
-			var unusedGroups = new HashSet<RightsGroup>(ctx.Groups);
-			foreach (var decl in ctx.Declarations)
-			{
-				foreach (var include in decl.Includes)
-				{
-					unusedGroups.Remove(include);
-				}
-			}
-			foreach (var uGroup in unusedGroups)
-				ctx.Warnings.Add($"Group \"{uGroup.Name}\" is never included in a rule");
-		}
-
-		/// <summary>
-		/// Sums up all includes for each group and includes them directly into the
-		/// <see cref="RightsDecl.DeclAdd"/> and <see cref="RightsDecl.DeclDeny"/>.
-		/// </summary>
-		/// <param name="ctx">The parsing context for the current file processing.</param>
-		private static void FlattenGroups(ParseContext ctx)
-		{
-			var notReachable = new Queue<RightsGroup>(ctx.Groups);
-			var currentlyReached = new HashSet<RightsGroup>(ctx.Groups.Where(x => x.Includes.Length == 0));
-
-			while (notReachable.Count > 0)
-			{
-				var item = notReachable.Dequeue();
-				if (currentlyReached.IsSupersetOf(item.Includes))
-				{
-					currentlyReached.Add(item);
-
-					item.MergeGroups(item.Includes);
-					item.Includes = Array.Empty<RightsGroup>();
-				}
-				else
-				{
-					notReachable.Enqueue(item);
-				}
+				BuildLevel(child, level + RuleLevelSize);
 			}
 		}
+	}
 
-		/// <summary>
-		/// Sums up all includes and parent rule declarations for each rule and includes them
-		/// directly into the <see cref="RightsDecl.DeclAdd"/> and <see cref="RightsDecl.DeclDeny"/>.
-		/// </summary>
-		/// <param name="root">The root element of the hierarchy tree.</param>
-		private static void FlattenRules(RightsRule root)
+	/// <summary>
+	/// Checks groups and rules for common mistakes and unusual declarations.
+	/// Found stuff will be added as warnings.
+	/// </summary>
+	/// <param name="ctx">The parsing context for the current file processing.</param>
+	private static void LintDeclarations(ParseContext ctx)
+	{
+		// check if <+> contains <-> decl
+		foreach (var decl in ctx.Declarations)
 		{
-			if (root.Parent != null)
-				root.MergeGroups(root.Parent);
-			root.MergeGroups(root.Includes);
-			root.Includes = Array.Empty<RightsGroup>();
-
-			foreach (var child in root.ChildrenRules)
-				FlattenRules(child);
+			var uselessAdd = decl.DeclAdd.Intersect(decl.DeclDeny).ToArray();
+			foreach (var uAdd in uselessAdd)
+				ctx.Warnings.Add($"Rule has declaration \"{uAdd}\" in \"+\" and \"-\"");
 		}
 
-		/// <summary>
-		/// Checks which ts3client calls need to made to get all information
-		/// for the required matcher.
-		/// </summary>
-		/// <param name="ctx">The parsing context for the current file processing.</param>
-		private static void CheckRequiredCalls(ParseContext ctx)
+		// top level <-> declaration is useless
+		foreach (var decl in ctx.Groups)
 		{
-			foreach (var matcher in ctx.Rules.SelectMany(g => g.Matcher))
-				matcher.SetRequiredFeatures(ctx);
+			if (decl.Includes.Length == 0 && decl.DeclDeny.Length > 0)
+				ctx.Warnings.Add("Rule with \"-\" declaration but no include to override");
 		}
+		var root = ctx.Rules.First(x => x.Parent is null);
+		if (root.Includes.Length == 0 && root.DeclDeny.Length > 0)
+			ctx.Warnings.Add("Root rule \"-\" declaration has no effect");
+
+		// check if rule has no matcher
+		foreach (var rule in ctx.Rules)
+		{
+			if (!rule.HasMatcher() && rule.Parent != null)
+				ctx.Warnings.Add("Rule has no matcher and will always match");
+		}
+
+		// check for impossible combinations uid + uid, server + server, perm + perm ?
+		// TODO
+
+		// check for unused group
+		var unusedGroups = new HashSet<RightsGroup>(ctx.Groups);
+		foreach (var decl in ctx.Declarations)
+		{
+			foreach (var include in decl.Includes)
+			{
+				unusedGroups.Remove(include);
+			}
+		}
+		foreach (var uGroup in unusedGroups)
+			ctx.Warnings.Add($"Group \"{uGroup.Name}\" is never included in a rule");
+	}
+
+	/// <summary>
+	/// Sums up all includes for each group and includes them directly into the
+	/// <see cref="RightsDecl.DeclAdd"/> and <see cref="RightsDecl.DeclDeny"/>.
+	/// </summary>
+	/// <param name="ctx">The parsing context for the current file processing.</param>
+	private static void FlattenGroups(ParseContext ctx)
+	{
+		var notReachable = new Queue<RightsGroup>(ctx.Groups);
+		var currentlyReached = new HashSet<RightsGroup>(ctx.Groups.Where(x => x.Includes.Length == 0));
+
+		while (notReachable.Count > 0)
+		{
+			var item = notReachable.Dequeue();
+			if (currentlyReached.IsSupersetOf(item.Includes))
+			{
+				currentlyReached.Add(item);
+
+				item.MergeGroups(item.Includes);
+				item.Includes = Array.Empty<RightsGroup>();
+			}
+			else
+			{
+				notReachable.Enqueue(item);
+			}
+		}
+	}
+
+	/// <summary>
+	/// Sums up all includes and parent rule declarations for each rule and includes them
+	/// directly into the <see cref="RightsDecl.DeclAdd"/> and <see cref="RightsDecl.DeclDeny"/>.
+	/// </summary>
+	/// <param name="root">The root element of the hierarchy tree.</param>
+	private static void FlattenRules(RightsRule root)
+	{
+		if (root.Parent != null)
+			root.MergeGroups(root.Parent);
+		root.MergeGroups(root.Includes);
+		root.Includes = Array.Empty<RightsGroup>();
+
+		foreach (var child in root.ChildrenRules)
+			FlattenRules(child);
+	}
+
+	/// <summary>
+	/// Checks which ts3client calls need to made to get all information
+	/// for the required matcher.
+	/// </summary>
+	/// <param name="ctx">The parsing context for the current file processing.</param>
+	private static void CheckRequiredCalls(ParseContext ctx)
+	{
+		foreach (var matcher in ctx.Rules.SelectMany(g => g.Matcher))
+			matcher.SetRequiredFeatures(ctx);
 	}
 }

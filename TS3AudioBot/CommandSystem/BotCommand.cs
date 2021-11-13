@@ -19,156 +19,155 @@ using System.Threading.Tasks;
 using TS3AudioBot.CommandSystem.Commands;
 using TS3AudioBot.Localization;
 
-namespace TS3AudioBot.CommandSystem
+namespace TS3AudioBot.CommandSystem;
+
+[DebuggerDisplay("{DebuggerDisplay, nq}")]
+[JsonConverter(typeof(BotCommandSerializer))]
+public class BotCommand : FunctionCommand
 {
-	[DebuggerDisplay("{DebuggerDisplay, nq}")]
-	[JsonConverter(typeof(BotCommandSerializer))]
-	public class BotCommand : FunctionCommand
+	private readonly string helpLookupName;
+
+	public string InvokeName { get; }
+	private readonly string[] requiredRights;
+	public string RequiredRight => requiredRights[0];
+	public string? Description => LocalizationManager.GetString(helpLookupName);
+	public UsageAttribute[] UsageList { get; }
+	public string FullQualifiedName { get; }
+
+	public string Return { get; }
+	public (string name, string type, bool optional)[] Parameter { get; }
+	public (string type, bool optional)[] Modules { get; }
+
+	public string DebuggerDisplay
 	{
-		private readonly string helpLookupName;
-
-		public string InvokeName { get; }
-		private readonly string[] requiredRights;
-		public string RequiredRight => requiredRights[0];
-		public string? Description => LocalizationManager.GetString(helpLookupName);
-		public UsageAttribute[] UsageList { get; }
-		public string FullQualifiedName { get; }
-
-		public string Return { get; }
-		public (string name, string type, bool optional)[] Parameter { get; }
-		public (string type, bool optional)[] Modules { get; }
-
-		public string DebuggerDisplay
-		{
-			get
-			{
-				var strb = new StringBuilder();
-				strb.Append('!').Append(InvokeName);
-				strb.Append(" : ");
-				foreach (var param in UsageList)
-					strb.Append(param.UsageSyntax).Append('/');
-				return strb.ToString();
-			}
-		}
-
-		public BotCommand(CommandBuildInfo buildInfo) : base(buildInfo.Method, buildInfo.Parent)
-		{
-			InvokeName = buildInfo.CommandData.CommandNameSpace;
-			helpLookupName = buildInfo.CommandData.OverrideHelpName ?? ("cmd_" + InvokeName.Replace(" ", "_") + "_help");
-			requiredRights = new[] { "cmd." + string.Join(".", InvokeName.Split(' ')) };
-			UsageList = buildInfo.UsageList;
-			// Serialization
-			Return = UnwrapReturnType(CommandReturn).Name;
-			Parameter = (
-				from x in CommandParameter
-				where x.Kind.IsNormal()
-				select (x.Name, UnwrapParamType(x.Type).Name, x.Optional)).ToArray();
-			Modules = (
-				from x in CommandParameter
-				where x.Kind == ParamKind.Dependency
-				select (x.Type.Name, x.Optional)).ToArray();
-
-			var strb = new StringBuilder();
-			strb.Append(InvokeName);
-			strb.Append(" (");
-			strb.Append(string.Join(", ", CommandParameter.Where(p => !p.Kind.IsNormal()).Select(p => p.Type.FullName).OrderBy(p => p)));
-			strb.Append('|');
-			strb.Append(string.Join(", ", CommandParameter.Where(p => p.Kind.IsNormal()).Select(p => p.Type.FullName)));
-			strb.Append(')');
-			FullQualifiedName = strb.ToString();
-		}
-
-		public override string ToString()
+		get
 		{
 			var strb = new StringBuilder();
-			strb.Append("\n!")
-				.Append(InvokeName);
-
-			foreach (var (name, _, optional) in Parameter)
-			{
-				strb.Append(' ');
-				if (optional)
-					strb.Append("[<").Append(name).Append(">]");
-				else
-					strb.Append('<').Append(name).Append('>');
-			}
-
-			strb.Append(": ")
-				.Append(Description ?? strings.error_no_help ?? "<No help found>");
-
-			if (UsageList.Length > 0)
-			{
-				int longest = UsageList.Max(p => p.UsageSyntax.Length) + 1;
-				foreach (var para in UsageList)
-					strb.Append("\n!").Append(InvokeName).Append(' ').Append(para.UsageSyntax)
-						.Append(' ', longest - para.UsageSyntax.Length).Append(para.UsageHelp);
-			}
+			strb.Append('!').Append(InvokeName);
+			strb.Append(" : ");
+			foreach (var param in UsageList)
+				strb.Append(param.UsageSyntax).Append('/');
 			return strb.ToString();
-		}
-
-		public override async ValueTask<object?> Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments)
-		{
-			// Check call complexity
-			info.UseComplexityTokens(1);
-
-			// Check permissions
-			if (!await info.HasRights(requiredRights))
-				throw new CommandException(string.Format(strings.error_missing_right, InvokeName, RequiredRight), CommandExceptionReason.MissingRights);
-
-			return await base.Execute(info, arguments);
-		}
-
-		private class BotCommandSerializer : JsonConverter<BotCommand>
-		{
-			public override BotCommand? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => throw new NotSupportedException();
-			public override void Write(Utf8JsonWriter writer, BotCommand value, JsonSerializerOptions options)
-			{
-				writer.WriteStartObject();
-				writer.WriteString("Name", value.InvokeName);
-				writer.WriteString("Description", value.Description);
-				writer.WriteString("Return", value.Return);
-				writer.WriteStartArray("Parameter");
-
-				foreach (var (name, type, optional) in value.Parameter)
-				{
-					writer.WriteStartObject();
-					writer.WriteString("name", name);
-					writer.WriteString("type", type);
-					writer.WriteBoolean("optional", optional);
-					writer.WriteEndObject();
-				}
-				writer.WriteEndArray();
-
-				writer.WriteStartArray("Modules");
-				foreach (var (type, optional) in value.Modules)
-				{
-					writer.WriteStartObject();
-					writer.WriteString("type", type);
-					writer.WriteBoolean("optional", optional);
-					writer.WriteEndObject();
-				}
-				writer.WriteEndArray();
-
-				writer.WriteEndObject();
-			}
 		}
 	}
 
-	public class CommandBuildInfo
+	public BotCommand(CommandBuildInfo buildInfo) : base(buildInfo.Method, buildInfo.Parent)
 	{
-		public object? Parent { get; }
-		public MethodInfo Method { get; }
-		public CommandAttribute CommandData { get; }
-		public UsageAttribute[] UsageList { get; set; }
+		InvokeName = buildInfo.CommandData.CommandNameSpace;
+		helpLookupName = buildInfo.CommandData.OverrideHelpName ?? ("cmd_" + InvokeName.Replace(" ", "_") + "_help");
+		requiredRights = new[] { "cmd." + string.Join(".", InvokeName.Split(' ')) };
+		UsageList = buildInfo.UsageList;
+		// Serialization
+		Return = UnwrapReturnType(CommandReturn).Name;
+		Parameter = (
+			from x in CommandParameter
+			where x.Kind.IsNormal()
+			select (x.Name, UnwrapParamType(x.Type).Name, x.Optional)).ToArray();
+		Modules = (
+			from x in CommandParameter
+			where x.Kind == ParamKind.Dependency
+			select (x.Type.Name, x.Optional)).ToArray();
 
-		public CommandBuildInfo(object? p, MethodInfo m, CommandAttribute comAtt)
+		var strb = new StringBuilder();
+		strb.Append(InvokeName);
+		strb.Append(" (");
+		strb.Append(string.Join(", ", CommandParameter.Where(p => !p.Kind.IsNormal()).Select(p => p.Type.FullName).OrderBy(p => p)));
+		strb.Append('|');
+		strb.Append(string.Join(", ", CommandParameter.Where(p => p.Kind.IsNormal()).Select(p => p.Type.FullName)));
+		strb.Append(')');
+		FullQualifiedName = strb.ToString();
+	}
+
+	public override string ToString()
+	{
+		var strb = new StringBuilder();
+		strb.Append("\n!")
+			.Append(InvokeName);
+
+		foreach (var (name, _, optional) in Parameter)
 		{
-			Parent = p;
-			Method = m;
-			if (!m.IsStatic && p is null)
-				throw new ArgumentException("Got instance method without accociated object");
-			CommandData = comAtt;
-			UsageList = Array.Empty<UsageAttribute>();
+			strb.Append(' ');
+			if (optional)
+				strb.Append("[<").Append(name).Append(">]");
+			else
+				strb.Append('<').Append(name).Append('>');
 		}
+
+		strb.Append(": ")
+			.Append(Description ?? strings.error_no_help ?? "<No help found>");
+
+		if (UsageList.Length > 0)
+		{
+			int longest = UsageList.Max(p => p.UsageSyntax.Length) + 1;
+			foreach (var para in UsageList)
+				strb.Append("\n!").Append(InvokeName).Append(' ').Append(para.UsageSyntax)
+					.Append(' ', longest - para.UsageSyntax.Length).Append(para.UsageHelp);
+		}
+		return strb.ToString();
+	}
+
+	public override async ValueTask<object?> Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments)
+	{
+		// Check call complexity
+		info.UseComplexityTokens(1);
+
+		// Check permissions
+		if (!await info.HasRights(requiredRights))
+			throw new CommandException(string.Format(strings.error_missing_right, InvokeName, RequiredRight), CommandExceptionReason.MissingRights);
+
+		return await base.Execute(info, arguments);
+	}
+
+	private class BotCommandSerializer : JsonConverter<BotCommand>
+	{
+		public override BotCommand? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => throw new NotSupportedException();
+		public override void Write(Utf8JsonWriter writer, BotCommand value, JsonSerializerOptions options)
+		{
+			writer.WriteStartObject();
+			writer.WriteString("Name", value.InvokeName);
+			writer.WriteString("Description", value.Description);
+			writer.WriteString("Return", value.Return);
+			writer.WriteStartArray("Parameter");
+
+			foreach (var (name, type, optional) in value.Parameter)
+			{
+				writer.WriteStartObject();
+				writer.WriteString("name", name);
+				writer.WriteString("type", type);
+				writer.WriteBoolean("optional", optional);
+				writer.WriteEndObject();
+			}
+			writer.WriteEndArray();
+
+			writer.WriteStartArray("Modules");
+			foreach (var (type, optional) in value.Modules)
+			{
+				writer.WriteStartObject();
+				writer.WriteString("type", type);
+				writer.WriteBoolean("optional", optional);
+				writer.WriteEndObject();
+			}
+			writer.WriteEndArray();
+
+			writer.WriteEndObject();
+		}
+	}
+}
+
+public class CommandBuildInfo
+{
+	public object? Parent { get; }
+	public MethodInfo Method { get; }
+	public CommandAttribute CommandData { get; }
+	public UsageAttribute[] UsageList { get; set; }
+
+	public CommandBuildInfo(object? p, MethodInfo m, CommandAttribute comAtt)
+	{
+		Parent = p;
+		Method = m;
+		if (!m.IsStatic && p is null)
+			throw new ArgumentException("Got instance method without accociated object");
+		CommandData = comAtt;
+		UsageList = Array.Empty<UsageAttribute>();
 	}
 }

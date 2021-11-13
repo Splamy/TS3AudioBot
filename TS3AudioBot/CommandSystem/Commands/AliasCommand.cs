@@ -13,44 +13,43 @@ using System.Linq;
 using System.Threading.Tasks;
 using TS3AudioBot.Dependency;
 
-namespace TS3AudioBot.CommandSystem.Commands
+namespace TS3AudioBot.CommandSystem.Commands;
+
+public class AliasCommand : ICommand
 {
-	public class AliasCommand : ICommand
+	private readonly ICommand aliasCommand;
+	public string AliasString { get; }
+
+	public AliasCommand(string command)
 	{
-		private readonly ICommand aliasCommand;
-		public string AliasString { get; }
-
-		public AliasCommand(string command)
-		{
-			var ast = CommandParser.ParseCommandRequest(command);
-			aliasCommand = CommandManager.AstToCommandResult(ast);
-			AliasString = command;
-		}
-
-		public async ValueTask<object?> Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments)
-		{
-			info.UseComplexityTokens(1);
-
-			IReadOnlyList<ICommand>? backupArguments = null;
-			if (!info.TryGet<AliasContext>(out var aliasContext))
-			{
-				aliasContext = new AliasContext();
-				info.AddModule(aliasContext);
-			}
-			else
-			{
-				backupArguments = aliasContext.Arguments;
-			}
-
-			aliasContext.Arguments = arguments.Select(c => new LazyCommand(c)).ToArray();
-			var ret = await aliasCommand.Execute(info, Array.Empty<ICommand>());
-			aliasContext.Arguments = backupArguments;
-			return ret;
-		}
+		var ast = CommandParser.ParseCommandRequest(command);
+		aliasCommand = CommandManager.AstToCommandResult(ast);
+		AliasString = command;
 	}
 
-	public class AliasContext
+	public async ValueTask<object?> Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments)
 	{
-		public IReadOnlyList<ICommand>? Arguments { get; set; }
+		info.UseComplexityTokens(1);
+
+		IReadOnlyList<ICommand>? backupArguments = null;
+		if (!info.TryGet<AliasContext>(out var aliasContext))
+		{
+			aliasContext = new AliasContext();
+			info.AddModule(aliasContext);
+		}
+		else
+		{
+			backupArguments = aliasContext.Arguments;
+		}
+
+		aliasContext.Arguments = arguments.Select(c => new LazyCommand(c)).ToArray();
+		var ret = await aliasCommand.Execute(info, Array.Empty<ICommand>());
+		aliasContext.Arguments = backupArguments;
+		return ret;
 	}
+}
+
+public class AliasContext
+{
+	public IReadOnlyList<ICommand>? Arguments { get; set; }
 }

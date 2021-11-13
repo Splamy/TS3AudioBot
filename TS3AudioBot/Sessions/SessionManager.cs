@@ -10,47 +10,46 @@
 using System.Collections.Generic;
 using TSLib;
 
-namespace TS3AudioBot.Sessions
+namespace TS3AudioBot.Sessions;
+
+/// <summary>Management for clients talking with the bot.</summary>
+public class SessionManager
 {
-	/// <summary>Management for clients talking with the bot.</summary>
-	public class SessionManager
+	private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
+
+	// Map: Id => UserSession
+	private readonly Dictionary<ClientId, UserSession> openSessions = new();
+
+	public UserSession GetOrCreateSession(ClientId clientId)
 	{
-		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
-
-		// Map: Id => UserSession
-		private readonly Dictionary<ClientId, UserSession> openSessions = new();
-
-		public UserSession GetOrCreateSession(ClientId clientId)
+		lock (openSessions)
 		{
-			lock (openSessions)
-			{
-				if (openSessions.TryGetValue(clientId, out var session))
-					return session;
-
-				Log.Debug("ClientId {0} created session with the bot", clientId);
-				session = new UserSession();
-				openSessions.Add(clientId, session);
+			if (openSessions.TryGetValue(clientId, out var session))
 				return session;
-			}
-		}
 
-		public UserSession? GetSession(ClientId id)
-		{
-			lock (openSessions)
-			{
-				if (openSessions.TryGetValue(id, out var session))
-					return session;
-				else
-					return null;
-			}
+			Log.Debug("ClientId {0} created session with the bot", clientId);
+			session = new UserSession();
+			openSessions.Add(clientId, session);
+			return session;
 		}
+	}
 
-		public void RemoveSession(ClientId id)
+	public UserSession? GetSession(ClientId id)
+	{
+		lock (openSessions)
 		{
-			lock (openSessions)
-			{
-				openSessions.Remove(id);
-			}
+			if (openSessions.TryGetValue(id, out var session))
+				return session;
+			else
+				return null;
+		}
+	}
+
+	public void RemoveSession(ClientId id)
+	{
+		lock (openSessions)
+		{
+			openSessions.Remove(id);
 		}
 	}
 }

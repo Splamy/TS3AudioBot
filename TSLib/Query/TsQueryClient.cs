@@ -20,221 +20,221 @@ using TSLib.Helper;
 using TSLib.Messages;
 using CmdR = System.Threading.Tasks.Task<System.E<TSLib.Messages.CommandError>>;
 
-namespace TSLib.Query
+namespace TSLib.Query;
+
+public sealed partial class TsQueryClient : TsBaseFunctions
 {
-	public sealed partial class TsQueryClient : TsBaseFunctions
+	private readonly object sendQueueLock = new();
+	private readonly TcpClient tcpClient;
+	private StreamReader? tcpReader;
+	private StreamWriter? tcpWriter;
+	private CancellationTokenSource? cts;
+	private readonly SyncMessageProcessor msgProc;
+	private readonly IEventDispatcher dispatcher;
+	private readonly Pipe dataPipe = new();
+
+	public override ClientType ClientType => ClientType.Query;
+	public override bool Connected => tcpClient.Connected;
+	private bool connecting;
+	public override bool Connecting => connecting && !Connected;
+	protected override Deserializer Deserializer => msgProc.Deserializer;
+
+	public override event EventHandler<DisconnectEventArgs>? OnDisconnected;
+
+	public TsQueryClient()
 	{
-		private readonly object sendQueueLock = new();
-		private readonly TcpClient tcpClient;
-		private StreamReader? tcpReader;
-		private StreamWriter? tcpWriter;
-		private CancellationTokenSource? cts;
-		private readonly SyncMessageProcessor msgProc;
-		private readonly IEventDispatcher dispatcher;
-		private readonly Pipe dataPipe = new();
+		connecting = false;
+		tcpClient = new TcpClient();
+		msgProc = new SyncMessageProcessor(MessageHelper.GetToClientNotificationType);
+		dispatcher = new ExtraThreadEventDispatcher();
+	}
 
-		public override ClientType ClientType => ClientType.Query;
-		public override bool Connected => tcpClient.Connected;
-		private bool connecting;
-		public override bool Connecting => connecting && !Connected;
-		protected override Deserializer Deserializer => msgProc.Deserializer;
+	public override async CmdR Connect(ConnectionData conData)
+	{
+		remoteAddress = await TsDnsResolver.TryResolve(conData.Address, TsDnsResolver.TsQueryDefaultPort);
+		if (remoteAddress is null)
+			return CommandError.Custom("Could not read or resolve address.");
 
-		public override event EventHandler<DisconnectEventArgs>? OnDisconnected;
-
-		public TsQueryClient()
+		NetworkStream tcpStream;
+		try
 		{
-			connecting = false;
-			tcpClient = new TcpClient();
-			msgProc = new SyncMessageProcessor(MessageHelper.GetToClientNotificationType);
-			dispatcher = new ExtraThreadEventDispatcher();
+			connecting = true;
+
+			await tcpClient.ConnectAsync(remoteAddress.Address, remoteAddress.Port);
+
+			ConnectionData = conData;
+
+			tcpStream = tcpClient.GetStream();
+			tcpReader = new StreamReader(tcpStream, Tools.Utf8Encoder);
+			tcpWriter = new StreamWriter(tcpStream, Tools.Utf8Encoder) { NewLine = "\n" };
+
+			if (await tcpReader.ReadLineAsync() != "TS3")
+				return CommandError.Custom("Protocol violation. The stream must start with 'TS3'");
+			if (string.IsNullOrEmpty(await tcpReader.ReadLineAsync()))
+				await tcpReader.ReadLineAsync();
 		}
+		catch (SocketException ex) { return CommandError.Custom("Could not connect: " + ex.Message); }
+		finally { connecting = false; }
 
-		public override async CmdR Connect(ConnectionData conData)
+		cts = new CancellationTokenSource();
+		dispatcher.Init(InvokeEvent, conData.LogId);
+		_ = NetworkLoop(tcpStream, cts.Token);
+		return R.Ok;
+	}
+
+	public override Task Disconnect()
+	{
+		lock (sendQueueLock)
 		{
-			remoteAddress = await TsDnsResolver.TryResolve(conData.Address, TsDnsResolver.TsQueryDefaultPort);
-			if (remoteAddress is null)
-				return CommandError.Custom("Could not read or resolve address.");
+			SendRaw("quit");
+			cts?.Cancel();
+			cts = null;
+			if (tcpClient.Connected)
+				tcpClient.Dispose();
+		}
+		return Task.CompletedTask;
+	}
 
-			NetworkStream tcpStream;
+	private async Task NetworkLoop(NetworkStream tcpStream, CancellationToken cancellationToken)
+	{
+		await Task.WhenAll(NetworkToPipeLoopAsync(tcpStream, dataPipe.Writer, cancellationToken), PipeProcessorAsync(dataPipe.Reader, cancellationToken));
+		OnDisconnected?.Invoke(this, new DisconnectEventArgs(Reason.LeftServer));
+	}
+
+	private static async Task NetworkToPipeLoopAsync(NetworkStream stream, PipeWriter writer, CancellationToken cancellationToken = default)
+	{
+		const int minimumBufferSize = 4096;
+
+		while (!cancellationToken.IsCancellationRequested)
+		{
 			try
 			{
-				connecting = true;
-
-				await tcpClient.ConnectAsync(remoteAddress.Address, remoteAddress.Port);
-
-				ConnectionData = conData;
-
-				tcpStream = tcpClient.GetStream();
-				tcpReader = new StreamReader(tcpStream, Tools.Utf8Encoder);
-				tcpWriter = new StreamWriter(tcpStream, Tools.Utf8Encoder) { NewLine = "\n" };
-
-				if (await tcpReader.ReadLineAsync() != "TS3")
-					return CommandError.Custom("Protocol violation. The stream must start with 'TS3'");
-				if (string.IsNullOrEmpty(await tcpReader.ReadLineAsync()))
-					await tcpReader.ReadLineAsync();
-			}
-			catch (SocketException ex) { return CommandError.Custom("Could not connect: " + ex.Message); }
-			finally { connecting = false; }
-
-			cts = new CancellationTokenSource();
-			dispatcher.Init(InvokeEvent, conData.LogId);
-			_ = NetworkLoop(tcpStream, cts.Token);
-			return R.Ok;
-		}
-
-		public override Task Disconnect()
-		{
-			lock (sendQueueLock)
-			{
-				SendRaw("quit");
-				cts?.Cancel();
-				cts = null;
-				if (tcpClient.Connected)
-					tcpClient.Dispose();
-			}
-			return Task.CompletedTask;
-		}
-
-		private async Task NetworkLoop(NetworkStream tcpStream, CancellationToken cancellationToken)
-		{
-			await Task.WhenAll(NetworkToPipeLoopAsync(tcpStream, dataPipe.Writer, cancellationToken), PipeProcessorAsync(dataPipe.Reader, cancellationToken));
-			OnDisconnected?.Invoke(this, new DisconnectEventArgs(Reason.LeftServer));
-		}
-
-		private static async Task NetworkToPipeLoopAsync(NetworkStream stream, PipeWriter writer, CancellationToken cancellationToken = default)
-		{
-			const int minimumBufferSize = 4096;
-
-			while (!cancellationToken.IsCancellationRequested)
-			{
-				try
-				{
-					var mem = writer.GetMemory(minimumBufferSize);
-					int bytesRead = await stream.ReadAsync(mem, cancellationToken);
-					if (bytesRead == 0)
-						break;
-					writer.Advance(bytesRead);
-				}
-				catch (IOException) { break; }
-
-				var result = await writer.FlushAsync(cancellationToken);
-				if (result.IsCompleted || result.IsCanceled)
+				var mem = writer.GetMemory(minimumBufferSize);
+				int bytesRead = await stream.ReadAsync(mem, cancellationToken);
+				if (bytesRead == 0)
 					break;
+				writer.Advance(bytesRead);
 			}
-			await writer.CompleteAsync();
+			catch (IOException) { break; }
+
+			var result = await writer.FlushAsync(cancellationToken);
+			if (result.IsCompleted || result.IsCanceled)
+				break;
 		}
+		await writer.CompleteAsync();
+	}
 
-		private async Task PipeProcessorAsync(PipeReader reader, CancellationToken cancelationToken = default)
+	private async Task PipeProcessorAsync(PipeReader reader, CancellationToken cancelationToken = default)
+	{
+		while (!cancelationToken.IsCancellationRequested)
 		{
-			while (!cancelationToken.IsCancellationRequested)
+			var result = await reader.ReadAsync(cancelationToken);
+
+			var buffer = result.Buffer;
+
+			while (buffer.PositionOf((byte)'\n') is { } position)
 			{
-				var result = await reader.ReadAsync(cancelationToken);
-
-				var buffer = result.Buffer;
-
-				while (buffer.PositionOf((byte)'\n') is { } position)
+				if (msgProc.PushMessage(buffer.Slice(0, position).ToArray()) is { } notif)
 				{
-					if (msgProc.PushMessage(buffer.Slice(0, position).ToArray()) is { } notif)
-					{
-						dispatcher.Invoke(notif);
-					}
-
-					// +2 = skipping \n\r
-					buffer = buffer.Slice(buffer.GetPosition(2, position));
+					dispatcher.Invoke(notif);
 				}
 
-				reader.AdvanceTo(buffer.Start, buffer.End);
-				if (result.IsCompleted || result.IsCanceled)
-					break;
+				// +2 = skipping \n\r
+				buffer = buffer.Slice(buffer.GetPosition(2, position));
 			}
 
-			await reader.CompleteAsync();
+			reader.AdvanceTo(buffer.Start, buffer.End);
+			if (result.IsCompleted || result.IsCanceled)
+				break;
 		}
 
-		public override Task<R<T[], CommandError>> Send<T>(TsCommand com)
+		await reader.CompleteAsync();
+	}
+
+	public override Task<R<T[], CommandError>> Send<T>(TsCommand com)
+	{
+		using var wb = new WaitBlock(msgProc.Deserializer);
+		lock (sendQueueLock)
 		{
-			using var wb = new WaitBlock(msgProc.Deserializer);
-			lock (sendQueueLock)
-			{
-				msgProc.EnqueueRequest(wb);
-				SendRaw(com.ToString());
-			}
-
-			return wb.WaitForMessageAsync<T>();
+			msgProc.EnqueueRequest(wb);
+			SendRaw(com.ToString());
 		}
 
-		public override Task<R<T[], CommandError>> SendHybrid<T>(TsCommand com, NotificationType type)
-			=> Send<T>(com);
+		return wb.WaitForMessageAsync<T>();
+	}
 
-		private void SendRaw(string data)
-		{
-			if (!tcpClient.Connected)
-				return;
-			tcpWriter?.WriteLine(data);
-			tcpWriter?.Flush();
-		}
+	public override Task<R<T[], CommandError>> SendHybrid<T>(TsCommand com, NotificationType type)
+		=> Send<T>(com);
 
-		#region QUERY SPECIFIC COMMANDS
+	private void SendRaw(string data)
+	{
+		if (!tcpClient.Connected)
+			return;
+		tcpWriter?.WriteLine(data);
+		tcpWriter?.Flush();
+	}
 
-		private static readonly string[] TargetTypeString = { "(dummy)", "textprivate", "textchannel", "textserver", "channel", "server" };
+	#region QUERY SPECIFIC COMMANDS
 
-		public CmdR RegisterNotification(TextMessageTargetMode target)
-			=> RegisterNotification(TargetTypeString[(int)target], null);
+	private static readonly string[] TargetTypeString = { "(dummy)", "textprivate", "textchannel", "textserver", "channel", "server" };
 
-		public CmdR RegisterNotificationChannel(ChannelId? channel = null)
-			=> RegisterNotification(TargetTypeString[4], channel);
+	public CmdR RegisterNotification(TextMessageTargetMode target)
+		=> RegisterNotification(TargetTypeString[(int)target], null);
 
-		public CmdR RegisterNotificationServer()
-			=> RegisterNotification(TargetTypeString[5], null);
+	public CmdR RegisterNotificationChannel(ChannelId? channel = null)
+		=> RegisterNotification(TargetTypeString[4], channel);
 
-		private CmdR RegisterNotification(string target, ChannelId? channel)
-			=> SendVoid(new TsCommand("servernotifyregister") {
+	public CmdR RegisterNotificationServer()
+		=> RegisterNotification(TargetTypeString[5], null);
+
+	private CmdR RegisterNotification(string target, ChannelId? channel)
+		=> SendVoid(new TsCommand("servernotifyregister") {
 				{ "event", target },
 				{ "id", channel },
-			});
+		});
 
-		public CmdR Login(string username, string password)
-			=> SendVoid(new TsCommand("login") {
+	public CmdR Login(string username, string password)
+		=> SendVoid(new TsCommand("login") {
 				{ "client_login_name", username },
 				{ "client_login_password", password },
-			});
+		});
 
-		public CmdR UseServer(int serverId)
-			=> SendVoid(new TsCommand("use") {
+	public CmdR UseServer(int serverId)
+		=> SendVoid(new TsCommand("use") {
 				{ "sid", serverId },
-			});
+		});
 
-		public CmdR UseServerPort(ushort port)
-			=> SendVoid(new TsCommand("use") {
+	public CmdR UseServerPort(ushort port)
+		=> SendVoid(new TsCommand("use") {
 				{ "port", port },
-			});
+		});
 
-		// Splitted base commands
+	// Splitted base commands
 
-		public override async Task<R<IChannelCreateResponse, CommandError>> ChannelCreate(string name,
-			string? namePhonetic = null, string? topic = null, string? description = null, string? password = null,
-			Codec? codec = null, int? codecQuality = null, int? codecLatencyFactor = null, bool? codecEncrypted = null,
-			int? maxClients = null, int? maxFamilyClients = null, bool? maxClientsUnlimited = null,
-			bool? maxFamilyClientsUnlimited = null, bool? maxFamilyClientsInherited = null, ChannelId? order = null,
-			ChannelId? parent = null, ChannelType? type = null, TimeSpan? deleteDelay = null, int? neededTalkPower = null)
-		{
-			var result = await Send<ChannelCreateResponse>(ChannelOp("channelcreate", null, name, namePhonetic, topic, description,
-				password, codec, codecQuality, codecLatencyFactor, codecEncrypted,
-				maxClients, maxFamilyClients, maxClientsUnlimited, maxFamilyClientsUnlimited,
-				maxFamilyClientsInherited, order, parent, type, deleteDelay, neededTalkPower));
-			return result.MapToSingle()
-				.WrapInterface<ChannelCreateResponse, IChannelCreateResponse>();
-		}
+	public override async Task<R<IChannelCreateResponse, CommandError>> ChannelCreate(string name,
+		string? namePhonetic = null, string? topic = null, string? description = null, string? password = null,
+		Codec? codec = null, int? codecQuality = null, int? codecLatencyFactor = null, bool? codecEncrypted = null,
+		int? maxClients = null, int? maxFamilyClients = null, bool? maxClientsUnlimited = null,
+		bool? maxFamilyClientsUnlimited = null, bool? maxFamilyClientsInherited = null, ChannelId? order = null,
+		ChannelId? parent = null, ChannelType? type = null, TimeSpan? deleteDelay = null, int? neededTalkPower = null)
+	{
+		var result = await Send<ChannelCreateResponse>(ChannelOp("channelcreate", null, name, namePhonetic, topic, description,
+			password, codec, codecQuality, codecLatencyFactor, codecEncrypted,
+			maxClients, maxFamilyClients, maxClientsUnlimited, maxFamilyClientsUnlimited,
+			maxFamilyClientsInherited, order, parent, type, deleteDelay, neededTalkPower));
+		return result.MapToSingle()
+			.WrapInterface<ChannelCreateResponse, IChannelCreateResponse>();
+	}
 
-		public override Task<R<ServerGroupAddResponse, CommandError>> ServerGroupAdd(string name, GroupType? type = null)
-			=> Send<ServerGroupAddResponse>(new TsCommand("servergroupadd") {
+	public override Task<R<ServerGroupAddResponse, CommandError>> ServerGroupAdd(string name, GroupType? type = null)
+		=> Send<ServerGroupAddResponse>(new TsCommand("servergroupadd") {
 				{ "name", name },
 				{ "type", (int?)type }
-			}).MapToSingle();
+		}).MapToSingle();
 
-		public override Task<R<FileUpload, CommandError>> FileTransferInitUpload(ChannelId channelId, string path, string channelPassword,
-			ushort clientTransferId, long fileSize, bool overwrite, bool resume)
-			=> Send<FileUpload>(new TsCommand("ftinitupload") {
+	public override Task<R<FileUpload, CommandError>> FileTransferInitUpload(ChannelId channelId, string path, string channelPassword,
+		ushort clientTransferId, long fileSize, bool overwrite, bool resume)
+		=> Send<FileUpload>(new TsCommand("ftinitupload") {
 				{ "cid", channelId },
 				{ "name", path },
 				{ "cpw", channelPassword },
@@ -242,31 +242,30 @@ namespace TSLib.Query
 				{ "size", fileSize },
 				{ "overwrite", overwrite },
 				{ "resume", resume }
-			}).MapToSingle();
+		}).MapToSingle();
 
-		public override Task<R<FileDownload, CommandError>> FileTransferInitDownload(ChannelId channelId, string path, string channelPassword,
-			ushort clientTransferId, long seek)
-			=> Send<FileDownload>(new TsCommand("ftinitdownload") {
+	public override Task<R<FileDownload, CommandError>> FileTransferInitDownload(ChannelId channelId, string path, string channelPassword,
+		ushort clientTransferId, long seek)
+		=> Send<FileDownload>(new TsCommand("ftinitdownload") {
 				{ "cid", channelId },
 				{ "name", path },
 				{ "cpw", channelPassword },
 				{ "clientftfid", clientTransferId },
 				{ "seekpos", seek }
-			}).MapToSingle();
+		}).MapToSingle();
 
-		#endregion
+	#endregion
 
-		public override void Dispose()
+	public override void Dispose()
+	{
+		lock (sendQueueLock)
 		{
-			lock (sendQueueLock)
-			{
-				tcpWriter?.Dispose();
-				tcpWriter = null;
-				tcpReader?.Dispose();
-				tcpReader = null;
-				msgProc.DropQueue();
-				dispatcher.Dispose();
-			}
+			tcpWriter?.Dispose();
+			tcpWriter = null;
+			tcpReader?.Dispose();
+			tcpReader = null;
+			msgProc.DropQueue();
+			dispatcher.Dispose();
 		}
 	}
 }

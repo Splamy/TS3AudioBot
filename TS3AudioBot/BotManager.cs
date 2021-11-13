@@ -17,293 +17,292 @@ using TS3AudioBot.Helper;
 using TSLib;
 using TSLib.Helper;
 
-namespace TS3AudioBot
+namespace TS3AudioBot;
+
+public class BotManager
 {
-	public class BotManager
+	private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
+
+	private List<Bot?>? activeBots = new();
+	private readonly object lockObj = new();
+
+	private readonly ConfRoot confRoot;
+	private readonly CoreInjector coreInjector;
+
+	public BotManager(ConfRoot confRoot, CoreInjector coreInjector)
 	{
-		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
+		this.confRoot = confRoot;
+		this.coreInjector = coreInjector;
+	}
 
-		private List<Bot?>? activeBots = new();
-		private readonly object lockObj = new();
+	public async Task RunBots(bool interactive)
+	{
+		var botConfigList = confRoot.GetAllBots();
+		if (botConfigList is null)
+			return;
 
-		private readonly ConfRoot confRoot;
-		private readonly CoreInjector coreInjector;
-
-		public BotManager(ConfRoot confRoot, CoreInjector coreInjector)
+		if (botConfigList.Length == 0)
 		{
-			this.confRoot = confRoot;
-			this.coreInjector = coreInjector;
-		}
-
-		public async Task RunBots(bool interactive)
-		{
-			var botConfigList = confRoot.GetAllBots();
-			if (botConfigList is null)
-				return;
-
-			if (botConfigList.Length == 0)
+			if (!interactive)
 			{
-				if (!interactive)
-				{
-					Log.Warn("No bots are configured in the load list.");
-					return;
-				}
-
-				Console.WriteLine("It seems like there are no bots configured.");
-				Console.WriteLine("Fill out this quick setup to get started.");
-
-				var newBot = CreateNewBot();
-				newBot.Run.Value = true;
-
-				var address = await Interactive.LoopActionAsync("Please enter the ip, domain or nickname (with port; default: 9987) where to connect to:", async addr =>
-				{
-					if (await TsDnsResolver.TryResolve(addr) != null)
-						return true;
-					Console.WriteLine("The address seems invalid or could not be resolved, continue anyway? [y/N]");
-					return Interactive.UserAgree(defaultTo: false);
-				});
-				if (address is null)
-					return;
-				newBot.Connect.Address.Value = address;
-				Console.WriteLine("Please enter the server password (or leave empty for none):");
-				newBot.Connect.ServerPassword.Password.Value = Console.ReadLine() ?? "";
-
-				if (!newBot.SaveNew(Defaults.BotName))
-				{
-					Log.Error("Could not save new bot. Ensure that the bot has access to the directory.");
-					return;
-				}
-
-				if (!confRoot.Save())
-					Log.Error("Could not save root config. The bot won't start by default.");
-
-				var runResult = await RunBot(newBot);
-				if (!runResult.Ok)
-					Log.Error("Could not run bot ({0})", runResult.Error);
+				Log.Warn("No bots are configured in the load list.");
 				return;
 			}
 
-			var launchBotTasks = new List<Task<R<BotInfo, string>>>(botConfigList.Length);
-			foreach (var instance in botConfigList)
+			Console.WriteLine("It seems like there are no bots configured.");
+			Console.WriteLine("Fill out this quick setup to get started.");
+
+			var newBot = CreateNewBot();
+			newBot.Run.Value = true;
+
+			var address = await Interactive.LoopActionAsync("Please enter the ip, domain or nickname (with port; default: 9987) where to connect to:", async addr =>
 			{
-				if (!instance.Run)
-					continue;
-				launchBotTasks.Add(RunBot(instance).ContinueWith(async t =>
-				{
-					var result = await t;
-					if (!result.Ok)
-					{
-						Log.Error("Could not instantiate bot: {0}", result.Error);
-					}
-					return result;
-				}).Unwrap());
-			}
-			await Task.WhenAll(launchBotTasks);
-		}
-
-		public ConfBot CreateNewBot() => confRoot.CreateBot();
-
-		public Task<R<BotInfo, string>> CreateAndRunNewBot()
-		{
-			var botConf = CreateNewBot();
-			return RunBot(botConf);
-		}
-
-		public async Task<R<BotInfo, string>> RunBotTemplate(string name)
-		{
-			if (!confRoot.GetBotConfig(name).Get(out var config, out var error))
-				return error.Message;
-			return await RunBot(config);
-		}
-
-		public async Task<R<BotInfo, string>> RunBot(ConfBot config)
-		{
-			var (bot, info) = InstantiateNewBot(config);
-			if (info != null)
-				return info;
-
-			if (bot is null)
-				return "Failed to create new Bot";
-
-			return await bot.Scheduler.InvokeAsync<R<BotInfo, string>>(async () =>
-			{
-				var initializeResult = await bot.Run();
-				if (!initializeResult.Ok)
-				{
-					await StopBot(bot);
-					return $"Bot failed to initialize ({initializeResult.Error})";
-				}
-				return bot.GetInfo();
+				if (await TsDnsResolver.TryResolve(addr) != null)
+					return true;
+				Console.WriteLine("The address seems invalid or could not be resolved, continue anyway? [y/N]");
+				return Interactive.UserAgree(defaultTo: false);
 			});
+			if (address is null)
+				return;
+			newBot.Connect.Address.Value = address;
+			Console.WriteLine("Please enter the server password (or leave empty for none):");
+			newBot.Connect.ServerPassword.Password.Value = Console.ReadLine() ?? "";
+
+			if (!newBot.SaveNew(Defaults.BotName))
+			{
+				Log.Error("Could not save new bot. Ensure that the bot has access to the directory.");
+				return;
+			}
+
+			if (!confRoot.Save())
+				Log.Error("Could not save root config. The bot won't start by default.");
+
+			var runResult = await RunBot(newBot);
+			if (!runResult.Ok)
+				Log.Error("Could not run bot ({0})", runResult.Error);
+			return;
 		}
 
-		private (Bot? bot, BotInfo? info) InstantiateNewBot(ConfBot config)
+		var launchBotTasks = new List<Task<R<BotInfo, string>>>(botConfigList.Length);
+		foreach (var instance in botConfigList)
 		{
-			lock (lockObj)
+			if (!instance.Run)
+				continue;
+			launchBotTasks.Add(RunBot(instance).ContinueWith(async t =>
 			{
-				if (!string.IsNullOrEmpty(config.Name))
+				var result = await t;
+				if (!result.Ok)
 				{
-					var maybeBot = GetBotSave(config.Name);
-					if (maybeBot != null)
-						return (null, maybeBot.GetInfo());
+					Log.Error("Could not instantiate bot: {0}", result.Error);
 				}
+				return result;
+			}).Unwrap());
+		}
+		await Task.WhenAll(launchBotTasks);
+	}
 
-				var id = GetFreeId();
-				if (id == null)
-					return (null, null); // "BotManager is shutting down"
+	public ConfBot CreateNewBot() => confRoot.CreateBot();
 
-				var botInjector = new BotInjector(coreInjector);
-				botInjector.AddModule(botInjector);
-				botInjector.AddModule(new Id(id.Value));
-				botInjector.AddModule(config);
-				if (!botInjector.TryCreate<Bot>(out var bot))
-					return (null, null); // "Failed to create new Bot"
-				InsertBot(bot);
-				return (bot, null);
+	public Task<R<BotInfo, string>> CreateAndRunNewBot()
+	{
+		var botConf = CreateNewBot();
+		return RunBot(botConf);
+	}
+
+	public async Task<R<BotInfo, string>> RunBotTemplate(string name)
+	{
+		if (!confRoot.GetBotConfig(name).Get(out var config, out var error))
+			return error.Message;
+		return await RunBot(config);
+	}
+
+	public async Task<R<BotInfo, string>> RunBot(ConfBot config)
+	{
+		var (bot, info) = InstantiateNewBot(config);
+		if (info != null)
+			return info;
+
+		if (bot is null)
+			return "Failed to create new Bot";
+
+		return await bot.Scheduler.InvokeAsync<R<BotInfo, string>>(async () =>
+		{
+			var initializeResult = await bot.Run();
+			if (!initializeResult.Ok)
+			{
+				await StopBot(bot);
+				return $"Bot failed to initialize ({initializeResult.Error})";
+			}
+			return bot.GetInfo();
+		});
+	}
+
+	private (Bot? bot, BotInfo? info) InstantiateNewBot(ConfBot config)
+	{
+		lock (lockObj)
+		{
+			if (!string.IsNullOrEmpty(config.Name))
+			{
+				var maybeBot = GetBotSave(config.Name);
+				if (maybeBot != null)
+					return (null, maybeBot.GetInfo());
+			}
+
+			var id = GetFreeId();
+			if (id == null)
+				return (null, null); // "BotManager is shutting down"
+
+			var botInjector = new BotInjector(coreInjector);
+			botInjector.AddModule(botInjector);
+			botInjector.AddModule(new Id(id.Value));
+			botInjector.AddModule(config);
+			if (!botInjector.TryCreate<Bot>(out var bot))
+				return (null, null); // "Failed to create new Bot"
+			InsertBot(bot);
+			return (bot, null);
+		}
+	}
+
+	// !! This method must be called with a lock on lockObj
+	private void InsertBot(Bot bot)
+	{
+		if (activeBots is null)
+			return;
+		activeBots[bot.Id] = bot;
+	}
+
+	// !! This method must be called with a lock on lockObj
+	// !! The id must be used within the same lock or will be considered invalid.
+	private int? GetFreeId()
+	{
+		if (activeBots is null)
+			return null;
+
+		for (int i = 0; i < activeBots.Count; i++)
+		{
+			if (activeBots[i] is null)
+			{
+				return i;
 			}
 		}
 
-		// !! This method must be called with a lock on lockObj
-		private void InsertBot(Bot bot)
+		// All slots are full, get a new slot
+		activeBots.Add(null);
+		return activeBots.Count - 1;
+	}
+
+	// !! This method must be called with a lock on lockObj
+	private Bot? GetBotSave(int id)
+	{
+		if (activeBots is null || id < 0 || id >= activeBots.Count)
+			return null;
+		return activeBots[id];
+	}
+
+	// !! This method must be called with a lock on lockObj
+	private Bot? GetBotSave(string name)
+	{
+		if (name is null)
+			throw new ArgumentNullException(nameof(name));
+		if (activeBots is null)
+			return null;
+		return activeBots.Find(x => x?.Name == name);
+	}
+
+	public Bot? GetBotLock(int id)
+	{
+		Bot? bot;
+		lock (lockObj)
+		{
+			bot = GetBotSave(id);
+			if (bot is null)
+				return null;
+			if (bot.Id != id)
+				throw new Exception("Got not matching bot id");
+		}
+		return bot;
+	}
+
+	public Bot? GetBotLock(string name)
+	{
+		Bot? bot;
+		lock (lockObj)
+		{
+			bot = GetBotSave(name);
+			if (bot is null)
+				return null;
+			if (bot.Name != name)
+				throw new Exception("Got not matching bot name");
+		}
+		return bot;
+	}
+
+	internal void IterateAll(Action<Bot> body)
+	{
+		lock (lockObj)
 		{
 			if (activeBots is null)
 				return;
-			activeBots[bot.Id] = bot;
+			foreach (var bot in activeBots)
+			{
+				if (bot is null) continue;
+				body(bot);
+			}
 		}
+	}
 
-		// !! This method must be called with a lock on lockObj
-		// !! The id must be used within the same lock or will be considered invalid.
-		private int? GetFreeId()
+	public async Task StopBot(Bot bot)
+	{
+		RemoveBot(bot);
+		await bot.Scheduler.InvokeAsync(async () => await bot.Stop());
+	}
+
+	internal void RemoveBot(Bot bot)
+	{
+		lock (lockObj)
+		{
+			Bot? botInList;
+			if (activeBots != null
+				&& (botInList = GetBotSave(bot.Id)) != null
+				&& botInList == bot)
+			{
+				activeBots[bot.Id] = null;
+			}
+		}
+	}
+
+	public BotInfo[] GetBotInfolist()
+	{
+		lock (lockObj)
 		{
 			if (activeBots is null)
-				return null;
-
-			for (int i = 0; i < activeBots.Count; i++)
-			{
-				if (activeBots[i] is null)
-				{
-					return i;
-				}
-			}
-
-			// All slots are full, get a new slot
-			activeBots.Add(null);
-			return activeBots.Count - 1;
+				return Array.Empty<BotInfo>();
+			return activeBots.Where(x => x != null).Select(x => x!.GetInfo()).ToArray();
 		}
+	}
 
-		// !! This method must be called with a lock on lockObj
-		private Bot? GetBotSave(int id)
+	public uint GetRunningBotCount()
+	{
+		lock (lockObj)
 		{
-			if (activeBots is null || id < 0 || id >= activeBots.Count)
-				return null;
-			return activeBots[id];
-		}
-
-		// !! This method must be called with a lock on lockObj
-		private Bot? GetBotSave(string name)
-		{
-			if (name is null)
-				throw new ArgumentNullException(nameof(name));
 			if (activeBots is null)
-				return null;
-			return activeBots.Find(x => x?.Name == name);
+				return 0;
+			return (uint)activeBots.Count(x => x != null);
 		}
+	}
 
-		public Bot? GetBotLock(int id)
+	public async Task StopBots()
+	{
+		List<Bot?> disposeBots;
+		lock (lockObj)
 		{
-			Bot? bot;
-			lock (lockObj)
-			{
-				bot = GetBotSave(id);
-				if (bot is null)
-					return null;
-				if (bot.Id != id)
-					throw new Exception("Got not matching bot id");
-			}
-			return bot;
+			if (activeBots is null)
+				return;
+
+			disposeBots = activeBots;
+			activeBots = null;
 		}
 
-		public Bot? GetBotLock(string name)
-		{
-			Bot? bot;
-			lock (lockObj)
-			{
-				bot = GetBotSave(name);
-				if (bot is null)
-					return null;
-				if (bot.Name != name)
-					throw new Exception("Got not matching bot name");
-			}
-			return bot;
-		}
-
-		internal void IterateAll(Action<Bot> body)
-		{
-			lock (lockObj)
-			{
-				if (activeBots is null)
-					return;
-				foreach (var bot in activeBots)
-				{
-					if (bot is null) continue;
-					body(bot);
-				}
-			}
-		}
-
-		public async Task StopBot(Bot bot)
-		{
-			RemoveBot(bot);
-			await bot.Scheduler.InvokeAsync(async () => await bot.Stop());
-		}
-
-		internal void RemoveBot(Bot bot)
-		{
-			lock (lockObj)
-			{
-				Bot? botInList;
-				if (activeBots != null
-					&& (botInList = GetBotSave(bot.Id)) != null
-					&& botInList == bot)
-				{
-					activeBots[bot.Id] = null;
-				}
-			}
-		}
-
-		public BotInfo[] GetBotInfolist()
-		{
-			lock (lockObj)
-			{
-				if (activeBots is null)
-					return Array.Empty<BotInfo>();
-				return activeBots.Where(x => x != null).Select(x => x!.GetInfo()).ToArray();
-			}
-		}
-
-		public uint GetRunningBotCount()
-		{
-			lock (lockObj)
-			{
-				if (activeBots is null)
-					return 0;
-				return (uint)activeBots.Count(x => x != null);
-			}
-		}
-
-		public async Task StopBots()
-		{
-			List<Bot?> disposeBots;
-			lock (lockObj)
-			{
-				if (activeBots is null)
-					return;
-
-				disposeBots = activeBots;
-				activeBots = null;
-			}
-
-			await Task.WhenAll(disposeBots.Where(x => x != null).Select(x => StopBot(x!)));
-		}
+		await Task.WhenAll(disposeBots.Where(x => x != null).Select(x => StopBot(x!)));
 	}
 }

@@ -12,274 +12,273 @@ using System.Collections.Generic;
 using System.Text;
 using TS3AudioBot.CommandSystem.Ast;
 
-namespace TS3AudioBot.CommandSystem
+namespace TS3AudioBot.CommandSystem;
+
+internal static class CommandParser
 {
-	internal static class CommandParser
+	public const char DefaultCommandChar = '!';
+	public const char DefaultDelimiterChar = ' ';
+
+	// This switch follows more or less a DEA to this EBNF
+	// COMMAND-EBNF := <COMMAND> | $.*^
+
+	// COMMAND      := '!' <ARGUMENT> (\s+ <ARGUMENT>)*
+	// ARGUMENT     := '(' <COMMAND> ')'? | <FREESTRING> | <QUOTESTRING>
+	// FREESTRING   := [^)]+
+	// QUOTESTRING  := '"' [<anything but ", \" is ok>]* '"'
+
+	public static AstNode ParseCommandRequest(string request, char commandChar = DefaultCommandChar, char delimiterChar = DefaultDelimiterChar)
 	{
-		public const char DefaultCommandChar = '!';
-		public const char DefaultDelimiterChar = ' ';
+		AstCommand? root = null;
+		var comAst = new Stack<AstCommand>();
+		var build = BuildStatus.ParseCommand;
+		var strb = new StringBuilder();
+		var strPtr = new StringPtr(request);
 
-		// This switch follows more or less a DEA to this EBNF
-		// COMMAND-EBNF := <COMMAND> | $.*^
-
-		// COMMAND      := '!' <ARGUMENT> (\s+ <ARGUMENT>)*
-		// ARGUMENT     := '(' <COMMAND> ')'? | <FREESTRING> | <QUOTESTRING>
-		// FREESTRING   := [^)]+
-		// QUOTESTRING  := '"' [<anything but ", \" is ok>]* '"'
-
-		public static AstNode ParseCommandRequest(string request, char commandChar = DefaultCommandChar, char delimiterChar = DefaultDelimiterChar)
+		var startTrim = request.AsSpan().TrimStart();
+		if (startTrim.IsEmpty || startTrim[0] != commandChar)
 		{
-			AstCommand? root = null;
-			var comAst = new Stack<AstCommand>();
-			var build = BuildStatus.ParseCommand;
-			var strb = new StringBuilder();
-			var strPtr = new StringPtr(request);
-
-			var startTrim = request.AsSpan().TrimStart();
-			if (startTrim.IsEmpty || startTrim[0] != commandChar)
+			return new AstValue(request, StringType.FreeString)
 			{
-				return new AstValue(request, StringType.FreeString)
-				{
-					Length = request.Length,
-					Position = 0,
-					Value = request,
-				};
-			}
+				Length = request.Length,
+				Position = 0,
+				Value = request,
+			};
+		}
 
-			while (!strPtr.End)
+		while (!strPtr.End)
+		{
+			AstCommand buildCom;
+			switch (build)
 			{
-				AstCommand buildCom;
-				switch (build)
+			case BuildStatus.ParseCommand:
+				// Got a command
+				buildCom = new AstCommand(request);
+				// Consume CommandChar if left over
+				if (strPtr.Char == commandChar)
+					strPtr.Next(commandChar);
+
+				if (root is null) root = buildCom;
+				else comAst.Peek().Parameter.Add(buildCom);
+				comAst.Push(buildCom);
+				build = BuildStatus.SelectParam;
+				break;
+
+			case BuildStatus.SelectParam:
+				strPtr.SkipChar(delimiterChar);
+
+				if (strPtr.End)
 				{
-				case BuildStatus.ParseCommand:
-					// Got a command
-					buildCom = new AstCommand(request);
-					// Consume CommandChar if left over
-					if (strPtr.Char == commandChar)
-						strPtr.Next(commandChar);
-
-					if (root is null) root = buildCom;
-					else comAst.Peek().Parameter.Add(buildCom);
-					comAst.Push(buildCom);
-					build = BuildStatus.SelectParam;
-					break;
-
-				case BuildStatus.SelectParam:
-					strPtr.SkipChar(delimiterChar);
-
-					if (strPtr.End)
+					build = BuildStatus.End;
+				}
+				else
+				{
+					switch (strPtr.Char)
 					{
-						build = BuildStatus.End;
-					}
-					else
-					{
-						switch (strPtr.Char)
+					case '"':
+					case '\'':
+						build = BuildStatus.ParseQuotedString;
+						//goto case BuildStatus.ParseQuotedString;
+						break;
+
+					case '(':
+						if (!strPtr.HasNext)
 						{
-						case '"':
-						case '\'':
-							build = BuildStatus.ParseQuotedString;
-							//goto case BuildStatus.ParseQuotedString;
-							break;
-
-						case '(':
-							if (!strPtr.HasNext)
-							{
-								build = BuildStatus.ParseFreeString;
-							}
-							else if (strPtr.IsNext(commandChar))
-							{
-								strPtr.Next('(');
-								build = BuildStatus.ParseCommand;
-							}
-							else
-							{
-								build = BuildStatus.ParseFreeString;
-							}
-							break;
-
-						case ')':
-							if (comAst.Count <= 0)
-							{
-								build = BuildStatus.End;
-							}
-							else
-							{
-								buildCom = comAst.Pop();
-								foreach (var param in buildCom.Parameter)
-									if (param is AstValue astVal)
-										astVal.TailLength = strPtr.Index - param.Position;
-								if (comAst.Count <= 0)
-									build = BuildStatus.End;
-							}
-							strPtr.Next();
-							break;
-
-						default:
 							build = BuildStatus.ParseFreeString;
+						}
+						else if (strPtr.IsNext(commandChar))
+						{
+							strPtr.Next('(');
+							build = BuildStatus.ParseCommand;
+						}
+						else
+						{
+							build = BuildStatus.ParseFreeString;
+						}
+						break;
+
+					case ')':
+						if (comAst.Count <= 0)
+						{
+							build = BuildStatus.End;
+						}
+						else
+						{
+							buildCom = comAst.Pop();
+							foreach (var param in buildCom.Parameter)
+								if (param is AstValue astVal)
+									astVal.TailLength = strPtr.Index - param.Position;
+							if (comAst.Count <= 0)
+								build = BuildStatus.End;
+						}
+						strPtr.Next();
+						break;
+
+					default:
+						build = BuildStatus.ParseFreeString;
+						break;
+					}
+				}
+				break;
+
+			case BuildStatus.ParseFreeString:
+				var valFreeAst = new AstValue(request, StringType.FreeString);
+				using (strPtr.TrackNode(valFreeAst))
+				{
+					for (; !strPtr.End; strPtr.Next())
+					{
+						if ((strPtr.Char == '(' && strPtr.HasNext && strPtr.IsNext(commandChar))
+							|| strPtr.Char == ')'
+							|| strPtr.Char == delimiterChar)
+						{
 							break;
 						}
 					}
-					break;
+				}
+				buildCom = comAst.Peek();
+				buildCom.Parameter.Add(valFreeAst);
+				build = BuildStatus.SelectParam;
+				break;
 
-				case BuildStatus.ParseFreeString:
-					var valFreeAst = new AstValue(request, StringType.FreeString);
-					using (strPtr.TrackNode(valFreeAst))
+			case BuildStatus.ParseQuotedString:
+				strb.Clear();
+
+				char quoteChar;
+				if (strPtr.TryNext('"'))
+					quoteChar = '"';
+				else if (strPtr.TryNext('\''))
+					quoteChar = '\'';
+				else
+					throw new Exception("Parser error");
+
+				var valQuoAst = new AstValue(request, StringType.QuotedString);
+				using (strPtr.TrackNode(valQuoAst))
+				{
+					bool escaped = false;
+					for (; !strPtr.End; strPtr.Next())
 					{
-						for (; !strPtr.End; strPtr.Next())
+						if (strPtr.Char == '\\')
 						{
-							if ((strPtr.Char == '(' && strPtr.HasNext && strPtr.IsNext(commandChar))
-								|| strPtr.Char == ')'
-								|| strPtr.Char == delimiterChar)
+							escaped = true;
+						}
+						else if (strPtr.Char == quoteChar)
+						{
+							if (!escaped)
 							{
+								strPtr.Next();
 								break;
 							}
-						}
-					}
-					buildCom = comAst.Peek();
-					buildCom.Parameter.Add(valFreeAst);
-					build = BuildStatus.SelectParam;
-					break;
-
-				case BuildStatus.ParseQuotedString:
-					strb.Clear();
-
-					char quoteChar;
-					if (strPtr.TryNext('"'))
-						quoteChar = '"';
-					else if (strPtr.TryNext('\''))
-						quoteChar = '\'';
-					else
-						throw new Exception("Parser error");
-
-					var valQuoAst = new AstValue(request, StringType.QuotedString);
-					using (strPtr.TrackNode(valQuoAst))
-					{
-						bool escaped = false;
-						for (; !strPtr.End; strPtr.Next())
-						{
-							if (strPtr.Char == '\\')
-							{
-								escaped = true;
-							}
-							else if (strPtr.Char == quoteChar)
-							{
-								if (!escaped)
-								{
-									strPtr.Next();
-									break;
-								}
-								else
-								{
-									strb.Length--;
-									escaped = false;
-								}
-							}
 							else
 							{
+								strb.Length--;
 								escaped = false;
 							}
-
-							strb.Append(strPtr.Char);
 						}
+						else
+						{
+							escaped = false;
+						}
+
+						strb.Append(strPtr.Char);
 					}
-					valQuoAst.Value = strb.ToString();
-					buildCom = comAst.Peek();
-					buildCom.Parameter.Add(valQuoAst);
-					build = BuildStatus.SelectParam;
-					break;
-
-				case BuildStatus.End:
-					strPtr.JumpToEnd();
-					break;
-
-				default: throw new InvalidOperationException();
 				}
-			}
+				valQuoAst.Value = strb.ToString();
+				buildCom = comAst.Peek();
+				buildCom.Parameter.Add(valQuoAst);
+				build = BuildStatus.SelectParam;
+				break;
 
-			return root ?? throw new InvalidOperationException("No ast was built");
+			case BuildStatus.End:
+				strPtr.JumpToEnd();
+				break;
+
+			default: throw new InvalidOperationException();
+			}
 		}
 
-		private class StringPtr
+		return root ?? throw new InvalidOperationException("No ast was built");
+	}
+
+	private class StringPtr
+	{
+		private readonly string text;
+
+		public char Char => text[Index];
+		public bool End => Index >= text.Length;
+		public bool HasNext => Index + 1 < text.Length;
+		public int Index { get; private set; }
+
+		public StringPtr(string str)
 		{
-			private readonly string text;
+			text = str;
+			Index = 0;
+		}
 
-			public char Char => text[Index];
-			public bool End => Index >= text.Length;
-			public bool HasNext => Index + 1 < text.Length;
-			public int Index { get; private set; }
+		public void Next()
+		{
+			Index++;
+		}
 
-			public StringPtr(string str)
-			{
-				text = str;
-				Index = 0;
-			}
+		public void Next(char mustBe)
+		{
+			if (Char != mustBe)
+				throw new InvalidOperationException();
+			Next();
+		}
 
-			public void Next()
-			{
+		public bool TryNext(char mustBe)
+		{
+			if (Char != mustBe)
+				return false;
+			Next();
+			return true;
+		}
+
+		public bool IsNext(char what) => HasNext && text[Index + 1] == what;
+
+		public void SkipChar(char c = ' ')
+		{
+			while (Index < text.Length && text[Index] == c)
 				Index++;
-			}
-
-			public void Next(char mustBe)
-			{
-				if (Char != mustBe)
-					throw new InvalidOperationException();
-				Next();
-			}
-
-			public bool TryNext(char mustBe)
-			{
-				if (Char != mustBe)
-					return false;
-				Next();
-				return true;
-			}
-
-			public bool IsNext(char what) => HasNext && text[Index + 1] == what;
-
-			public void SkipChar(char c = ' ')
-			{
-				while (Index < text.Length && text[Index] == c)
-					Index++;
-			}
-
-			public void JumpToEnd() => Index = text.Length + 1;
-
-			public NodeTracker TrackNode(AstNode? node = null)
-			{
-				return new NodeTracker(this, node);
-			}
-
-			public readonly ref struct NodeTracker
-			{
-				private readonly int indexStart;
-				private readonly StringPtr parent;
-				private readonly AstNode? node;
-				public NodeTracker(StringPtr p, AstNode? node = null)
-				{
-					parent = p;
-					indexStart = parent.Index;
-					this.node = node;
-				}
-
-				public readonly void Apply(AstNode node)
-				{
-					node.Position = indexStart;
-					node.Length = parent.Index - indexStart;
-				}
-
-				public readonly (int start, int end) Done() => (indexStart, parent.Index);
-
-				public readonly void Dispose() { if (node != null) Apply(node); }
-			}
 		}
 
-		private enum BuildStatus
+		public void JumpToEnd() => Index = text.Length + 1;
+
+		public NodeTracker TrackNode(AstNode? node = null)
 		{
-			ParseCommand,
-			SelectParam,
-			ParseFreeString,
-			ParseQuotedString,
-			End,
+			return new NodeTracker(this, node);
 		}
+
+		public readonly ref struct NodeTracker
+		{
+			private readonly int indexStart;
+			private readonly StringPtr parent;
+			private readonly AstNode? node;
+			public NodeTracker(StringPtr p, AstNode? node = null)
+			{
+				parent = p;
+				indexStart = parent.Index;
+				this.node = node;
+			}
+
+			public readonly void Apply(AstNode node)
+			{
+				node.Position = indexStart;
+				node.Length = parent.Index - indexStart;
+			}
+
+			public readonly (int start, int end) Done() => (indexStart, parent.Index);
+
+			public readonly void Dispose() { if (node != null) Apply(node); }
+		}
+	}
+
+	private enum BuildStatus
+	{
+		ParseCommand,
+		SelectParam,
+		ParseFreeString,
+		ParseQuotedString,
+		End,
 	}
 }

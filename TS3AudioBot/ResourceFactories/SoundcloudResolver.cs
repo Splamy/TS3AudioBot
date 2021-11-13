@@ -16,188 +16,187 @@ using TS3AudioBot.Helper;
 using TS3AudioBot.Localization;
 using TS3AudioBot.Playlists;
 
-namespace TS3AudioBot.ResourceFactories
+namespace TS3AudioBot.ResourceFactories;
+
+public sealed class SoundcloudResolver : IResourceResolver, IPlaylistResolver, IThumbnailResolver
 {
-	public sealed class SoundcloudResolver : IResourceResolver, IPlaylistResolver, IThumbnailResolver
+	private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
+	private static readonly Regex SoundcloudLink = new(@"^https?\:\/\/(www\.)?soundcloud\.", Util.DefaultRegexConfig);
+	private static readonly Regex SoundcloudPermalink = new(@"\/\/([^\/]+)\/([^\/]+)\/([^\/]+)$", Util.DefaultRegexConfig);
+	private const string SoundcloudClientId = "a9dd3403f858e105d7e266edc162a0c5";
+
+	private const string AddArtist = "artist";
+	private const string AddTrack = "track";
+
+	public string ResolverFor => "soundcloud";
+
+	public MatchCertainty MatchResource(ResolveContext? _, string uri) => SoundcloudLink.IsMatch(uri).ToMatchCertainty();
+
+	public MatchCertainty MatchPlaylist(ResolveContext? _, string uri) => MatchResource(null, uri);
+
+	public async Task<PlayResource> GetResource(ResolveContext? _, string uri, CancellationToken cancellationToken)
 	{
-		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
-		private static readonly Regex SoundcloudLink = new(@"^https?\:\/\/(www\.)?soundcloud\.", Util.DefaultRegexConfig);
-		private static readonly Regex SoundcloudPermalink = new(@"\/\/([^\/]+)\/([^\/]+)\/([^\/]+)$", Util.DefaultRegexConfig);
-		private const string SoundcloudClientId = "a9dd3403f858e105d7e266edc162a0c5";
-
-		private const string AddArtist = "artist";
-		private const string AddTrack = "track";
-
-		public string ResolverFor => "soundcloud";
-
-		public MatchCertainty MatchResource(ResolveContext? _, string uri) => SoundcloudLink.IsMatch(uri).ToMatchCertainty();
-
-		public MatchCertainty MatchPlaylist(ResolveContext? _, string uri) => MatchResource(null, uri);
-
-		public async Task<PlayResource> GetResource(ResolveContext? _, string uri, CancellationToken cancellationToken)
+		JsonTrackInfo? track = null;
+		try
 		{
-			JsonTrackInfo? track = null;
-			try
+			track = await WebWrapper
+				.Request($"https://api.soundcloud.com/resolve.json?url={Uri.EscapeUriString(uri)}&client_id={SoundcloudClientId}")
+				.AsJson<JsonTrackInfo>(cancellationToken);
+		}
+		catch (Exception ex) { Log.Debug(ex, "Failed to get via api"); }
+
+		if (track is null)
+		{
+			if (!SoundcloudLink.IsMatch(uri))
+				throw Error.LocalStr(strings.error_media_invalid_uri);
+			return await YoutubeDlWrappedAsync(uri, cancellationToken);
+		}
+		var resource = CheckAndGet(track);
+		if (resource is null)
+			throw Error.LocalStr(strings.error_media_internal_missing + " (parsedDict)");
+		return await GetResourceById(resource, false, cancellationToken);
+	}
+
+	public Task<PlayResource> GetResourceById(ResolveContext _, AudioResource resource, CancellationToken cancellationToken) => GetResourceById(resource, true, cancellationToken);
+
+	private async Task<PlayResource> GetResourceById(AudioResource resource, bool allowNullName, CancellationToken cancellationToken)
+	{
+		if (SoundcloudLink.IsMatch(resource.ResourceId))
+			return await GetResource(null, resource.ResourceId, cancellationToken);
+
+		if (resource.ResourceTitle is null)
+		{
+			if (!allowNullName) throw Error.LocalStr(strings.error_media_internal_missing + " (title)");
+			string link = RestoreLink(null, resource);
+			if (link is null) throw Error.LocalStr(strings.error_media_internal_missing + " (link)");
+			return await GetResource(null, link, cancellationToken);
+		}
+
+		string finalRequest = $"https://api.soundcloud.com/tracks/{resource.ResourceId}/stream?client_id={SoundcloudClientId}";
+		return new PlayResource(finalRequest, resource);
+	}
+
+	public string RestoreLink(ResolveContext? _, AudioResource resource)
+	{
+		var artistName = resource.Get(AddArtist);
+		var trackName = resource.Get(AddTrack);
+
+		if (artistName != null && trackName != null)
+			return $"https://soundcloud.com/{artistName}/{trackName}";
+
+		return "https://soundcloud.com";
+	}
+
+	private AudioResource? CheckAndGet(JsonTrackInfo track)
+	{
+		if (track == null || track.id == 0 || track.title == null || track.permalink_url == null)
+		{
+			Log.Debug("Parts of track response are empty: {@json}", track);
+			return null;
+		}
+
+		var permalinkMatch = SoundcloudPermalink.Match(track.permalink_url);
+		if (!permalinkMatch.Success)
+		{
+			Log.Debug("Permalink url didn't match: {url}", track.permalink_url);
+			return null;
+		}
+
+		var permaArtist = permalinkMatch.Groups[2].Value;
+		var permaTrack = permalinkMatch.Groups[3].Value;
+
+		return new AudioResource(
+			track.id.ToString(CultureInfo.InvariantCulture),
+			track.title,
+			ResolverFor)
+			.Add(AddArtist, permaArtist)
+			.Add(AddTrack, permaTrack);
+	}
+
+	private async Task<PlayResource> YoutubeDlWrappedAsync(string link, CancellationToken cancellationToken)
+	{
+		Log.Debug("Falling back to youtube-dl!");
+
+		var response = await YoutubeDlHelper.GetSingleVideo(link, cancellationToken);
+		var title = response.title ?? $"Soundcloud-{link}";
+		var format = YoutubeDlHelper.FilterBest(response.formats);
+		var url = format?.url;
+
+		if (string.IsNullOrEmpty(url))
+			throw Error.LocalStr(strings.error_ytdl_empty_response);
+
+		Log.Debug("youtube-dl succeeded!");
+
+		return new PlayResource(url, new AudioResource(link, title, ResolverFor));
+	}
+
+	public async Task<Playlist> GetPlaylist(ResolveContext _, string url, CancellationToken cancellationToken)
+	{
+		var playlist = await WebWrapper
+			.Request($"https://api.soundcloud.com/resolve.json?url={Uri.EscapeUriString(url)}&client_id={SoundcloudClientId}")
+			.AsJson<JsonPlaylist>(cancellationToken);
+
+		if (playlist is null || playlist.title is null || playlist.tracks is null)
+		{
+			Log.Debug("Parts of playlist response are empty: {@json}", playlist);
+			throw Error.LocalStr(strings.error_media_internal_missing + " (playlist)");
+		}
+
+		var plist = new Playlist().SetTitle(playlist.title);
+		plist.AddRange(
+			playlist.tracks.SelectNotNull(track =>
 			{
-				track = await WebWrapper
-					.Request($"https://api.soundcloud.com/resolve.json?url={Uri.EscapeUriString(uri)}&client_id={SoundcloudClientId}")
-					.AsJson<JsonTrackInfo>(cancellationToken);
-			}
-			catch (Exception ex) { Log.Debug(ex, "Failed to get via api"); }
+				var resource = CheckAndGet(track);
+				if (resource is null)
+					return null;
+				return new PlaylistItem(resource);
+			})
+		);
 
-			if (track is null)
-			{
-				if (!SoundcloudLink.IsMatch(uri))
-					throw Error.LocalStr(strings.error_media_invalid_uri);
-				return await YoutubeDlWrappedAsync(uri, cancellationToken);
-			}
-			var resource = CheckAndGet(track);
-			if (resource is null)
-				throw Error.LocalStr(strings.error_media_internal_missing + " (parsedDict)");
-			return await GetResourceById(resource, false, cancellationToken);
-		}
+		return plist;
+	}
 
-		public Task<PlayResource> GetResourceById(ResolveContext _, AudioResource resource, CancellationToken cancellationToken) => GetResourceById(resource, true, cancellationToken);
+	public async Task GetThumbnail(ResolveContext _, PlayResource playResource, AsyncStreamAction action, CancellationToken cancellationToken)
+	{
+		var thumb = await WebWrapper
+			.Request($"https://api.soundcloud.com/tracks/{playResource.AudioResource.ResourceId}?client_id={SoundcloudClientId}")
+			.AsJson<JsonTumbnailMinimal>(cancellationToken);
+		if (thumb is null)
+			throw Error.LocalStr(strings.error_media_internal_missing + " (thumb)");
+		if (thumb.artwork_url is null)
+			throw Error.LocalStr(strings.error_media_internal_missing + " (artwork_url)");
 
-		private async Task<PlayResource> GetResourceById(AudioResource resource, bool allowNullName, CancellationToken cancellationToken)
-		{
-			if (SoundcloudLink.IsMatch(resource.ResourceId))
-				return await GetResource(null, resource.ResourceId, cancellationToken);
+		// t500x500: 500px×500px
+		// crop    : 400px×400px
+		// t300x300: 300px×300px
+		// large   : 100px×100px 
+		await WebWrapper.Request(thumb.artwork_url.Replace("-large", "-t300x300")).ToStream(action, cancellationToken);
+	}
 
-			if (resource.ResourceTitle is null)
-			{
-				if (!allowNullName) throw Error.LocalStr(strings.error_media_internal_missing + " (title)");
-				string link = RestoreLink(null, resource);
-				if (link is null) throw Error.LocalStr(strings.error_media_internal_missing + " (link)");
-				return await GetResource(null, link, cancellationToken);
-			}
-
-			string finalRequest = $"https://api.soundcloud.com/tracks/{resource.ResourceId}/stream?client_id={SoundcloudClientId}";
-			return new PlayResource(finalRequest, resource);
-		}
-
-		public string RestoreLink(ResolveContext? _, AudioResource resource)
-		{
-			var artistName = resource.Get(AddArtist);
-			var trackName = resource.Get(AddTrack);
-
-			if (artistName != null && trackName != null)
-				return $"https://soundcloud.com/{artistName}/{trackName}";
-
-			return "https://soundcloud.com";
-		}
-
-		private AudioResource? CheckAndGet(JsonTrackInfo track)
-		{
-			if (track == null || track.id == 0 || track.title == null || track.permalink_url == null)
-			{
-				Log.Debug("Parts of track response are empty: {@json}", track);
-				return null;
-			}
-
-			var permalinkMatch = SoundcloudPermalink.Match(track.permalink_url);
-			if (!permalinkMatch.Success)
-			{
-				Log.Debug("Permalink url didn't match: {url}", track.permalink_url);
-				return null;
-			}
-
-			var permaArtist = permalinkMatch.Groups[2].Value;
-			var permaTrack = permalinkMatch.Groups[3].Value;
-
-			return new AudioResource(
-				track.id.ToString(CultureInfo.InvariantCulture),
-				track.title,
-				ResolverFor)
-				.Add(AddArtist, permaArtist)
-				.Add(AddTrack, permaTrack);
-		}
-
-		private async Task<PlayResource> YoutubeDlWrappedAsync(string link, CancellationToken cancellationToken)
-		{
-			Log.Debug("Falling back to youtube-dl!");
-
-			var response = await YoutubeDlHelper.GetSingleVideo(link, cancellationToken);
-			var title = response.title ?? $"Soundcloud-{link}";
-			var format = YoutubeDlHelper.FilterBest(response.formats);
-			var url = format?.url;
-
-			if (string.IsNullOrEmpty(url))
-				throw Error.LocalStr(strings.error_ytdl_empty_response);
-
-			Log.Debug("youtube-dl succeeded!");
-
-			return new PlayResource(url, new AudioResource(link, title, ResolverFor));
-		}
-
-		public async Task<Playlist> GetPlaylist(ResolveContext _, string url, CancellationToken cancellationToken)
-		{
-			var playlist = await WebWrapper
-				.Request($"https://api.soundcloud.com/resolve.json?url={Uri.EscapeUriString(url)}&client_id={SoundcloudClientId}")
-				.AsJson<JsonPlaylist>(cancellationToken);
-
-			if (playlist is null || playlist.title is null || playlist.tracks is null)
-			{
-				Log.Debug("Parts of playlist response are empty: {@json}", playlist);
-				throw Error.LocalStr(strings.error_media_internal_missing + " (playlist)");
-			}
-
-			var plist = new Playlist().SetTitle(playlist.title);
-			plist.AddRange(
-				playlist.tracks.SelectNotNull(track =>
-				{
-					var resource = CheckAndGet(track);
-					if (resource is null)
-						return null;
-					return new PlaylistItem(resource);
-				})
-			);
-
-			return plist;
-		}
-
-		public async Task GetThumbnail(ResolveContext _, PlayResource playResource, AsyncStreamAction action, CancellationToken cancellationToken)
-		{
-			var thumb = await WebWrapper
-				.Request($"https://api.soundcloud.com/tracks/{playResource.AudioResource.ResourceId}?client_id={SoundcloudClientId}")
-				.AsJson<JsonTumbnailMinimal>(cancellationToken);
-			if (thumb is null)
-				throw Error.LocalStr(strings.error_media_internal_missing + " (thumb)");
-			if (thumb.artwork_url is null)
-				throw Error.LocalStr(strings.error_media_internal_missing + " (artwork_url)");
-
-			// t500x500: 500px×500px
-			// crop    : 400px×400px
-			// t300x300: 300px×300px
-			// large   : 100px×100px 
-			await WebWrapper.Request(thumb.artwork_url.Replace("-large", "-t300x300")).ToStream(action, cancellationToken);
-		}
-
-		public void Dispose() { }
+	public void Dispose() { }
 
 #pragma warning disable CS0649, CS0169, IDE1006
-		// ReSharper disable ClassNeverInstantiated.Local, InconsistentNaming
-		private class JsonTrackInfo
-		{
-			public int id { get; set; }
-			public string? title { get; set; }
-			public string? permalink_url { get; set; }
-			public JsonTrackUser? user { get; set; }
-		}
-		private class JsonTrackUser
-		{
-			public string? permalink { get; set; }
-		}
-		private class JsonPlaylist
-		{
-			public string? title { get; set; }
-			public JsonTrackInfo[]? tracks { get; set; }
-		}
-		private class JsonTumbnailMinimal
-		{
-			public string? artwork_url { get; set; }
-		}
-		// ReSharper enable ClassNeverInstantiated.Local, InconsistentNaming
-#pragma warning restore CS0649, CS0169, IDE1006
+	// ReSharper disable ClassNeverInstantiated.Local, InconsistentNaming
+	private class JsonTrackInfo
+	{
+		public int id { get; set; }
+		public string? title { get; set; }
+		public string? permalink_url { get; set; }
+		public JsonTrackUser? user { get; set; }
 	}
+	private class JsonTrackUser
+	{
+		public string? permalink { get; set; }
+	}
+	private class JsonPlaylist
+	{
+		public string? title { get; set; }
+		public JsonTrackInfo[]? tracks { get; set; }
+	}
+	private class JsonTumbnailMinimal
+	{
+		public string? artwork_url { get; set; }
+	}
+	// ReSharper enable ClassNeverInstantiated.Local, InconsistentNaming
+#pragma warning restore CS0649, CS0169, IDE1006
 }

@@ -10,20 +10,19 @@
 using System;
 using System.IO;
 
-namespace TSLib.Audio
+namespace TSLib.Audio;
+
+public class StreamAudioProducer : IAudioPassiveProducer
 {
-	public class StreamAudioProducer : IAudioPassiveProducer
+	private readonly Stream stream;
+
+	public StreamAudioProducer(Stream stream) { this.stream = stream; }
+
+	public int Read(Span<byte> data, out Meta? meta)
 	{
-		private readonly Stream stream;
-
-		public StreamAudioProducer(Stream stream) { this.stream = stream; }
-
-		public int Read(Span<byte> data, out Meta? meta)
-		{
-			meta = default;
-			return stream.Read(data);
-		}
-
-		public void Dispose() => stream.Dispose();
+		meta = default;
+		return stream.Read(data);
 	}
+
+	public void Dispose() => stream.Dispose();
 }

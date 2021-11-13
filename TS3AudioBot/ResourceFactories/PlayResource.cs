@@ -10,23 +10,22 @@
 using TS3AudioBot.Audio;
 using TS3AudioBot.CommandSystem.CommandResults;
 
-namespace TS3AudioBot.ResourceFactories
+namespace TS3AudioBot.ResourceFactories;
+
+public class PlayResource : IAudioResourceResult, IMetaContainer
 {
-	public class PlayResource : IAudioResourceResult, IMetaContainer
+	public AudioResource AudioResource { get; }
+	public string PlayUri { get; }
+	public PlayInfo? PlayInfo { get; set; }
+	public SongInfo? SongInfo { get; set; }
+
+	public PlayResource(string uri, AudioResource baseData, PlayInfo? playInfo = null, SongInfo? songInfo = null)
 	{
-		public AudioResource AudioResource { get; }
-		public string PlayUri { get; }
-		public PlayInfo? PlayInfo { get; set; }
-		public SongInfo? SongInfo { get; set; }
-
-		public PlayResource(string uri, AudioResource baseData, PlayInfo? playInfo = null, SongInfo? songInfo = null)
-		{
-			AudioResource = baseData;
-			PlayUri = uri;
-			PlayInfo = playInfo;
-			SongInfo = songInfo;
-		}
-
-		public override string ToString() => AudioResource.ToString();
+		AudioResource = baseData;
+		PlayUri = uri;
+		PlayInfo = playInfo;
+		SongInfo = songInfo;
 	}
+
+	public override string ToString() => AudioResource.ToString();
 }

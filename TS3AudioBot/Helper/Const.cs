@@ -7,28 +7,27 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
-namespace TS3AudioBot.Helper
+namespace TS3AudioBot.Helper;
+
+internal static class SessionConst
 {
-	internal static class SessionConst
-	{
-		public const string SearchResult = "tab_searchresult";
-	}
+	public const string SearchResult = "tab_searchresult";
+}
 
-	public static class BotPaths
-	{
-		public const string Playlists = "playlists";
-		public const string Avatars = "avatars";
-		public const string Music = "music";
-	}
+public static class BotPaths
+{
+	public const string Playlists = "playlists";
+	public const string Avatars = "avatars";
+	public const string Music = "music";
+}
 
-	public static class FilesConst
-	{
-		public const string CoreConfig = "ts3audiobot.toml";
-		public const string BotConfig = "bot.toml";
-	}
+public static class FilesConst
+{
+	public const string CoreConfig = "ts3audiobot.toml";
+	public const string BotConfig = "bot.toml";
+}
 
-	public static class Defaults
-	{
-		public const string BotName = "default";
-	}
+public static class Defaults
+{
+	public const string BotName = "default";
 }

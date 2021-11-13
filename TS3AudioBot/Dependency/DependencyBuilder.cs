@@ -11,106 +11,105 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace TS3AudioBot.Dependency
+namespace TS3AudioBot.Dependency;
+
+public sealed class CoreInjector : BasicInjector { }
+public sealed class BotInjector : ChainedInjector<BasicInjector>
 {
-	public sealed class CoreInjector : BasicInjector { }
-	public sealed class BotInjector : ChainedInjector<BasicInjector>
+	private HashSet<Type>? hiddenParentModules = null;
+
+	public BotInjector(IInjector parent) : base(parent, new BasicInjector())
 	{
-		private HashSet<Type>? hiddenParentModules = null;
-
-		public BotInjector(IInjector parent) : base(parent, new BasicInjector())
-		{
-		}
-
-		public override object? GetModule(Type type)
-		{
-			var ownObj = OwnInjector.GetModule(type);
-			if (ownObj != null)
-				return ownObj;
-			if (hiddenParentModules != null && hiddenParentModules.Contains(type))
-				return null;
-			return ParentInjector.GetModule(type);
-		}
-
-		public void HideParentModule(Type type)
-		{
-			hiddenParentModules ??= new HashSet<Type>();
-			hiddenParentModules.Add(type);
-		}
-		public void HideParentModule<T>() => HideParentModule(typeof(T));
-		public void ClearHiddenParentModules() => hiddenParentModules = null;
 	}
 
-	/// <summary>
-	/// The DependencyBuilder will try to create a dependency graph of all Modules
-	/// which are available or requested and instantitate them (if possible).
-	/// </summary>
-	public class DependencyBuilder
+	public override object? GetModule(Type type)
 	{
-		private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
+		var ownObj = OwnInjector.GetModule(type);
+		if (ownObj != null)
+			return ownObj;
+		if (hiddenParentModules != null && hiddenParentModules.Contains(type))
+			return null;
+		return ParentInjector.GetModule(type);
+	}
 
-		private readonly IInjector injector;
-		private readonly LinkedList<Module> modules = new();
+	public void HideParentModule(Type type)
+	{
+		hiddenParentModules ??= new HashSet<Type>();
+		hiddenParentModules.Add(type);
+	}
+	public void HideParentModule<T>() => HideParentModule(typeof(T));
+	public void ClearHiddenParentModules() => hiddenParentModules = null;
+}
 
-		public DependencyBuilder(IInjector injector)
+/// <summary>
+/// The DependencyBuilder will try to create a dependency graph of all Modules
+/// which are available or requested and instantitate them (if possible).
+/// </summary>
+public class DependencyBuilder
+{
+	private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
+
+	private readonly IInjector injector;
+	private readonly LinkedList<Module> modules = new();
+
+	public DependencyBuilder(IInjector injector)
+	{
+		this.injector = injector;
+	}
+
+	public DependencyBuilder RequestModule<TService>() where TService : class => RequestModule<TService, TService>();
+
+	public DependencyBuilder RequestModule<TService, TImplementation>() where TImplementation : class, TService => RequestModule(typeof(TService), typeof(TImplementation));
+
+	private DependencyBuilder RequestModule(Type tService, Type tImplementation)
+	{
+		Log.Trace("Requested Service {0} with {1}", tService.Name, tImplementation.Name);
+		var mod = new Module(tService, tImplementation);
+
+		for (var cur = modules.First; cur != null; cur = cur.Next)
 		{
-			this.injector = injector;
-		}
-
-		public DependencyBuilder RequestModule<TService>() where TService : class => RequestModule<TService, TService>();
-
-		public DependencyBuilder RequestModule<TService, TImplementation>() where TImplementation : class, TService => RequestModule(typeof(TService), typeof(TImplementation));
-
-		private DependencyBuilder RequestModule(Type tService, Type tImplementation)
-		{
-			Log.Trace("Requested Service {0} with {1}", tService.Name, tImplementation.Name);
-			var mod = new Module(tService, tImplementation);
-
-			for (var cur = modules.First; cur != null; cur = cur.Next)
+			if (mod.ConstructorParam.Contains(cur.Value.TService) || mod.TImplementation == cur.Value.TService)
 			{
-				if (mod.ConstructorParam.Contains(cur.Value.TService) || mod.TImplementation == cur.Value.TService)
-				{
-					modules.AddBefore(cur, mod);
-					return this;
-				}
+				modules.AddBefore(cur, mod);
+				return this;
 			}
-			modules.AddLast(mod);
-			return this;
 		}
+		modules.AddLast(mod);
+		return this;
+	}
 
-		/// <summary>Creates all modules.</summary>
-		/// <returns>True if all are initialized, false otherwise.</returns>
-		public bool Build()
+	/// <summary>Creates all modules.</summary>
+	/// <returns>True if all are initialized, false otherwise.</returns>
+	public bool Build()
+	{
+		for (var curNode = modules.Last; curNode != null; curNode = curNode.Previous, modules.RemoveLast())
 		{
-			for (var curNode = modules.Last; curNode != null; curNode = curNode.Previous, modules.RemoveLast())
+			var cur = curNode.Value;
+			var obj = injector.GetModule(cur.TImplementation);
+			if (obj != null)
 			{
-				var cur = curNode.Value;
-				var obj = injector.GetModule(cur.TImplementation);
-				if (obj != null)
-				{
-					injector.AddModule(cur.TService, obj);
-				}
-				else
-				{
-					if (!injector.TryCreate(cur.TImplementation, out obj))
-						return false;
-					injector.AddModule(cur.TService, obj);
-				}
+				injector.AddModule(cur.TService, obj);
 			}
-			return true;
+			else
+			{
+				if (!injector.TryCreate(cur.TImplementation, out obj))
+					return false;
+				injector.AddModule(cur.TService, obj);
+			}
 		}
+		return true;
+	}
 
-		internal static Type[]? GetConstructorParam(Type type)
-		{
-			var fod = type.GetConstructors().FirstOrDefault();
-			if (fod == null)
-				return null;
-			return fod.GetParameters().Select(p => p.ParameterType).ToArray();
-		}
+	internal static Type[]? GetConstructorParam(Type type)
+	{
+		var fod = type.GetConstructors().FirstOrDefault();
+		if (fod == null)
+			return null;
+		return fod.GetParameters().Select(p => p.ParameterType).ToArray();
+	}
 
-		public override string ToString()
-		{
-			return $"Unresolved: {modules.Count}";
-		}
+	public override string ToString()
+	{
+		return $"Unresolved: {modules.Count}";
 	}
 }

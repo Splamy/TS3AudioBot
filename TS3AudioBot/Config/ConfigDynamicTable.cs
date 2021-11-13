@@ -12,72 +12,71 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 
-namespace TS3AudioBot.Config
+namespace TS3AudioBot.Config;
+
+[DebuggerDisplay("dyntable:{Key}")]
+public class ConfigDynamicTable<T> : ConfigEnumerable, IDynamicTable where T : ConfigPart
 {
-	[DebuggerDisplay("dyntable:{Key}")]
-	public class ConfigDynamicTable<T> : ConfigEnumerable, IDynamicTable where T : ConfigPart
+	private readonly Dictionary<string, T> dynamicTables = new();
+	private readonly Func<string, T> createFactory;
+
+	public ConfigDynamicTable(Func<string, T> createFactory)
 	{
-		private readonly Dictionary<string, T> dynamicTables = new();
-		private readonly Func<string, T> createFactory;
+		this.createFactory = createFactory;
+	}
 
-		public ConfigDynamicTable(Func<string, T> createFactory)
+	public override void FromToml(TomlObject? tomlObject)
+	{
+		base.FromToml(tomlObject);
+
+		dynamicTables.Clear();
+
+		if (tomlObject != null)
 		{
-			this.createFactory = createFactory;
-		}
+			if (tomlObject is not TomlTable tomlTable)
+				throw new InvalidCastException();
 
-		public override void FromToml(TomlObject? tomlObject)
-		{
-			base.FromToml(tomlObject);
-
-			dynamicTables.Clear();
-
-			if (tomlObject != null)
+			foreach (var child in tomlTable.Rows)
 			{
-				if (tomlObject is not TomlTable tomlTable)
-					throw new InvalidCastException();
-
-				foreach (var child in tomlTable.Rows)
-				{
-					var childConfig = Init(createFactory(child.Key), this, child.Value);
-					dynamicTables.Add(child.Key, childConfig);
-				}
+				var childConfig = Init(createFactory(child.Key), this, child.Value);
+				dynamicTables.Add(child.Key, childConfig);
 			}
 		}
-
-		public override IEnumerable<ConfigPart> GetAllChildren() => GetAllItems();
-
-		public override ConfigPart? GetChild(string key) => GetItem(key);
-
-		public ConfigPart GetOrCreateChild(string key) => GetOrCreateItem(key);
-
-		public override void Derive(ConfigPart derived)
-		{
-			// TODO (or rather probably ignore, as deriving is a bit ambiguous)
-		}
-
-		public T? GetItem(string key) => dynamicTables.TryGetValue(key, out var item) ? item : null;
-
-		public IEnumerable<T> GetAllItems() => dynamicTables.Values;
-
-		public T CreateItem(string key)
-		{
-			var childConfig = Init(createFactory(key), this, null);
-			dynamicTables.Add(key, childConfig);
-			return childConfig;
-		}
-
-		public T GetOrCreateItem(string key) => GetItem(key) ?? CreateItem(key);
-
-		public void RemoveItem(string key)
-		{
-			if (dynamicTables.Remove(key, out var child))
-				child.ClearEvents();
-			TomlObject.Remove(key);
-		}
 	}
 
-	public interface IDynamicTable
+	public override IEnumerable<ConfigPart> GetAllChildren() => GetAllItems();
+
+	public override ConfigPart? GetChild(string key) => GetItem(key);
+
+	public ConfigPart GetOrCreateChild(string key) => GetOrCreateItem(key);
+
+	public override void Derive(ConfigPart derived)
 	{
-		ConfigPart GetOrCreateChild(string key);
+		// TODO (or rather probably ignore, as deriving is a bit ambiguous)
 	}
+
+	public T? GetItem(string key) => dynamicTables.TryGetValue(key, out var item) ? item : null;
+
+	public IEnumerable<T> GetAllItems() => dynamicTables.Values;
+
+	public T CreateItem(string key)
+	{
+		var childConfig = Init(createFactory(key), this, null);
+		dynamicTables.Add(key, childConfig);
+		return childConfig;
+	}
+
+	public T GetOrCreateItem(string key) => GetItem(key) ?? CreateItem(key);
+
+	public void RemoveItem(string key)
+	{
+		if (dynamicTables.Remove(key, out var child))
+			child.ClearEvents();
+		TomlObject.Remove(key);
+	}
+}
+
+public interface IDynamicTable
+{
+	ConfigPart GetOrCreateChild(string key);
 }

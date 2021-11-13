@@ -10,21 +10,20 @@
 using System;
 using System.Collections.Generic;
 
-namespace TSLib.Messages
+namespace TSLib.Messages;
+
+public interface IMessage
 {
-	public interface IMessage
-	{
-		void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser);
-		void Expand(IMessage[] to, IEnumerable<string> flds);
-	}
+	void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser);
+	void Expand(IMessage[] to, IEnumerable<string> flds);
+}
 
-	public interface INotification : IMessage
-	{
-		NotificationType NotifyType { get; }
-	}
+public interface INotification : IMessage
+{
+	NotificationType NotifyType { get; }
+}
 
-	public interface IResponse : IMessage
-	{
-		string? ReturnCode { get; set; }
-	}
+public interface IResponse : IMessage
+{
+	string? ReturnCode { get; set; }
 }

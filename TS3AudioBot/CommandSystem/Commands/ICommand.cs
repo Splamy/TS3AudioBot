@@ -10,27 +10,26 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace TS3AudioBot.CommandSystem.Commands
+namespace TS3AudioBot.CommandSystem.Commands;
+
+public interface ICommand
 {
-	public interface ICommand
-	{
-		/// <summary>Execute this command.</summary>
-		/// <param name="info">All contextual data for this execution.</param>
-		/// <param name="arguments">
-		/// The arguments for this command.
-		/// They are evaluated lazy which means they will only be evaluated if needed.
-		/// </param>
-		/// <param name="returnTypes">
-		/// The possible return types that should be returned by this execution.
-		/// They are ordered by priority so, if possible, the first return type should be picked, then the second and so on.
-		///
-		/// These types can contain primitive types, the actual return value will then be wrapped into a <see cref="CommandResults.IPrimitiveResult{T}"/>.
-		/// null inside the list allows an empty result.
-		/// </param>
-		/// <returns>
-		/// <para>The result of this command.</para>
-		/// <para>null is an empty result.</para>
-		/// </returns>
-		ValueTask<object?> Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments);
-	}
+	/// <summary>Execute this command.</summary>
+	/// <param name="info">All contextual data for this execution.</param>
+	/// <param name="arguments">
+	/// The arguments for this command.
+	/// They are evaluated lazy which means they will only be evaluated if needed.
+	/// </param>
+	/// <param name="returnTypes">
+	/// The possible return types that should be returned by this execution.
+	/// They are ordered by priority so, if possible, the first return type should be picked, then the second and so on.
+	///
+	/// These types can contain primitive types, the actual return value will then be wrapped into a <see cref="CommandResults.IPrimitiveResult{T}"/>.
+	/// null inside the list allows an empty result.
+	/// </param>
+	/// <returns>
+	/// <para>The result of this command.</para>
+	/// <para>null is an empty result.</para>
+	/// </returns>
+	ValueTask<object?> Execute(ExecutionInformation info, IReadOnlyList<ICommand> arguments);
 }

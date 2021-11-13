@@ -9,33 +9,32 @@
 
 using System.Text;
 
-namespace TS3AudioBot.CommandSystem.Ast
+namespace TS3AudioBot.CommandSystem.Ast;
+
+public abstract class AstNode
 {
-	public abstract class AstNode
+	public abstract AstType Type { get; }
+
+	public string FullRequest { get; }
+	public int Position { get; set; }
+	public int Length { get; set; }
+
+	protected AstNode(string fullRequest)
 	{
-		public abstract AstType Type { get; }
-
-		public string FullRequest { get; }
-		public int Position { get; set; }
-		public int Length { get; set; }
-
-		protected AstNode(string fullRequest)
-		{
-			FullRequest = fullRequest;
-		}
-
-		public abstract void Write(StringBuilder strb, int depth);
-		public sealed override string ToString()
-		{
-			var strb = new StringBuilder();
-			Write(strb, 0);
-			return strb.ToString();
-		}
+		FullRequest = fullRequest;
 	}
 
-	internal static class AstNodeExtensions
+	public abstract void Write(StringBuilder strb, int depth);
+	public sealed override string ToString()
 	{
-		public const int SpacePerTab = 2;
-		public static StringBuilder Space(this StringBuilder strb, int depth) => strb.Append(' ', depth * SpacePerTab);
+		var strb = new StringBuilder();
+		Write(strb, 0);
+		return strb.ToString();
 	}
+}
+
+internal static class AstNodeExtensions
+{
+	public const int SpacePerTab = 2;
+	public static StringBuilder Space(this StringBuilder strb, int depth) => strb.Append(' ', depth * SpacePerTab);
 }

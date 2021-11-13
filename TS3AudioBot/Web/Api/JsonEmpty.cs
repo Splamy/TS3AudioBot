@@ -7,15 +7,14 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
-namespace TS3AudioBot.Web.Api
-{
-	public class JsonEmpty : JsonObject
-	{
-		private readonly string message;
-		public JsonEmpty(string msg) { message = msg; }
+namespace TS3AudioBot.Web.Api;
 
-		public override object GetSerializeObject() => string.Empty;
-		public override string Serialize() => string.Empty;
-		public override string ToString() => message;
-	}
+public class JsonEmpty : JsonObject
+{
+	private readonly string message;
+	public JsonEmpty(string msg) { message = msg; }
+
+	public override object GetSerializeObject() => string.Empty;
+	public override string Serialize() => string.Empty;
+	public override string ToString() => message;
 }

@@ -11,75 +11,74 @@ using System;
 using System.Collections.Generic;
 using TSLib.Helper;
 
-namespace TSLib.Audio
+namespace TSLib.Audio;
+
+public class StaticMetaPipe : IAudioPipe
 {
-	public class StaticMetaPipe : IAudioPipe
+	public bool Active => OutStream?.Active ?? false;
+	public IAudioPassiveConsumer? OutStream { get; set; }
+
+	private readonly MetaOut setMeta = new();
+	public TargetSendMode SendMode { get; private set; }
+
+	private void ClearData()
 	{
-		public bool Active => OutStream?.Active ?? false;
-		public IAudioPassiveConsumer? OutStream { get; set; }
+		setMeta.ChannelIds = null;
+		setMeta.ClientIds = null;
+	}
 
-		private readonly MetaOut setMeta = new();
-		public TargetSendMode SendMode { get; private set; }
+	public void SetNone()
+	{
+		ClearData();
+		SendMode = TargetSendMode.None;
+	}
 
-		private void ClearData()
+	public void SetVoice()
+	{
+		ClearData();
+		SendMode = TargetSendMode.Voice;
+	}
+
+	public void SetWhisper(IReadOnlyList<ChannelId> channelIds, IReadOnlyList<ClientId> clientIds)
+	{
+		ClearData();
+		SendMode = TargetSendMode.Whisper;
+		setMeta.ChannelIds = channelIds;
+		setMeta.ClientIds = clientIds;
+	}
+
+	public void SetWhisperGroup(GroupWhisperType type, GroupWhisperTarget target, ulong targetId = 0)
+	{
+		ClearData();
+		SendMode = TargetSendMode.WhisperGroup;
+		setMeta.GroupWhisperType = type;
+		setMeta.GroupWhisperTarget = target;
+		setMeta.TargetId = targetId;
+	}
+
+	public void Write(Span<byte> data, Meta? meta)
+	{
+		if (OutStream is null || SendMode == TargetSendMode.None)
+			return;
+
+		meta ??= new Meta();
+		meta.Out ??= new MetaOut();
+		meta.Out.SendMode = SendMode;
+		switch (SendMode)
 		{
-			setMeta.ChannelIds = null;
-			setMeta.ClientIds = null;
+		case TargetSendMode.None: break;
+		case TargetSendMode.Voice: break;
+		case TargetSendMode.Whisper:
+			meta.Out.ChannelIds = setMeta.ChannelIds;
+			meta.Out.ClientIds = setMeta.ClientIds;
+			break;
+		case TargetSendMode.WhisperGroup:
+			meta.Out.GroupWhisperTarget = setMeta.GroupWhisperTarget;
+			meta.Out.GroupWhisperType = setMeta.GroupWhisperType;
+			meta.Out.TargetId = setMeta.TargetId;
+			break;
+		case var _unhandled: throw Tools.UnhandledDefault(_unhandled);
 		}
-
-		public void SetNone()
-		{
-			ClearData();
-			SendMode = TargetSendMode.None;
-		}
-
-		public void SetVoice()
-		{
-			ClearData();
-			SendMode = TargetSendMode.Voice;
-		}
-
-		public void SetWhisper(IReadOnlyList<ChannelId> channelIds, IReadOnlyList<ClientId> clientIds)
-		{
-			ClearData();
-			SendMode = TargetSendMode.Whisper;
-			setMeta.ChannelIds = channelIds;
-			setMeta.ClientIds = clientIds;
-		}
-
-		public void SetWhisperGroup(GroupWhisperType type, GroupWhisperTarget target, ulong targetId = 0)
-		{
-			ClearData();
-			SendMode = TargetSendMode.WhisperGroup;
-			setMeta.GroupWhisperType = type;
-			setMeta.GroupWhisperTarget = target;
-			setMeta.TargetId = targetId;
-		}
-
-		public void Write(Span<byte> data, Meta? meta)
-		{
-			if (OutStream is null || SendMode == TargetSendMode.None)
-				return;
-
-			meta ??= new Meta();
-			meta.Out ??= new MetaOut();
-			meta.Out.SendMode = SendMode;
-			switch (SendMode)
-			{
-			case TargetSendMode.None: break;
-			case TargetSendMode.Voice: break;
-			case TargetSendMode.Whisper:
-				meta.Out.ChannelIds = setMeta.ChannelIds;
-				meta.Out.ClientIds = setMeta.ClientIds;
-				break;
-			case TargetSendMode.WhisperGroup:
-				meta.Out.GroupWhisperTarget = setMeta.GroupWhisperTarget;
-				meta.Out.GroupWhisperType = setMeta.GroupWhisperType;
-				meta.Out.TargetId = setMeta.TargetId;
-				break;
-			case var _unhandled: throw Tools.UnhandledDefault(_unhandled);
-			}
-			OutStream?.Write(data, meta);
-		}
+		OutStream?.Write(data, meta);
 	}
 }

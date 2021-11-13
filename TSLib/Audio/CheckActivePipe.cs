@@ -9,19 +9,18 @@
 
 using System;
 
-namespace TSLib.Audio
+namespace TSLib.Audio;
+
+public class CheckActivePipe : IAudioPipe
 {
-	public class CheckActivePipe : IAudioPipe
+	public bool Active => OutStream?.Active ?? false;
+	public IAudioPassiveConsumer? OutStream { get; set; }
+
+	public void Write(Span<byte> data, Meta? meta)
 	{
-		public bool Active => OutStream?.Active ?? false;
-		public IAudioPassiveConsumer? OutStream { get; set; }
+		if (OutStream is null || data.IsEmpty || !Active)
+			return;
 
-		public void Write(Span<byte> data, Meta? meta)
-		{
-			if (OutStream is null || data.IsEmpty || !Active)
-				return;
-
-			OutStream?.Write(data, meta);
-		}
+		OutStream?.Write(data, meta);
 	}
 }

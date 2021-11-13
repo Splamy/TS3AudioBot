@@ -10,88 +10,87 @@
 using System;
 using System.Collections.Generic;
 
-namespace TSLib.Audio
+namespace TSLib.Audio;
+
+public class ClientMixdown : PassiveMergePipe, IAudioPassiveConsumer
 {
-	public class ClientMixdown : PassiveMergePipe, IAudioPassiveConsumer
+	public bool Active => true;
+
+	private const int BufferSize = 4096 * 8;
+
+	private readonly Dictionary<ClientId, ClientMix> mixdownBuffer = new();
+
+	public void Write(Span<byte> data, Meta? meta)
 	{
-		public bool Active => true;
+		if (data.IsEmpty || meta is null)
+			return;
 
-		private const int BufferSize = 4096 * 8;
-
-		private readonly Dictionary<ClientId, ClientMix> mixdownBuffer = new();
-
-		public void Write(Span<byte> data, Meta? meta)
+		if (!mixdownBuffer.TryGetValue(meta.In.Sender, out var mix))
 		{
-			if (data.IsEmpty || meta is null)
-				return;
-
-			if (!mixdownBuffer.TryGetValue(meta.In.Sender, out var mix))
-			{
-				mix = new ClientMix(BufferSize);
-				mixdownBuffer.Add(meta.In.Sender, mix);
-				Add(mix);
-			}
-
-			mix.Write(data, meta);
-			/*
-			List<KeyValuePair<ushort, ClientMix>> remove = null;
-			foreach (var item in mixdownBuffer)
-			{
-				if (item.Value.Length == 0)
-				{
-					remove = remove ?? new List<KeyValuePair<ushort, ClientMix>>();
-					remove.Add(item);
-				}
-			}
-
-			if (remove != null)
-			{
-				foreach (var item in remove)
-				{
-					mixdownBuffer.Remove(item.Key);
-					Remove(item.Value);
-				}
-			}*/
+			mix = new ClientMix(BufferSize);
+			mixdownBuffer.Add(meta.In.Sender, mix);
+			Add(mix);
 		}
 
-		public class ClientMix : IAudioPassiveProducer
+		mix.Write(data, meta);
+		/*
+		List<KeyValuePair<ushort, ClientMix>> remove = null;
+		foreach (var item in mixdownBuffer)
 		{
-			public byte[] Buffer { get; }
-			public int Length { get; set; } = 0;
-			public Meta? LastMeta { get; set; }
-
-			private readonly object rwLock = new();
-
-			public ClientMix(int bufferSize)
+			if (item.Value.Length == 0)
 			{
-				Buffer = new byte[bufferSize];
+				remove = remove ?? new List<KeyValuePair<ushort, ClientMix>>();
+				remove.Add(item);
 			}
+		}
 
-			public void Write(Span<byte> data, Meta meta)
+		if (remove != null)
+		{
+			foreach (var item in remove)
 			{
-				lock (rwLock)
-				{
-					int take = Math.Min(data.Length, Buffer.Length - Length);
-					data.Slice(0, take).CopyTo(Buffer.AsSpan(Length));
-					Length += take;
-					LastMeta = meta;
-				}
+				mixdownBuffer.Remove(item.Key);
+				Remove(item.Value);
 			}
+		}*/
+	}
 
-			public int Read(Span<byte> data, out Meta? meta)
+	public class ClientMix : IAudioPassiveProducer
+	{
+		public byte[] Buffer { get; }
+		public int Length { get; set; } = 0;
+		public Meta? LastMeta { get; set; }
+
+		private readonly object rwLock = new();
+
+		public ClientMix(int bufferSize)
+		{
+			Buffer = new byte[bufferSize];
+		}
+
+		public void Write(Span<byte> data, Meta meta)
+		{
+			lock (rwLock)
 			{
-				lock (rwLock)
-				{
-					int take = Math.Min(Length, data.Length);
+				int take = Math.Min(data.Length, Buffer.Length - Length);
+				data.Slice(0, take).CopyTo(Buffer.AsSpan(Length));
+				Length += take;
+				LastMeta = meta;
+			}
+		}
 
-					var bufferSpan = Buffer.AsSpan();
-					bufferSpan[..take].CopyTo(data);
-					bufferSpan[take..].CopyTo(bufferSpan);
-					Length -= take;
+		public int Read(Span<byte> data, out Meta? meta)
+		{
+			lock (rwLock)
+			{
+				int take = Math.Min(Length, data.Length);
 
-					meta = default;
-					return take;
-				}
+				var bufferSpan = Buffer.AsSpan();
+				bufferSpan[..take].CopyTo(data);
+				bufferSpan[take..].CopyTo(bufferSpan);
+				Length -= take;
+
+				meta = default;
+				return take;
 			}
 		}
 	}

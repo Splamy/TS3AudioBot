@@ -9,17 +9,16 @@
 
 using TSLib.Messages;
 
-namespace TSLib
-{
-	public readonly struct LazyNotification
-	{
-		public readonly INotification[] Notifications;
-		public readonly NotificationType NotifyType;
+namespace TSLib;
 
-		public LazyNotification(INotification[] notifications, NotificationType notifyType)
-		{
-			Notifications = notifications;
-			NotifyType = notifyType;
-		}
+public readonly struct LazyNotification
+{
+	public readonly INotification[] Notifications;
+	public readonly NotificationType NotifyType;
+
+	public LazyNotification(INotification[] notifications, NotificationType notifyType)
+	{
+		Notifications = notifications;
+		NotifyType = notifyType;
 	}
 }

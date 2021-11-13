@@ -23,132 +23,131 @@ using System;
 using System.Runtime.InteropServices;
 using TSLib.Helper;
 
-namespace TSLib.Audio.Opus
+namespace TSLib.Audio.Opus;
+
+/// <summary>
+/// Wraps the Opus API.
+/// </summary>
+public static class NativeMethods
+{
+	private static bool isPreloaded = false;
+	private static bool wasPreloadSuccessful = false;
+
+	static NativeMethods()
+	{
+		PreloadLibrary();
+	}
+
+	public static bool PreloadLibrary()
+	{
+		if (!isPreloaded)
+		{
+			wasPreloadSuccessful = NativeLibraryLoader.DirectLoadLibrary("libopus", () => opus_get_version_string());
+			isPreloaded = true;
+		}
+		return wasPreloadSuccessful;
+	}
+
+	public static string Info
+	{
+		get
+		{
+			var verStrPtr = opus_get_version_string();
+			var verString = Marshal.PtrToStringAnsi(verStrPtr);
+			return $"{verString} ({NativeLibraryLoader.ArchFolder})";
+		}
+	}
+
+	// ReSharper disable EnumUnderlyingTypeIsInt, InconsistentNaming
+	[DllImport("libopus", CallingConvention = CallingConvention.Cdecl)]
+	internal static extern IntPtr opus_encoder_create(int sampleRate, int channels, Application application, out int error);
+
+	[DllImport("libopus", CallingConvention = CallingConvention.Cdecl)]
+	internal static extern void opus_encoder_destroy(IntPtr encoder);
+
+	[DllImport("libopus", CallingConvention = CallingConvention.Cdecl)]
+	internal static extern int opus_encode(IntPtr st, in byte pcm, int frameSize, out byte data, int maxDataBytes);
+
+	[DllImport("libopus", CallingConvention = CallingConvention.Cdecl)]
+	internal static extern IntPtr opus_decoder_create(int sampleRate, int channels, out int error);
+
+	[DllImport("libopus", CallingConvention = CallingConvention.Cdecl)]
+	internal static extern void opus_decoder_destroy(IntPtr decoder);
+
+	[DllImport("libopus", CallingConvention = CallingConvention.Cdecl)]
+	internal static extern int opus_decode(IntPtr st, in byte data, int len, out byte pcm, int frameSize, int decodeFec);
+
+	[DllImport("libopus", CallingConvention = CallingConvention.Cdecl)]
+	internal static extern int opus_encoder_ctl(IntPtr st, Ctl request, int value);
+
+	[DllImport("libopus", CallingConvention = CallingConvention.Cdecl)]
+	internal static extern int opus_encoder_ctl(IntPtr st, Ctl request, out int value);
+
+	[DllImport("libopus", CallingConvention = CallingConvention.Cdecl)]
+	internal static extern IntPtr opus_get_version_string();
+}
+
+public enum Ctl : int
+{
+	SetBitrateRequest = 4002,
+	GetBitrateRequest = 4003,
+	SetInbandFecRequest = 4012,
+	GetInbandFecRequest = 4013,
+	SetPacketLossPercentageRequest = 4014,
+	GetPacketLossPercentageRequest = 4015,
+}
+
+/// <summary>
+/// Supported coding modes.
+/// </summary>
+public enum Application : int
 {
 	/// <summary>
-	/// Wraps the Opus API.
+	/// Best for most VoIP/videoconference applications where listening quality and intelligibility matter most.
 	/// </summary>
-	public static class NativeMethods
-	{
-		private static bool isPreloaded = false;
-		private static bool wasPreloadSuccessful = false;
-
-		static NativeMethods()
-		{
-			PreloadLibrary();
-		}
-
-		public static bool PreloadLibrary()
-		{
-			if (!isPreloaded)
-			{
-				wasPreloadSuccessful = NativeLibraryLoader.DirectLoadLibrary("libopus", () => opus_get_version_string());
-				isPreloaded = true;
-			}
-			return wasPreloadSuccessful;
-		}
-
-		public static string Info
-		{
-			get
-			{
-				var verStrPtr = opus_get_version_string();
-				var verString = Marshal.PtrToStringAnsi(verStrPtr);
-				return $"{verString} ({NativeLibraryLoader.ArchFolder})";
-			}
-		}
-
-		// ReSharper disable EnumUnderlyingTypeIsInt, InconsistentNaming
-		[DllImport("libopus", CallingConvention = CallingConvention.Cdecl)]
-		internal static extern IntPtr opus_encoder_create(int sampleRate, int channels, Application application, out int error);
-
-		[DllImport("libopus", CallingConvention = CallingConvention.Cdecl)]
-		internal static extern void opus_encoder_destroy(IntPtr encoder);
-
-		[DllImport("libopus", CallingConvention = CallingConvention.Cdecl)]
-		internal static extern int opus_encode(IntPtr st, in byte pcm, int frameSize, out byte data, int maxDataBytes);
-
-		[DllImport("libopus", CallingConvention = CallingConvention.Cdecl)]
-		internal static extern IntPtr opus_decoder_create(int sampleRate, int channels, out int error);
-
-		[DllImport("libopus", CallingConvention = CallingConvention.Cdecl)]
-		internal static extern void opus_decoder_destroy(IntPtr decoder);
-
-		[DllImport("libopus", CallingConvention = CallingConvention.Cdecl)]
-		internal static extern int opus_decode(IntPtr st, in byte data, int len, out byte pcm, int frameSize, int decodeFec);
-
-		[DllImport("libopus", CallingConvention = CallingConvention.Cdecl)]
-		internal static extern int opus_encoder_ctl(IntPtr st, Ctl request, int value);
-
-		[DllImport("libopus", CallingConvention = CallingConvention.Cdecl)]
-		internal static extern int opus_encoder_ctl(IntPtr st, Ctl request, out int value);
-
-		[DllImport("libopus", CallingConvention = CallingConvention.Cdecl)]
-		internal static extern IntPtr opus_get_version_string();
-	}
-
-	public enum Ctl : int
-	{
-		SetBitrateRequest = 4002,
-		GetBitrateRequest = 4003,
-		SetInbandFecRequest = 4012,
-		GetInbandFecRequest = 4013,
-		SetPacketLossPercentageRequest = 4014,
-		GetPacketLossPercentageRequest = 4015,
-	}
-
+	Voip = 2048,
 	/// <summary>
-	/// Supported coding modes.
+	/// Best for broadcast/high-fidelity application where the decoded audio should be as close as possible to input.
 	/// </summary>
-	public enum Application : int
-	{
-		/// <summary>
-		/// Best for most VoIP/videoconference applications where listening quality and intelligibility matter most.
-		/// </summary>
-		Voip = 2048,
-		/// <summary>
-		/// Best for broadcast/high-fidelity application where the decoded audio should be as close as possible to input.
-		/// </summary>
-		Audio = 2049,
-		/// <summary>
-		/// Only use when lowest-achievable latency is what matters most. Voice-optimized modes cannot be used.
-		/// </summary>
-		RestrictedLowLatency = 2051
-	}
+	Audio = 2049,
+	/// <summary>
+	/// Only use when lowest-achievable latency is what matters most. Voice-optimized modes cannot be used.
+	/// </summary>
+	RestrictedLowLatency = 2051
+}
 
-	public enum Errors : int
-	{
-		/// <summary>
-		/// No error.
-		/// </summary>
-		Ok = 0,
-		/// <summary>
-		/// One or more invalid/out of range arguments.
-		/// </summary>
-		BadArg = -1,
-		/// <summary>
-		/// The mode struct passed is invalid.
-		/// </summary>
-		BufferToSmall = -2,
-		/// <summary>
-		/// An internal error was detected.
-		/// </summary>
-		InternalError = -3,
-		/// <summary>
-		/// The compressed data passed is corrupted.
-		/// </summary>
-		InvalidPacket = -4,
-		/// <summary>
-		/// Invalid/unsupported request number.
-		/// </summary>
-		Unimplemented = -5,
-		/// <summary>
-		/// An encoder or decoder structure is invalid or already freed.
-		/// </summary>
-		InvalidState = -6,
-		/// <summary>
-		/// Memory allocation has failed.
-		/// </summary>
-		AllocFail = -7
-	}
+public enum Errors : int
+{
+	/// <summary>
+	/// No error.
+	/// </summary>
+	Ok = 0,
+	/// <summary>
+	/// One or more invalid/out of range arguments.
+	/// </summary>
+	BadArg = -1,
+	/// <summary>
+	/// The mode struct passed is invalid.
+	/// </summary>
+	BufferToSmall = -2,
+	/// <summary>
+	/// An internal error was detected.
+	/// </summary>
+	InternalError = -3,
+	/// <summary>
+	/// The compressed data passed is corrupted.
+	/// </summary>
+	InvalidPacket = -4,
+	/// <summary>
+	/// Invalid/unsupported request number.
+	/// </summary>
+	Unimplemented = -5,
+	/// <summary>
+	/// An encoder or decoder structure is invalid or already freed.
+	/// </summary>
+	InvalidState = -6,
+	/// <summary>
+	/// Memory allocation has failed.
+	/// </summary>
+	AllocFail = -7
 }

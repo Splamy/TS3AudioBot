@@ -14,54 +14,53 @@ using System.Text.Encodings.Web;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace TS3AudioBot.Helper.Json
+namespace TS3AudioBot.Helper.Json;
+
+public static class JsonSerializableExtensions
 {
-	public static class JsonSerializableExtensions
+	private static readonly JsonSerializerOptions JsonOptions = new()
 	{
-		private static readonly JsonSerializerOptions JsonOptions = new()
-		{
-			Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
-			AllowTrailingCommas = true,
-			ReadCommentHandling = JsonCommentHandling.Skip,
-			NumberHandling = JsonNumberHandling.AllowReadingFromString,
-			PropertyNameCaseInsensitive = true,
-			WriteIndented = true,
-		};
-		private static readonly JsonReaderOptions JsonReaderOptions = new()
-		{
-			AllowTrailingCommas = true,
-			CommentHandling = JsonCommentHandling.Skip,
-		};
-		private static readonly JsonWriterOptions JsonWriterOptions = new()
-		{
-			Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
-			Indented = true,
-		};
+		Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+		AllowTrailingCommas = true,
+		ReadCommentHandling = JsonCommentHandling.Skip,
+		NumberHandling = JsonNumberHandling.AllowReadingFromString,
+		PropertyNameCaseInsensitive = true,
+		WriteIndented = true,
+	};
+	private static readonly JsonReaderOptions JsonReaderOptions = new()
+	{
+		AllowTrailingCommas = true,
+		CommentHandling = JsonCommentHandling.Skip,
+	};
+	private static readonly JsonWriterOptions JsonWriterOptions = new()
+	{
+		Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+		Indented = true,
+	};
 
-		static JsonSerializableExtensions()
+	static JsonSerializableExtensions()
+	{
+		JsonOptions.Converters.Add(new TimeSpanConverter(TimeSpanFormatting.Simple));
+	}
+
+	public static E<string> FromJson(this IJsonSerializable jsonConfig, string json)
+	{
+		if (jsonConfig.ExpectsString)
+			json = JsonSerializer.Serialize(json);
+
+		var data = Encoding.UTF8.GetBytes(json);
+		var reader = new Utf8JsonReader(data, JsonReaderOptions);
+		return jsonConfig.FromJson(ref reader, JsonOptions);
+	}
+
+	public static string ToJson(this IJsonSerializable jsonConfig)
+	{
+		using var mem = new MemoryStream();
+		using (var writer = new Utf8JsonWriter(mem, JsonWriterOptions))
 		{
-			JsonOptions.Converters.Add(new TimeSpanConverter(TimeSpanFormatting.Simple));
+			jsonConfig.ToJson(writer, JsonOptions);
 		}
-
-		public static E<string> FromJson(this IJsonSerializable jsonConfig, string json)
-		{
-			if (jsonConfig.ExpectsString)
-				json = JsonSerializer.Serialize(json);
-
-			var data = Encoding.UTF8.GetBytes(json);
-			var reader = new Utf8JsonReader(data, JsonReaderOptions);
-			return jsonConfig.FromJson(ref reader, JsonOptions);
-		}
-
-		public static string ToJson(this IJsonSerializable jsonConfig)
-		{
-			using var mem = new MemoryStream();
-			using (var writer = new Utf8JsonWriter(mem, JsonWriterOptions))
-			{
-				jsonConfig.ToJson(writer, JsonOptions);
-			}
-			mem.Seek(0, SeekOrigin.Begin);
-			return Encoding.UTF8.GetString(mem.ToArray());
-		}
+		mem.Seek(0, SeekOrigin.Begin);
+		return Encoding.UTF8.GetString(mem.ToArray());
 	}
 }

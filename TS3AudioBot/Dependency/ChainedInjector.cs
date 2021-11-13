@@ -9,23 +9,22 @@
 
 using System;
 
-namespace TS3AudioBot.Dependency
+namespace TS3AudioBot.Dependency;
+
+public class ChainedInjector<T> : IInjector where T : class, IInjector
 {
-	public class ChainedInjector<T> : IInjector where T : class, IInjector
+	public IInjector ParentInjector { get; set; }
+	public T OwnInjector { get; protected set; }
+
+	public ChainedInjector(IInjector parent, T own)
 	{
-		public IInjector ParentInjector { get; set; }
-		public T OwnInjector { get; protected set; }
-
-		public ChainedInjector(IInjector parent, T own)
-		{
-			ParentInjector = parent ?? throw new ArgumentNullException(nameof(parent));
-			OwnInjector = own ?? throw new ArgumentNullException(nameof(parent));
-		}
-
-		public virtual object? GetModule(Type type)
-			=> OwnInjector.GetModule(type) ?? ParentInjector.GetModule(type);
-
-		public virtual void AddModule(Type type, object obj)
-			=> OwnInjector.AddModule(type, obj);
+		ParentInjector = parent ?? throw new ArgumentNullException(nameof(parent));
+		OwnInjector = own ?? throw new ArgumentNullException(nameof(parent));
 	}
+
+	public virtual object? GetModule(Type type)
+		=> OwnInjector.GetModule(type) ?? ParentInjector.GetModule(type);
+
+	public virtual void AddModule(Type type, object obj)
+		=> OwnInjector.AddModule(type, obj);
 }

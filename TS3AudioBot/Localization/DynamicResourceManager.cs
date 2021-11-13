@@ -13,58 +13,57 @@ using System.Reflection;
 using System.Resources;
 using System.Threading;
 
-namespace TS3AudioBot.Localization
+namespace TS3AudioBot.Localization;
+
+internal class DynamicResourceManager : ResourceManager
 {
-	internal class DynamicResourceManager : ResourceManager
+	private readonly Dictionary<string, ResourceSet> dynamicResourceSets = new();
+
+	public DynamicResourceManager(string baseName, Assembly assembly) : base(baseName, assembly)
 	{
-		private readonly Dictionary<string, ResourceSet> dynamicResourceSets = new();
+	}
 
-		public DynamicResourceManager(string baseName, Assembly assembly) : base(baseName, assembly)
+	public void SetResourceSet(CultureInfo culture, ResourceSet set)
+	{
+		dynamicResourceSets[culture.Name] = set;
+	}
+
+	public override ResourceSet? GetResourceSet(CultureInfo culture, bool createIfNotExists, bool tryParents)
+	{
+		if (culture is null)
 		{
+			culture = Thread.CurrentThread.CurrentUICulture;
 		}
 
-		public void SetResourceSet(CultureInfo culture, ResourceSet set)
+		if (dynamicResourceSets.TryGetValue(culture.Name, out var set))
 		{
-			dynamicResourceSets[culture.Name] = set;
+			return set;
 		}
 
-		public override ResourceSet? GetResourceSet(CultureInfo culture, bool createIfNotExists, bool tryParents)
+		return base.GetResourceSet(culture, createIfNotExists, tryParents);
+	}
+
+	public override string? GetString(string name, CultureInfo? culture)
+	{
+		if (culture is null)
 		{
-			if (culture is null)
-			{
-				culture = Thread.CurrentThread.CurrentUICulture;
-			}
-
-			if (dynamicResourceSets.TryGetValue(culture.Name, out var set))
-			{
-				return set;
-			}
-
-			return base.GetResourceSet(culture, createIfNotExists, tryParents);
+			culture = Thread.CurrentThread.CurrentUICulture;
 		}
 
-		public override string? GetString(string name, CultureInfo? culture)
+		string? str;
+		if (dynamicResourceSets.TryGetValue(culture.Name, out var set))
 		{
-			if (culture is null)
-			{
-				culture = Thread.CurrentThread.CurrentUICulture;
-			}
-
-			string? str;
-			if (dynamicResourceSets.TryGetValue(culture.Name, out var set))
-			{
-				if ((str = set.GetString(name)) != null)
-					return str;
-			}
-
-			if ((str = base.GetString(name, culture)) != null)
+			if ((str = set.GetString(name)) != null)
 				return str;
-
-			if ((str = base.GetString(name, CultureInfo.InvariantCulture)) != null)
-				return str;
-
-			//$"The localized entry {name} was not found"
-			return null;
 		}
+
+		if ((str = base.GetString(name, culture)) != null)
+			return str;
+
+		if ((str = base.GetString(name, CultureInfo.InvariantCulture)) != null)
+			return str;
+
+		//$"The localized entry {name} was not found"
+		return null;
 	}
 }

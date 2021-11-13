@@ -10,29 +10,28 @@
 using System;
 using System.Linq;
 
-namespace TSLib.Helper
+namespace TSLib.Helper;
+
+internal static class DebugUtil
 {
-	internal static class DebugUtil
+	public static string DebugToHex(byte[] bytes) => bytes is null ? "<null>" : DebugToHex(bytes.AsSpan());
+
+	public static string DebugToHex(ReadOnlySpan<byte> bytes)
 	{
-		public static string DebugToHex(byte[] bytes) => bytes is null ? "<null>" : DebugToHex(bytes.AsSpan());
-
-		public static string DebugToHex(ReadOnlySpan<byte> bytes)
+		var c = new char[bytes.Length * 3];
+		for (int bx = 0, cx = 0; bx < bytes.Length; ++bx, ++cx)
 		{
-			var c = new char[bytes.Length * 3];
-			for (int bx = 0, cx = 0; bx < bytes.Length; ++bx, ++cx)
-			{
-				var b = (byte)(bytes[bx] >> 4);
-				c[cx] = (char)(b > 9 ? b - 10 + 'A' : b + '0');
+			var b = (byte)(bytes[bx] >> 4);
+			c[cx] = (char)(b > 9 ? b - 10 + 'A' : b + '0');
 
-				b = (byte)(bytes[bx] & 0x0F);
-				c[++cx] = (char)(b > 9 ? b - 10 + 'A' : b + '0');
-				c[++cx] = ' ';
-			}
-			return new string(c);
+			b = (byte)(bytes[bx] & 0x0F);
+			c[++cx] = (char)(b > 9 ? b - 10 + 'A' : b + '0');
+			c[++cx] = ' ';
 		}
-
-		public static byte[] DebugFromHex(string hex)
-			=> hex.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries)
-				.Select(x => Convert.ToByte(x, 16)).ToArray();
+		return new string(c);
 	}
+
+	public static byte[] DebugFromHex(string hex)
+		=> hex.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries)
+			.Select(x => Convert.ToByte(x, 16)).ToArray();
 }

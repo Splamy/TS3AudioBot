@@ -11,70 +11,69 @@ using System;
 using System.Linq;
 using TSLib.Helper;
 
-namespace TS3AudioBot.Playlists.Shuffle
+namespace TS3AudioBot.Playlists.Shuffle;
+
+public class ListedShuffle : IShuffleAlgorithm
 {
-	public class ListedShuffle : IShuffleAlgorithm
+	private int[] permutation = Array.Empty<int>();
+
+	private bool needsRecalc = true;
+	private int index;
+	private int seed;
+	private int length;
+
+	public int Seed
 	{
-		private int[] permutation = Array.Empty<int>();
-
-		private bool needsRecalc = true;
-		private int index;
-		private int seed;
-		private int length;
-
-		public int Seed
+		get => seed;
+		set { needsRecalc |= seed != value; seed = value; }
+	}
+	public int Length
+	{
+		get => length;
+		set { needsRecalc |= length != value; length = value; }
+	}
+	public int Index
+	{
+		get
 		{
-			get => seed;
-			set { needsRecalc |= seed != value; seed = value; }
+			if (Length <= 0) return -1;
+			GenList();
+			return permutation[index];
 		}
-		public int Length
+		set
 		{
-			get => length;
-			set { needsRecalc |= length != value; length = value; }
-		}
-		public int Index
-		{
-			get
-			{
-				if (Length <= 0) return -1;
-				GenList();
-				return permutation[index];
-			}
-			set
-			{
-				if (Length <= 0) return;
-				GenList();
-				index = Array.IndexOf(permutation, Tools.MathMod(value, permutation.Length));
-			}
-		}
-
-		private void GenList()
-		{
-			if (!needsRecalc) return;
-			needsRecalc = false;
-
 			if (Length <= 0) return;
-
-			var rngeesus = new Random(seed);
-			permutation = Enumerable.Range(0, length).Select(i => i).OrderBy(_ => rngeesus.Next()).ToArray();
-			index %= Length;
-		}
-
-		public bool Next()
-		{
-			if (Length <= 0)
-				return false;
 			GenList();
-			index = (index + 1) % permutation.Length;
-			return index == 0;
+			index = Array.IndexOf(permutation, Tools.MathMod(value, permutation.Length));
 		}
-		public bool Prev()
-		{
-			if (Length <= 0)
-				return false;
-			GenList();
-			index = Tools.MathMod(index - 1, permutation.Length);
-			return index == permutation.Length - 1;
-		}
+	}
+
+	private void GenList()
+	{
+		if (!needsRecalc) return;
+		needsRecalc = false;
+
+		if (Length <= 0) return;
+
+		var rngeesus = new Random(seed);
+		permutation = Enumerable.Range(0, length).Select(i => i).OrderBy(_ => rngeesus.Next()).ToArray();
+		index %= Length;
+	}
+
+	public bool Next()
+	{
+		if (Length <= 0)
+			return false;
+		GenList();
+		index = (index + 1) % permutation.Length;
+		return index == 0;
+	}
+	public bool Prev()
+	{
+		if (Length <= 0)
+			return false;
+		GenList();
+		index = Tools.MathMod(index - 1, permutation.Length);
+		return index == permutation.Length - 1;
 	}
 }

@@ -12,92 +12,91 @@ using System.Collections.Concurrent;
 using System.Threading;
 using TSLib.Helper;
 
-namespace TSLib
+namespace TSLib;
+
+internal static class EventDispatcherHelper
 {
-	internal static class EventDispatcherHelper
-	{
-		public const string DispatcherTitle = "TS Dispatcher";
-		public const string EventLoopTitle = "TS MessageLoop";
+	public const string DispatcherTitle = "TS Dispatcher";
+	public const string EventLoopTitle = "TS MessageLoop";
 
-		internal static string CreateLogThreadName(string threadName, Id id) => threadName + (id == Id.Null ? "" : $"[{id}]");
+	internal static string CreateLogThreadName(string threadName, Id id) => threadName + (id == Id.Null ? "" : $"[{id}]");
 
-		internal static string CreateDispatcherTitle(Id id) => CreateLogThreadName(DispatcherTitle, id);
-	}
+	internal static string CreateDispatcherTitle(Id id) => CreateLogThreadName(DispatcherTitle, id);
+}
 
-	/// <summary> Provides a function to run a receiving loop and asynchronously
-	/// dispatch notifications.
-	/// </summary>
-	internal interface IEventDispatcher : IDisposable
-	{
-		/// <summary>Initializes the dispatcher.</summary>
-		/// <param name="eventLoop">The main loop which will be receiving packets.</param>
-		/// <param name="dispatcher">The method to call asynchronously when a new
-		/// notification comes in.</param>
-		/// <param name="ctx">The current connection context.</param>
-		void Init(Action<LazyNotification> dispatcher, Id id);
-		/// <summary>Dispatches the notification.</summary>
-		/// <param name="lazyNotification"></param>
-		void Invoke(LazyNotification lazyNotification);
-		void DoWork();
-	}
+/// <summary> Provides a function to run a receiving loop and asynchronously
+/// dispatch notifications.
+/// </summary>
+internal interface IEventDispatcher : IDisposable
+{
+	/// <summary>Initializes the dispatcher.</summary>
+	/// <param name="eventLoop">The main loop which will be receiving packets.</param>
+	/// <param name="dispatcher">The method to call asynchronously when a new
+	/// notification comes in.</param>
+	/// <param name="ctx">The current connection context.</param>
+	void Init(Action<LazyNotification> dispatcher, Id id);
+	/// <summary>Dispatches the notification.</summary>
+	/// <param name="lazyNotification"></param>
+	void Invoke(LazyNotification lazyNotification);
+	void DoWork();
+}
 
-	internal sealed class ExtraThreadEventDispatcher : IEventDispatcher
-	{
-		private Action<LazyNotification> dispatcher;
-		private Thread dispatchThread;
-		private readonly ConcurrentQueue<LazyNotification> eventQueue = new();
-		private readonly AutoResetEvent eventBlock = new(false);
-		private volatile bool run;
+internal sealed class ExtraThreadEventDispatcher : IEventDispatcher
+{
+	private Action<LazyNotification> dispatcher;
+	private Thread dispatchThread;
+	private readonly ConcurrentQueue<LazyNotification> eventQueue = new();
+	private readonly AutoResetEvent eventBlock = new(false);
+	private volatile bool run;
 
 #pragma warning disable CS8618 // !NRT on Init
-		public ExtraThreadEventDispatcher() { }
+	public ExtraThreadEventDispatcher() { }
 #pragma warning restore CS8618
 
-		public void Init(Action<LazyNotification> dispatcher, Id id)
-		{
-			run = true;
-			this.dispatcher = dispatcher;
+	public void Init(Action<LazyNotification> dispatcher, Id id)
+	{
+		run = true;
+		this.dispatcher = dispatcher;
 
-			dispatchThread = new Thread(() =>
+		dispatchThread = new Thread(() =>
+		{
+			Tools.SetLogId(id);
+			DispatchLoop();
+		})
+		{ Name = EventDispatcherHelper.CreateDispatcherTitle(id) };
+		dispatchThread.Start();
+	}
+
+	public void Invoke(LazyNotification lazyNotification)
+	{
+		eventQueue.Enqueue(lazyNotification);
+		eventBlock.Set();
+	}
+
+	private void DispatchLoop()
+	{
+		while (run)
+		{
+			eventBlock.WaitOne();
+			while (!eventQueue.IsEmpty)
 			{
-				Tools.SetLogId(id);
-				DispatchLoop();
-			})
-			{ Name = EventDispatcherHelper.CreateDispatcherTitle(id) };
-			dispatchThread.Start();
-		}
-
-		public void Invoke(LazyNotification lazyNotification)
-		{
-			eventQueue.Enqueue(lazyNotification);
-			eventBlock.Set();
-		}
-
-		private void DispatchLoop()
-		{
-			while (run)
-			{
-				eventBlock.WaitOne();
-				while (!eventQueue.IsEmpty)
-				{
-					if (eventQueue.TryDequeue(out var lazyNotification))
-						dispatcher.Invoke(lazyNotification);
-				}
+				if (eventQueue.TryDequeue(out var lazyNotification))
+					dispatcher.Invoke(lazyNotification);
 			}
 		}
+	}
 
-		public void DoWork()
-		{
-			if (Thread.CurrentThread.ManagedThreadId != dispatchThread.ManagedThreadId)
-				return;
-			if (eventQueue.TryDequeue(out var lazyNotification))
-				dispatcher.Invoke(lazyNotification);
-		}
+	public void DoWork()
+	{
+		if (Thread.CurrentThread.ManagedThreadId != dispatchThread.ManagedThreadId)
+			return;
+		if (eventQueue.TryDequeue(out var lazyNotification))
+			dispatcher.Invoke(lazyNotification);
+	}
 
-		public void Dispose()
-		{
-			run = false;
-			eventBlock.Set();
-		}
+	public void Dispose()
+	{
+		run = false;
+		eventBlock.Set();
 	}
 }

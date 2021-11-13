@@ -9,15 +9,14 @@
 
 using System.Text.Json.Serialization;
 
-namespace TS3AudioBot.Web.Model
-{
-	public class QueueInfo : PlaylistInfo
-	{
-		[JsonPropertyName("PlaybackIndex")]
-		public int PlaybackIndex { get; set; }
+namespace TS3AudioBot.Web.Model;
 
-		public QueueInfo(string id, string title) : base(id, title)
-		{
-		}
+public class QueueInfo : PlaylistInfo
+{
+	[JsonPropertyName("PlaybackIndex")]
+	public int PlaybackIndex { get; set; }
+
+	public QueueInfo(string id, string title) : base(id, title)
+	{
 	}
 }

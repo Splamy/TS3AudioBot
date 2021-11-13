@@ -12,24 +12,23 @@ using TS3AudioBot.Audio;
 using TS3AudioBot.CommandSystem.CommandResults;
 using TS3AudioBot.ResourceFactories;
 
-namespace TS3AudioBot.Playlists
+namespace TS3AudioBot.Playlists;
+
+public class PlaylistItem : IAudioResourceResult, IMetaContainer
 {
-	public class PlaylistItem : IAudioResourceResult, IMetaContainer
+	public PlayInfo? PlayInfo { get; set; }
+	public AudioResource AudioResource { get; }
+
+	public PlaylistItem(AudioResource resource, PlayInfo? meta = null)
 	{
-		public PlayInfo? PlayInfo { get; set; }
-		public AudioResource AudioResource { get; }
-
-		public PlaylistItem(AudioResource resource, PlayInfo? meta = null)
-		{
-			AudioResource = resource ?? throw new ArgumentNullException(nameof(resource));
-			PlayInfo = meta;
-		}
-
-		public static PlaylistItem From(PlayResource playResource)
-		{
-			return new PlaylistItem(playResource.AudioResource, playResource.PlayInfo);
-		}
-
-		public override string ToString() => AudioResource.ResourceTitle ?? $"{AudioResource.AudioType}: {AudioResource.ResourceId}";
+		AudioResource = resource ?? throw new ArgumentNullException(nameof(resource));
+		PlayInfo = meta;
 	}
+
+	public static PlaylistItem From(PlayResource playResource)
+	{
+		return new PlaylistItem(playResource.AudioResource, playResource.PlayInfo);
+	}
+
+	public override string ToString() => AudioResource.ResourceTitle ?? $"{AudioResource.AudioType}: {AudioResource.ResourceId}";
 }

@@ -11,89 +11,88 @@ using System;
 using System.Collections.Generic;
 using TSLib.Audio.Opus;
 
-namespace TSLib.Audio
+namespace TSLib.Audio;
+
+public sealed class DecoderPipe : IAudioPipe, IDisposable
 {
-	public sealed class DecoderPipe : IAudioPipe, IDisposable
+	public bool Active => OutStream?.Active ?? false;
+	public IAudioPassiveConsumer? OutStream { get; set; }
+
+	// TODO:
+	// - Add some sort of decoder reuse to reduce concurrent amount of decoders (see ctl 'reset')
+	// - Clean up decoders after some time (Control: Tick?)
+	// - Make dispose threadsafe OR redefine thread safety requirements for pipes.
+
+	private readonly Dictionary<ClientId, (OpusDecoder, Codec)> decoders = new();
+	private readonly byte[] decodedBuffer;
+
+	public DecoderPipe()
 	{
-		public bool Active => OutStream?.Active ?? false;
-		public IAudioPassiveConsumer? OutStream { get; set; }
+		decodedBuffer = new byte[4096 * 2];
+	}
 
-		// TODO:
-		// - Add some sort of decoder reuse to reduce concurrent amount of decoders (see ctl 'reset')
-		// - Clean up decoders after some time (Control: Tick?)
-		// - Make dispose threadsafe OR redefine thread safety requirements for pipes.
+	public void Write(Span<byte> data, Meta? meta)
+	{
+		if (OutStream is null || meta?.Codec is not { } codec)
+			return;
 
-		private readonly Dictionary<ClientId, (OpusDecoder, Codec)> decoders = new();
-		private readonly byte[] decodedBuffer;
-
-		public DecoderPipe()
+		switch (codec)
 		{
-			decodedBuffer = new byte[4096 * 2];
-		}
-
-		public void Write(Span<byte> data, Meta? meta)
-		{
-			if (OutStream is null || meta?.Codec is not { } codec)
-				return;
-
-			switch (codec)
+		case Codec.OpusVoice:
 			{
-			case Codec.OpusVoice:
-				{
-					var decoder = GetDecoder(meta.In.Sender, Codec.OpusVoice);
-					var decodedData = decoder.Decode(data, decodedBuffer.AsSpan(0, decodedBuffer.Length / 2));
-					int dataLength = decodedData.Length;
-					if (!AudioTools.TryMonoToStereo(decodedBuffer, ref dataLength))
-						break;
-					OutStream?.Write(decodedBuffer.AsSpan(0, dataLength), meta);
-				}
-				break;
-
-			case Codec.OpusMusic:
-				{
-					var decoder = GetDecoder(meta.In.Sender, Codec.OpusMusic);
-					var decodedData = decoder.Decode(data, decodedBuffer);
-					OutStream?.Write(decodedData, meta);
-				}
-				break;
-
-			default:
-				// Cannot decode
-				break;
+				var decoder = GetDecoder(meta.In.Sender, Codec.OpusVoice);
+				var decodedData = decoder.Decode(data, decodedBuffer.AsSpan(0, decodedBuffer.Length / 2));
+				int dataLength = decodedData.Length;
+				if (!AudioTools.TryMonoToStereo(decodedBuffer, ref dataLength))
+					break;
+				OutStream?.Write(decodedBuffer.AsSpan(0, dataLength), meta);
 			}
-		}
+			break;
 
-		private OpusDecoder GetDecoder(ClientId sender, Codec codec)
-		{
-			if (decoders.TryGetValue(sender, out var decoder))
+		case Codec.OpusMusic:
 			{
-				if (decoder.Item2 == codec)
-					return decoder.Item1;
-				else
-					decoder.Item1.Dispose();
+				var decoder = GetDecoder(meta.In.Sender, Codec.OpusMusic);
+				var decodedData = decoder.Decode(data, decodedBuffer);
+				OutStream?.Write(decodedData, meta);
 			}
+			break;
 
-			var newDecoder = CreateDecoder(codec);
-			decoders[sender] = (newDecoder, codec);
-			return newDecoder;
+		default:
+			// Cannot decode
+			break;
+		}
+	}
+
+	private OpusDecoder GetDecoder(ClientId sender, Codec codec)
+	{
+		if (decoders.TryGetValue(sender, out var decoder))
+		{
+			if (decoder.Item2 == codec)
+				return decoder.Item1;
+			else
+				decoder.Item1.Dispose();
 		}
 
-		private static OpusDecoder CreateDecoder(Codec codec)
-		{
-			return codec switch
-			{
-				Codec.OpusVoice => OpusDecoder.Create(SampleInfo.OpusVoice),
-				Codec.OpusMusic => OpusDecoder.Create(SampleInfo.OpusMusic),
-				_ => throw new NotSupportedException(),
-			};
-		}
+		var newDecoder = CreateDecoder(codec);
+		decoders[sender] = (newDecoder, codec);
+		return newDecoder;
+	}
 
-		public void Dispose()
+	private static OpusDecoder CreateDecoder(Codec codec)
+	{
+		return codec switch
 		{
-			foreach (var (decoder, _) in decoders.Values)
-			{
-				decoder.Dispose();
-			}
+			Codec.OpusVoice => OpusDecoder.Create(SampleInfo.OpusVoice),
+			Codec.OpusMusic => OpusDecoder.Create(SampleInfo.OpusMusic),
+			_ => throw new NotSupportedException(),
+		};
+	}
+
+	public void Dispose()
+	{
+		foreach (var (decoder, _) in decoders.Values)
+		{
+			decoder.Dispose();
 		}
 	}
 }

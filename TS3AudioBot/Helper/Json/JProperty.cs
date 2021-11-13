@@ -11,30 +11,29 @@ using System;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace TS3AudioBot.Helper.Json
+namespace TS3AudioBot.Helper.Json;
+
+[JsonConverter(typeof(Converter))]
+public class JProperty
 {
-	[JsonConverter(typeof(Converter))]
-	public class JProperty
+	public string Key { get; }
+	public object? Value { get; }
+
+	public JProperty(string key, object? value)
 	{
-		public string Key { get; }
-		public object? Value { get; }
+		Key = key;
+		Value = value;
+	}
 
-		public JProperty(string key, object? value)
+	class Converter : JsonConverter<JProperty>
+	{
+		public override JProperty? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => throw new NotSupportedException();
+		public override void Write(Utf8JsonWriter writer, JProperty value, JsonSerializerOptions options)
 		{
-			Key = key;
-			Value = value;
-		}
-
-		class Converter : JsonConverter<JProperty>
-		{
-			public override JProperty? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => throw new NotSupportedException();
-			public override void Write(Utf8JsonWriter writer, JProperty value, JsonSerializerOptions options)
-			{
-				if (options.IgnoreNullValues && value.Value is null)
-					return;
-				writer.WritePropertyName(value.Key);
-				JsonSerializer.Serialize(writer, value.Value, options);
-			}
+			if (options.IgnoreNullValues && value.Value is null)
+				return;
+			writer.WritePropertyName(value.Key);
+			JsonSerializer.Serialize(writer, value.Value, options);
 		}
 	}
 }

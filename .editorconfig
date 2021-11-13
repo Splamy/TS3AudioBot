@@ -73,6 +73,7 @@ dotnet_diagnostic.CA1309.severity=warning
 # IDE0057: Use range operator
 csharp_style_prefer_range_operator = true
 dotnet_diagnostic.IDE0057.severity = silent
+csharp_style_namespace_declarations=file_scoped:warning
 
 [*.{tt,ttinclude}]
 insert_final_newline = false

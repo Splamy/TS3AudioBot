@@ -10,35 +10,34 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace TS3AudioBot.CommandSystem.Ast
+namespace TS3AudioBot.CommandSystem.Ast;
+
+internal class AstCommand : AstNode
 {
-	internal class AstCommand : AstNode
+	public override AstType Type => AstType.Command;
+
+	public List<AstNode> Parameter { get; } = new List<AstNode>();
+
+	public AstCommand(string fullRequest) : base(fullRequest) { }
+
+	public override void Write(StringBuilder strb, int depth)
 	{
-		public override AstType Type => AstType.Command;
-
-		public List<AstNode> Parameter { get; } = new List<AstNode>();
-
-		public AstCommand(string fullRequest) : base(fullRequest) { }
-
-		public override void Write(StringBuilder strb, int depth)
+		strb.Space(depth);
+		if (Parameter.Count == 0)
 		{
-			strb.Space(depth);
-			if (Parameter.Count == 0)
-			{
-				strb.Append("<Invalid empty command>");
-			}
+			strb.Append("<Invalid empty command>");
+		}
+		else
+		{
+			if (Parameter[0] is AstValue comName)
+				strb.Append('!').Append(comName.Value);
 			else
-			{
-				if (Parameter[0] is AstValue comName)
-					strb.Append('!').Append(comName.Value);
-				else
-					strb.Append("<Invalid command name>");
+				strb.Append("<Invalid command name>");
 
-				for (int i = 1; i < Parameter.Count; i++)
-				{
-					strb.AppendLine();
-					Parameter[i].Write(strb, depth + 1);
-				}
+			for (int i = 1; i < Parameter.Count; i++)
+			{
+				strb.AppendLine();
+				Parameter[i].Write(strb, depth + 1);
 			}
 		}
 	}

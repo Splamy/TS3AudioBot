@@ -9,52 +9,51 @@
 
 using System;
 
-namespace TSLib.Scheduler
+namespace TSLib.Scheduler;
+
+public class TickWorker
 {
-	public class TickWorker
+	readonly DedicatedTaskScheduler parent;
+	private TimeSpan interval;
+
+	internal Action Method { get; }
+	internal TimeSpan Timestamp { get; set; } = TimeSpan.Zero;
+
+	public TimeSpan Interval
 	{
-		readonly DedicatedTaskScheduler parent;
-		private TimeSpan interval;
-
-		internal Action Method { get; }
-		internal TimeSpan Timestamp { get; set; } = TimeSpan.Zero;
-
-		public TimeSpan Interval
+		get => interval;
+		set
 		{
-			get => interval;
-			set
-			{
-				if (value <= TimeSpan.Zero)
-					throw new ArgumentOutOfRangeException(nameof(Interval), "Interval must not be 0 or negative");
-				interval = value;
-			}
+			if (value <= TimeSpan.Zero)
+				throw new ArgumentOutOfRangeException(nameof(Interval), "Interval must not be 0 or negative");
+			interval = value;
 		}
+	}
 
-		public bool IsActive { get; private set; } = false;
+	public bool IsActive { get; private set; } = false;
 
-		public void Enable()
+	public void Enable()
+	{
+		if (!IsActive)
 		{
-			if (!IsActive)
-			{
-				parent.EnableTimer(this);
-				IsActive = true;
-			}
+			parent.EnableTimer(this);
+			IsActive = true;
 		}
+	}
 
-		public void Disable()
+	public void Disable()
+	{
+		if (IsActive)
 		{
-			if (IsActive)
-			{
-				parent.DisableTimer(this);
-				IsActive = false;
-			}
+			parent.DisableTimer(this);
+			IsActive = false;
 		}
+	}
 
-		internal TickWorker(DedicatedTaskScheduler parent, Action method, TimeSpan interval)
-		{
-			this.parent = parent;
-			Method = method;
-			Interval = interval;
-		}
+	internal TickWorker(DedicatedTaskScheduler parent, Action method, TimeSpan interval)
+	{
+		this.parent = parent;
+		Method = method;
+		Interval = interval;
 	}
 }

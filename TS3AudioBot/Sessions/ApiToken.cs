@@ -10,21 +10,20 @@
 using System;
 using TSLib.Helper;
 
-namespace TS3AudioBot.Sessions
+namespace TS3AudioBot.Sessions;
+
+internal class ApiToken
 {
-	internal class ApiToken
+	public const int TokenLen = 32;
+	public static readonly TimeSpan DefaultTokenTimeout = TimeSpan.MaxValue;
+
+	public string Value { get; }
+	public DateTime Timeout { get; }
+	public bool ApiTokenActive => Tools.Now <= Timeout;
+
+	public ApiToken(string value, DateTime timeout)
 	{
-		public const int TokenLen = 32;
-		public static readonly TimeSpan DefaultTokenTimeout = TimeSpan.MaxValue;
-
-		public string Value { get; }
-		public DateTime Timeout { get; }
-		public bool ApiTokenActive => Tools.Now <= Timeout;
-
-		public ApiToken(string value, DateTime timeout)
-		{
-			Value = value;
-			Timeout = timeout;
-		}
+		Value = value;
+		Timeout = timeout;
 	}
 }

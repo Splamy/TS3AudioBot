@@ -9,14 +9,13 @@
 
 using TSLib.Helper;
 
-namespace TSLib.Scheduler
+namespace TSLib.Scheduler;
+
+internal static class DispatcherHelper
 {
-	internal static class DispatcherHelper
-	{
-		public const string DispatcherTitle = "TS Dispatcher";
+	public const string DispatcherTitle = "TS Dispatcher";
 
-		internal static string CreateLogThreadName(string threadName, Id id) => threadName + (id == Id.Null ? "" : $"[{id}]");
+	internal static string CreateLogThreadName(string threadName, Id id) => threadName + (id == Id.Null ? "" : $"[{id}]");
 
-		internal static string CreateDispatcherTitle(Id id) => CreateLogThreadName(DispatcherTitle, id);
-	}
+	internal static string CreateDispatcherTitle(Id id) => CreateLogThreadName(DispatcherTitle, id);
 }

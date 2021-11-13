@@ -15,102 +15,101 @@ using System.Threading;
 using TSLib.Helper;
 using TSLib.Scheduler;
 
-namespace TS3AudioBot.Environment
+namespace TS3AudioBot.Environment;
+
+public class SystemMonitor
 {
-	public class SystemMonitor
+	private static readonly Process CurrentProcess = Process.GetCurrentProcess();
+	private readonly ReaderWriterLockSlim historyLock = new();
+	private readonly Queue<SystemMonitorSnapshot> history = new();
+
+	private bool historyChanged = true;
+	private SystemMonitorReport? lastReport = null;
+	private DateTime lastSnapshotTime = DateTime.MinValue;
+	private TimeSpan lastCpuTime = TimeSpan.Zero;
+
+	public DateTime StartTime { get; } = Tools.Now;
+
+	public SystemMonitor(DedicatedTaskScheduler scheduler)
 	{
-		private static readonly Process CurrentProcess = Process.GetCurrentProcess();
-		private readonly ReaderWriterLockSlim historyLock = new();
-		private readonly Queue<SystemMonitorSnapshot> history = new();
+		_ = scheduler.CreateTimer(CreateSnapshot, TimeSpan.FromSeconds(1), true);
+	}
 
-		private bool historyChanged = true;
-		private SystemMonitorReport? lastReport = null;
-		private DateTime lastSnapshotTime = DateTime.MinValue;
-		private TimeSpan lastCpuTime = TimeSpan.Zero;
+	public void CreateSnapshot()
+	{
+		CurrentProcess.Refresh();
 
-		public DateTime StartTime { get; } = Tools.Now;
-
-		public SystemMonitor(DedicatedTaskScheduler scheduler)
+		//TODO: foreach (ProcessThread thread in CurrentProcess.Threads)
 		{
-			_ = scheduler.CreateTimer(CreateSnapshot, TimeSpan.FromSeconds(1), true);
 		}
 
-		public void CreateSnapshot()
+		var currentSnapshotTime = Tools.Now;
+		var currentCpuTime = CurrentProcess.TotalProcessorTime;
+
+		var timeDiff = currentSnapshotTime - lastSnapshotTime;
+		var cpuDiff = currentCpuTime - lastCpuTime;
+		var cpu = cpuDiff.Ticks / (float)timeDiff.Ticks;
+
+		lastSnapshotTime = currentSnapshotTime;
+		lastCpuTime = currentCpuTime;
+
+		historyLock.EnterWriteLock();
+		try
 		{
-			CurrentProcess.Refresh();
-
-			//TODO: foreach (ProcessThread thread in CurrentProcess.Threads)
+			history.Enqueue(new SystemMonitorSnapshot
 			{
-			}
+				Memory = CurrentProcess.WorkingSet64,
+				Cpu = cpu,
+			});
 
-			var currentSnapshotTime = Tools.Now;
-			var currentCpuTime = CurrentProcess.TotalProcessorTime;
+			while (history.Count > 60)
+				history.Dequeue();
 
-			var timeDiff = currentSnapshotTime - lastSnapshotTime;
-			var cpuDiff = currentCpuTime - lastCpuTime;
-			var cpu = cpuDiff.Ticks / (float)timeDiff.Ticks;
-
-			lastSnapshotTime = currentSnapshotTime;
-			lastCpuTime = currentCpuTime;
-
-			historyLock.EnterWriteLock();
-			try
-			{
-				history.Enqueue(new SystemMonitorSnapshot
-				{
-					Memory = CurrentProcess.WorkingSet64,
-					Cpu = cpu,
-				});
-
-				while (history.Count > 60)
-					history.Dequeue();
-
-				historyChanged = true;
-			}
-			finally
-			{
-				historyLock.ExitWriteLock();
-			}
+			historyChanged = true;
 		}
-
-		public SystemMonitorReport GetReport()
+		finally
 		{
-			try
-			{
-				historyLock.EnterReadLock();
-				if (historyChanged || lastReport == null)
-				{
-					lastReport = new SystemMonitorReport
-					(
-						 memory: history.Select(x => x.Memory).ToArray(),
-						 cpu: history.Select(x => x.Cpu).ToArray()
-					);
-					historyChanged = false;
-				}
-				return lastReport;
-			}
-			finally
-			{
-				historyLock.ExitReadLock();
-			}
+			historyLock.ExitWriteLock();
 		}
 	}
 
-	public class SystemMonitorReport
+	public SystemMonitorReport GetReport()
 	{
-		public long[] Memory { get; }
-		public float[] Cpu { get; }
-
-		public SystemMonitorReport(long[] memory, float[] cpu)
+		try
 		{
-			Memory = memory;
-			Cpu = cpu;
+			historyLock.EnterReadLock();
+			if (historyChanged || lastReport == null)
+			{
+				lastReport = new SystemMonitorReport
+				(
+					 memory: history.Select(x => x.Memory).ToArray(),
+					 cpu: history.Select(x => x.Cpu).ToArray()
+				);
+				historyChanged = false;
+			}
+			return lastReport;
+		}
+		finally
+		{
+			historyLock.ExitReadLock();
 		}
 	}
+}
 
-	public struct SystemMonitorSnapshot
+public class SystemMonitorReport
+{
+	public long[] Memory { get; }
+	public float[] Cpu { get; }
+
+	public SystemMonitorReport(long[] memory, float[] cpu)
 	{
-		public float Cpu { get; set; }
-		public long Memory { get; set; }
+		Memory = memory;
+		Cpu = cpu;
 	}
+}
+
+public struct SystemMonitorSnapshot
+{
+	public float Cpu { get; set; }
+	public long Memory { get; set; }
 }

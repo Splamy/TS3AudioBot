@@ -7,22 +7,21 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
-namespace TS3AudioBot.Localization
+namespace TS3AudioBot.Localization;
+
+/// <summary>
+/// Represents a localizable string
+/// </summary>
+public readonly struct LocalStr
 {
-	/// <summary>
-	/// Represents a localizable string
-	/// </summary>
-	public readonly struct LocalStr
+	public static readonly LocalStr Empty = new(string.Empty);
+
+	public string Str { get; }
+
+	public LocalStr(string str)
 	{
-		public static readonly LocalStr Empty = new(string.Empty);
-
-		public string Str { get; }
-
-		public LocalStr(string str)
-		{
-			Str = str;
-		}
-
-		public override readonly string ToString() => Str;
+		Str = str;
 	}
+
+	public override readonly string ToString() => Str;
 }
