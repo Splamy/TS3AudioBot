@@ -537,9 +537,9 @@ public sealed class TsCrypt
 			outBuf[i] = (byte)(a[i] ^ b[i]);
 	}
 
-	private static readonly System.Security.Cryptography.SHA1Managed Sha1Hash = new();
-	private static readonly System.Security.Cryptography.SHA256Managed Sha256Hash = new();
-	private static readonly System.Security.Cryptography.SHA512Managed Sha512Hash = new();
+	private static readonly System.Security.Cryptography.SHA1 Sha1Hash = System.Security.Cryptography.SHA1.Create();
+	private static readonly System.Security.Cryptography.SHA256 Sha256Hash = System.Security.Cryptography.SHA256.Create();
+	private static readonly System.Security.Cryptography.SHA512 Sha512Hash = System.Security.Cryptography.SHA512.Create();
 	internal static byte[] Hash1It(byte[] data, int offset = 0, int len = 0) => HashItInternal(Sha1Hash, data, offset, len);
 	internal static byte[] Hash256It(byte[] data, int offset = 0, int len = 0) => HashItInternal(Sha256Hash, data, offset, len);
 	internal static byte[] Hash512It(byte[] data, int offset = 0, int len = 0) => HashItInternal(Sha512Hash, data, offset, len);

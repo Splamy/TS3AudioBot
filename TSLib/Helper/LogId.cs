@@ -11,25 +11,15 @@ using System;
 
 namespace TSLib.Helper;
 
-public readonly struct Id : IEquatable<Id>
+public record struct Id(int Value) : IEquatable<Id>
 {
 	public static readonly Id Null = new(-1);
 
-	public int Value { get; }
-
-	public Id(int id)
-	{
-		Value = id;
-	}
 
 	public static implicit operator int(Id id) => id.Value;
 
 	public override string ToString() => Value.ToString();
 
-	public override bool Equals(object? obj) => obj is Id id && Equals(id);
 	public bool Equals(Id other) => Value == other.Value;
 	public override int GetHashCode() => Value;
-
-	public static bool operator ==(Id id, Id other) => id.Value == other.Value;
-	public static bool operator !=(Id id, Id other) => id.Value != other.Value;
 }

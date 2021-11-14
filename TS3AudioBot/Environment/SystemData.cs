@@ -11,6 +11,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Runtime.Versioning;
 using System.Text.RegularExpressions;
 using TS3AudioBot.Helper;
 using TSLib.Helper;
@@ -87,6 +88,7 @@ public static class SystemData
 		return $"{platform} {version} ({bitness})";
 	}
 
+	[SupportedOSPlatform("Linux")]
 	private static void RunBash(string param, Action<StreamReader> action)
 	{
 		try

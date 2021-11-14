@@ -701,8 +701,7 @@ internal static class CommandErrorExtensions
 
 		if (prefix != null)
 		{
-			string? prefixStr;
-			(prefixStr, msg) = prefix(err.Id);
+			(var prefixStr, msg) = prefix(err.Id);
 			if (prefixStr != null)
 			{
 				strb.Append(prefixStr);

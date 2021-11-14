@@ -442,7 +442,7 @@ public readonly struct ICmdResult
 		this.result = result;
 	}
 
-	public object? AsRaw() => result;
+	public readonly object? AsRaw() => result;
 
-	public string? AsString() => result?.ToString();
+	public readonly string? AsString() => result?.ToString();
 }

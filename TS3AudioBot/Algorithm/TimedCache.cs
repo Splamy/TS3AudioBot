@@ -43,7 +43,7 @@ public class TimedCache<TK, TV> where TK : notnull
 
 	public void Set(TK key, TV value)
 	{
-		cachedData[key] = new TimedData { Data = value, Timestamp = Tools.Now };
+		cachedData[key] = new TimedData(value, Tools.Now);
 	}
 
 	public void Clear()
@@ -60,9 +60,5 @@ public class TimedCache<TK, TV> where TK : notnull
 		}
 	}
 
-	private struct TimedData
-	{
-		public TV Data;
-		public DateTime Timestamp;
-	}
+	private record struct TimedData(TV Data, DateTime Timestamp);
 }

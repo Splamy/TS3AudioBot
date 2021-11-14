@@ -10,7 +10,7 @@ namespace TS3ABotUnitTests;
 [TestFixture]
 public class TS3MessageParserTests
 {
-	private readonly Deserializer deserializer = new Deserializer();
+	private readonly Deserializer deserializer = new();
 
 	[Test]
 	public void Deserializer1Test()

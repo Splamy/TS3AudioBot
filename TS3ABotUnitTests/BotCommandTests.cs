@@ -178,9 +178,9 @@ public class BotCommandTests
 		var intCom = new Func<int, string>(_ => "INT");
 		var strCom = new Func<string, string>(_ => "STRING");
 		group.AddCommand("overlord", new OverloadedFunctionCommand(new[] {
-				new FunctionCommand(intCom.Method, intCom.Target),
-				new FunctionCommand(strCom.Method, strCom.Target)
-			}));
+			new FunctionCommand(intCom.Method, intCom.Target),
+			new FunctionCommand(strCom.Method, strCom.Target)
+		}));
 
 		Assert.AreEqual("INT", CallCommand("!overlord 1"));
 		Assert.AreEqual("STRING", CallCommand("!overlord a"));

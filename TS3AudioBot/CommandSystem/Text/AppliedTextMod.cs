@@ -9,22 +9,9 @@
 
 namespace TS3AudioBot.CommandSystem.Text;
 
-public readonly struct AppliedTextMod
+public record struct AppliedTextMod(string? Text, TextMod Mod)
 {
-	public string? Text { get; }
-	public TextMod Mod { get; }
-
-	public AppliedTextMod(string? text)
-	{
-		Text = text;
-		Mod = TextMod.None;
-	}
-
-	public AppliedTextMod(string? text, TextMod mod)
-	{
-		Text = text;
-		Mod = mod;
-	}
+	public AppliedTextMod(string? text) : this(text, TextMod.None) { }
 
 	public readonly AppliedTextMod Color(Color color) => new(Text, Mod.Color(color));
 	public readonly AppliedTextMod Bold() => new(Text, Mod.Bold());

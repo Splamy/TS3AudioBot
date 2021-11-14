@@ -13,13 +13,8 @@ using System.Text;
 
 namespace TS3AudioBot.CommandSystem.Text;
 
-public readonly struct Color
+public record struct Color(byte R, byte G, byte B, ColorFlags Flags)
 {
-	public byte R { get; }
-	public byte G { get; }
-	public byte B { get; }
-	public ColorFlags Flags { get; }
-
 	public static readonly Color Black = (0, 0, 0);
 	public static readonly Color DarkGray = (64, 64, 64);
 	public static readonly Color Gray = (128, 128, 128);
@@ -92,15 +87,9 @@ public readonly struct Color
 	}
 
 	public Color(byte r, byte g, byte b) : this(r, g, b, ColorFlags.Solid) { }
-	public Color(byte r, byte g, byte b, ColorFlags flags)
-	{
-		R = r;
-		G = g;
-		B = b;
-		Flags = flags;
-	}
+
 	public static implicit operator Color((byte r, byte g, byte b) rgb) => new(rgb.r, rgb.g, rgb.b);
-	public void Deconstruct(out byte r, out byte g, out byte b) => (r, g, b) = (R, G, B);
+	public readonly void Deconstruct(out byte r, out byte g, out byte b) => (r, g, b) = (R, G, B);
 
 	private static bool IsDouble(byte num) => (num & 0x0F) == (num >> 4);
 
@@ -116,15 +105,6 @@ public readonly struct Color
 			strb.AppendFormat("[COLOR=#{0:X2}{1:X2}{2:X2}]", R, G, B);
 	}
 
-	public override readonly bool Equals(object? obj)
-	{
-		if (obj is Color col)
-		{
-			return this == col;
-		}
-		return false;
-	}
-
 	public override readonly int GetHashCode() => (int)Flags << 24 | R << 16 | G << 8 | B;
 
 	public override readonly string ToString()
@@ -133,10 +113,6 @@ public readonly struct Color
 		GetL(strb);
 		return strb.ToString();
 	}
-
-	public static bool operator ==(Color a, Color b) => a.R == b.R && a.G == b.G && a.B == b.B && a.Flags == b.Flags;
-
-	public static bool operator !=(Color a, Color b) => a.R != b.R || a.G != b.G || a.B != b.B || a.Flags != b.Flags;
 }
 
 [Flags]

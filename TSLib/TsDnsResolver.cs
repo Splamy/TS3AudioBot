@@ -12,8 +12,8 @@ using Heijden.DNS;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.IO;
 using System.Net;
+using System.Net.Http;
 using System.Net.Sockets;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -33,21 +33,22 @@ public static class TsDnsResolver
 	private const string DnsPrefixUdp = "_ts3._udp.";
 	private const string NicknameLookup = "https://named.myteamspeak.com/lookup?name=";
 	private static readonly TimeSpan LookupTimeout = TimeSpan.FromSeconds(1);
+	private static readonly HttpClient httpClient = new();
 	public static readonly Resolver Resolver = new(new[]
 	{
-			// Google
-			new IPEndPoint(new IPAddress(new byte[] { 8,8,8,8 }), 53),
-			new IPEndPoint(new IPAddress(new byte[] { 8,8,4,4 }), 53),
-			// Cloudflare
-			new IPEndPoint(new IPAddress(new byte[] { 1,1,1,1 }), 53),
-			new IPEndPoint(new IPAddress(new byte[] { 1,0,0,1 }), 53),
-			// OpenDNS
-			new IPEndPoint(new IPAddress(new byte[] { 208,67,222,222 }), 53),
-			new IPEndPoint(new IPAddress(new byte[] { 208,67,220,220 }), 53),
-			// Freenom
-			new IPEndPoint(new IPAddress(new byte[] { 80,80,80,80 }), 53),
-			new IPEndPoint(new IPAddress(new byte[] { 80,80,81,81 }), 53),
-		});
+		// Google
+		new IPEndPoint(new IPAddress(new byte[] { 8,8,8,8 }), 53),
+		new IPEndPoint(new IPAddress(new byte[] { 8,8,4,4 }), 53),
+		// Cloudflare
+		new IPEndPoint(new IPAddress(new byte[] { 1,1,1,1 }), 53),
+		new IPEndPoint(new IPAddress(new byte[] { 1,0,0,1 }), 53),
+		// OpenDNS
+		new IPEndPoint(new IPAddress(new byte[] { 208,67,222,222 }), 53),
+		new IPEndPoint(new IPAddress(new byte[] { 208,67,220,220 }), 53),
+		// Freenom
+		new IPEndPoint(new IPAddress(new byte[] { 80,80,80,80 }), 53),
+		new IPEndPoint(new IPAddress(new byte[] { 80,80,81,81 }), 53),
+	});
 
 	// TODO maybe change to proper TLRU
 	private static readonly ConcurrentDictionary<string, CacheEntry> addressCache = new();
@@ -206,8 +207,8 @@ public static class TsDnsResolver
 			var cancelTask = Task.Delay(LookupTimeout);
 			var connectTask = client.ConnectAsync(tsDnsAddress.Address, tsDnsAddress.Port).ContinueWith(async t =>
 			{
-					// Swallow error on connect error
-					try { await t; } catch { }
+				// Swallow error on connect error
+				try { await t; } catch { }
 			}, TaskContinuationOptions.OnlyOnFaulted);
 			await Task.WhenAny(connectTask, cancelTask);
 			if (cancelTask.IsCompleted)
@@ -276,11 +277,8 @@ public static class TsDnsResolver
 		string result;
 		try
 		{
-			var request = WebRequest.Create(NicknameLookup + Uri.EscapeDataString(nickname));
-			using var response = await request.GetResponseAsync().ConfigureAwait(false);
-			using var stream = response.GetResponseStream();
-			using var reader = new StreamReader(stream, Tools.Utf8Encoder, false, (int)response.ContentLength);
-			result = await reader.ReadToEndAsync().ConfigureAwait(false);
+			var response = await httpClient.GetAsync(NicknameLookup + Uri.EscapeDataString(nickname)).ConfigureAwait(false);
+			result = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 		}
 		catch (Exception ex)
 		{
@@ -297,15 +295,5 @@ public static class TsDnsResolver
 		return splits[0];
 	}
 
-	private readonly struct CacheEntry
-	{
-		public IPEndPoint? Ip { get; }
-		public DateTime Created { get; }
-
-		public CacheEntry(IPEndPoint? ip, DateTime created)
-		{
-			Ip = ip;
-			Created = created;
-		}
-	}
+	private record struct CacheEntry(IPEndPoint? Ip, DateTime Created);
 }

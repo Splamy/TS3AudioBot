@@ -40,7 +40,7 @@ public sealed class SoundcloudResolver : IResourceResolver, IPlaylistResolver, I
 		try
 		{
 			track = await WebWrapper
-				.Request($"https://api.soundcloud.com/resolve.json?url={Uri.EscapeUriString(uri)}&client_id={SoundcloudClientId}")
+				.Request($"https://api.soundcloud.com/resolve.json?url={Uri.EscapeDataString(uri)}&client_id={SoundcloudClientId}")
 				.AsJson<JsonTrackInfo>(cancellationToken);
 		}
 		catch (Exception ex) { Log.Debug(ex, "Failed to get via api"); }
@@ -133,7 +133,7 @@ public sealed class SoundcloudResolver : IResourceResolver, IPlaylistResolver, I
 	public async Task<Playlist> GetPlaylist(ResolveContext _, string url, CancellationToken cancellationToken)
 	{
 		var playlist = await WebWrapper
-			.Request($"https://api.soundcloud.com/resolve.json?url={Uri.EscapeUriString(url)}&client_id={SoundcloudClientId}")
+			.Request($"https://api.soundcloud.com/resolve.json?url={Uri.EscapeDataString(url)}&client_id={SoundcloudClientId}")
 			.AsJson<JsonPlaylist>(cancellationToken);
 
 		if (playlist is null || playlist.title is null || playlist.tracks is null)

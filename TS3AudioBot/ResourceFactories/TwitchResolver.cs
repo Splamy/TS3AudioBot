@@ -51,7 +51,7 @@ public sealed class TwitchResolver : IResourceResolver
 		// request m3u8 file
 		if (access is null || access.token is null || access.sig is null)
 			throw Error.LocalStr(strings.error_media_internal_invalid + " (tokenResult|sigResult)");
-		var token = Uri.EscapeUriString(access.token);
+		var token = Uri.EscapeDataString(access.token);
 		var sig = access.sig;
 		// guaranteed to be random, chosen by fair dice roll.
 		const int random = 4;

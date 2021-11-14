@@ -39,7 +39,7 @@ public static class LongTextTransform
 			return new[] { text };
 
 		var list = new List<string>();
-		Span<Ind> splitIndices = stackalloc Ind[SeparatorWeight.Length];
+		Span<int> splitIndices = stackalloc int[SeparatorWeight.Length];
 
 		var block = new byte[encodedSize].AsSpan(0, encodedSize);
 		encodedSize = Tools.Utf8Encoder.GetBytes(text, block);
@@ -68,7 +68,7 @@ public static class LongTextTransform
 				{
 					if (block[i] == SeparatorWeight[j])
 					{
-						splitIndices[j] = new Ind(i, tokenCnt);
+						splitIndices[j] = i;
 					}
 				}
 			}
@@ -84,15 +84,15 @@ public static class LongTextTransform
 			{
 				for (int j = 0; j < SeparatorWeight.Length; j++)
 				{
-					if (!hasSplit && splitIndices[j].i > 0)
+					if (!hasSplit && splitIndices[j] > 0)
 					{
-						var (left, right) = block.SplitAt(splitIndices[j].i + 1);
+						var (left, right) = block.SplitAt(splitIndices[j] + 1);
 						list.Add(left.NewUtf8String());
 						block = right;
 						hasSplit = true;
 					}
 				}
-				splitIndices.Fill(new Ind());
+				splitIndices.Fill(0);
 			}
 
 			if (!hasSplit)
@@ -110,19 +110,5 @@ public static class LongTextTransform
 				break;
 		}
 		return list;
-	}
-
-	private readonly struct Ind
-	{
-		public readonly int i;
-		public readonly int tok;
-
-		public Ind(int i, int tok)
-		{
-			this.i = i;
-			this.tok = tok;
-		}
-
-		public override readonly string ToString() => $"i:{i} tok:{tok}";
 	}
 }

@@ -16,6 +16,9 @@ namespace TSLib.Helper;
 
 public static class Tools
 {
+#if NET6_0_OR_GREATER
+	[System.Runtime.Versioning.SupportedOSPlatformGuard("Linux")]
+#endif
 	public static bool IsLinux
 	{
 		get

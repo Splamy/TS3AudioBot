@@ -12,16 +12,9 @@ namespace TS3AudioBot.Localization;
 /// <summary>
 /// Represents a localizable string
 /// </summary>
-public readonly struct LocalStr
+public record struct LocalStr(string Str)
 {
 	public static readonly LocalStr Empty = new(string.Empty);
-
-	public string Str { get; }
-
-	public LocalStr(string str)
-	{
-		Str = str;
-	}
 
 	public override readonly string ToString() => Str;
 }

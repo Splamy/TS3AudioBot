@@ -11,21 +11,10 @@ using System;
 
 namespace TSLib.Audio;
 
-public readonly struct SampleInfo
+public record struct SampleInfo(int SampleRate, int Channels, int BitsPerSample)
 {
-	public int SampleRate { get; }
-	public int Channels { get; }
-	public int BitsPerSample { get; }
-
 	public static readonly SampleInfo OpusMusic = new(48_000, 2, 16);
 	public static readonly SampleInfo OpusVoice = new(48_000, 1, 16);
-
-	public SampleInfo(int sampleRate, int channels, int bitsPerSample)
-	{
-		SampleRate = sampleRate;
-		Channels = channels;
-		BitsPerSample = bitsPerSample;
-	}
 
 	public readonly int GetBytesPerSecond() => SampleRate * (BitsPerSample / 8) * Channels;
 

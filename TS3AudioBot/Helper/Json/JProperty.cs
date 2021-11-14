@@ -30,7 +30,7 @@ public class JProperty
 		public override JProperty? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) => throw new NotSupportedException();
 		public override void Write(Utf8JsonWriter writer, JProperty value, JsonSerializerOptions options)
 		{
-			if (options.IgnoreNullValues && value.Value is null)
+			if (options.DefaultIgnoreCondition == JsonIgnoreCondition.WhenWritingNull && value.Value is null)
 				return;
 			writer.WritePropertyName(value.Key);
 			JsonSerializer.Serialize(writer, value.Value, options);

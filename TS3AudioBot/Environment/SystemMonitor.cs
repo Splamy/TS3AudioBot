@@ -108,8 +108,4 @@ public class SystemMonitorReport
 	}
 }
 
-public struct SystemMonitorSnapshot
-{
-	public float Cpu { get; set; }
-	public long Memory { get; set; }
-}
+public record struct SystemMonitorSnapshot(float Cpu, long Memory);

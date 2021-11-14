@@ -204,14 +204,7 @@ public sealed class NetworkStats
 		Control,
 	}
 
-	private readonly struct PacketData
-	{
-		public DateTime SendPoint { get; }
-		public ushort Size { get; }
-		public PacketKind Kind { get; }
-
-		public PacketData(ushort size, DateTime sendPoint, PacketKind kind) { Size = size; SendPoint = sendPoint; Kind = kind; }
-	}
+	private record struct PacketData(ushort Size, DateTime SendPoint, PacketKind Kind);
 
 	struct DataCatergory
 	{

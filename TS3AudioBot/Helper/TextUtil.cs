@@ -108,7 +108,7 @@ public static class TextUtil
 
 	private static TimeSpan? ParseTimeAsDigital(string value)
 	{
-		if (value.Contains(":"))
+		if (value.Contains(':'))
 		{
 			string[] splittime = value.Split(':');
 

@@ -88,7 +88,7 @@ internal sealed class ExtraThreadEventDispatcher : IEventDispatcher
 
 	public void DoWork()
 	{
-		if (Thread.CurrentThread.ManagedThreadId != dispatchThread.ManagedThreadId)
+		if (Environment.CurrentManagedThreadId != dispatchThread.ManagedThreadId)
 			return;
 		if (eventQueue.TryDequeue(out var lazyNotification))
 			dispatcher.Invoke(lazyNotification);

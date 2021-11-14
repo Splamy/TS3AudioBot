@@ -19,8 +19,8 @@ internal static class NativeLibraryLoader
 	private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 
 #if !NETCOREAPP3_0_OR_GREATER
-		[DllImport("kernel32.dll", SetLastError = true)]
-		private static extern IntPtr LoadLibrary(string dllToLoad);
+	[DllImport("kernel32.dll", SetLastError = true)]
+	private static extern IntPtr LoadLibrary(string dllToLoad);
 #endif
 
 	public static bool DirectLoadLibrary(string lib, Action? dummyLoad = null)
@@ -43,9 +43,9 @@ internal static class NativeLibraryLoader
 			{
 				Log.Debug("Loading \"{0}\" from \"{1}\"", lib, libPath);
 #if !NETCOREAPP3_0_OR_GREATER
-					var handle = LoadLibrary(libPath);
-					if (handle != IntPtr.Zero)
-						return true;
+				var handle = LoadLibrary(libPath);
+				if (handle != IntPtr.Zero)
+					return true;
 #else
 				if (NativeLibrary.TryLoad(libPath, out _))
 					return true;
