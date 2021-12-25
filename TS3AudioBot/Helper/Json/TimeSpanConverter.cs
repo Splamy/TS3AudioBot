@@ -8,6 +8,7 @@
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
 using System;
+using System.Globalization;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Xml;
@@ -24,6 +25,25 @@ internal class TimeSpanConverter : JsonConverter<TimeSpan>
 		this.format = format;
 	}
 
+	public override TimeSpan Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+	{
+		switch (reader.TokenType)
+		{
+		case JsonTokenType.String:
+		case JsonTokenType.Null:
+			var str = reader.GetString() ?? throw new JsonException("TimeSpan value is empty");
+			return TextUtil.ParseTime(str) ?? throw new JsonException("Invalid TimeSpan");
+		case JsonTokenType.Number:
+			var secs = reader.GetDouble();
+			return TimeSpan.FromSeconds(secs);
+		case JsonTokenType.StartObject:
+			var helper = JsonSerializer.Deserialize<TickReaderHelper>(ref reader);
+			return TimeSpan.FromTicks(helper.Ticks);
+		default:
+			throw new JsonException($"Invalid token type '{reader.TokenType}' for TimeSpan");
+		}
+	}
+
 	public override void Write(Utf8JsonWriter writer, TimeSpan value, JsonSerializerOptions options)
 	{
 		switch (format)
@@ -37,25 +57,17 @@ internal class TimeSpanConverter : JsonConverter<TimeSpan>
 		case TimeSpanFormatting.Xml:
 			writer.WriteStringValue(XmlConvert.ToString(value));
 			break;
+		case TimeSpanFormatting.ToString:
+			writer.WriteStringValue(value.ToString("c", CultureInfo.InvariantCulture));
+			break;
 		case var _unhandled:
 			throw Tools.UnhandledDefault(_unhandled);
 		}
 	}
 
-	public override TimeSpan Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
+	private struct TickReaderHelper
 	{
-		switch (reader.TokenType)
-		{
-		case JsonTokenType.String:
-		case JsonTokenType.Null:
-			var str = reader.GetString() ?? throw new JsonException("TimeSpan value is empty");
-			return TextUtil.ParseTime(str) ?? throw new JsonException("Invalid TimeSpan");
-		case JsonTokenType.Number:
-			var secs = reader.GetDouble();
-			return TimeSpan.FromSeconds(secs);
-		default:
-			throw new JsonException($"Invalid token type '{reader.TokenType}' for TimeSpan");
-		}
+		public long Ticks { get; set; }
 	}
 }
 
@@ -64,4 +76,5 @@ enum TimeSpanFormatting
 	Simple,
 	Seconds,
 	Xml,
+	ToString,
 }

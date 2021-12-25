@@ -278,9 +278,10 @@ public sealed class Bot
 
 		Log.Debug("TextMessage: {@textMessage}", textMessage);
 
-		textMessage.Message = textMessage.Message.Trim();
-		if (!textMessage.Message.StartsWith("!", StringComparison.Ordinal))
+		var message = textMessage.Message.Trim();
+		if (!(message.Length >= 2 && message[0] == '!' && char.IsLetter(message[1])))
 			return;
+		textMessage.Message = message;
 
 		if (!localization.LanguageLoaded)
 		{

@@ -19,6 +19,7 @@ using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 using TS3AudioBot.Config;
 using TS3AudioBot.Helper;
+using TS3AudioBot.Helper.Json;
 using TSLib.Helper;
 using TSLib.Scheduler;
 
@@ -36,6 +37,7 @@ public class Stats
 	private static readonly JsonSerializerOptions JsonOptions = new()
 	{
 		DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
+		Converters = { new TimeSpanConverter(TimeSpanFormatting.Simple) }
 	};
 
 	private readonly ConfRoot conf;

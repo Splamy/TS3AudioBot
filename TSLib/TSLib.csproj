@@ -1,177 +1,178 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <OutputType>Library</OutputType>
-    <TargetFrameworks>net6.0;net5.0;netstandard2.0;netstandard2.1</TargetFrameworks>
-    <LangVersion>10</LangVersion>
-    <RootNamespace>TSLib</RootNamespace>
-    <AssemblyName>TSLib</AssemblyName>
+	<PropertyGroup>
+		<OutputType>Library</OutputType>
+		<TargetFrameworks>net6.0;net5.0;netstandard2.0;netstandard2.1</TargetFrameworks>
+		<LangVersion>10</LangVersion>
+		<RootNamespace>TSLib</RootNamespace>
+		<AssemblyName>TSLib</AssemblyName>
 
-    <Nullable>enable</Nullable>
-    <PlatformTarget>AnyCPU</PlatformTarget>
-    <Prefer32Bit>false</Prefer32Bit>
-    <DebugType>embedded</DebugType>
+		<Nullable>enable</Nullable>
+		<PlatformTarget>AnyCPU</PlatformTarget>
+		<Prefer32Bit>false</Prefer32Bit>
+		<DebugType>embedded</DebugType>
 
-    <RepositoryUrl>https://github.com/Splamy/TS3AudioBot.git</RepositoryUrl>
-    <RepositoryType>git</RepositoryType>
-    <PublishRepositoryUrl>true</PublishRepositoryUrl>
-    <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
-    <PackageId>Splamy.TSLib</PackageId>
-    <Authors>Splamy, Flakebi, TSLib Contributors</Authors>
-    <Company>TSLib</Company>
-    <Description>
-      A free and open source TeamSpeak 3 and 5 client library.
-      Can connect as normal voice or query client and is optimized for performance.
-    </Description>
-    <Copyright>Splamy, Flakebi, TSLib Contributors</Copyright>
-    <PackageLicenseExpression>OSL-3.0</PackageLicenseExpression>
-    <PackageProjectUrl>https://github.com/Splamy/TS3AudioBot</PackageProjectUrl>
-    <PackageTags>TeamSpeak, TS3, TS5, Voice, Client, Query, Normal, Communication</PackageTags>
-    <Version>1.1.0</Version>
-    <PackageIcon>ReSpeak.png</PackageIcon>
-    <!-- PackageIconUrl is deprecated, but doc says it might be good for backwards compatibility -->
-    <PackageIconUrl>https://splamy.de/static/ReSpeak.png</PackageIconUrl>
-  </PropertyGroup>
+		<RepositoryUrl>https://github.com/Splamy/TS3AudioBot.git</RepositoryUrl>
+		<RepositoryType>git</RepositoryType>
+		<PublishRepositoryUrl>true</PublishRepositoryUrl>
+		<GeneratePackageOnBuild>false</GeneratePackageOnBuild>
+		<PackageId>Splamy.TSLib</PackageId>
+		<Authors>Splamy, Flakebi, TSLib Contributors</Authors>
+		<Company>TSLib</Company>
+		<Description>
+			A free and open source TeamSpeak 3 and 5 client library.
+			Can connect as normal voice or query client and is optimized for performance.
+		</Description>
+		<Copyright>Splamy, Flakebi, TSLib Contributors</Copyright>
+		<PackageLicenseExpression>OSL-3.0</PackageLicenseExpression>
+		<PackageProjectUrl>https://github.com/Splamy/TS3AudioBot</PackageProjectUrl>
+		<PackageTags>TeamSpeak, TS3, TS5, Voice, Client, Query, Normal, Communication</PackageTags>
+		<Version>1.1.0</Version>
+		<PackageIcon>ReSpeak.png</PackageIcon>
+		<!-- PackageIconUrl is deprecated, but doc says it might be good for backwards compatibility -->
+		<PackageIconUrl>https://splamy.de/static/ReSpeak.png</PackageIconUrl>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="NLog" Version="4.7.10" />
-    <PackageReference Include="Heijden.Dns.Portable" Version="2.0.19" />
-    <PackageReference Include="Nullable" Version="1.3.0">
-      <PrivateAssets>all</PrivateAssets>
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-    </PackageReference>
-    <PackageReference Include="Portable.BouncyCastle" Version="1.8.10" />
-    <PackageReference Include="Splamy.Ed25519.Toolkit" Version="1.0.3" />
-    <PackageReference Include="System.IO.Pipelines" Version="5.0.1" />
-    <PackageReference Condition="'$(TargetFramework)' == 'netstandard2.0'" Include="System.Memory" Version="4.5.4" />
-    <PackageReference Condition="'$(TargetFramework)' != 'net5.0'" Include="System.Text.Json" Version="5.0.2" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="ReSpeak.png" Pack="true" PackagePath="\" />
-    <None Include="Generated\BookParser.ttinclude" />
-    <None Include="Generated\ErrorParser.ttinclude" />
-    <None Include="Generated\M2BParser.ttinclude" />
-    <None Include="Generated\MessageParser.ttinclude" />
-    <None Include="Generated\Util.ttinclude" />
-    <None Update="Commands\TsCommand.gen.tt">
-      <Generator>TextTemplatingFileGenerator</Generator>
-      <LastGenOutput>TsCommand.gen.cs</LastGenOutput>
-    </None>
-    <None Update="Generated\Book.tt">
-      <Generator>TextTemplatingFileGenerator</Generator>
-      <LastGenOutput>Book.cs</LastGenOutput>
-    </None>
-    <None Update="Generated\TsErrorCode.tt">
-      <Generator>TextTemplatingFileGenerator</Generator>
-      <LastGenOutput>TsErrorCode.cs</LastGenOutput>
-    </None>
-    <None Update="Generated\M2B.tt">
-      <Generator>TextTemplatingFileGenerator</Generator>
-      <LastGenOutput>M2B.cs</LastGenOutput>
-    </None>
-    <None Update="Generated\Messages.tt">
-      <Generator>TextTemplatingFileGenerator</Generator>
-      <LastGenOutput>Messages.cs</LastGenOutput>
-    </None>
-    <None Update="Generated\TsPermission.tt">
-      <Generator>TextTemplatingFileGenerator</Generator>
-      <LastGenOutput>TsPermission.cs</LastGenOutput>
-    </None>
-    <None Update="Full\TsFullClient.gen.tt">
-      <Generator>TextTemplatingFileGenerator</Generator>
-      <LastGenOutput>TsFullClient.gen.cs</LastGenOutput>
-    </None>
-    <None Update="Query\TsQueryClient.gen.tt">
-      <LastGenOutput>TsQueryClient.gen.cs</LastGenOutput>
-      <Generator>TextTemplatingFileGenerator</Generator>
-    </None>
-    <None Update="Types.gen.tt">
-      <Generator>TextTemplatingFileGenerator</Generator>
-      <LastGenOutput>Types.gen.cs</LastGenOutput>
-    </None>
-    <None Update="Generated\TsVersion.gen.tt">
-      <Generator>TextTemplatingFileGenerator</Generator>
-      <LastGenOutput>TsVersion.gen.cs</LastGenOutput>
-    </None>
-    <None Update="TsBaseFunctions.gen.tt">
-      <Generator>TextTemplatingFileGenerator</Generator>
-      <LastGenOutput>TsBaseFunctions.gen.cs</LastGenOutput>
-    </None>
-  </ItemGroup>
-  <ItemGroup>
-    <CompilerVisibleItemMetadata Include="AdditionalFiles" MetadataName="TsDeclType" />
-    <AdditionalFiles Include="Declarations/Book.toml" TsDeclType="Book" />
-    <AdditionalFiles Include="Declarations/Messages.toml" TsDeclType="Messages" />
-    <AdditionalFiles Include="Declarations/MessagesToBook.toml" TsDeclType="M2B" />
-    <AdditionalFiles Include="Declarations/Errors.csv" TsDeclType="Errors" />
-    <AdditionalFiles Include="Declarations/Permissions.csv" TsDeclType="Permissions" />
-    <AdditionalFiles Include="Declarations/Versions.csv" TsDeclType="Versions" />
-  </ItemGroup>
-  
-  <ItemGroup>
-    <!--<ProjectReference
+	<ItemGroup>
+		<PackageReference Include="NLog" Version="4.7.13" />
+		<PackageReference Include="Heijden.Dns.Portable" Version="2.0.19" />
+		<PackageReference Include="Nullable" Version="1.3.0">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
+		<PackageReference Include="Portable.BouncyCastle" Version="1.9.0" />
+		<PackageReference Include="Splamy.Ed25519.Toolkit" Version="1.0.3" />
+		<PackageReference Include="System.IO.Pipelines" Version="6.0.1" />
+		<PackageReference Condition="'$(TargetFramework)' == 'netstandard2.0'" Include="System.Memory" Version="4.5.4" />
+		<PackageReference Condition="'$(TargetFramework)' == 'netstandard2.0'" Include="System.Text.Json" Version="6.0.1" />
+		<PackageReference Condition="'$(TargetFramework)' == 'netstandard2.1'" Include="System.Text.Json" Version="6.0.1" />
+	</ItemGroup>
+	<ItemGroup>
+		<None Include="ReSpeak.png" Pack="true" PackagePath="\" />
+		<None Include="Generated\BookParser.ttinclude" />
+		<None Include="Generated\ErrorParser.ttinclude" />
+		<None Include="Generated\M2BParser.ttinclude" />
+		<None Include="Generated\MessageParser.ttinclude" />
+		<None Include="Generated\Util.ttinclude" />
+		<None Update="Commands\TsCommand.gen.tt">
+			<Generator>TextTemplatingFileGenerator</Generator>
+			<LastGenOutput>TsCommand.gen.cs</LastGenOutput>
+		</None>
+		<None Update="Generated\Book.tt">
+			<Generator>TextTemplatingFileGenerator</Generator>
+			<LastGenOutput>Book.cs</LastGenOutput>
+		</None>
+		<None Update="Generated\TsErrorCode.tt">
+			<Generator>TextTemplatingFileGenerator</Generator>
+			<LastGenOutput>TsErrorCode.cs</LastGenOutput>
+		</None>
+		<None Update="Generated\M2B.tt">
+			<Generator>TextTemplatingFileGenerator</Generator>
+			<LastGenOutput>M2B.cs</LastGenOutput>
+		</None>
+		<None Update="Generated\Messages.tt">
+			<Generator>TextTemplatingFileGenerator</Generator>
+			<LastGenOutput>Messages.cs</LastGenOutput>
+		</None>
+		<None Update="Generated\TsPermission.tt">
+			<Generator>TextTemplatingFileGenerator</Generator>
+			<LastGenOutput>TsPermission.cs</LastGenOutput>
+		</None>
+		<None Update="Full\TsFullClient.gen.tt">
+			<Generator>TextTemplatingFileGenerator</Generator>
+			<LastGenOutput>TsFullClient.gen.cs</LastGenOutput>
+		</None>
+		<None Update="Query\TsQueryClient.gen.tt">
+			<LastGenOutput>TsQueryClient.gen.cs</LastGenOutput>
+			<Generator>TextTemplatingFileGenerator</Generator>
+		</None>
+		<None Update="Types.gen.tt">
+			<Generator>TextTemplatingFileGenerator</Generator>
+			<LastGenOutput>Types.gen.cs</LastGenOutput>
+		</None>
+		<None Update="Generated\TsVersion.gen.tt">
+			<Generator>TextTemplatingFileGenerator</Generator>
+			<LastGenOutput>TsVersion.gen.cs</LastGenOutput>
+		</None>
+		<None Update="TsBaseFunctions.gen.tt">
+			<Generator>TextTemplatingFileGenerator</Generator>
+			<LastGenOutput>TsBaseFunctions.gen.cs</LastGenOutput>
+		</None>
+	</ItemGroup>
+	<ItemGroup>
+		<CompilerVisibleItemMetadata Include="AdditionalFiles" MetadataName="TsDeclType" />
+		<AdditionalFiles Include="Declarations/Book.toml" TsDeclType="Book" />
+		<AdditionalFiles Include="Declarations/Messages.toml" TsDeclType="Messages" />
+		<AdditionalFiles Include="Declarations/MessagesToBook.toml" TsDeclType="M2B" />
+		<AdditionalFiles Include="Declarations/Errors.csv" TsDeclType="Errors" />
+		<AdditionalFiles Include="Declarations/Permissions.csv" TsDeclType="Permissions" />
+		<AdditionalFiles Include="Declarations/Versions.csv" TsDeclType="Versions" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<!--<ProjectReference
       Include="../TSLibAutogen/TSLibAutogen.csproj"
       SetTargetFramework="TargetFramework=netstandard2.0"
       OutputItemType="Analyzer"
       ReferenceOutputAssembly="false" />-->
 
-    <Compile Update="Commands\TsCommand.gen.cs">
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-      <DependentUpon>TsCommand.gen.tt</DependentUpon>
-    </Compile>
-    <Compile Update="Full\TsFullClient.gen.cs">
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-      <DependentUpon>TsFullClient.gen.tt</DependentUpon>
-    </Compile>
-    <Compile Update="Generated\Book.cs">
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-      <DependentUpon>Book.tt</DependentUpon>
-    </Compile>
-    <Compile Update="Generated\TsErrorCode.cs">
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-      <DependentUpon>TsErrorCode.tt</DependentUpon>
-    </Compile>
-    <Compile Update="Generated\M2B.cs">
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-      <DependentUpon>M2B.tt</DependentUpon>
-    </Compile>
-    <Compile Update="Generated\Messages.cs">
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-      <DependentUpon>Messages.tt</DependentUpon>
-    </Compile>
-    <Compile Update="Generated\TsPermission.cs">
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-      <DependentUpon>TsPermission.tt</DependentUpon>
-    </Compile>
-    <Compile Update="Generated\TsVersion.gen.cs">
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-      <DependentUpon>TsVersion.gen.tt</DependentUpon>
-    </Compile>
-    <Compile Update="Query\TsQueryClient.gen.cs">
-      <DependentUpon>TsQueryClient.gen.tt</DependentUpon>
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-    </Compile>
-    <Compile Update="TsBaseFunctions.gen.cs">
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-      <DependentUpon>TsBaseFunctions.gen.tt</DependentUpon>
-    </Compile>
-    <Compile Update="Types.gen.cs">
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-      <DependentUpon>Types.gen.tt</DependentUpon>
-    </Compile>
-  </ItemGroup>
-  <ItemGroup>
-    <!-- Transform all Templates tool -->
-    <Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
-  </ItemGroup>
+		<Compile Update="Commands\TsCommand.gen.cs">
+			<DesignTime>True</DesignTime>
+			<AutoGen>True</AutoGen>
+			<DependentUpon>TsCommand.gen.tt</DependentUpon>
+		</Compile>
+		<Compile Update="Full\TsFullClient.gen.cs">
+			<DesignTime>True</DesignTime>
+			<AutoGen>True</AutoGen>
+			<DependentUpon>TsFullClient.gen.tt</DependentUpon>
+		</Compile>
+		<Compile Update="Generated\Book.cs">
+			<DesignTime>True</DesignTime>
+			<AutoGen>True</AutoGen>
+			<DependentUpon>Book.tt</DependentUpon>
+		</Compile>
+		<Compile Update="Generated\TsErrorCode.cs">
+			<DesignTime>True</DesignTime>
+			<AutoGen>True</AutoGen>
+			<DependentUpon>TsErrorCode.tt</DependentUpon>
+		</Compile>
+		<Compile Update="Generated\M2B.cs">
+			<DesignTime>True</DesignTime>
+			<AutoGen>True</AutoGen>
+			<DependentUpon>M2B.tt</DependentUpon>
+		</Compile>
+		<Compile Update="Generated\Messages.cs">
+			<DesignTime>True</DesignTime>
+			<AutoGen>True</AutoGen>
+			<DependentUpon>Messages.tt</DependentUpon>
+		</Compile>
+		<Compile Update="Generated\TsPermission.cs">
+			<DesignTime>True</DesignTime>
+			<AutoGen>True</AutoGen>
+			<DependentUpon>TsPermission.tt</DependentUpon>
+		</Compile>
+		<Compile Update="Generated\TsVersion.gen.cs">
+			<DesignTime>True</DesignTime>
+			<AutoGen>True</AutoGen>
+			<DependentUpon>TsVersion.gen.tt</DependentUpon>
+		</Compile>
+		<Compile Update="Query\TsQueryClient.gen.cs">
+			<DependentUpon>TsQueryClient.gen.tt</DependentUpon>
+			<DesignTime>True</DesignTime>
+			<AutoGen>True</AutoGen>
+		</Compile>
+		<Compile Update="TsBaseFunctions.gen.cs">
+			<DesignTime>True</DesignTime>
+			<AutoGen>True</AutoGen>
+			<DependentUpon>TsBaseFunctions.gen.tt</DependentUpon>
+		</Compile>
+		<Compile Update="Types.gen.cs">
+			<DesignTime>True</DesignTime>
+			<AutoGen>True</AutoGen>
+			<DependentUpon>Types.gen.tt</DependentUpon>
+		</Compile>
+	</ItemGroup>
+	<ItemGroup>
+		<!-- Transform all Templates tool -->
+		<Service Include="{508349b6-6b84-4df5-91f0-309beebad82d}" />
+	</ItemGroup>
 </Project>
