@@ -905,14 +905,38 @@ namespace TSLib.Messages
 		public NotificationType NotifyType { get; } = NotificationType.ChannelDelPerm;
 		
 
+		public ChannelId ChannelId { get; set; }
+		public Ts3Permission? PermissionId { get; set; }
+		public str? PermissionNameId { get; set; }
 		#pragma warning restore CS8618
 
 		public void SetField(string name, ReadOnlySpan<byte> value, Deserializer ser)
 		{
+			switch(name)
+			{
+
+			case "cid": { if(Utf8Parser.TryParse(value, out u64 oval, out _)) ChannelId = (ChannelId)oval; } break;
+			case "permid": { if(Utf8Parser.TryParse(value, out u16 oval, out _)) PermissionId = ser.PermissionTransform.GetName(oval); } break;
+			case "permsid": PermissionNameId = (str)TsString.Unescape(value); break;
+			
+			}
+
 		}
 
 		public void Expand(IMessage[] to, IEnumerable<string> flds)
 		{
+			var toc = (ChannelDelPerm[])to;
+			foreach (var fld in flds)
+			{
+				switch(fld)
+				{
+
+				case "cid": foreach(var toi in toc) { toi.ChannelId = ChannelId; } break;
+				case "permid": foreach(var toi in toc) { toi.PermissionId = PermissionId; } break;
+				case "permsid": foreach(var toi in toc) { toi.PermissionNameId = PermissionNameId; } break;
+				}
+			}
+
 		}
 	}
 
@@ -999,7 +1023,6 @@ namespace TSLib.Messages
 		public DurationSeconds? DeleteDelay { get; set; }
 		public str? Description { get; set; }
 		public bool? HasPassword { get; set; }
-		public IconId? Icon { get; set; }
 		public bool? InheritsMaxFamilyClients { get; set; }
 		public bool? IsDefault { get; set; }
 		public bool? IsMaxClientsUnlimited { get; set; }
@@ -1035,7 +1058,6 @@ namespace TSLib.Messages
 			case "channel_flag_password": HasPassword = value.Length > 0 && value[0] != '0'; break;
 			case "channel_flag_permanent": IsPermanent = value.Length > 0 && value[0] != '0'; break;
 			case "channel_flag_semi_permanent": IsSemiPermanent = value.Length > 0 && value[0] != '0'; break;
-			case "channel_icon_id": { if(!value.IsEmpty && value[0] == (u8)'-') { if(Utf8Parser.TryParse(value, out i32 oval, out _)) Icon = oval; } else { if(Utf8Parser.TryParse(value, out u64 oval, out _)) Icon = unchecked((i32)oval); } } break;
 			case "channel_maxclients": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) MaxClients = (i32)oval; } break;
 			case "channel_maxfamilyclients": { if(Utf8Parser.TryParse(value, out i32 oval, out _)) MaxFamilyClients = (i32)oval; } break;
 			case "channel_name": Name = (str)TsString.Unescape(value); break;
@@ -1071,7 +1093,6 @@ namespace TSLib.Messages
 				case "channel_flag_password": foreach(var toi in toc) { toi.HasPassword = HasPassword; } break;
 				case "channel_flag_permanent": foreach(var toi in toc) { toi.IsPermanent = IsPermanent; } break;
 				case "channel_flag_semi_permanent": foreach(var toi in toc) { toi.IsSemiPermanent = IsSemiPermanent; } break;
-				case "channel_icon_id": foreach(var toi in toc) { toi.Icon = Icon; } break;
 				case "channel_maxclients": foreach(var toi in toc) { toi.MaxClients = MaxClients; } break;
 				case "channel_maxfamilyclients": foreach(var toi in toc) { toi.MaxFamilyClients = MaxFamilyClients; } break;
 				case "channel_name": foreach(var toi in toc) { toi.Name = Name; } break;
