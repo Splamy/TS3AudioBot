@@ -65,12 +65,12 @@ deploy_script:
       Write-Host -ForegroundColor Yellow Packing $dnver
       cd([io.path]::combine(${rel}, $dnver, "publish"))
       Compress-Archive -Path *.*,lib,../../WebInterface -DestinationPath TS3AudioBot.zip
-      Invoke-RestMethod -Uri "https://splamy.de/api/nightly/ts3ab/${env:APPVEYOR_REPO_BRANCH}?filename=TS3AudioBot.zip&commit=${env:APPVEYOR_REPO_COMMIT}&version=${ver}" -Headers @{ "Content-Type" = "application/zip"; "Authorization" = "${env:UPLOAD_TOKEN}" } -Method Put -InFile .\TS3AudioBot.zip
+      Invoke-RestMethod -Uri "https://splamy.de/api/nightly/projects/ts3ab/${env:APPVEYOR_REPO_BRANCH}?filename=TS3AudioBot.zip&commit=${env:APPVEYOR_REPO_COMMIT}&version=${ver}" -Headers @{ "Content-Type" = "application/zip"; "Authorization" = "${env:UPLOAD_TOKEN}" } -Method Put -InFile .\TS3AudioBot.zip
 
       Write-Host -ForegroundColor Yellow Packing win-x64
       cd([io.path]::combine(${rel}, $dnver, "win-x64", "publish"))
       Compress-Archive -Path TS3AudioBot.exe,../../../WebInterface -DestinationPath TS3AudioBot.zip
-      Invoke-RestMethod -Uri "https://splamy.de/api/nightly/ts3ab/${env:APPVEYOR_REPO_BRANCH}_win_x64?filename=TS3AudioBot.zip&commit=${env:APPVEYOR_REPO_COMMIT}&version=${ver}" -Headers @{ "Content-Type" = "application/zip"; "Authorization" = "${env:UPLOAD_TOKEN}" } -Method Put -InFile .\TS3AudioBot.zip
+      Invoke-RestMethod -Uri "https://splamy.de/api/nightly/projects/ts3ab/${env:APPVEYOR_REPO_BRANCH}_win_x64?filename=TS3AudioBot.zip&commit=${env:APPVEYOR_REPO_COMMIT}&version=${ver}" -Headers @{ "Content-Type" = "application/zip"; "Authorization" = "${env:UPLOAD_TOKEN}" } -Method Put -InFile .\TS3AudioBot.zip
       
       $pack_linux = [io.path]::combine("${env:APPVEYOR_BUILD_FOLDER}", "Tools", "pack_linux.csx")
 
@@ -81,7 +81,7 @@ deploy_script:
         # creates TS3AudioBot.tar.gz
         dotnet script $pack_linux
         $name = $target -replace '-','_'
-        Invoke-RestMethod -Uri "https://splamy.de/api/nightly/ts3ab/${env:APPVEYOR_REPO_BRANCH}_${name}?filename=TS3AudioBot.tar.gz&commit=${env:APPVEYOR_REPO_COMMIT}&version=${ver}" -Headers @{ "Content-Type" = "application/gzip"; "Authorization" = "${env:UPLOAD_TOKEN}" } -Method Put -InFile .\TS3AudioBot.tar.gz
+        Invoke-RestMethod -Uri "https://splamy.de/api/nightly/projects/ts3ab/${env:APPVEYOR_REPO_BRANCH}_${name}?filename=TS3AudioBot.tar.gz&commit=${env:APPVEYOR_REPO_COMMIT}&version=${ver}" -Headers @{ "Content-Type" = "application/gzip"; "Authorization" = "${env:UPLOAD_TOKEN}" } -Method Put -InFile .\TS3AudioBot.tar.gz
       }
     }
 
