@@ -14,14 +14,6 @@
 
 
 
-
-
-
-
-
-
-
-
 using System;
 using System.Threading.Tasks;
 using TSLib.Commands;
@@ -111,34 +103,5 @@ namespace TSLib
 		public async Task<R<T[], CommandError>> SendHybrid<T>(string command, NotificationType type, params ICommandPart[] parameter) where T : class, IResponse, new()
 			=> await SendHybrid<T>(new TsCommand(command, parameter), type);
 
-
-#pragma warning disable CS0067
-
-		public abstract event NotifyEventHandler<ChannelChanged>? OnChannelChanged;
-		public abstract event EventHandler<ChannelChanged>? OnEachChannelChanged;
-		public abstract event NotifyEventHandler<ChannelCreated>? OnChannelCreated;
-		public abstract event EventHandler<ChannelCreated>? OnEachChannelCreated;
-		public abstract event NotifyEventHandler<ChannelDeleted>? OnChannelDeleted;
-		public abstract event EventHandler<ChannelDeleted>? OnEachChannelDeleted;
-		public abstract event NotifyEventHandler<ChannelEdited>? OnChannelEdited;
-		public abstract event EventHandler<ChannelEdited>? OnEachChannelEdited;
-		public abstract event NotifyEventHandler<ChannelMoved>? OnChannelMoved;
-		public abstract event EventHandler<ChannelMoved>? OnEachChannelMoved;
-		public abstract event NotifyEventHandler<ChannelPasswordChanged>? OnChannelPasswordChanged;
-		public abstract event EventHandler<ChannelPasswordChanged>? OnEachChannelPasswordChanged;
-		public abstract event NotifyEventHandler<ClientEnterView>? OnClientEnterView;
-		public abstract event EventHandler<ClientEnterView>? OnEachClientEnterView;
-		public abstract event NotifyEventHandler<ClientLeftView>? OnClientLeftView;
-		public abstract event EventHandler<ClientLeftView>? OnEachClientLeftView;
-		public abstract event NotifyEventHandler<ClientMoved>? OnClientMoved;
-		public abstract event EventHandler<ClientMoved>? OnEachClientMoved;
-		public abstract event NotifyEventHandler<ServerEdited>? OnServerEdited;
-		public abstract event EventHandler<ServerEdited>? OnEachServerEdited;
-		public abstract event NotifyEventHandler<TextMessage>? OnTextMessage;
-		public abstract event EventHandler<TextMessage>? OnEachTextMessage;
-		public abstract event NotifyEventHandler<TokenUsed>? OnTokenUsed;
-		public abstract event EventHandler<TokenUsed>? OnEachTokenUsed;
-
-#pragma warning restore CS0067
 	}
 }

@@ -48,50 +48,9 @@
 	</ItemGroup>
 	<ItemGroup>
 		<None Include="ReSpeak.png" Pack="true" PackagePath="\" />
-		<None Include="Generated\BookParser.ttinclude" />
-		<None Include="Generated\ErrorParser.ttinclude" />
-		<None Include="Generated\M2BParser.ttinclude" />
-		<None Include="Generated\MessageParser.ttinclude" />
-		<None Include="Generated\Util.ttinclude" />
-		<None Update="Commands\TsCommand.gen.tt">
-			<Generator>TextTemplatingFileGenerator</Generator>
-			<LastGenOutput>TsCommand.gen.cs</LastGenOutput>
-		</None>
-		<None Update="Generated\Book.tt">
-			<Generator>TextTemplatingFileGenerator</Generator>
-			<LastGenOutput>Book.cs</LastGenOutput>
-		</None>
-		<None Update="Generated\TsErrorCode.tt">
-			<Generator>TextTemplatingFileGenerator</Generator>
-			<LastGenOutput>TsErrorCode.cs</LastGenOutput>
-		</None>
-		<None Update="Generated\M2B.tt">
-			<Generator>TextTemplatingFileGenerator</Generator>
-			<LastGenOutput>M2B.cs</LastGenOutput>
-		</None>
-		<None Update="Generated\Messages.tt">
-			<Generator>TextTemplatingFileGenerator</Generator>
-			<LastGenOutput>Messages.cs</LastGenOutput>
-		</None>
-		<None Update="Generated\TsPermission.tt">
-			<Generator>TextTemplatingFileGenerator</Generator>
-			<LastGenOutput>TsPermission.cs</LastGenOutput>
-		</None>
-		<None Update="Full\TsFullClient.gen.tt">
-			<Generator>TextTemplatingFileGenerator</Generator>
-			<LastGenOutput>TsFullClient.gen.cs</LastGenOutput>
-		</None>
-		<None Update="Query\TsQueryClient.gen.tt">
-			<LastGenOutput>TsQueryClient.gen.cs</LastGenOutput>
-			<Generator>TextTemplatingFileGenerator</Generator>
-		</None>
 		<None Update="Types.gen.tt">
 			<Generator>TextTemplatingFileGenerator</Generator>
 			<LastGenOutput>Types.gen.cs</LastGenOutput>
-		</None>
-		<None Update="Generated\TsVersion.gen.tt">
-			<Generator>TextTemplatingFileGenerator</Generator>
-			<LastGenOutput>TsVersion.gen.cs</LastGenOutput>
 		</None>
 		<None Update="TsBaseFunctions.gen.tt">
 			<Generator>TextTemplatingFileGenerator</Generator>
@@ -109,57 +68,8 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<!--<ProjectReference
-      Include="../TSLibAutogen/TSLibAutogen.csproj"
-      SetTargetFramework="TargetFramework=netstandard2.0"
-      OutputItemType="Analyzer"
-      ReferenceOutputAssembly="false" />-->
+		<ProjectReference Include="../TSLibAutogen/TSLibAutogen.csproj" SetTargetFramework="TargetFramework=netstandard2.0" OutputItemType="Analyzer" ReferenceOutputAssembly="false" />
 
-		<Compile Update="Commands\TsCommand.gen.cs">
-			<DesignTime>True</DesignTime>
-			<AutoGen>True</AutoGen>
-			<DependentUpon>TsCommand.gen.tt</DependentUpon>
-		</Compile>
-		<Compile Update="Full\TsFullClient.gen.cs">
-			<DesignTime>True</DesignTime>
-			<AutoGen>True</AutoGen>
-			<DependentUpon>TsFullClient.gen.tt</DependentUpon>
-		</Compile>
-		<Compile Update="Generated\Book.cs">
-			<DesignTime>True</DesignTime>
-			<AutoGen>True</AutoGen>
-			<DependentUpon>Book.tt</DependentUpon>
-		</Compile>
-		<Compile Update="Generated\TsErrorCode.cs">
-			<DesignTime>True</DesignTime>
-			<AutoGen>True</AutoGen>
-			<DependentUpon>TsErrorCode.tt</DependentUpon>
-		</Compile>
-		<Compile Update="Generated\M2B.cs">
-			<DesignTime>True</DesignTime>
-			<AutoGen>True</AutoGen>
-			<DependentUpon>M2B.tt</DependentUpon>
-		</Compile>
-		<Compile Update="Generated\Messages.cs">
-			<DesignTime>True</DesignTime>
-			<AutoGen>True</AutoGen>
-			<DependentUpon>Messages.tt</DependentUpon>
-		</Compile>
-		<Compile Update="Generated\TsPermission.cs">
-			<DesignTime>True</DesignTime>
-			<AutoGen>True</AutoGen>
-			<DependentUpon>TsPermission.tt</DependentUpon>
-		</Compile>
-		<Compile Update="Generated\TsVersion.gen.cs">
-			<DesignTime>True</DesignTime>
-			<AutoGen>True</AutoGen>
-			<DependentUpon>TsVersion.gen.tt</DependentUpon>
-		</Compile>
-		<Compile Update="Query\TsQueryClient.gen.cs">
-			<DependentUpon>TsQueryClient.gen.tt</DependentUpon>
-			<DesignTime>True</DesignTime>
-			<AutoGen>True</AutoGen>
-		</Compile>
 		<Compile Update="TsBaseFunctions.gen.cs">
 			<DesignTime>True</DesignTime>
 			<AutoGen>True</AutoGen>

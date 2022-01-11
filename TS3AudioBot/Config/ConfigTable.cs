@@ -17,7 +17,7 @@ namespace TS3AudioBot.Config;
 [DebuggerDisplay("table:{Key}")]
 public abstract class ConfigTable : ConfigEnumerable
 {
-	protected List<ConfigPart> Properties { get; } = new List<ConfigPart>();
+	protected List<ConfigPart> Properties { get; } = new();
 
 	protected ConfigTable()
 	{

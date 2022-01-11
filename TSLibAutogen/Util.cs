@@ -1,11 +1,11 @@
 using Microsoft.CodeAnalysis;
 using System;
 
-namespace TSLibAutogen
+namespace TSLibAutogen;
+
+public static class Util
 {
-	public static class Util
-	{
-		public const string ConversionSet =
+	public const string ConversionSet =
 @"
 using i8  = System.SByte;
 using u8  = System.Byte;
@@ -36,15 +36,14 @@ using EccKeyPubP256 = TSLib.Uid;
 
 
 #pragma warning disable RS2008 // Enable analyzer release tracking
-		public static readonly DiagnosticDescriptor ParseErrorDiag = new("TSDECL_1", "Parse Error", "Parse errorn in module {0}", "TSLib.Autogen", DiagnosticSeverity.Error, true);
+	public static readonly DiagnosticDescriptor ParseErrorDiag = new("TSDECL_1", "Parse Error", "Parse errorn in module {0}", "TSLib.Autogen", DiagnosticSeverity.Error, true);
 #pragma warning restore RS2008 // Enable analyzer release tracking
 
-		public static Exception ParseError(this GeneratorExecutionContext context, string err)
-		{
-			context.ReportDiagnostic(
-				Diagnostic.Create(ParseErrorDiag, Location.None, err)
-			);
-			return new Exception(err);
-		}
+	public static Exception ParseError(this GenerationContextType context, string err)
+	{
+		context.ReportDiagnostic(
+			Diagnostic.Create(ParseErrorDiag, Location.None, err)
+		);
+		return new Exception(err);
 	}
 }
