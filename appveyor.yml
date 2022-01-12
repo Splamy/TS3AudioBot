@@ -12,10 +12,6 @@ environment:
 cache:
   - '%USERPROFILE%\.nuget\packages -> TS3AudioBot\TS3AudioBot.csproj, TSLib\TSLib.csproj, TS3ABotUnitTests\TS3ABotUnitTests.csproj'
   - 'WebInterface\node_modules -> WebInterface\package.json'
-build:
-  parallel: true
-  verbosity: minimal
-
 
 init:
   - pwsh: dotnet --version;
@@ -32,9 +28,11 @@ install:
   - ps: Install-Product node LTS
   - pwsh: Install-Module Microsoft.PowerShell.Archive -MinimumVersion 1.2.5 -Repository PSGallery -Force
 
-before_build:
+build_script:
 - pwsh: |-
-    nuget restore
+    dotnet restore
+    dotnet build TSLibAutogen -c Release
+    dotnet build -c Release
 
 deploy_script:
 - pwsh: |-
