@@ -5,6 +5,7 @@
 		<LangVersion>10</LangVersion>
 		<Nullable>enable</Nullable>
 		<IsRoslynComponent>true</IsRoslynComponent>
+		<Nullable>enable</Nullable>
 	</PropertyGroup>
 
 	<ItemGroup>
