@@ -39,7 +39,7 @@ namespace TSLib
 {
 	public static class TsTypes
 	{
-		public static IReadOnlyList<Type> All = new Type[] { <# foreach(var (alias,_,_) in types) { Write($"typeof({alias}),"); } #> };
+		public static IReadOnlyCollection<Type> All = new Type[] { <# foreach(var (alias,_,_) in types) { Write($"typeof({alias}),"); } #> };
 	}
 
 	<# foreach(var (alias, backing, isStr) in types) { #>
@@ -78,7 +78,7 @@ namespace TSLib
 			<# } #>
 		}
 
-		private class Converter : JsonConverter<<#= alias #>>
+		internal class Converter : JsonConverter<<#= alias #>>
 		{
 			public override void Write(Utf8JsonWriter writer, <#= alias #> value, JsonSerializerOptions options)
 				=> writer.<#= isStr ? "WriteStringValue" : "WriteNumberValue" #>(value.Value);

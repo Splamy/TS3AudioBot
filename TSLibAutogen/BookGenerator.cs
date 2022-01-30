@@ -12,6 +12,8 @@ public class BookGenerator
 
 		src.AppendLine("using System;");
 		src.AppendLine("using System.Collections.Generic;");
+		src.AppendLine("using System.Text.Json;");
+		src.AppendLine("using System.Text.Json.Serialization;");
 		src.AppendLine(Util.ConversionSet);
 
 		src.AppendLine("#pragma warning disable CS8618");
@@ -23,6 +25,14 @@ public class BookGenerator
 
 			foreach (var prop in struc.Properties)
 			{
+				var converterAttribute = prop.mod switch
+				{
+					"map" => $"[JsonConverter(typeof({prop.key}.DictConverter<{prop.type}>))]",
+					_ => null,
+				};
+				if (!string.IsNullOrEmpty(converterAttribute))
+					src.AppendLine(converterAttribute!);
+
 				var type = prop.mod switch
 				{
 					"set" => $"HashSet<{prop.type}>",

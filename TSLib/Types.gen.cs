@@ -28,7 +28,7 @@ namespace TSLib
 {
 	public static class TsTypes
 	{
-		public static IReadOnlyList<Type> All = new Type[] { typeof(Uid),typeof(ClientDbId),typeof(ClientId),typeof(ChannelId),typeof(ServerGroupId),typeof(ChannelGroupId), };
+		public static IReadOnlyCollection<Type> All = new Type[] { typeof(Uid),typeof(ClientDbId),typeof(ClientId),typeof(ChannelId),typeof(ServerGroupId),typeof(ChannelGroupId), };
 	}
 
 	
@@ -58,7 +58,7 @@ namespace TSLib
 			
 		}
 
-		private class Converter : JsonConverter<Uid>
+		internal class Converter : JsonConverter<Uid>
 		{
 			public override void Write(Utf8JsonWriter writer, Uid value, JsonSerializerOptions options)
 				=> writer.WriteStringValue(value.Value);
@@ -115,7 +115,7 @@ namespace TSLib
 			
 		}
 
-		private class Converter : JsonConverter<ClientDbId>
+		internal class Converter : JsonConverter<ClientDbId>
 		{
 			public override void Write(Utf8JsonWriter writer, ClientDbId value, JsonSerializerOptions options)
 				=> writer.WriteNumberValue(value.Value);
@@ -172,7 +172,7 @@ namespace TSLib
 			
 		}
 
-		private class Converter : JsonConverter<ClientId>
+		internal class Converter : JsonConverter<ClientId>
 		{
 			public override void Write(Utf8JsonWriter writer, ClientId value, JsonSerializerOptions options)
 				=> writer.WriteNumberValue(value.Value);
@@ -229,7 +229,7 @@ namespace TSLib
 			
 		}
 
-		private class Converter : JsonConverter<ChannelId>
+		internal class Converter : JsonConverter<ChannelId>
 		{
 			public override void Write(Utf8JsonWriter writer, ChannelId value, JsonSerializerOptions options)
 				=> writer.WriteNumberValue(value.Value);
@@ -286,7 +286,7 @@ namespace TSLib
 			
 		}
 
-		private class Converter : JsonConverter<ServerGroupId>
+		internal class Converter : JsonConverter<ServerGroupId>
 		{
 			public override void Write(Utf8JsonWriter writer, ServerGroupId value, JsonSerializerOptions options)
 				=> writer.WriteNumberValue(value.Value);
@@ -343,7 +343,7 @@ namespace TSLib
 			
 		}
 
-		private class Converter : JsonConverter<ChannelGroupId>
+		internal class Converter : JsonConverter<ChannelGroupId>
 		{
 			public override void Write(Utf8JsonWriter writer, ChannelGroupId value, JsonSerializerOptions options)
 				=> writer.WriteNumberValue(value.Value);

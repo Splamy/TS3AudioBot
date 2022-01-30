@@ -35,7 +35,7 @@
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="CliWrap" Version="3.3.3" />
+		<PackageReference Include="CliWrap" Version="3.4.0" />
 		<PackageReference Include="CommandLineParser" Version="2.8.0" />
 		<PackageReference Include="NLog" Version="4.7.13" />
 		<PackageReference Include="LiteDB" Version="5.0.11" />
