@@ -104,6 +104,17 @@ public abstract class LicenseBlock
 			read = 6 + issuer.read;
 			break;
 
+		case 8:
+			if (!Enum.IsDefined(typeof(ServerLicenseType), data[42]))
+				return $"Unknown license type {data[42]}";
+			if (!ReadNullString(data[47..]).Get(out issuer, out error))
+				return error;
+			int len = data[48 + issuer.read];
+			// There is a field with len bytes of unknown content
+			block = new ServerLicenseBlock(issuer.str, (ServerLicenseType)data[42]);
+			read = 7 + issuer.read + len;
+			break;
+
 		case 32:
 			block = new EphemeralLicenseBlock();
 			read = 0;
