@@ -199,7 +199,12 @@ public sealed class Bot
 		foreach (var plugin in pluginManager.Plugins)
 			if (plugin.Type == PluginType.CorePlugin || plugin.Type == PluginType.Commands)
 				commandManager.RegisterCollection(plugin.CorePlugin.Bag);
-		// Restore all alias from the config
+
+		// Add global aliases
+		foreach (var alias in config.GetParent().Bot.Commands.Alias.GetAllItems())
+			commandManager.RegisterAlias(alias.Key, alias.Value).UnwrapToLog(Log);
+
+		// Restore bot-aliases from the config
 		foreach (var alias in config.Commands.Alias.GetAllItems())
 			commandManager.RegisterAlias(alias.Key, alias.Value).UnwrapToLog(Log);
 	}
