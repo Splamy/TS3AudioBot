@@ -64,6 +64,28 @@ public static class YoutubeDlHelper
 		var youtubeDlPath = YoutubeDlPath;
 		if (string.IsNullOrEmpty(youtubeDlPath))
 		{
+			// Try from PATH
+			try
+			{
+			    const string defaultYtDlName = "youtube-dl";
+			    using var tmproc = new Process();
+			    tmproc.StartInfo.FileName = defaultYtDlName;
+			    tmproc.StartInfo.Arguments = "--version";
+			    tmproc.StartInfo.UseShellExecute = false;
+			    tmproc.StartInfo.CreateNoWindow = true;
+			    tmproc.StartInfo.RedirectStandardOutput = true;
+			    tmproc.StartInfo.RedirectStandardError = true;
+			    tmproc.EnableRaisingEvents = true;
+			    tmproc.Start();
+			    tmproc.WaitForExit();
+			    if (tmproc.ExitCode == 0)
+			        return (defaultYtDlName, "");
+			}
+			catch (Win32Exception)
+			{
+			    // Not in path, ignore
+			}
+
 			// Default path youtube-dl is suggesting to install
 			const string defaultYtDlPath = "/usr/local/bin/youtube-dl";
 			if (File.Exists(defaultYtDlPath))
