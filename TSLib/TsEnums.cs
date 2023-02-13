@@ -201,6 +201,8 @@ public enum TextMessageTargetMode
 	Channel,
 	/// <summary>Target is a virtual server.</summary>
 	Server,
+	/// <summary>Target is a client that poked.</summary>
+	Poke,
 }
 
 public enum LogLevel

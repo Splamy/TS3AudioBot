@@ -107,7 +107,7 @@ public class ModelBuilder
 		var lows = messages.Msgs.Where(m => m.low).ToArray();
 		foreach (var low in lows)
 		{
-			if (messages.Msgs.Any(m => m.Name == low.Name))
+			if (messages.Msgs.Any(m => m.Notify == low.Notify && !m.low))
 			{
 				messages.Msgs.Remove(low);
 				m2b.RemoveAll(rule => rule.From == low);

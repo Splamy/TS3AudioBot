@@ -74,6 +74,7 @@ public sealed class Ts3Client
 
 		this.ts3FullClient = ts3FullClient;
 		ts3FullClient.OnEachTextMessage += ExtendedTextMessage;
+		ts3FullClient.OnEachClientPoke += ExtendedClientPoke;
 		ts3FullClient.OnErrorEvent += TsFullClient_OnErrorEvent;
 		ts3FullClient.OnDisconnected += TsFullClient_OnDisconnected;
 		ts3FullClient.OnEachClientMoved += async (_, e) =>
@@ -207,6 +208,7 @@ public sealed class Ts3Client
 
 	#region TSLib functions wrapper
 
+	public Task SendPoke(string message, ClientId clientId) => ts3FullClient.SendPokeMessage(message, clientId).UnwrapThrow();
 	public Task SendMessage(string message, ClientId clientId) => ts3FullClient.SendPrivateMessage(message, clientId).UnwrapThrow();
 	public Task SendChannelMessage(string message) => ts3FullClient.SendChannelMessage(message).UnwrapThrow();
 	public Task SendServerMessage(string message) => ts3FullClient.SendServerMessage(message, 1).UnwrapThrow();
@@ -606,6 +608,20 @@ public sealed class Ts3Client
 		// Prevent loopback of own textmessages
 		if (textMessage.InvokerId == ts3FullClient.ClientId)
 			return;
+		await OnMessageReceived.InvokeAsync(sender, textMessage);
+	}
+
+	private async void ExtendedClientPoke(object? sender, ClientPoke clientPoke)
+	{
+		// Convert to TextMessage
+		TextMessage textMessage = new TextMessage
+		{
+			InvokerId = clientPoke.InvokerId,
+			InvokerName = clientPoke.InvokerName,
+			InvokerUid = clientPoke.InvokerUid,
+			Message = clientPoke.Message,
+			Target = TextMessageTargetMode.Poke,
+		};
 		await OnMessageReceived.InvokeAsync(sender, textMessage);
 	}
 

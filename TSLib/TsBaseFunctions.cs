@@ -92,6 +92,9 @@ public abstract partial class TsBaseFunctions : IDisposable
 	public Task<R<WhoAmI, CommandError>> WhoAmI() // Q ?
 		=> Send<WhoAmI>("whoami").MapToSingle();
 
+	public CmdR SendPokeMessage(string message, ClientId clientId)
+		=> SendMessage(message, TextMessageTargetMode.Poke, clientId.Value);
+
 	public CmdR SendPrivateMessage(string message, ClientId clientId)
 		=> SendMessage(message, TextMessageTargetMode.Private, clientId.Value);
 
@@ -102,15 +105,23 @@ public abstract partial class TsBaseFunctions : IDisposable
 		=> SendMessage(message, TextMessageTargetMode.Server, serverId);
 
 	/// <summary>Sends a text message to a specified target.
-	/// If targetmode is set to <see cref="TextMessageTargetMode.Private"/>, a message is sent to the client with the ID specified by target.
+	/// If targetmode is set to <see cref="TextMessageTargetMode.Private"/> or <see cref="TextMessageTargetMode.Poke"/>,
+	/// a message is sent to the client with the ID specified by target.
 	/// If targetmode is set to <see cref="TextMessageTargetMode.Channel"/> or <see cref="TextMessageTargetMode.Server"/>,
 	/// the target parameter will be ignored and a message is sent to the current channel or server respectively.</summary>
-	public CmdR SendMessage(string message, TextMessageTargetMode target, ulong id)
-		=> SendVoid(new TsCommand("sendtextmessage") {
+	public CmdR SendMessage(string message, TextMessageTargetMode target, ulong id) {
+		if (target == TextMessageTargetMode.Poke)
+			return SendVoid(new TsCommand("clientpoke") {
+				{ "clid", id },
+				{ "msg", message },
+			});
+		else
+			return SendVoid(new TsCommand("sendtextmessage") {
 				{ "targetmode", (int)target },
 				{ "target", id },
 				{ "msg", message },
-		});
+			});
+	}
 
 	/// <summary>Sends a text message to all clients on all virtual servers in the TeamSpeak 3 Server instance.</summary>
 	public CmdR SendGlobalMessage(string message)

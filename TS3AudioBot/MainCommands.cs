@@ -108,7 +108,7 @@ public static class MainCommands
 	[Usage("[<duration>]", "Optionally specifies a duration this key is valid. Uses common TSAB duration notation like '1h5m'")]
 	public static string CommandApiToken(TokenManager tokenManager, ClientCall invoker, TimeSpan? validTime = null)
 	{
-		if (invoker.Visibility != null && invoker.Visibility != TextMessageTargetMode.Private)
+		if (invoker.Visibility != null && invoker.Visibility != TextMessageTargetMode.Private && invoker.Visibility != TextMessageTargetMode.Poke)
 			throw new CommandException(strings.error_use_private, CommandExceptionReason.CommandError);
 		if (invoker.IsAnonymous || invoker.ClientUid == Uid.Null)
 			throw new MissingContextCommandException(strings.error_no_uid_found, typeof(ClientCall));
@@ -1211,7 +1211,7 @@ public static class MainCommands
 	[Command("quiz off")]
 	public static async Task CommandQuizOff(Bot bot, PlayManager playManager, ClientCall? invoker = null)
 	{
-		if (invoker != null && invoker.Visibility == TextMessageTargetMode.Private)
+		if (invoker != null && (invoker.Visibility == TextMessageTargetMode.Private || invoker.Visibility == TextMessageTargetMode.Poke))
 			throw new CommandException(strings.cmd_quiz_off_no_cheating, CommandExceptionReason.CommandError);
 		bot.QuizMode = false;
 		if (playManager.IsPlaying)
@@ -1860,6 +1860,9 @@ public static class MainCommands
 		{
 			switch (invoker.Visibility.Value)
 			{
+			case TextMessageTargetMode.Poke:
+				await ts3Client.SendPoke(msgPart, invoker.ClientId.Value);
+				break;
 			case TextMessageTargetMode.Private:
 				await ts3Client.SendMessage(msgPart, invoker.ClientId.Value);
 				break;
