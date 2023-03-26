@@ -107,12 +107,19 @@ public abstract class LicenseBlock
 		case 8:
 			if (!Enum.IsDefined(typeof(ServerLicenseType), data[42]))
 				return $"Unknown license type {data[42]}";
-			if (!ReadNullString(data[47..]).Get(out issuer, out error))
-				return error;
-			int len = data[48 + issuer.read];
-			// There is a field with len bytes of unknown content
-			block = new ServerLicenseBlock(issuer.str, (ServerLicenseType)data[42]);
-			read = 7 + issuer.read + len;
+
+			List<byte[]> properties = new();
+			int propertyCount = data[43];
+			int pos = 44;
+			for (int i = 0; i < propertyCount; i++) {
+				int propertyLength = data[pos];
+				pos += 1;
+				properties.Add(data.Slice(pos, propertyLength).ToArray());
+				pos += propertyLength;
+			}
+
+			block = new Ts5ServerLicenseBlock((ServerLicenseType)data[42], properties);
+			read = pos - 42;
 			break;
 
 		case 32:
@@ -221,6 +228,19 @@ public class ServerLicenseBlock : LicenseBlock
 	}
 }
 
+public class Ts5ServerLicenseBlock : LicenseBlock
+{
+	public override ChainBlockType Type => ChainBlockType.Ts5Server;
+	public ServerLicenseType LicenseType { get; }
+	public List<byte[]> Properties { get; }
+
+	public Ts5ServerLicenseBlock(ServerLicenseType licenseType, List<byte[]> properties)
+	{
+		LicenseType = licenseType;
+		Properties = properties;
+	}
+}
+
 public class EphemeralLicenseBlock : LicenseBlock
 {
 	public override ChainBlockType Type => ChainBlockType.Ephemeral;
@@ -236,6 +256,7 @@ public enum ChainBlockType : byte
 	//Token = 4,
 	//LicenseSign = 5,
 	//MyTsIdSign = 6,
+	Ts5Server = 8,
 	Ephemeral = 32,
 }
 
