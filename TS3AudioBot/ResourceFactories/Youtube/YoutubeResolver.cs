@@ -27,7 +27,7 @@ namespace TS3AudioBot.ResourceFactories.Youtube;
 public sealed class YoutubeResolver : IResourceResolver, IPlaylistResolver, IThumbnailResolver, ISearchResolver
 {
 	private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
-	private static readonly Regex IdMatch = new(@"(?:(?:&|\?)v=|youtu\.be\/)([\w\-_]{11})", Util.DefaultRegexConfig);
+	private static readonly Regex IdMatch = new(@"(?:(?:&|\?)v=|youtu\.be\/|youtube\.com\/shorts\/)([\w\-_]{11})", Util.DefaultRegexConfig);
 	private static readonly Regex YtTimestampMatch = new(@"(?:&|\?)t=(\d+)", Util.DefaultRegexConfig);
 	private static readonly Regex LinkMatch = new(@"^(https?\:\/\/)?(www\.|m\.)?(youtube\.|youtu\.be)", Util.DefaultRegexConfig);
 	private static readonly Regex ListMatch = new(@"(&|\?)list=([\w\-_]+)", Util.DefaultRegexConfig);
