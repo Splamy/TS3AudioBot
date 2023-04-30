@@ -312,7 +312,7 @@ export default Vue.extend({
 		doWatch(confVal: string, child: any) {
 			this.$watch(
 				"model." + confVal,
-				debounce(async function(val) {
+				debounce(async (val) => {
 					const res = await this.sendValue(confVal, val);
 					if (!Util.check(this, res, "Failed to apply")) return;
 

@@ -44,7 +44,7 @@ export default Vue.component("settings-field", {
 			);
 		},
 		parent_arr(): boolean[] {
-			return (this.$parent.$parent.$data as any).children as boolean[];
+			return (this.$parent!.$parent!.$data as any).children as boolean[];
 		}
 	},
 	watch: {

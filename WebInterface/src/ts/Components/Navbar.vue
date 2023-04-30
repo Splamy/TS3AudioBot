@@ -17,7 +17,7 @@
 				<b-icon icon="robot"></b-icon>
 				<span>Bots</span>
 			</b-navbar-item>
-			<b-navbar-item tag="router-link" :to="{ path: '/openapi' }">
+			<b-navbar-item href="/openapi">
 				<b-icon icon="api"></b-icon>
 				<span>Api</span>
 			</b-navbar-item>

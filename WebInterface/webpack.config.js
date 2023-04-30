@@ -76,7 +76,7 @@ module.exports = {
 		new VueLoaderPlugin()
 	],
 	devServer: {
-		disableHostCheck: true,
+		allowedHosts: "all",
 		headers: {
 			"Access-Control-Allow-Origin": "*",
 			"Access-Control-Allow-Methods": "GET",

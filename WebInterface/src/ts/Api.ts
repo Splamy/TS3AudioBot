@@ -67,7 +67,7 @@ export class Get {
 export class Api<T extends ApiRet = ApiRet> {
 	public constructor(private buildAddr: string) { }
 
-	public static call<T>(...params: (string | number | boolean | Api)[]) {
+	public static call<T extends ApiRet>(...params: (string | number | boolean | Api)[]) {
 		let buildStr = "";
 		for (const param of params) {
 			if (typeof param === "string") {
@@ -114,4 +114,4 @@ export function jmerge<T extends Api[]>(...param: T): Api<UnwrapApi<T>> {
 type UnwrapApi<T extends Api[]> = { [K in keyof T]: T[K] extends Api<infer U> ? U : T[K] };
 
 export type ApiRet = {} | null | void;
-export type ApiErr = ErrorObject<ApiError>;
+export type ApiErr = ErrorObject<ApiError | any>;

@@ -55,8 +55,8 @@ deploy_script:
 
       Write-Host -ForegroundColor Yellow Building Webinterface
       cd([io.path]::combine("${env:APPVEYOR_BUILD_FOLDER}", "WebInterface"))
-      npm install
-      npm run build
+      yarn install --frozen-lockfile
+      yarn run build
       $webInter = [io.path]::combine(${rel}, "WebInterface")
       Copy-Item "./dist" -Destination $webInter -Recurse
 

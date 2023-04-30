@@ -94,7 +94,7 @@ export class Util {
 
 			vue.$buefy.toast.open({
 				duration: 3000,
-				message: msg,
+				message: msg!,
 				type: "is-danger"
 			});
 			return false;
@@ -105,7 +105,7 @@ export class Util {
 	public static findParent(elem: Node, match: string): HTMLElement {
 		let curElement: Node | HTMLElement | null = elem;
 		while (curElement != undefined) {
-			if ("matches" in curElement && curElement.matches(match)) {
+			if ("matches" in curElement && curElement.matches(match) as boolean) {
 				return curElement;
 			}
 			curElement = curElement.parentElement;
