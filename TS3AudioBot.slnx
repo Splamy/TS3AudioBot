@@ -1,0 +1,13 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path=".editorconfig" />
+    <File Path="appveyor.yml" />
+    <File Path="GitVersion.yml" />
+    <File Path="README.md" />
+  </Folder>
+  <Project Path="TS3AudioBot.Tests/TS3AudioBot.Tests.csproj" />
+  <Project Path="TS3AudioBot/TS3AudioBot.csproj" />
+  <Project Path="TSLib.Tests/TSLib.Tests.csproj" />
+  <Project Path="TSLib/TSLib.csproj" />
+  <Project Path="TSLibAutogen/TSLibAutogen.csproj" />
+</Solution>
