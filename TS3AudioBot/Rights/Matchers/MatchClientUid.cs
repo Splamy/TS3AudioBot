@@ -7,16 +7,15 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System.Collections.Frozen;
 using System.Collections.Generic;
 using TSLib;
 
 namespace TS3AudioBot.Rights.Matchers;
 
-internal class MatchClientUid : Matcher
+internal class MatchClientUid(IEnumerable<Uid> clientUids) : Matcher
 {
-	private readonly HashSet<Uid> clientUids;
+	private readonly FrozenSet<Uid> _clientUids = [..clientUids];
 
-	public MatchClientUid(IEnumerable<Uid> clientUids) => this.clientUids = new HashSet<Uid>(clientUids);
-
-	public override bool Matches(ExecuteContext ctx) => ctx.ClientUid is { } uid && clientUids.Contains(uid);
+	public override bool Matches(ExecuteContext ctx) => ctx.ClientUid is { } uid && _clientUids.Contains(uid);
 }

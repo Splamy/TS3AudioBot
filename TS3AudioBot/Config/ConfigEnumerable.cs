@@ -11,11 +11,13 @@ using Nett;
 using System;
 using System.Collections.Generic;
 using System.Text.Json;
+using System.Threading;
 
 namespace TS3AudioBot.Config;
 
 public abstract class ConfigEnumerable : ConfigPart
 {
+	private readonly Lock writeLock = new();
 	private static readonly object EmptyObject = new();
 
 	protected virtual TomlTable.TableTypes TableType { get => TomlTable.TableTypes.Default; }
@@ -145,7 +147,7 @@ public abstract class ConfigEnumerable : ConfigPart
 	{
 		try
 		{
-			lock (this)
+			lock (writeLock)
 			{
 				ToToml(writeDefaults, writeDocumentation);
 				Toml.WriteFile(TomlObject, path);

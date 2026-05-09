@@ -56,7 +56,7 @@ public sealed class Player : IDisposable
 		EncoderPipe.Chain(target);
 	}
 
-	private static int ScaleBitrate(int value) => Tools.Clamp(value, 1, 255) * 1000;
+	private static int ScaleBitrate(int value) => Math.Clamp(value, 1, 255) * 1000;
 
 	public event AsyncEventHandler? OnSongEnd;
 	public event AsyncEventHandler<SongInfoChanged>? OnSongUpdated;

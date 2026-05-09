@@ -8,6 +8,7 @@
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
 using System;
+using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Text;
 
@@ -29,7 +30,7 @@ public record struct Color(byte R, byte G, byte B, ColorFlags Flags)
 	public static readonly Color White = (255, 255, 255);
 	public static readonly Color Transparent = new(0, 0, 0, ColorFlags.Transparent);
 
-	private static readonly Dictionary<Color, string> ColorOptimizer = [];
+	private static readonly FrozenDictionary<Color, string> ColorOptimizer;
 
 	static Color()
 	{
@@ -74,16 +75,19 @@ public record struct Color(byte R, byte G, byte B, ColorFlags Flags)
 			( (255, 255, 0), "yellow" ),
 		];
 
+		Dictionary<Color, string> colorDict = [];
 		foreach (var (col, htmlname) in colors)
 		{
 			if (htmlname.Length < 4 || (htmlname.Length < 7 && (!IsDouble(col.R) || !IsDouble(col.G) || !IsDouble(col.B))))
 			{
-				if (!ColorOptimizer.TryGetValue(col, out var name) || name.Length > htmlname.Length)
+				if (!colorDict.TryGetValue(col, out var name) || name.Length > htmlname.Length)
 				{
-					ColorOptimizer[col] = htmlname;
+					colorDict[col] = htmlname;
 				}
 			}
 		}
+
+		ColorOptimizer = colorDict.ToFrozenDictionary();
 	}
 
 	public Color(byte r, byte g, byte b) : this(r, g, b, ColorFlags.Solid) { }
@@ -98,16 +102,16 @@ public record struct Color(byte R, byte G, byte B, ColorFlags Flags)
 		if (Flags.HasFlag(ColorFlags.Transparent))
 			strb.Append("[COLOR=transparent]");
 		else if (ColorOptimizer.TryGetValue(this, out var optValue))
-			strb.AppendFormat("[COLOR={0}]", optValue);
+			strb.Append($"[COLOR={optValue}]");
 		else if (IsDouble(R) && IsDouble(G) && IsDouble(B))
-			strb.AppendFormat("[COLOR=#{0:X}{1:X}{2:X}]", R & 0x0F, G & 0x0F, B & 0x0F);
+			strb.Append($"[COLOR=#{R & 0x0F:X}{G & 0x0F:X}{B & 0x0F:X}]");
 		else
-			strb.AppendFormat("[COLOR=#{0:X2}{1:X2}{2:X2}]", R, G, B);
+			strb.Append($"[COLOR=#{R:X2}{G:X2}{B:X2}]");
 	}
 
-	public override readonly int GetHashCode() => (int)Flags << 24 | R << 16 | G << 8 | B;
+	public readonly override int GetHashCode() => (int)Flags << 24 | R << 16 | G << 8 | B;
 
-	public override readonly string ToString()
+	public readonly override string ToString()
 	{
 		var strb = new StringBuilder();
 		GetL(strb);

@@ -51,7 +51,7 @@ internal sealed class PacketHandler<TIn, TOut>
 	private readonly RingQueue<Packet<TIn>> receiveQueueCommand;
 	private readonly RingQueue<Packet<TIn>> receiveQueueCommandLow;
 	// ====
-	private readonly object sendLoopLock = new();
+	private readonly Lock sendLoopLock = new();
 	private readonly TsCrypt tsCrypt;
 	private Socket? socket;
 	private Timer? resendTimer;
@@ -103,7 +103,7 @@ internal sealed class PacketHandler<TIn, TOut>
 		{
 			Initialize(address, false).Unwrap();
 			// dummy
-			initPacketCheck = new ResendPacket<TOut>(new Packet<TOut>(Array.Empty<byte>(), 0, 0, 0))
+			initPacketCheck = new ResendPacket<TOut>(new Packet<TOut>([], 0, 0, 0))
 			{
 				FirstSendTime = DateTime.MaxValue,
 				LastSendTime = DateTime.MaxValue
@@ -113,7 +113,7 @@ internal sealed class PacketHandler<TIn, TOut>
 
 	private E<Exception> Initialize(IPEndPoint address, bool connect)
 	{
-		if (address is null) throw new ArgumentNullException(nameof(address));
+		ArgumentNullException.ThrowIfNull(address);
 
 		lock (sendLoopLock)
 		{
@@ -578,7 +578,7 @@ internal sealed class PacketHandler<TIn, TOut>
 	private void SendPing()
 	{
 		pingTimer.Restart();
-		AddOutgoingPacket(Array.Empty<byte>(), PacketType.Ping);
+		AddOutgoingPacket([], PacketType.Ping);
 	}
 
 	private void ReceivePing(ref Packet<TIn> packet)

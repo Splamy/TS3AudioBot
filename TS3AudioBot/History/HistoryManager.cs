@@ -12,6 +12,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using TS3AudioBot.Localization;
 using TS3AudioBot.ResourceFactories;
@@ -28,7 +29,7 @@ public sealed class HistoryManager
 	private const string AudioLogEntriesTable = "audioLogEntries";
 
 	private readonly ILiteCollection<AudioLogEntry> audioLogEntries;
-	private readonly object dbLock = new();
+	private readonly Lock dbLock = new();
 
 	public IHistoryFormatter Formatter { get; private set; }
 	public uint HighestId => (uint)audioLogEntries.Max().AsInt32;

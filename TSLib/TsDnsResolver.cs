@@ -34,21 +34,20 @@ public static class TsDnsResolver
 	private const string NicknameLookup = "https://named.myteamspeak.com/lookup?name=";
 	private static readonly TimeSpan LookupTimeout = TimeSpan.FromSeconds(1);
 	private static readonly HttpClient httpClient = new();
-	public static readonly Resolver Resolver = new(new[]
-	{
+	public static readonly Resolver Resolver = new([
 		// Google
-		new IPEndPoint(new IPAddress(new byte[] { 8,8,8,8 }), 53),
-		new IPEndPoint(new IPAddress(new byte[] { 8,8,4,4 }), 53),
+		new IPEndPoint(new IPAddress([8,8,8,8]), 53),
+		new IPEndPoint(new IPAddress([8,8,4,4]), 53),
 		// Cloudflare
-		new IPEndPoint(new IPAddress(new byte[] { 1,1,1,1 }), 53),
-		new IPEndPoint(new IPAddress(new byte[] { 1,0,0,1 }), 53),
+		new IPEndPoint(new IPAddress([1,1,1,1]), 53),
+		new IPEndPoint(new IPAddress([1,0,0,1]), 53),
 		// OpenDNS
-		new IPEndPoint(new IPAddress(new byte[] { 208,67,222,222 }), 53),
-		new IPEndPoint(new IPAddress(new byte[] { 208,67,220,220 }), 53),
+		new IPEndPoint(new IPAddress([208,67,222,222]), 53),
+		new IPEndPoint(new IPAddress([208,67,220,220]), 53),
 		// Freenom
-		new IPEndPoint(new IPAddress(new byte[] { 80,80,80,80 }), 53),
-		new IPEndPoint(new IPAddress(new byte[] { 80,80,81,81 }), 53),
-	});
+		new IPEndPoint(new IPAddress([80,80,80,80]), 53),
+		new IPEndPoint(new IPAddress([80,80,81,81]), 53)
+	]);
 
 	// TODO maybe change to proper TLRU
 	private static readonly ConcurrentDictionary<string, CacheEntry> addressCache = new();

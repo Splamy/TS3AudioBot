@@ -10,6 +10,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using TSLib.Commands;
 using TSLib.Helper;
 
@@ -28,7 +29,7 @@ public sealed class NetworkStats
 	private readonly Queue<TimeSpan> pingTimes = new(60);
 	private static readonly TimeSpan TimeSecond = TimeSpan.FromSeconds(1);
 	private static readonly TimeSpan TimeMinute = TimeSpan.FromMinutes(1);
-	private readonly object queueLock = new();
+	private readonly Lock queueLock = new();
 
 	internal void LogOutPacket<TDir>(ref Packet<TDir> packet)
 	{
@@ -80,11 +81,11 @@ public sealed class NetworkStats
 		};
 	}
 
-	private static void GetWithin(Queue<PacketData> queue, TimeSpan time, out DataCatergory data)
+	private static void GetWithin(Queue<PacketData> queue, TimeSpan time, out DataCategory data)
 	{
 		var now = Tools.Now;
 		var nowThresh = now - time;
-		data = new DataCatergory();
+		data = new DataCategory();
 		foreach (var pack in queue.Reverse())
 			if (nowThresh <= pack.SendPoint)
 			{
@@ -111,10 +112,10 @@ public sealed class NetworkStats
 
 	public TsCommand GenerateStatusAnswer()
 	{
-		DataCatergory lastSecondIn;
-		DataCatergory lastSecondOut;
-		DataCatergory lastMinuteIn;
-		DataCatergory lastMinuteOut;
+		DataCategory lastSecondIn;
+		DataCategory lastSecondOut;
+		DataCategory lastMinuteIn;
+		DataCategory lastMinuteOut;
 		double lastPing;
 		double deviationPing;
 		lock (queueLock)
@@ -206,7 +207,7 @@ public sealed class NetworkStats
 
 	private record struct PacketData(ushort Size, DateTime SendPoint, PacketKind Kind);
 
-	struct DataCatergory
+	private struct DataCategory
 	{
 		public long Speech { get; set; }
 		public long Keepalive { get; set; }

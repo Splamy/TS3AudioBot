@@ -14,15 +14,17 @@ using Org.BouncyCastle.Crypto.Engines;
 using Org.BouncyCastle.Crypto.Modes;
 using Org.BouncyCastle.Crypto.Parameters;
 using Org.BouncyCastle.Math;
-using Org.BouncyCastle.Math.EC;
 using Org.BouncyCastle.Security;
 using System;
 using System.Buffers.Binary;
 using System.Diagnostics;
 using System.Linq;
+using System.Security.Cryptography;
 using System.Text;
+using System.Threading;
 using TSLib.Commands;
 using TSLib.Helper;
+using ECPoint = Org.BouncyCastle.Math.EC.ECPoint;
 
 namespace TSLib.Full;
 
@@ -30,12 +32,13 @@ namespace TSLib.Full;
 public sealed class TsCrypt
 {
 	private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
-	private const string DummyKeyAndNonceString = "c:\\windows\\system\\firewall32.cpl";
-	private static readonly byte[] DummyKey = Encoding.ASCII.GetBytes(DummyKeyAndNonceString.Substring(0, 16));
-	private static readonly byte[] DummyIv = Encoding.ASCII.GetBytes(DummyKeyAndNonceString.Substring(16, 16));
-	private static readonly (byte[], byte[]) DummyKeyAndNonceTuple = (DummyKey, DummyIv);
-	private static readonly byte[] Ts3InitMac = Encoding.ASCII.GetBytes("TS3INIT1");
+	private static ReadOnlySpan<byte> DummyKeyAndNonceString => @"c:\windows\system\firewall32.cpl"u8;
+	private static ReadOnlySpan<byte> DummyKey => DummyKeyAndNonceString[..16];
+	private static ReadOnlySpan<byte> DummyIv => DummyKeyAndNonceString[16..32];
+	private static readonly (byte[], byte[]) DummyKeyAndNonceTuple = (DummyKey.ToArray(), DummyIv.ToArray());
+	private static ReadOnlySpan<byte> Ts3InitMac => "TS3INIT1"u8;
 	private const uint InitVersion = 1566914096; // 3.5.0 [Stable]
+	private readonly Lock cipherLock = new();
 	private readonly EaxBlockCipher eaxCipher = new(new AesEngine());
 
 	internal const int MacLen = 8;
@@ -118,8 +121,9 @@ public sealed class TsCrypt
 		XorBinary(sharedKey[10..], beta, beta.Length, ivStruct.AsSpan(10));
 
 		// creating a dummy signature which will be used on packets which dont use a real encryption signature (like plain voice)
-		var buffer2 = Hash1It(ivStruct, 0, ivStruct.Length);
-		Array.Copy(buffer2, 0, fakeSignature, 0, 8);
+		Span<byte> buffer2 = stackalloc byte[SHA1.HashSizeInBytes];
+		Hash1It(ivStruct, buffer2);
+		buffer2[..8].CopyTo(fakeSignature);
 
 		alphaTmp = null;
 		CryptoInitComplete = true;
@@ -215,7 +219,7 @@ public sealed class TsCrypt
 			BinaryPrimitives.WriteUInt32BigEndian(sendData.AsSpan(0), InitVersion); // initVersion
 			sendData[versionLen] = 0x00; // initType
 			BinaryPrimitives.WriteUInt32BigEndian(sendData.AsSpan(versionLen + initTypeLen), Tools.UnixNow); // 4byte timestamp
-			BinaryPrimitives.WriteInt32BigEndian(sendData.AsSpan(versionLen + initTypeLen + 4), Tools.Random.Next()); // 4byte random
+			BinaryPrimitives.WriteInt32BigEndian(sendData.AsSpan(versionLen + initTypeLen + 4), Random.Shared.Next()); // 4byte random
 			return sendData;
 		}
 
@@ -261,19 +265,20 @@ public sealed class TsCrypt
 			if (data.Length != initTypeLen + 64 + 64 + 4 + 100)
 				return packetInvalidLength;
 			alphaTmp = new byte[10];
-			Tools.Random.NextBytes(alphaTmp);
+			Random.Shared.NextBytes(alphaTmp);
 			var alpha = Convert.ToBase64String(alphaTmp);
 			string initAdd = TsCommand.BuildToString("clientinitiv",
-				new ICommandPart[] {
-						new CommandParameter("alpha", alpha),
-						new CommandParameter("omega", Identity.PublicKeyString),
-						new CommandParameter("ot", 1),
-						new CommandParameter("ip", string.Empty) });
+			[
+				new CommandParameter("alpha", alpha),
+				new CommandParameter("omega", Identity.PublicKeyString),
+				new CommandParameter("ot", 1),
+				new CommandParameter("ip", string.Empty)
+			]);
 			var textBytes = Tools.Utf8Encoder.GetBytes(initAdd);
 
 			// Prepare solution
 			int level = BinaryPrimitives.ReadInt32BigEndian(data.AsSpan(initTypeLen + 128));
-			if (!SolveRsaChallange(data, initTypeLen, level).Get(out var y, out var error))
+			if (!SolveRsaChallenge(data, initTypeLen, level).Get(out var y, out var error))
 				return error;
 
 			// Copy bytes for this result: [Version..., InitType..., data..., y..., text...]
@@ -306,10 +311,10 @@ public sealed class TsCrypt
 	/// <param name="offset">The offset of x and n in the data array.</param>
 	/// <param name="level">The exponent to x.</param>
 	/// <returns>The y value, unsigned, as a BigInteger bytearray.</returns>
-	private static R<byte[], string> SolveRsaChallange(byte[] data, int offset, int level)
+	private static R<byte[], string> SolveRsaChallenge(byte[] data, int offset, int level)
 	{
-		if (level < 0 || level > 1_000_000)
-			return "RSA challange level is not within an acceptable range";
+		if (level is < 0 or > 1_000_000)
+			return "RSA challenge level is not within an acceptable range";
 
 		// x is the base, n is the modulus.
 		var x = new BigInteger(1, data, 00 + offset, 64);
@@ -320,7 +325,7 @@ public sealed class TsCrypt
 	internal static (byte[] publicKey, byte[] privateKey) GenerateTemporaryKey()
 	{
 		var privateKey = new byte[32];
-		using (var rng = System.Security.Cryptography.RandomNumberGenerator.Create())
+		using (var rng = RandomNumberGenerator.Create())
 			rng.GetBytes(privateKey);
 		ScalarOperations.sc_clamp(privateKey);
 
@@ -354,7 +359,7 @@ public sealed class TsCrypt
 
 		byte[] result;
 		int len;
-		lock (eaxCipher)
+		lock (cipherLock)
 		{
 			eaxCipher.Init(true, ivAndKey);
 			result = new byte[eaxCipher.GetOutputSize(packet.Size)];
@@ -384,11 +389,11 @@ public sealed class TsCrypt
 		// Raw is now [Mac..., Header..., Data...]
 	}
 
-	private static void FakeEncrypt<TDir>(ref Packet<TDir> packet, byte[] mac)
+	private static void FakeEncrypt<TDir>(ref Packet<TDir> packet, ReadOnlySpan<byte> mac)
 	{
 		// //packet.Raw = new byte[packet.Data.Length + MacLen + Packet<TDir>.HeaderLength];
 		// Copy the Mac from [Mac...] to [Mac..., Header..., Data...]
-		Array.Copy(mac, 0, packet.Raw, 0, MacLen);
+		mac.CopyTo(packet.Raw);
 		// Copy the Header from packet.Header to [Mac..., Header..., Data...]
 		packet.BuildHeader(packet.Raw.AsSpan(MacLen, Packet<TDir>.HeaderLength));
 		// Copy the Data from packet.Data to [Mac..., Header..., Data...]
@@ -438,7 +443,7 @@ public sealed class TsCrypt
 		try
 		{
 			byte[] result;
-			lock (eaxCipher)
+			lock (cipherLock)
 			{
 				eaxCipher.Init(false, ivAndKey);
 				result = new byte[eaxCipher.GetOutputSize(dataLen + MacLen)];
@@ -457,7 +462,7 @@ public sealed class TsCrypt
 		return true;
 	}
 
-	private static bool FakeDecrypt<TDir>(ref Packet<TDir> packet, byte[] mac)
+	private static bool FakeDecrypt<TDir>(ref Packet<TDir> packet, ReadOnlySpan<byte> mac)
 	{
 		if (!CheckEqual(packet.Raw, mac, MacLen))
 			return false;
@@ -487,16 +492,17 @@ public sealed class TsCrypt
 		if (!cacheValue.HasValue || cacheValue.GetValueOrDefault().generation != generationId)
 		{
 			// this part of the key/nonce is fixed by the message direction and packetType
-
-			var tmpToHash = new byte[ivStruct!.Length == 20 ? 26 : 70];
+			var hashInputLength = ivStruct!.Length == 20 ? 26 : 70;
+			Span<byte> tmpToHash = stackalloc byte[70];
 
 			tmpToHash[0] = fromServer ? (byte)0x30 : (byte)0x31;
 			tmpToHash[1] = packetTypeRaw;
 
-			BinaryPrimitives.WriteUInt32BigEndian(tmpToHash.AsSpan(2), generationId);
-			Array.Copy(ivStruct, 0, tmpToHash, 6, ivStruct.Length);
+			BinaryPrimitives.WriteUInt32BigEndian(tmpToHash[2..], generationId);
+			ivStruct.CopyTo(tmpToHash[6..]);
 
-			var result = Hash256It(tmpToHash).AsSpan();
+			Span<byte> result = stackalloc byte[SHA256.HashSizeInBytes];
+			Hash256It(tmpToHash[..hashInputLength], result);
 
 			cacheValue = (result[0..16].ToArray(), result[16..32].ToArray(), generationId);
 		}
@@ -537,13 +543,11 @@ public sealed class TsCrypt
 			outBuf[i] = (byte)(a[i] ^ b[i]);
 	}
 
-	private static readonly System.Security.Cryptography.SHA1 Sha1Hash = System.Security.Cryptography.SHA1.Create();
-	private static readonly System.Security.Cryptography.SHA256 Sha256Hash = System.Security.Cryptography.SHA256.Create();
-	private static readonly System.Security.Cryptography.SHA512 Sha512Hash = System.Security.Cryptography.SHA512.Create();
+	private static readonly SHA1 Sha1Hash = SHA1.Create();
+	private static readonly SHA256 Sha256Hash = SHA256.Create();
+	private static readonly SHA512 Sha512Hash = SHA512.Create();
 	internal static byte[] Hash1It(byte[] data, int offset = 0, int len = 0) => HashItInternal(Sha1Hash, data, offset, len);
-	internal static byte[] Hash256It(byte[] data, int offset = 0, int len = 0) => HashItInternal(Sha256Hash, data, offset, len);
-	internal static byte[] Hash512It(byte[] data, int offset = 0, int len = 0) => HashItInternal(Sha512Hash, data, offset, len);
-	private static byte[] HashItInternal(System.Security.Cryptography.HashAlgorithm hashAlgo, byte[] data, int offset = 0, int len = 0)
+	private static byte[] HashItInternal(HashAlgorithm hashAlgo, byte[] data, int offset = 0, int len = 0)
 	{
 		lock (hashAlgo)
 		{
@@ -551,20 +555,18 @@ public sealed class TsCrypt
 		}
 	}
 
-#if !NETSTANDARD2_0
 	internal static void Hash1It(ReadOnlySpan<byte> data, Span<byte> hash) => HashItInternal(Sha1Hash, data, hash);
 	internal static void Hash256It(ReadOnlySpan<byte> data, Span<byte> hash) => HashItInternal(Sha256Hash, data, hash);
 	internal static void Hash512It(ReadOnlySpan<byte> data, Span<byte> hash) => HashItInternal(Sha512Hash, data, hash);
-	private static void HashItInternal(System.Security.Cryptography.HashAlgorithm hashAlgo, ReadOnlySpan<byte> data, Span<byte> hash)
+	private static int HashItInternal(HashAlgorithm hashAlgo, ReadOnlySpan<byte> data, Span<byte> hash)
 	{
 		lock (hashAlgo)
 		{
 			if (!hashAlgo.TryComputeHash(data, hash, out var len))
 				throw new InvalidOperationException();
-			hash = hash[..len];
+			return len;
 		}
 	}
-#endif
 
 	/// <summary>
 	/// Hashes a password like TeamSpeak.
@@ -577,8 +579,9 @@ public sealed class TsCrypt
 		if (string.IsNullOrEmpty(password))
 			return string.Empty;
 		var bytes = Tools.Utf8Encoder.GetBytes(password);
-		var hashed = Hash1It(bytes);
-		return Convert.ToBase64String(hashed);
+		Span<byte> hash = stackalloc byte[SHA1.HashSizeInBytes];
+		Hash1It(bytes, hash);
+		return Convert.ToBase64String(hash);
 	}
 
 	public static byte[] Sign(BigInteger privateKey, byte[] data)

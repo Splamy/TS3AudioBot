@@ -9,11 +9,7 @@
 
 namespace TS3AudioBot.Rights.Matchers;
 
-internal class MatchIsApi : Matcher
+internal class MatchIsApi(bool isApi) : Matcher
 {
-	private readonly bool isApi;
-
-	public MatchIsApi(bool isApi) => this.isApi = isApi;
-
 	public override bool Matches(ExecuteContext ctx) => ctx.IsApi == isApi;
 }

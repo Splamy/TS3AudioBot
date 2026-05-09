@@ -21,9 +21,9 @@ public static class M3uReader
 	private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 	private const int MaxLineLength = 4096;
 	private const int MaxListLength = 1000;
-	private static readonly byte[] ExtM3uLine = Tools.Utf8Encoder.GetBytes("#EXTM3U");
-	private static readonly byte[] ExtInfLine = Tools.Utf8Encoder.GetBytes("#EXTINF");
-	private static readonly byte[] ExtXStreamInfLine = Tools.Utf8Encoder.GetBytes("#EXT-X-STREAM-INF");
+	private static ReadOnlySpan<byte> ExtM3uLine => "#EXTM3U"u8;
+	private static ReadOnlySpan<byte> ExtInfLine => "#EXTINF"u8;
+	private static ReadOnlySpan<byte> ExtXStreamInfLine => "#EXT-X-STREAM-INF"u8;
 
 	public static async Task<List<M3uEntry>> TryGetData(Stream stream, CancellationToken cancellationToken)
 	{

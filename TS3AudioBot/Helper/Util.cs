@@ -9,6 +9,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -28,35 +29,35 @@ public static partial class Util
 	[GeneratedRegex(@"^[\w-_]+$", RegexOptions.IgnoreCase | RegexOptions.ECMAScript)]
 	private static partial Regex SafeFileNameReg();
 
-	private static readonly string[] byteSuffix = ["B", "KB", "MB", "GB", "TB", "PB", "EB"];
+	private static readonly ImmutableArray<string> ByteSuffix = ["B", "KB", "MB", "GB", "TB", "PB", "EB"];
 
 	public static string FormatBytesHumanReadable(long bytes)
 	{
 		if (bytes == 0)
 			return "0B";
 		var order = (int)Math.Log(Math.Abs(bytes), 1024);
-		return (bytes >> (10 * order)) + byteSuffix[order];
+		return (bytes >> (10 * order)) + ByteSuffix[order];
 	}
 
 	public static string FromSeed(int seed)
 	{
-		var seedstr = new char[7];
-		uint plainseed = unchecked((uint)seed);
+		var seedStr = new char[7];
+		uint plainSeed = unchecked((uint)seed);
 		for (int i = 0; i < 7; i++)
 		{
-			if (plainseed > 0)
+			if (plainSeed > 0)
 			{
-				plainseed--;
-				var remainder = plainseed % 26;
-				seedstr[i] = (char)(remainder + 'a');
-				plainseed = (plainseed - remainder) / 26;
+				plainSeed--;
+				var remainder = plainSeed % 26;
+				seedStr[i] = (char)(remainder + 'a');
+				plainSeed = (plainSeed - remainder) / 26;
 			}
 			else
 			{
-				seedstr[i] = '\0';
+				seedStr[i] = '\0';
 			}
 		}
-		return new string(seedstr).TrimEnd('\0');
+		return new string(seedStr).TrimEnd('\0');
 	}
 
 	public static int ToSeed(string seed)

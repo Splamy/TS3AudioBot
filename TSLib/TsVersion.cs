@@ -7,6 +7,7 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using TSLib.Full;
@@ -16,20 +17,21 @@ namespace TSLib;
 /// <summary>Describes a version tuple of version and platform.</summary>
 public class TsVersion
 {
-	protected static readonly Regex VersionPattern = new(@"([^ ])* \[Build: (\d+)\]", RegexOptions.ECMAScript | RegexOptions.Compiled);
+	protected static readonly Regex VersionPattern =
+		new(@"([^ ])* \[Build: (\d+)\]", RegexOptions.ECMAScript | RegexOptions.Compiled);
 
-	private static readonly Dictionary<string, ClientPlatform> Platforms = new()
-	{
-		{ "Windows", ClientPlatform.Windows },
-		{ "Linux", ClientPlatform.Linux },
-		{ "OS X", ClientPlatform.MacOs },
-		{ "macOS", ClientPlatform.MacOs },
-		{ "Android", ClientPlatform.Android },
-		{ "iOS", ClientPlatform.Ios },
-	};
+	private static readonly FrozenDictionary<string, ClientPlatform> Platforms =
+		FrozenDictionary.Create<string, ClientPlatform>([
+			new("Windows", ClientPlatform.Windows),
+			new("Linux", ClientPlatform.Linux),
+			new("OS X", ClientPlatform.MacOs),
+			new("macOS", ClientPlatform.MacOs),
+			new("Android", ClientPlatform.Android),
+			new("iOS", ClientPlatform.Ios),
+		]);
 
 	protected static ClientPlatform GetPlatform(string platform)
-		=> Platforms.TryGetValue(platform, out var enu) ? enu : ClientPlatform.Other;
+		=> Platforms.GetValueOrDefault(platform, ClientPlatform.Other);
 
 	public string Version { get; }
 	public string Platform { get; }
@@ -37,7 +39,9 @@ public class TsVersion
 	public ulong Build { get; }
 
 	public TsVersion(string rawVersion, string platform, ulong build)
-			: this(rawVersion, platform, GetPlatform(platform), build) { }
+		: this(rawVersion, platform, GetPlatform(platform), build)
+	{
+	}
 
 	public TsVersion(string rawVersion, string platform, ClientPlatform platformType, ulong build)
 	{
@@ -67,7 +71,9 @@ public sealed partial class TsVersionSigned : TsVersion
 	public string Sign { get; }
 
 	public TsVersionSigned(string rawVersion, string platform, ulong build, string sign)
-		: this(rawVersion, platform, GetPlatform(platform), build, sign) { }
+		: this(rawVersion, platform, GetPlatform(platform), build, sign)
+	{
+	}
 
 	public TsVersionSigned(string rawVersion, string platform, ClientPlatform platformType, ulong build, string sign)
 		: base(rawVersion, platform, platformType, build)

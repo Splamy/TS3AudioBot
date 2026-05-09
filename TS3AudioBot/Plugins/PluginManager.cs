@@ -13,6 +13,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using TS3AudioBot.Config;
 using TS3AudioBot.Dependency;
 using TS3AudioBot.ResourceFactories;
@@ -40,7 +41,7 @@ public sealed class PluginManager : IDisposable
 	private readonly BotManager botManager;
 	private readonly Dictionary<string, Plugin> plugins = [];
 	private readonly HashSet<int> usedIds = [];
-	private readonly object pluginsLock = new();
+	private readonly Lock pluginsLock = new();
 
 	// TODO remove after plugin rework
 	internal ICollection<Plugin> Plugins => plugins.Values;

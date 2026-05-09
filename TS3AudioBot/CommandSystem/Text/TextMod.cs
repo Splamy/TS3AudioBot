@@ -11,7 +11,7 @@ using System;
 
 namespace TS3AudioBot.CommandSystem.Text;
 
-public record struct TextMod(TextModFlag Flags, Color? HasColor = null) : IEquatable<TextMod>
+public record struct TextMod(TextModFlag Flags, Color? HasColor = null)
 {
 	public static readonly TextMod None = new(0, null);
 
@@ -34,5 +34,5 @@ public record struct TextMod(TextModFlag Flags, Color? HasColor = null) : IEquat
 	}
 
 	public readonly bool Equals(TextMod other) => Flags == other.Flags && HasColor == other.HasColor;
-	public override readonly int GetHashCode() => ((int)Flags << 28) | HasColor.GetHashCode();
+	public readonly override int GetHashCode() => ((int)Flags << 28) | HasColor.GetHashCode();
 }

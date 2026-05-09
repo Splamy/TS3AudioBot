@@ -17,7 +17,7 @@ namespace TS3AudioBot.CommandSystem.Text;
 
 public static class LongTextTransform
 {
-	private static ReadOnlySpan<byte> SeparatorWeight => [(byte)'\n', (byte)',', (byte)' '];
+	private static ReadOnlySpan<byte> SeparatorWeight => "\n, "u8;
 
 	public static IEnumerable<string> Split(string text, LongTextBehaviour behaviour, int maxMessageSize, int limit = int.MaxValue)
 	{

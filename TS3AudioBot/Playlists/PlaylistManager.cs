@@ -9,6 +9,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Threading;
 using TS3AudioBot.Config;
 using TS3AudioBot.Helper;
 using TS3AudioBot.Localization;
@@ -23,7 +24,7 @@ public sealed class PlaylistManager
 	private readonly PlaylistIO playlistPool;
 	private const string mixName = ".mix";
 	private readonly Playlist mixList = new() { Title = "Now Playing" };
-	private readonly object listLock = new();
+	private readonly Lock listLock = new();
 	public IReadOnlyPlaylist CurrentList => mixList;
 
 	private IShuffleAlgorithm shuffle;
@@ -95,7 +96,7 @@ public sealed class PlaylistManager
 
 			// If a next/prev request goes over the bounds of the list while loop mode is off
 			// but was requested manually we act as if the list was looped.
-			// This will give a more intuitive behaviour when the list is shuffeled (and also if not)
+			// This will give a more intuitive behaviour when the list is shuffled (and also if not)
 			// as the end might not be clear or visible.
 			if (Loop == LoopMode.Off && listEnded && !manually)
 				return null;
@@ -115,7 +116,7 @@ public sealed class PlaylistManager
 
 	private void SetRandomSeed()
 	{
-		shuffle.Seed = Tools.Random.Next();
+		shuffle.Seed = System.Random.Shared.Next();
 	}
 
 	public R<IReadOnlyPlaylist, LocalStr> LoadPlaylist(string listId)

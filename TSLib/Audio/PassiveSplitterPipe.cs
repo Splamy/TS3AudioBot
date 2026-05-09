@@ -10,6 +10,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 
 namespace TSLib.Audio;
 
@@ -19,8 +20,8 @@ public class PassiveSplitterPipe : IAudioPipe
 	private readonly List<IAudioPassiveConsumer> safeConsumerList = new();
 	private readonly List<IAudioPassiveConsumer> consumerList = new();
 	private bool changed;
-	private readonly object listLock = new();
-	private byte[] buffer = Array.Empty<byte>();
+	private readonly Lock listLock = new();
+	private byte[] buffer = [];
 
 	public bool CloneMeta { get; set; } = false;
 

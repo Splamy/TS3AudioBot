@@ -12,14 +12,15 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.InteropServices;
+using System.Threading;
 
 namespace TSLib.Audio;
 
 public class PassiveMergePipe : IAudioPassiveProducer, ICollection<IAudioPassiveProducer>
 {
-	private IAudioPassiveProducer[] safeProducerList = Array.Empty<IAudioPassiveProducer>();
-	private readonly List<IAudioPassiveProducer> producerList = new();
-	private readonly object listLock = new();
+	private IAudioPassiveProducer[] safeProducerList = [];
+	private readonly List<IAudioPassiveProducer> producerList = [];
+	private readonly Lock listLock = new();
 	private bool changed;
 	private readonly int[] accBuffer = new int[4096];
 

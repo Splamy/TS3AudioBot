@@ -68,217 +68,10 @@ public sealed class YoutubeResolver : IResourceResolver, IPlaylistResolver, IThu
 
 	public async Task<PlayResource> GetResourceById(ResolveContext? _, AudioResource resource, CancellationToken cancellationToken)
 	{
-		switch (conf.ResolverPriority.Value)
-		{
-		case LoaderPriority.Internal:
-			try { return await ResolveResourceInternal(resource, cancellationToken); }
-			catch (AudioBotException) { goto case LoaderPriority.YoutubeDl; }
-
-		case LoaderPriority.YoutubeDl:
-			return await YoutubeDlWrapped(resource, cancellationToken);
-
-		case var _unhandled:
-			throw Tools.UnhandledDefault(_unhandled);
-		}
-	}
-
-	private static async Task<PlayResource> ResolveResourceInternal(AudioResource resource, CancellationToken cancellationToken)
-	{
-		var resulthtml = await WebWrapper.Request($"https://www.youtube.com/get_video_info?video_id={resource.ResourceId}").AsString(cancellationToken);
-
-		var videoTypes = new List<VideoData>();
-		var dataParse = ParseQueryString(resulthtml);
-
-		if (dataParse.TryGetValue("player_response", out var playerData))
-		{
-			var parsed = JsonSerializer.Deserialize<JsonPlayerResponse>(playerData[0]);
-			Log.Debug("Extracted data: {@playerData}", parsed);
-
-			if (parsed?.videoDetails != null)
-			{
-				resource.ResourceTitle ??= parsed.videoDetails.title;
-
-				bool isLive = parsed.videoDetails.isLive ?? false;
-				if (isLive && parsed.streamingData?.hlsManifestUrl != null)
-				{
-					return await ParseLiveData(resource, parsed.streamingData.hlsManifestUrl, cancellationToken);
-				}
-				else if (isLive)
-				{
-					Log.Warn("Live stream without hls stream data");
-				}
-
-				ParsePlayerData(parsed, videoTypes);
-			}
-		}
-
-		if (dataParse.TryGetValue("url_encoded_fmt_stream_map", out var videoDataUnsplit))
-			ParseEncodedFmt(videoDataUnsplit, videoTypes);
-
-		if (dataParse.TryGetValue("adaptive_fmts", out videoDataUnsplit))
-			ParseAdaptiveFmt(videoDataUnsplit, videoTypes);
-
-		// Validation Process
-
-		if (videoTypes.Count <= 0)
-			throw Error.LocalStr(strings.error_media_no_stream_extracted);
-
-		int codec = SelectStream(videoTypes);
-		if (codec < 0)
-			throw Error.LocalStr(strings.error_media_no_stream_extracted);
-
-		await ValidateMedia(videoTypes[codec], cancellationToken);
-
-		resource.ResourceTitle ??= $"<YT - no title : {resource.ResourceId}>";
-
-		return new PlayResource(videoTypes[codec].Link, resource);
-	}
-
-	private static async Task<PlayResource> ParseLiveData(AudioResource resource, string requestUrl, CancellationToken cancellationToken)
-	{
-		List<M3uEntry>? webList = null;
-		try
-		{
-			webList = await WebWrapper.Request(requestUrl).ToAction(async (response, ct) =>
-				await M3uReader.TryGetData(await response.Content.ReadAsStreamAsync(ct), ct),
-				cancellationToken
-			);
-		}
-		catch (Exception ex) { throw Error.Exception(ex).LocalStr(strings.error_media_internal_invalid); }
-
-		const string AacHe = "mp4a.40.5";
-		const string AacLc = "mp4a.40.2";
-
-		var streamPref = from item in webList
-						 let codecs = item.StreamMeta != null ? StreamCodecMatch.Match(item.StreamMeta).Groups[1].Value : ""
-						 let codecPref = codecs.Contains(AacLc) ? 0
-							 : codecs.Contains(AacHe) ? 1
-							 : 2
-						 let bitrate = item.StreamMeta != null ? int.Parse(StreamBitrateMatch.Match(item.StreamMeta).Groups[1].Value) : int.MaxValue
-						 orderby codecPref, bitrate ascending
-						 select item;
-		var streamSelect = streamPref.FirstOrDefault();
-		if (streamSelect is null)
-			throw Error.LocalStr(strings.error_media_no_stream_extracted);
-		return new PlayResource(streamSelect.TrackUrl, resource);
-	}
-
-	private static void ParsePlayerData(JsonPlayerResponse data, List<VideoData> videoTypes)
-	{
-		// TODO
-	}
-
-	private static void ParseEncodedFmt(List<string> videoDataUnsplit, List<VideoData> videoTypes)
-	{
-		if (videoDataUnsplit.Count == 0)
-			return;
-		string[] videoData = videoDataUnsplit[0].Split(',');
-
-		foreach (string vdat in videoData)
-		{
-			var videoparse = ParseQueryString(vdat);
-
-			if (!videoparse.TryGetValue("url", out var vLink))
-				continue;
-
-			if (!videoparse.TryGetValue("type", out var vType))
-				continue;
-
-			if (!videoparse.TryGetValue("quality", out var vQuality))
-				continue;
-
-			var vt = new VideoData(vLink[0], vQuality[0], GetCodec(vType[0]));
-			videoTypes.Add(vt);
-		}
-	}
-
-	private static void ParseAdaptiveFmt(List<string> videoDataUnsplit, List<VideoData> videoTypes)
-	{
-		if (videoDataUnsplit.Count == 0)
-			return;
-
-		string[] videoData = videoDataUnsplit[0].Split(',');
-
-		foreach (string vdat in videoData)
-		{
-			var videoparse = ParseQueryString(vdat);
-
-			if (!videoparse.TryGetValue("type", out var vTypeArr))
-				continue;
-			var vType = vTypeArr[0];
-
-			bool audioOnly = false;
-			if (vType.StartsWith("video/", StringComparison.Ordinal))
-				continue;
-			else if (vType.StartsWith("audio/", StringComparison.Ordinal))
-				audioOnly = true;
-
-			if (!videoparse.TryGetValue("url", out var vLink))
-				continue;
-
-			var vt = new VideoData(vLink[0], vType, GetCodec(vType), audioOnly, !audioOnly);
-			videoTypes.Add(vt);
-		}
+		return await YoutubeDlWrapped(resource, cancellationToken);
 	}
 
 	public string RestoreLink(ResolveContext _, AudioResource resource) => "https://youtu.be/" + resource.ResourceId;
-
-	private static int SelectStream(List<VideoData> list)
-	{
-		if (Log.IsTraceEnabled)
-		{
-			var dbg = new System.Text.StringBuilder("YT avail codecs: ");
-			foreach (var yd in list)
-				dbg.Append(yd.Qualitydesciption).Append(" @ ").Append(yd.Codec).Append(", ");
-			Log.Trace("{0}", dbg);
-		}
-
-		int autoselectIndex = list.FindIndex(t => t.Codec == VideoCodec.M4A);
-		if (autoselectIndex == -1)
-			autoselectIndex = list.FindIndex(t => t.AudioOnly);
-		if (autoselectIndex == -1)
-			autoselectIndex = list.FindIndex(t => !t.VideoOnly);
-
-		return autoselectIndex;
-	}
-
-	private static Task ValidateMedia(VideoData media, CancellationToken cancellationToken) => WebWrapper.Request(media.Link).Send(cancellationToken);
-
-	private static VideoCodec GetCodec(string type)
-	{
-		string lowtype = type.ToLowerInvariant();
-		bool audioOnly = false;
-		string codecSubStr;
-		if (lowtype.StartsWith("video/", StringComparison.Ordinal))
-		{
-			codecSubStr = lowtype.Substring("video/".Length);
-		}
-		else if (lowtype.StartsWith("audio/", StringComparison.Ordinal))
-		{
-			codecSubStr = lowtype.Substring("audio/".Length);
-			audioOnly = true;
-		}
-		else return VideoCodec.Unknown;
-
-		int codecEnd = codecSubStr.IndexOf(';');
-		var extractedCodec = codecEnd >= 0 ? codecSubStr.Substring(0, codecEnd) : codecSubStr;
-
-		switch (extractedCodec)
-		{
-		case "mp4":
-			if (audioOnly)
-				return VideoCodec.M4A;
-			return VideoCodec.Mp4;
-		case "x-flv":
-			return VideoCodec.Flv;
-		case "3gpp":
-			return VideoCodec.ThreeGp;
-		case "webm":
-			return VideoCodec.Webm;
-		default:
-			return VideoCodec.Unknown;
-		}
-	}
 
 	public async Task<Playlist> GetPlaylist(ResolveContext _, string url, CancellationToken cancellationToken)
 	{
@@ -364,23 +157,6 @@ public sealed class YoutubeResolver : IResourceResolver, IPlaylistResolver, IThu
 		return new PlayResource(url, resource, songInfo: songInfo);
 	}
 
-	public static Dictionary<string, List<string>> ParseQueryString(string requestQueryString)
-	{
-		var rc = new Dictionary<string, List<string>>();
-		string[] ar1 = requestQueryString.Split('&', '?');
-		foreach (string row in ar1)
-		{
-			if (string.IsNullOrEmpty(row)) continue;
-			int index = row.IndexOf('=');
-			if (index < 0) continue;
-			var param = Uri.UnescapeDataString(row.Substring(0, index).Replace('+', ' '));
-
-			var list = rc.GetOrNew(param);
-			list.Add(Uri.UnescapeDataString(row.Substring(index + 1).Replace('+', ' ')));
-		}
-		return rc;
-	}
-
 	public Task GetThumbnail(ResolveContext _, PlayResource playResource, AsyncStreamAction action, CancellationToken cancellationToken)
 	{
 		// default  :  120px/ 90px /default.jpg
@@ -424,7 +200,11 @@ public sealed class YoutubeResolver : IResourceResolver, IPlaylistResolver, IThu
 	public async Task<IList<AudioResource>> SearchYoutubeDlAsync(string keyword, CancellationToken cancellationToken)
 	{
 		var search = await YoutubeDlHelper.GetSearchAsync(keyword, cancellationToken);
-		if (search.entries is null) { Log.Debug("Youtube-dl returned entries:null"); return []; }
+		if (search.entries is null)
+		{
+			Log.Debug("Youtube-dl returned entries:null");
+			return [];
+		}
 
 		return search.entries
 			.Where(entry => entry.id != null)

@@ -7,18 +7,17 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System.Collections.Frozen;
 using System.Collections.Generic;
 using TSLib;
 
 namespace TS3AudioBot.Rights.Matchers;
 
-internal class MatchServerGroupId : Matcher
+internal class MatchServerGroupId(IEnumerable<ServerGroupId> serverGroupIds) : Matcher
 {
-	private readonly HashSet<ServerGroupId> serverGroupIds;
+	private readonly FrozenSet<ServerGroupId> _serverGroupIds = [..serverGroupIds];
 
-	public MatchServerGroupId(IEnumerable<ServerGroupId> serverGroupIds) => this.serverGroupIds = new HashSet<ServerGroupId>(serverGroupIds);
-
-	public override bool Matches(ExecuteContext ctx) => ctx.ServerGroups?.Length > 0 && serverGroupIds.Overlaps(ctx.ServerGroups);
+	public override bool Matches(ExecuteContext ctx) => ctx.ServerGroups?.Length > 0 && _serverGroupIds.Overlaps(ctx.ServerGroups);
 
 	public override void SetRequiredFeatures(ParseContext ctx) => ctx.NeedsAvailableGroups = true;
 }

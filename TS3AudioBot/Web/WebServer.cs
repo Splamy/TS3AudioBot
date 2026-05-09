@@ -13,6 +13,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using NLog;
+using Org.BouncyCastle.Utilities.Net;
 using System;
 using System.IO;
 using System.Linq;
@@ -20,6 +21,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using TS3AudioBot.Config;
 using TS3AudioBot.Dependency;
+using IPAddress = System.Net.IPAddress;
 
 namespace TS3AudioBot.Web;
 
@@ -47,7 +49,8 @@ public sealed class WebServer : IDisposable
 		if (config.Api.Enabled || config.Interface.Enabled)
 		{
 			if (!config.Api.Enabled)
-				Log.Warn("The api is required for the webinterface to work properly; The api is now implicitly enabled. Enable the api in the config to remove this warning.");
+				Log.Warn(
+					"The api is required for the webinterface to work properly; The api is now implicitly enabled. Enable the api in the config to remove this warning.");
 
 			if (!coreInjector.TryCreate<Api.WebApi>(out var api))
 				throw new Exception("Could not create Api object.");
@@ -102,6 +105,24 @@ public sealed class WebServer : IDisposable
 			.UseKestrel(kestrel =>
 			{
 				kestrel.Limits.MaxRequestBodySize = 3_000_000; // 3 MiB should be enough
+
+				var addrs = config.Hosts.Value;
+				if (addrs.Contains("*"))
+				{
+					kestrel.ListenAnyIP(config.Port.Value);
+				}
+				else if (addrs is ["localhost"])
+				{
+					kestrel.ListenLocalhost(config.Port.Value);
+				}
+				else
+				{
+					foreach (var addr in addrs)
+					{
+						var ip = IPAddress.Parse(addr);
+						kestrel.Listen(ip, config.Port.Value);
+					}
+				}
 			})
 			.ConfigureServices(services =>
 			{
@@ -151,22 +172,8 @@ public sealed class WebServer : IDisposable
 			}
 		}
 
-		var addrs = config.Hosts.Value;
-		if (addrs.Contains("*"))
-		{
-			host.ConfigureKestrel(kestrel => { kestrel.ListenAnyIP(config.Port.Value); });
-		}
-		else if (addrs.Count == 1 && addrs[0] == "localhost")
-		{
-			host.ConfigureKestrel(kestrel => { kestrel.ListenLocalhost(config.Port.Value); });
-		}
-		else
-		{
-			host.UseUrls(addrs.Select(uri => new UriBuilder(uri) { Port = config.Port }.Uri.AbsoluteUri).ToArray());
-		}
-
 		Log.Info("Starting Webserver on port {0}", config.Port.Value);
-		new Func<Task>(async () =>
+		_ = Task.Run(async () =>
 		{
 			try
 			{
@@ -175,9 +182,8 @@ public sealed class WebServer : IDisposable
 			catch (Exception ex)
 			{
 				Log.Error(ex, "The webserver could not be started");
-				return;
 			}
-		})();
+		});
 	}
 
 	public static void OnShutdown()

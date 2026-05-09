@@ -74,7 +74,7 @@ public sealed partial class TsFullClient : TsBaseFunctions, IAudioActiveProducer
 	public event EventHandler<CommandError>? OnErrorEvent;
 
 	/// <summary>Creates a new client. A client can manage one connection to a server.</summary>
-	/// <param name="dispatcherType">The message processing method for incoming notifications.
+	/// <param name="scheduler">The message processing method for incoming notifications.
 	/// See <see cref="EventDispatchType"/> for further information about each type.</param>
 	public TsFullClient(DedicatedTaskScheduler? scheduler = null)
 	{
@@ -110,7 +110,7 @@ public sealed partial class TsFullClient : TsBaseFunctions, IAudioActiveProducer
 		var ctx = new ConnectionContext(conDataFull);
 		context = ctx;
 
-		ctx.PacketHandler.PacketEvent = (ref Packet<S2C> packet) =>
+		ctx.PacketHandler.PacketEvent = (ref packet) =>
 		{
 			if (status == TsClientStatus.Disconnected)
 				return;
@@ -240,7 +240,7 @@ public sealed partial class TsFullClient : TsBaseFunctions, IAudioActiveProducer
 
 		case PacketType.Init1:
 			// Init error
-			if (packet.Data.Length == 5 && packet.Data[0] == 1)
+			if (packet.Data is [1, _, _, _, _])
 			{
 				var errorNum = BinaryPrimitives.ReadUInt32LittleEndian(packet.Data.AsSpan(1));
 				if (Enum.IsDefined(typeof(TsErrorCode), errorNum))

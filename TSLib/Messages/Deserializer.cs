@@ -30,7 +30,7 @@ public class Deserializer
 
 		var pipes = PipeList(line);
 		var arr = MessageHelper.InstantiateNotificationArray(ntfyType, (pipes?.Count ?? 0) + 1);
-		return Dersialize(arr, line, pipes);
+		return Deserialize(arr, line, pipes);
 	}
 
 	public INotification? GenerateSingleNotification(ReadOnlySpan<byte> line, NotificationType ntfyType)
@@ -49,11 +49,11 @@ public class Deserializer
 		List<int>? pipes = null;
 		for (int i = 0; i < line.Length; i++)
 			if (line[i] == AsciiPipe)
-				(pipes ??= new List<int>()).Add(i);
+				(pipes ??= []).Add(i);
 		return pipes;
 	}
 
-	private T[]? Dersialize<T>(T[] arr, ReadOnlySpan<byte> line, List<int>? pipes) where T : notnull, IMessage
+	private T[]? Deserialize<T>(T[] arr, ReadOnlySpan<byte> line, List<int>? pipes) where T : notnull, IMessage
 	{
 		if (pipes is null || pipes.Count == 0)
 		{
@@ -62,8 +62,8 @@ public class Deserializer
 			return arr;
 		}
 
-		var arrItems = new HashSet<string>();
-		var single = new List<string>();
+		HashSet<string> arrItems = [];
+		List<string> single = [];
 
 		if (!ParseKeyValueLine(arr[^1], line.Slice(pipes[^1] + 1).Trim(AsciiSpace), arrItems, null))
 			return null;
@@ -89,13 +89,13 @@ public class Deserializer
 	public T[]? GenerateResponse<T>(ReadOnlySpan<byte> line) where T : IResponse, new()
 	{
 		if (line.IsEmpty)
-			return Array.Empty<T>();
+			return [];
 
 		var pipes = PipeList(line);
 		var arr = new T[(pipes?.Count ?? 0) + 1];
 		for (int i = 0; i < arr.Length; i++)
 			arr[i] = new T();
-		return Dersialize(arr, line, pipes);
+		return Deserialize(arr, line, pipes);
 	}
 
 	private bool ParseKeyValueLine(IMessage qm, ReadOnlySpan<byte> line, HashSet<string>? indexing, List<string>? single)

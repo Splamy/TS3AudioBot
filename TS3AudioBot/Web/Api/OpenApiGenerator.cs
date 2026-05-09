@@ -132,9 +132,8 @@ public static class OpenApiGenerator
 
 		var path = pathBuilder.ToString();
 
-		if (addedCommandPaths.Contains(path))
+		if (!addedCommandPaths.Add(path))
 			return null;
-		addedCommandPaths.Add(path);
 
 		// check tag
 

@@ -10,6 +10,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using TSLib;
 using TSLib.Audio;
 using TSLib.Full;
@@ -58,7 +59,7 @@ internal class CustomTargetPipe : IVoiceTarget, IAudioPassiveConsumer
 	private ChannelId[] channelSubscriptionsCache = [];
 	private ClientId[] clientSubscriptionsCache = [];
 	private bool subscriptionSetupChanged;
-	private readonly object subscriptionLockObj = new();
+	private readonly Lock subscriptionLockObj = new();
 
 	private readonly TsFullClient client;
 

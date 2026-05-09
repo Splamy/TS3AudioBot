@@ -7,16 +7,15 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Net;
 
 namespace TS3AudioBot.Rights.Matchers;
 
-internal class MatchApiCallerIp : Matcher
+internal class MatchApiCallerIp(IEnumerable<IPAddress> requestIps) : Matcher
 {
-	private readonly HashSet<IPAddress> requestIps;
+	private readonly FrozenSet<IPAddress> _requestIps = [..requestIps];
 
-	public MatchApiCallerIp(IEnumerable<IPAddress> requestIps) => this.requestIps = new HashSet<IPAddress>(requestIps);
-
-	public override bool Matches(ExecuteContext ctx) => ctx.ApiCallerIp != null && requestIps.Contains(ctx.ApiCallerIp);
+	public override bool Matches(ExecuteContext ctx) => ctx.ApiCallerIp != null && _requestIps.Contains(ctx.ApiCallerIp);
 }

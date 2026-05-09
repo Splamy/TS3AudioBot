@@ -29,7 +29,7 @@ public class CommandGroup : ICommand
 		return commands.Remove(com.Key);
 	}
 	public bool ContainsCommand(string name) => commands.ContainsKey(name);
-	public ICommand? GetCommand(string name) => commands.TryGetValue(name, out var com) ? com : null;
+	public ICommand? GetCommand(string name) => commands.GetValueOrDefault(name);
 	public bool IsEmpty => commands.Count == 0;
 	public IEnumerable<KeyValuePair<string, ICommand>> Commands => commands;
 

@@ -9,9 +9,11 @@
 
 using Nett;
 using System;
+using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using TS3AudioBot.CommandSystem;
 using TS3AudioBot.Config;
@@ -34,8 +36,8 @@ public class RightsManager
 	private bool needsRecalculation;
 	private readonly ConfRights config;
 	private RightsRule? rootRule;
-	private HashSet<string> registeredRights = [];
-	private readonly object rootRuleLock = new();
+	private FrozenSet<string> registeredRights = [];
+	private readonly Lock rootRuleLock = new();
 
 	// Required Matcher Data:
 	// This variables save whether the current rights setup has at least one rule that
@@ -57,7 +59,7 @@ public class RightsManager
 		if (!registeredRights.SetEquals(newRights))
 		{
 			// TODO validate right names
-			registeredRights = newRights;
+			registeredRights = [..newRights];
 			needsRecalculation = true;
 		}
 	}

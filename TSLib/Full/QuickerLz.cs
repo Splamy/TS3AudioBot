@@ -127,7 +127,7 @@ public static class QuickerLz
 		{
 			if ((control & 1) != 0)
 			{
-				BinaryPrimitives.WriteUInt32LittleEndian(destSpan.Slice(controlPos), (control >> 1) | SetControl); // C
+				BinaryPrimitives.WriteUInt32LittleEndian(destSpan[controlPos..], (control >> 1) | SetControl); // C
 				controlPos = destPos;
 				destPos += 4;
 				control = SetControl;
@@ -138,9 +138,9 @@ public static class QuickerLz
 
 		while ((control & 1) == 0)
 			control >>= 1;
-		BinaryPrimitives.WriteUInt32LittleEndian(destSpan.Slice(controlPos), (control >> 1) | SetControl); // C
+		BinaryPrimitives.WriteUInt32LittleEndian(destSpan[controlPos..], (control >> 1) | SetControl); // C
 
-		destSpan = destSpan.Slice(0, destPos);
+		destSpan = destSpan[..destPos];
 		WriteHeader(destSpan, data.Length, level, headerlen, true);
 		return destSpan;
 	}
@@ -167,7 +167,7 @@ public static class QuickerLz
 			// Uncompressed
 			if (compressedSize - headerlen != decompressedSize)
 				throw new InvalidDataException("Compressed and uncompressed size of uncompressed data do not match");
-			data.Slice(headerlen).CopyTo(dest.AsSpan(0, decompressedSize));
+			data[headerlen..].CopyTo(dest.AsSpan(0, decompressedSize));
 			return dest;
 		}
 
@@ -185,7 +185,7 @@ public static class QuickerLz
 			{
 				if (control == 1)
 				{
-					control = BinaryPrimitives.ReadUInt32LittleEndian(data.Slice(sourcePos));
+					control = BinaryPrimitives.ReadUInt32LittleEndian(data[sourcePos..]);
 					sourcePos += 4;
 				}
 
@@ -283,7 +283,7 @@ public static class QuickerLz
 	[MethodImpl(MethodImplOptions.AggressiveInlining)]
 	private static bool Is6Same(ReadOnlySpan<byte> arr)
 	{
-		var sli6 = arr.Slice(0, 6);
+		var sli6 = arr[..6];
 		var i0 = BinaryPrimitives.ReadUInt32LittleEndian(sli6);
 		var u1 = BinaryPrimitives.ReadUInt16LittleEndian(sli6[4..]);
 		return i0 == i0 >> 8 && unchecked((ushort)i0) == u1;

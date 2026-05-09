@@ -16,7 +16,7 @@ public class BasicInjector : IInjector
 {
 	private readonly Dictionary<Type, object> dynamicObjects;
 	public BasicInjector() { dynamicObjects = []; }
-	public object? GetModule(Type type) => dynamicObjects.TryGetValue(type, out var mod) ? mod : null;
+	public object? GetModule(Type type) => dynamicObjects.GetValueOrDefault(type);
 	public void AddModule(Type type, object obj) => dynamicObjects[type] = obj;
 	public IEnumerable<object> GetAllModules() => dynamicObjects.Values;
 }

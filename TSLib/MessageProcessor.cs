@@ -15,21 +15,14 @@ using TSLib.Messages;
 
 namespace TSLib;
 
-internal abstract class BaseMessageProcessor
+internal abstract class BaseMessageProcessor(Func<string, NotificationType> findTypeOfNotification)
 {
 	protected static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
-	protected readonly List<WaitBlock>[] dependingBlocks;
-	private readonly Func<string, NotificationType> findTypeOfNotification;
+	protected readonly List<WaitBlock>?[] dependingBlocks = new List<WaitBlock>?[Enum.GetValues<NotificationType>().Length];
 	public Deserializer Deserializer { get; } = new();
 
 	protected ReadOnlyMemory<byte>? cmdLineBuffer;
 	private const byte AsciiSpace = (byte)' ';
-
-	protected BaseMessageProcessor(Func<string, NotificationType> findTypeOfNotification)
-	{
-		dependingBlocks = new List<WaitBlock>[Enum.GetValues(typeof(NotificationType)).Length];
-		this.findTypeOfNotification = findTypeOfNotification;
-	}
 
 	public LazyNotification? PushMessage(ReadOnlyMemory<byte> message)
 	{
@@ -39,7 +32,7 @@ internal abstract class BaseMessageProcessor
 		if (splitindex < 0)
 			notifyname = msgSpan.TrimEnd(AsciiSpace).NewUtf8String();
 		else
-			notifyname = msgSpan.Slice(0, splitindex).NewUtf8String();
+			notifyname = msgSpan[..splitindex].NewUtf8String();
 
 		bool hasEqual = notifyname.Contains('=');
 		NotificationType ntfyType;
@@ -97,16 +90,16 @@ internal abstract class BaseMessageProcessor
 	public abstract void DropQueue();
 }
 
-internal sealed class AsyncMessageProcessor : BaseMessageProcessor
+internal sealed class AsyncMessageProcessor(Func<string, NotificationType> findTypeOfNotification)
+	: BaseMessageProcessor(findTypeOfNotification)
 {
 	private readonly Dictionary<string, WaitBlock> requestDict = new();
 
-	public AsyncMessageProcessor(Func<string, NotificationType> findTypeOfNotification) : base(findTypeOfNotification) { }
 	protected override LazyNotification? PushMessageInternal(CommandError errorStatus, NotificationType ntfyType)
 	{
 		if (errorStatus.ReturnCode is null)
 		{
-			return new LazyNotification(new[] { errorStatus }, ntfyType);
+			return new LazyNotification([errorStatus], ntfyType);
 		}
 
 		// otherwise it is the result status code to a request
@@ -129,7 +122,7 @@ internal sealed class AsyncMessageProcessor : BaseMessageProcessor
 			{
 				var depentantList = dependingBlocks[(int)dependantType];
 				if (depentantList is null)
-					dependingBlocks[(int)dependantType] = depentantList = new List<WaitBlock>();
+					dependingBlocks[(int)dependantType] = depentantList = [];
 
 				depentantList.Add(waitBlock);
 			}
@@ -150,11 +143,10 @@ internal sealed class AsyncMessageProcessor : BaseMessageProcessor
 	}
 }
 
-internal sealed class SyncMessageProcessor : BaseMessageProcessor
+internal sealed class SyncMessageProcessor(Func<string, NotificationType> findTypeOfNotification)
+	: BaseMessageProcessor(findTypeOfNotification)
 {
 	private readonly ConcurrentQueue<WaitBlock> requestQueue = new();
-
-	public SyncMessageProcessor(Func<string, NotificationType> findTypeOfNotification) : base(findTypeOfNotification) { }
 
 	protected override LazyNotification? PushMessageInternal(CommandError errorStatus, NotificationType ntfyType)
 	{

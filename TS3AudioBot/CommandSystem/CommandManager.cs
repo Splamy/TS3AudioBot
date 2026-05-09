@@ -110,7 +110,7 @@ public partial class CommandManager
 
 	public IEnumerable<string> AllAlias => aliasPaths.Keys;
 
-	public AliasCommand? GetAlias(string path) => aliasPaths.TryGetValue(path, out var ali) ? ali : null;
+	public AliasCommand? GetAlias(string path) => aliasPaths.GetValueOrDefault(path);
 
 	public static IEnumerable<BotCommand> GetBotCommands(object? obj, Type? type = null) => GetBotCommands(GetCommandMethods(obj, type));
 
@@ -157,10 +157,9 @@ public partial class CommandManager
 
 	private E<string> LoadCommand(BotCommand com)
 	{
-		if (commandPaths.Contains(com.FullQualifiedName))
+		if (!commandPaths.Add(com.FullQualifiedName))
 			return "Command already exists: " + com.InvokeName;
 
-		commandPaths.Add(com.FullQualifiedName);
 		return LoadICommand(com, com.InvokeName);
 	}
 

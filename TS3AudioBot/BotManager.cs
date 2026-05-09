@@ -10,6 +10,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using TS3AudioBot.Config;
 using TS3AudioBot.Dependency;
@@ -24,7 +25,7 @@ public class BotManager
 	private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 
 	private List<Bot?>? activeBots = [];
-	private readonly object lockObj = new();
+	private readonly Lock lockObj = new();
 
 	private readonly ConfRoot confRoot;
 	private readonly CoreInjector coreInjector;
