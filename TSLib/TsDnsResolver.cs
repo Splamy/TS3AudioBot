@@ -210,9 +210,11 @@ public static class TsDnsResolver
 			var cancelTask = Task.Delay(LookupTimeout);
 			var connectTask = client.ConnectAsync(tsDnsAddress.Address, tsDnsAddress.Port).ContinueWith(async t =>
 			{
-				// Swallow error on connect error
 				try { await t; }
-				catch { }
+				catch
+				{
+					// Swallow error on connect error
+				}
 			}, TaskContinuationOptions.OnlyOnFaulted);
 			await Task.WhenAny(connectTask, cancelTask);
 			if (cancelTask.IsCompleted)

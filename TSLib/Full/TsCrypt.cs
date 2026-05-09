@@ -268,12 +268,11 @@ public sealed class TsCrypt
 			Random.Shared.NextBytes(alphaTmp);
 			var alpha = Convert.ToBase64String(alphaTmp);
 			string initAdd = TsCommand.BuildToString("clientinitiv",
-			[
 				new CommandParameter("alpha", alpha),
 				new CommandParameter("omega", Identity.PublicKeyString),
 				new CommandParameter("ot", 1),
 				new CommandParameter("ip", string.Empty)
-			]);
+			);
 			var textBytes = Tools.Utf8Encoder.GetBytes(initAdd);
 
 			// Prepare solution

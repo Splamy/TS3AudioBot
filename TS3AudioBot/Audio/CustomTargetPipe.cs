@@ -142,20 +142,20 @@ internal class CustomTargetPipe : IVoiceTarget, IAudioPassiveConsumer
 		}
 	}
 
-	public void WhisperClientSubscribe(params IEnumerable<ClientId> userId)
+	public void WhisperClientSubscribe(params IEnumerable<ClientId> userIds)
 	{
 		lock (subscriptionLockObj)
 		{
-			clientSubscriptionsSetup.UnionWith(userId);
+			clientSubscriptionsSetup.UnionWith(userIds);
 			subscriptionSetupChanged = true;
 		}
 	}
 
-	public void WhisperClientUnsubscribe(params IEnumerable<ClientId> userId)
+	public void WhisperClientUnsubscribe(params IEnumerable<ClientId> userIds)
 	{
 		lock (subscriptionLockObj)
 		{
-			clientSubscriptionsSetup.ExceptWith(userId);
+			clientSubscriptionsSetup.ExceptWith(userIds);
 			subscriptionSetupChanged = true;
 		}
 	}
