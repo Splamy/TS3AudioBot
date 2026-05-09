@@ -10,13 +10,6 @@ This is a open-source TeamSpeak3 bot, playing music and much more.
 - **Want to support this Project?**
   - You can discuss and suggest features. However the [backlog](https://github.com/Splamy/TS3AudioBot/projects/2) is large and feature requests will probably take time
   - You can contribute code. This is always appreciated, please open an issue or contact a maintainer to discuss *before* you start.
-  - You can support me on [![Patreon][patreon-badge]][patreon-link] or [![Paypal][paypal-badge]][paypal-link]
-
-[patreon-badge]: https://img.shields.io/badge/Patreon-Donate!-F96854.svg?logo=patreon&style=flat-square
-[patreon-link]: https://patreon.com/Splamy
-
-[paypal-badge]: https://img.shields.io/badge/Paypal-Donate!-00457C.svg?logo=paypal&style=flat-square
-[paypal-link]: https://paypal.me/Splamy
 
 ## Features
 * Play Youtube and Soundcloud songs as well as stream Twitch (extensible with plugins)
