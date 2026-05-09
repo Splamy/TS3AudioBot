@@ -14,7 +14,7 @@ namespace TSLib.Helper;
 
 internal static class DebugUtil
 {
-	public static string DebugToHex(byte[] bytes) => bytes is null ? "<null>" : DebugToHex(bytes.AsSpan());
+	public static string DebugToHex(byte[]? bytes) => bytes is null ? "<null>" : DebugToHex(bytes.AsSpan());
 
 	public static string DebugToHex(ReadOnlySpan<byte> bytes)
 	{
@@ -32,6 +32,6 @@ internal static class DebugUtil
 	}
 
 	public static byte[] DebugFromHex(string hex)
-		=> hex.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries)
+		=> hex.Split([' '], StringSplitOptions.RemoveEmptyEntries)
 			.Select(x => Convert.ToByte(x, 16)).ToArray();
 }

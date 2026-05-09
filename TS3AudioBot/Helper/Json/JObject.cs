@@ -15,16 +15,10 @@ using System.Text.Json.Serialization;
 namespace TS3AudioBot.Helper.Json;
 
 [JsonConverter(typeof(Converter))]
-public class JObject
+public class JObject(params IEnumerable<object?> props)
 {
 	private JsonSerializerOptions? customOptions;
-	private List<object?>? properties;
-
-	public JObject(params object?[] props)
-	{
-		if (props.Length > 0)
-			properties = new List<object?>(props);
-	}
+	private List<object?>? properties = [..props];
 
 	public JObject Add(object? prop)
 	{

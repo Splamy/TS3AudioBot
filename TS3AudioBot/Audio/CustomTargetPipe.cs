@@ -101,7 +101,7 @@ internal class CustomTargetPipe : IVoiceTarget, IAudioPassiveConsumer
 		GroupWhisperTargetId = targetId;
 	}
 
-	public void WhisperChannelSubscribe(bool temp, params ChannelId[] channels)
+	public void WhisperChannelSubscribe(bool temp, params IEnumerable<ChannelId> channels)
 	{
 		lock (subscriptionLockObj)
 		{
@@ -120,7 +120,7 @@ internal class CustomTargetPipe : IVoiceTarget, IAudioPassiveConsumer
 		}
 	}
 
-	public void WhisperChannelUnsubscribe(bool temp, params ChannelId[] channels)
+	public void WhisperChannelUnsubscribe(bool temp, params IEnumerable<ChannelId> channels)
 	{
 		lock (subscriptionLockObj)
 		{
@@ -142,7 +142,7 @@ internal class CustomTargetPipe : IVoiceTarget, IAudioPassiveConsumer
 		}
 	}
 
-	public void WhisperClientSubscribe(params ClientId[] userId)
+	public void WhisperClientSubscribe(params IEnumerable<ClientId> userId)
 	{
 		lock (subscriptionLockObj)
 		{
@@ -151,7 +151,7 @@ internal class CustomTargetPipe : IVoiceTarget, IAudioPassiveConsumer
 		}
 	}
 
-	public void WhisperClientUnsubscribe(params ClientId[] userId)
+	public void WhisperClientUnsubscribe(params IEnumerable<ClientId> userId)
 	{
 		lock (subscriptionLockObj)
 		{

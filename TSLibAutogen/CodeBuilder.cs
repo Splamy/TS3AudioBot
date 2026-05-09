@@ -42,7 +42,7 @@ public class CodeBuilder
 	public void AppendLine() => AppendSingleLine("");
 	public void AppendLine(string s)
 	{
-		foreach (var line in s.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None))
+		foreach (var line in s.Split(["\r\n", "\n"], StringSplitOptions.None))
 			AppendSingleLine(line);
 		AutoPushLevel(s);
 	}

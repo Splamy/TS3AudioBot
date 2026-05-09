@@ -15,15 +15,9 @@ using System.Text.Json.Serialization;
 namespace TS3AudioBot.Helper.Json;
 
 [JsonConverter(typeof(Converter))]
-public class JArray
+public class JArray(params IEnumerable<object?> props)
 {
-	private List<object?>? values;
-
-	public JArray(params object?[] props)
-	{
-		if (props.Length > 0)
-			values = new List<object?>(props);
-	}
+	private List<object?>? values = [..props];
 
 	public void Add(object? prop) => (values ??= []).Add(prop);
 

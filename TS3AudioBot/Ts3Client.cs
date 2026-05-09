@@ -212,8 +212,8 @@ public sealed class Ts3Client
 	public Task SendChannelMessage(string message) => ts3FullClient.SendChannelMessage(message).UnwrapThrow();
 	public Task SendServerMessage(string message) => ts3FullClient.SendServerMessage(message, 1).UnwrapThrow();
 
-	public Task KickClientFromServer(params ClientId[] clientId) => ts3FullClient.KickClientFromServer(clientId).UnwrapThrow();
-	public Task KickClientFromChannel(params ClientId[] clientId) => ts3FullClient.KickClientFromChannel(clientId).UnwrapThrow();
+	public Task KickClientFromServer(params IEnumerable<ClientId> clientId) => ts3FullClient.KickClientFromServer(clientId).UnwrapThrow();
+	public Task KickClientFromChannel(params IEnumerable<ClientId> clientId) => ts3FullClient.KickClientFromChannel(clientId).UnwrapThrow();
 
 	public Task ChangeDescription(string description)
 		=> ts3FullClient.ChangeDescription(description).UnwrapThrow();

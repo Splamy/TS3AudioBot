@@ -198,7 +198,7 @@ public static class OpenApiGenerator
 		return token;
 	}
 
-	private static JProperty JPropObj(string name, params object[] token)
+	private static JProperty JPropObj(string name, params IEnumerable<object> token)
 	{
 		return new JProperty(name, new JObject(token));
 	}

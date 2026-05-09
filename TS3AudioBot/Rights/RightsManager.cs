@@ -64,14 +64,14 @@ public class RightsManager
 		}
 	}
 
-	public async ValueTask<bool> HasAllRights(ExecutionInformation info, params string[] requestedRights)
+	public async ValueTask<bool> HasAllRights(ExecutionInformation info, params IEnumerable<string> requestedRights)
 	{
 		var ctx = await GetRightsContext(info);
 		var normalizedRequest = ExpandRights(registeredRights, requestedRights);
 		return ctx.DeclAdd.IsSupersetOf(normalizedRequest);
 	}
 
-	public async ValueTask<string[]> GetRightsSubset(ExecutionInformation info, params string[] requestedRights)
+	public async ValueTask<string[]> GetRightsSubset(ExecutionInformation info, params IEnumerable<string> requestedRights)
 	{
 		var ctx = await GetRightsContext(info);
 		var normalizedRequest = ExpandRights(registeredRights, requestedRights);

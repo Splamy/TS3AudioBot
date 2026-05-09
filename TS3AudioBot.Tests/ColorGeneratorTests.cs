@@ -62,4 +62,27 @@ public class ColorGeneratorTests
 				", How are you?".Mod().Color(Color.Blue));
 		Assert.Equal("[COLOR=red]Hello [/COLOR][COLOR=#00F]World[/COLOR][COLOR=red] but [/COLOR][COLOR=#00F], How are you?", res);
 	}
+
+	[Fact]
+	public void NoFormatHoles()
+	{
+		var res = TextMod.Format("Hello World".Mod().Color(Color.Red));
+		Assert.Equal("[COLOR=red]Hello World", res);
+	}
+
+	[Fact]
+	public void NoFormatHolesWithSuperfluousParameters()
+	{
+		var res = TextMod.Format("Hello World".Mod().Color(Color.Red), "Unused");
+		Assert.Equal("[COLOR=red]Hello World", res);
+	}
+
+	[Fact]
+	public void OutOfOrderFormatHoles()
+	{
+		var res = TextMod.Format("Hello {1} but {0}".Mod().Color(Color.Red),
+			"Inverted".Mod().Bold(),
+			"World".Mod().Italic());
+		Assert.Equal("[COLOR=red]Hello [/COLOR][I]World[/I][COLOR=red] but [/COLOR][B]Inverted", res);
+	}
 }
