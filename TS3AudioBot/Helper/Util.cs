@@ -24,10 +24,8 @@ namespace TS3AudioBot.Helper;
 
 public static partial class Util
 {
-	public const RegexOptions DefaultRegexConfig = RegexOptions.Compiled | RegexOptions.IgnoreCase | RegexOptions.ECMAScript;
-
-	[GeneratedRegex(@"^[\w-_]+$", RegexOptions.IgnoreCase | RegexOptions.ECMAScript)]
-	private static partial Regex SafeFileNameReg();
+	[GeneratedRegex(@"^[0-9a-zA-Z\-_]+$")]
+	private static partial Regex SafeFileNameReg { get; }
 
 	private static readonly ImmutableArray<string> ByteSuffix = ["B", "KB", "MB", "GB", "TB", "PB", "EB"];
 
@@ -99,7 +97,7 @@ public static partial class Util
 			return new LocalStr(strings.error_playlist_name_invalid_empty); // TODO change to more generic error
 		if (name.Length > 64)
 			return new LocalStr(strings.error_playlist_name_invalid_too_long);
-		if (!SafeFileNameReg().IsMatch(name))
+		if (!SafeFileNameReg.IsMatch(name))
 			return new LocalStr(strings.error_playlist_name_invalid_character);
 		return R.Ok;
 	}
@@ -135,18 +133,6 @@ public static partial class Util
 		{
 			logger.Log(level ?? NLog.LogLevel.Warn, ex, ex.Message);
 		}
-	}
-
-	public static async Task<T?> Try<T>(this Task<T> t) where T : class
-	{
-		try { return await t; }
-		catch { return null; }
-	}
-
-	public static T? Try<T>(Func<T> t) where T : class
-	{
-		try { return t(); }
-		catch { return null; }
 	}
 
 	public static void UnwrapThrow(this E<LocalStr> r)

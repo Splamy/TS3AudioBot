@@ -19,11 +19,14 @@ using TS3AudioBot.Localization;
 
 namespace TS3AudioBot.ResourceFactories;
 
-public sealed class BandcampResolver : IResourceResolver, IThumbnailResolver
+public sealed partial class BandcampResolver : IResourceResolver, IThumbnailResolver
 {
-	private static readonly Regex BandcampUrlRegex = new(@"([\w_-]+).bandcamp.com/track/([\w_-]+)", Util.DefaultRegexConfig);
-	private static readonly Regex MainJsonRegex = new(@"data-tralbum=""([^""]*)""", Util.DefaultRegexConfig);
-	private static readonly Regex EmbedJsonRegex = new(@"data-player-data=""([^""]*)""", Util.DefaultRegexConfig);
+	[GeneratedRegex(@"([\w_-]+).bandcamp.com/track/([\w_-]+)", RegexOptions.IgnoreCase | RegexOptions.ECMAScript)]
+	private static partial Regex BandcampUrlRegex { get; }
+	[GeneratedRegex(@"data-tralbum=""([^""]*)""", RegexOptions.IgnoreCase)]
+	private static partial Regex MainJsonRegex { get; }
+	[GeneratedRegex(@"data-player-data=""([^""]*)""", RegexOptions.IgnoreCase)]
+	private static partial Regex EmbedJsonRegex { get; }
 
 	private const string AddArtist = "artist";
 	private const string AddTrack = "track";

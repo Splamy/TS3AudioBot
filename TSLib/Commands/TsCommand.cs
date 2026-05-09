@@ -11,7 +11,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using TSLib.Helper;
@@ -21,7 +20,8 @@ namespace TSLib.Commands;
 /// <summary>Builds TeamSpeak (query) commands from parameters.</summary>
 public partial class TsCommand : IEnumerable<ICommandPart>
 {
-	private static readonly Regex CommandMatch = new("[a-z0-9_]+", RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.ECMAScript);
+	[GeneratedRegex("[a-z0-9_]+")]
+	private static partial Regex CommandMatch { get; }
 
 	protected string? raw = null;
 	public bool ExpectResponse { get; set; }

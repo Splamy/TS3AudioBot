@@ -30,7 +30,7 @@ public partial class CommandManager
 {
 	private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 	[GeneratedRegex(@"^[a-z\d]+( [a-z\d]+)*$")]
-	private static partial Regex CommandNamespaceValidatorReg();
+	private static partial Regex CommandNamespaceValidatorReg { get; }
 
 	private readonly Dictionary<string, AliasCommand> aliasPaths = [];
 	private readonly HashSet<string> commandPaths = [];
@@ -165,7 +165,7 @@ public partial class CommandManager
 
 	private E<string> LoadICommand(ICommand com, string path)
 	{
-		if (!CommandNamespaceValidatorReg().IsMatch(path))
+		if (!CommandNamespaceValidatorReg.IsMatch(path))
 			return "Command has an invalid invoke name: " + path;
 
 		string[] comPath = path.Split(' ');

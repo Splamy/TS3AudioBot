@@ -24,15 +24,21 @@ using TSLib.Helper;
 
 namespace TS3AudioBot.ResourceFactories.Youtube;
 
-public sealed class YoutubeResolver : IResourceResolver, IPlaylistResolver, IThumbnailResolver, ISearchResolver
+public sealed partial class YoutubeResolver : IResourceResolver, IPlaylistResolver, IThumbnailResolver, ISearchResolver
 {
 	private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
-	private static readonly Regex IdMatch = new(@"(?:(?:&|\?)v=|youtu\.be\/|youtube\.com\/shorts\/)([\w\-_]{11})", Util.DefaultRegexConfig);
-	private static readonly Regex YtTimestampMatch = new(@"(?:&|\?)t=(\d+)", Util.DefaultRegexConfig);
-	private static readonly Regex LinkMatch = new(@"^(https?\:\/\/)?(www\.|m\.)?(youtube\.|youtu\.be)", Util.DefaultRegexConfig);
-	private static readonly Regex ListMatch = new(@"(&|\?)list=([\w\-_]+)", Util.DefaultRegexConfig);
-	private static readonly Regex StreamCodecMatch = new(@"CODECS=""([^""]*)""", Util.DefaultRegexConfig);
-	private static readonly Regex StreamBitrateMatch = new(@"BANDWIDTH=(\d+)", Util.DefaultRegexConfig);
+	[GeneratedRegex(@"(?:(?:&|\?)v=|youtu\.be\/|youtube\.com\/shorts\/)([\w\-_]{11})", RegexOptions.IgnoreCase | RegexOptions.ECMAScript)]
+	private static partial Regex IdMatch { get; }
+	[GeneratedRegex(@"(?:&|\?)t=([0-9]+)", RegexOptions.IgnoreCase)]
+	private static partial Regex YtTimestampMatch { get; }
+	[GeneratedRegex(@"^(https?\:\/\/)?(www\.|m\.)?(youtube\.|youtu\.be)", RegexOptions.IgnoreCase)]
+	private static partial Regex LinkMatch { get; }
+	[GeneratedRegex(@"(&|\?)list=([\w\-_]+)", RegexOptions.IgnoreCase | RegexOptions.ECMAScript)]
+	private static partial Regex ListMatch { get; }
+	[GeneratedRegex(@"CODECS=""([^""]*)""", RegexOptions.IgnoreCase)]
+	private static partial Regex StreamCodecMatch { get; }
+	[GeneratedRegex(@"BANDWIDTH=([0-9]+)", RegexOptions.IgnoreCase)]
+	private static partial Regex StreamBitrateMatch { get; }
 	private string YoutubeProjectId => conf.ApiKey.Value;
 	private readonly ConfResolverYoutube conf;
 

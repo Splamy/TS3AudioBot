@@ -18,10 +18,11 @@ namespace TS3AudioBot.Config;
 /// Upgrades the /bots/ folder structure from each Bot being a 'bot_(name).toml'
 /// file to each bot having its own folder with '/(name)/bot.toml'.
 /// </summary>
-internal static class ConfigUpgrade2
+internal static partial class ConfigUpgrade2
 {
 	private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
-	private static readonly Regex BotFileMatcher = new(@"^bot_(.+)\.toml$", Util.DefaultRegexConfig);
+	[GeneratedRegex(@"^bot_(.+)\.toml$", RegexOptions.IgnoreCase)]
+	private static partial Regex BotFileMatcher { get; }
 	private const string NewBotConfigFileName = "bot.toml";
 
 	public static void Upgrade(string path)

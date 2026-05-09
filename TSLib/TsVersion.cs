@@ -15,10 +15,10 @@ using TSLib.Full;
 namespace TSLib;
 
 /// <summary>Describes a version tuple of version and platform.</summary>
-public class TsVersion
+public partial class TsVersion
 {
-	protected static readonly Regex VersionPattern =
-		new(@"([^ ])* \[Build: (\d+)\]", RegexOptions.ECMAScript | RegexOptions.Compiled);
+	[GeneratedRegex(@"([^ ])* \[Build: ([0-9]+)\]")]
+	protected static partial Regex VersionPattern { get; }
 
 	private static readonly FrozenDictionary<string, ClientPlatform> Platforms =
 		FrozenDictionary.Create<string, ClientPlatform>([

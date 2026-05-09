@@ -16,7 +16,7 @@ namespace TS3AudioBot.CommandSystem.Text;
 public partial class TextModBuilder
 {
 	[GeneratedRegex(@"{\d+}", RegexOptions.ExplicitCapture)]
-	private static partial Regex Placeholder();
+	private static partial Regex Placeholder { get; }
 
 	private readonly bool color;
 	private readonly StringBuilder strb;
@@ -67,7 +67,7 @@ public partial class TextModBuilder
 		}
 		else
 		{
-			var parts = Placeholder().Split(format.Text);
+			var parts = Placeholder.Split(format.Text);
 
 			for (int i = 0; i < parts.Length - 1; i++)
 			{

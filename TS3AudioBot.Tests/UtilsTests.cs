@@ -9,7 +9,7 @@ public class UtilsTests
 	[Fact]
 	public void UtilSeedTest()
 	{
-		var lowCaseRegex = new Regex("^[a-z]*$", Util.DefaultRegexConfig & ~RegexOptions.IgnoreCase);
+		var lowCaseRegex = new Regex("^[a-z]*$");
 		for (int i = 0; i < 100000; i++)
 		{
 			var str = Util.FromSeed(i);

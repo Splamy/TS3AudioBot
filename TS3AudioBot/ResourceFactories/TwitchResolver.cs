@@ -18,10 +18,12 @@ using TS3AudioBot.Localization;
 
 namespace TS3AudioBot.ResourceFactories;
 
-public sealed class TwitchResolver : IResourceResolver
+public sealed partial class TwitchResolver : IResourceResolver
 {
-	private static readonly Regex TwitchMatch = new(@"^(https?://)?(www\.)?twitch\.tv/(\w+)", Util.DefaultRegexConfig);
-	private static readonly Regex M3U8ExtMatch = new(@"#([\w-]+)(:(([\w-]+)=(""[^""]*""|[^,]+),?)*)?", Util.DefaultRegexConfig);
+	[GeneratedRegex(@"^(https?://)?(www\.)?twitch\.tv/(\w+)", RegexOptions.IgnoreCase | RegexOptions.ECMAScript)]
+	private static partial Regex TwitchMatch { get; }
+	[GeneratedRegex(@"#([\w-]+)(:(([\w-]+)=(""[^""]*""|[^,]+),?)*)?", RegexOptions.IgnoreCase | RegexOptions.ECMAScript)]
+	private static partial Regex M3U8ExtMatch { get; }
 	//private const string TwitchClientId = "t9nlhlxnfux3gk2d6z1p093rj2c71i3";
 	// See: https://github.com/streamlink/streamlink/issues/2680
 	private const string TwitchClientIdPrivate = "kimne78kx3ncx6brgo4mv6wki5h1ko";
@@ -61,15 +63,15 @@ public sealed class TwitchResolver : IResourceResolver
 
 		// parse m3u8 file
 		var dataList = new List<StreamData>();
-		using (var reader = new System.IO.StringReader(m3u8))
+		using (var reader = new StringReader(m3u8))
 		{
-			var header = reader.ReadLine();
+			var header = await reader.ReadLineAsync(cancellationToken);
 			if (string.IsNullOrEmpty(header) || header != "#EXTM3U")
 				throw Error.LocalStr(strings.error_media_internal_missing + " (m3uHeader)");
 
 			while (true)
 			{
-				var blockInfo = reader.ReadLine();
+				var blockInfo = await reader.ReadLineAsync(cancellationToken);
 				if (string.IsNullOrEmpty(blockInfo))
 					break;
 
@@ -81,7 +83,7 @@ public sealed class TwitchResolver : IResourceResolver
 				{
 				case "EXT-X-TWITCH-INFO": break; // Ignore twitch info line
 				case "EXT-X-MEDIA":
-					string? streamInfo = reader.ReadLine();
+					string? streamInfo = await reader.ReadLineAsync(cancellationToken);
 					Match infoMatch;
 					if (string.IsNullOrEmpty(streamInfo)
 						|| !(infoMatch = M3U8ExtMatch.Match(streamInfo)).Success
@@ -108,7 +110,7 @@ public sealed class TwitchResolver : IResourceResolver
 						}
 					}
 
-					streamData.Url = reader.ReadLine();
+					streamData.Url = await reader.ReadLineAsync(cancellationToken);
 					dataList.Add(streamData);
 					break;
 				}

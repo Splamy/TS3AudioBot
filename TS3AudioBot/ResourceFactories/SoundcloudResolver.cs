@@ -18,11 +18,13 @@ using TS3AudioBot.Playlists;
 
 namespace TS3AudioBot.ResourceFactories;
 
-public sealed class SoundcloudResolver : IResourceResolver, IPlaylistResolver, IThumbnailResolver
+public sealed partial class SoundcloudResolver : IResourceResolver, IPlaylistResolver, IThumbnailResolver
 {
 	private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
-	private static readonly Regex SoundcloudLink = new(@"^https?\:\/\/(www\.)?soundcloud\.", Util.DefaultRegexConfig);
-	private static readonly Regex SoundcloudPermalink = new(@"\/\/([^\/]+)\/([^\/]+)\/([^\/]+)$", Util.DefaultRegexConfig);
+	[GeneratedRegex(@"^https?\:\/\/(www\.)?soundcloud\.", RegexOptions.IgnoreCase)]
+	private static partial Regex SoundcloudLink { get; }
+	[GeneratedRegex(@"\/\/([^\/]+)\/([^\/]+)\/([^\/]+)$", RegexOptions.IgnoreCase)]
+	private static partial Regex SoundcloudPermalink { get; }
 	private const string SoundcloudClientId = "a9dd3403f858e105d7e266edc162a0c5";
 
 	private const string AddArtist = "artist";
@@ -169,7 +171,7 @@ public sealed class SoundcloudResolver : IResourceResolver, IPlaylistResolver, I
 		// t500x500: 500px×500px
 		// crop    : 400px×400px
 		// t300x300: 300px×300px
-		// large   : 100px×100px 
+		// large   : 100px×100px
 		await WebWrapper.Request(thumb.artwork_url.Replace("-large", "-t300x300")).ToStream(action, cancellationToken);
 	}
 

@@ -18,10 +18,12 @@ using TSLib.Helper;
 
 namespace TS3AudioBot.Environment;
 
-public static class SystemData
+public static partial class SystemData
 {
-	private static readonly Regex PlatformRegex = new(@"(\w+)=(.*)", RegexOptions.IgnoreCase | RegexOptions.ECMAScript | RegexOptions.Multiline);
-	private static readonly Regex SemVerRegex = new(@"(\d+)(?:\.(\d+)){1,3}", RegexOptions.IgnoreCase | RegexOptions.ECMAScript | RegexOptions.Multiline);
+	[GeneratedRegex(@"(\w+)=(.*)", RegexOptions.IgnoreCase | RegexOptions.ECMAScript | RegexOptions.Multiline)]
+	private static partial Regex PlatformRegex { get; }
+	[GeneratedRegex(@"(\d+)(?:\.(\d+)){1,3}", RegexOptions.IgnoreCase | RegexOptions.ECMAScript | RegexOptions.Multiline)]
+	private static partial Regex SemVerRegex { get; }
 
 	public static BuildData AssemblyData { get; } = new();
 
@@ -38,7 +40,7 @@ public static class SystemData
 
 			RunBash("cat /etc/*[_-][Rr]elease", x =>
 			{
-				var lines = x.ReadToEnd().Split(new[] { '\n', '\r' }, StringSplitOptions.RemoveEmptyEntries);
+				var lines = x.ReadToEnd().Split(['\n', '\r'], StringSplitOptions.RemoveEmptyEntries);
 				foreach (var line in lines)
 				{
 					var match = PlatformRegex.Match(line);
@@ -113,8 +115,7 @@ public static class SystemData
 		catch { }
 	}
 
-	private static PlatformVersion UnknownRuntime { get; } = new PlatformVersion(Runtime.Unknown, "? (?)", null);
-	public static PlatformVersion RuntimeData { get; } = GetNetVersion() ?? UnknownRuntime;
+	public static PlatformVersion RuntimeData { get; } = GetNetVersion();
 
 	private static PlatformVersion GetNetVersion()
 	{
@@ -145,24 +146,13 @@ public partial class BuildData
 	}
 
 	public string ToLongString() => $"\nVersion: {Version}\nBranch: {Branch}\nCommitHash: {CommitSha}";
-	public override string ToString() => $"{Version}/{Branch}/{(CommitSha.Length > 8 ? CommitSha.Substring(0, 8) : CommitSha)}";
+	public override string ToString() => $"{Version}/{Branch}/{(CommitSha.Length > 8 ? CommitSha[..8] : CommitSha)}";
 
 	partial void GetDataInternal();
 }
 
-public class PlatformVersion
+public record PlatformVersion(Runtime Runtime, string FullName, Version? SemVer)
 {
-	public Runtime Runtime { get; }
-	public string FullName { get; }
-	public Version? SemVer { get; }
-
-	public PlatformVersion(Runtime runtime, string fullName, Version? semVer)
-	{
-		Runtime = runtime;
-		FullName = fullName;
-		SemVer = semVer;
-	}
-
 	public override string ToString() => FullName;
 }
 

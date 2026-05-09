@@ -23,12 +23,16 @@ using TSLib.Scheduler;
 
 namespace TS3AudioBot.Audio;
 
-public sealed class FfmpegProducer : IPlayerSource, IDisposable
+public sealed partial class FfmpegProducer : IPlayerSource, IDisposable
 {
 	private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 	private readonly Id id;
-	private static readonly Regex FindDurationMatch = new(@"^\s*Duration: (\d+):(\d\d):(\d\d).(\d\d)", Util.DefaultRegexConfig);
-	private static readonly Regex IcyMetadataMacher = new("((\\w+)='(.*?)';\\s*)+", Util.DefaultRegexConfig);
+
+	[GeneratedRegex(@"^\s*Duration: (\d+):(\d\d):(\d\d).(\d\d)", RegexOptions.IgnoreCase)]
+	private static partial Regex FindDurationMatch { get; }
+	[GeneratedRegex(@"((\w+)='(.*?)';\s*)+", RegexOptions.IgnoreCase | RegexOptions.ECMAScript)]
+	private static partial Regex IcyMetadataMacher { get; }
+
 	private const string PreLinkConf = "-hide_banner -nostats -threads 1 -i \"";
 	private const string PostLinkConf = "\" -ac 2 -ar 48000 -f s16le -acodec pcm_s16le pipe:1";
 	private const string LinkConfIcy = "-hide_banner -nostats -threads 1 -i pipe:0 -ac 2 -ar 48000 -f s16le -acodec pcm_s16le pipe:1";

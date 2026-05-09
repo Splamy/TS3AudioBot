@@ -17,9 +17,10 @@ using TSLib.Helper;
 
 namespace TS3AudioBot.Rights.Matchers;
 
-internal class MatchPermission : Matcher
+internal partial class MatchPermission : Matcher
 {
-	private static readonly Regex ExpressionMatch = new(@"(\w+)\s*(<|>|=|>=|<=|!=)\s*(-?\d+|true|false)", Util.DefaultRegexConfig);
+	[GeneratedRegex(@"(\w+)\s*(<|>|=|>=|<=|!=)\s*(-?\d+|true|false)", RegexOptions.IgnoreCase | RegexOptions.ECMAScript)]
+	private static partial Regex ExpressionMatch { get; }
 	private readonly FrozenDictionary<TsPermission, (PermCompare, int)> _permissions;
 
 	public MatchPermission(string[] permissions, ParseContext ctx)

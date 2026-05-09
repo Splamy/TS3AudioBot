@@ -22,20 +22,16 @@ using System.Text.RegularExpressions;
 namespace TSLib.Full;
 
 /// <summary>Represents the identity of a user.
-/// To generate new identities use <see cref="TsCrypt.GenerateNewIdentity"/>.
-/// To improve the security level of this identity use <see cref="TsCrypt.ImproveSecurity"/>.</summary>
-public class IdentityData
+/// To generate new identities use <see cref="IdentityData.GenerateNewIdentity"/>.
+/// To improve the security level of this identity use <see cref="IdentityData.ImproveSecurity"/>.</summary>
+public partial class IdentityData
 {
-	private string? publicKeyString;
-	private string? privateKeyString;
-	private string? publicAndPrivateKeyString;
-
 	/// <summary>The public key encoded in base64.</summary>
-	public string PublicKeyString => publicKeyString ??= Convert.ToBase64String(ExportPublicKey(PublicKey));
+	public string PublicKeyString => field ??= Convert.ToBase64String(ExportPublicKey(PublicKey));
 	/// <summary>The private key encoded in base64.</summary>
-	public string PrivateKeyString => privateKeyString ??= Convert.ToBase64String(ExportPrivateKey(PrivateKey));
+	public string PrivateKeyString => field ??= Convert.ToBase64String(ExportPrivateKey(PrivateKey));
 	/// <summary>The public and private key encoded in base64.</summary>
-	public string PublicAndPrivateKeyString => publicAndPrivateKeyString ??= Convert.ToBase64String(ExportPrivateAndPublicKey(PrivateKey, PublicKey));
+	public string PublicAndPrivateKeyString => field ??= Convert.ToBase64String(ExportPrivateAndPublicKey(PrivateKey, PublicKey));
 	/// <summary>The public key represented as its cryptographic data structure.</summary>
 	public ECPoint PublicKey { get; }
 	/// <summary>The private key represented as its cryptographic data structure.</summary>
@@ -59,7 +55,8 @@ public class IdentityData
 	}
 
 	internal static readonly ECKeyGenerationParameters KeyGenParams = new(X9ObjectIdentifiers.Prime256v1, new SecureRandom());
-	private static readonly Regex IdentityRegex = new(@"^(?<level>\d+)V(?<identity>[\w\/\+]+={0,2})$", RegexOptions.ECMAScript | RegexOptions.CultureInvariant);
+	[GeneratedRegex(@"^(?<level>\d+)V(?<identity>[\w\/\+]+={0,2})$", RegexOptions.ECMAScript | RegexOptions.CultureInvariant)]
+	private static partial Regex IdentityRegex { get; }
 	private static ReadOnlySpan<byte> TsIdentityObfuscationKey => "b9dfaa7bee6ac57ac7b65f1094a1c155e747327bc2fe5d51c512023fe54a280201004e90ad1daaae1075d53b7d571c30e063b5a62a4a017bb394833aa0983e6e"u8;
 
 	#region KEY IMPORT/EXPROT
