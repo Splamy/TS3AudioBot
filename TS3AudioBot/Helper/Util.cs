@@ -41,7 +41,7 @@ public static partial class Util
 
 	public static string FromSeed(int seed)
 	{
-		var seedStr = new char[7];
+		Span<char> seedStr = stackalloc char[7];
 		uint plainSeed = unchecked((uint)seed);
 		for (int i = 0; i < 7; i++)
 		{
@@ -57,7 +57,7 @@ public static partial class Util
 				seedStr[i] = '\0';
 			}
 		}
-		return new string(seedStr).TrimEnd('\0');
+		return new string(seedStr.TrimEnd('\0'));
 	}
 
 	public static int ToSeed(string seed)

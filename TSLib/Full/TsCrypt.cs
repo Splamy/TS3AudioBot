@@ -479,7 +479,7 @@ public sealed class TsCrypt
 	/// <param name="packetType">The packetType.</param>
 	/// <param name="dummyEncryption">Returns the const dummy (key,nonce) when true, ignoring all other parameters.</param>
 	/// <returns>A tuple of (key, nonce)</returns>
-	private (byte[] key, byte[] nonce) GetKeyNonce(bool fromServer, ushort packetId, uint generationId, PacketType packetType, bool dummyEncryption)
+	internal (byte[] key, byte[] nonce) GetKeyNonce(bool fromServer, ushort packetId, uint generationId, PacketType packetType, bool dummyEncryption)
 	{
 		if (dummyEncryption)
 			return DummyKeyAndNonceTuple;

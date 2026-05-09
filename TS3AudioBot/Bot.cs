@@ -499,7 +499,7 @@ public sealed class Bot
 		else
 		{
 			setStream ??= GetRandomFile(config.LocalConfigDir, "sleep*");
-			setStream ??= Util.GetEmbeddedFile("TS3AudioBot.Media.SleepingKitty.png");
+			setStream ??= Util.GetEmbeddedFile("TS3AudioBot.Assets.SleepingKitty.png");
 		}
 
 		if (setStream != null)

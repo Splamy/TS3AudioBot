@@ -1,25 +1,23 @@
-using NUnit.Framework;
 using System.Collections;
 using TS3AudioBot.Playlists.Shuffle;
 
-namespace TS3ABotUnitTests;
+namespace TS3AudioBot.Tests;
 
-[TestFixture]
 public class ShuffleTests
 {
-	[Test]
+	[Fact]
 	public void NormalOrderTest()
 	{
 		TestShuffleAlgorithmBiDir(new NormalOrder());
 	}
 
-	[Test]
+	[Fact]
 	public void ListedShuffleTest()
 	{
 		TestShuffleAlgorithmBiDir(new ListedShuffle());
 	}
 
-	[Test]
+	[Fact]
 	public void LinearFeedbackShiftRegisterTest()
 	{
 		TestShuffleAlgorithmBiDir(new LinearFeedbackShiftRegister());

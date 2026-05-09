@@ -4,11 +4,12 @@
 		<AssemblyName>TS3AudioBot</AssemblyName>
 		<OutputType>Exe</OutputType>
 		<TargetFramework>net10.0</TargetFramework>
-
+        
+        <ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 		<DebugType>embedded</DebugType>
 
-		<ApplicationIcon>Media\favicon.ico</ApplicationIcon>
+		<ApplicationIcon>Assets\favicon.ico</ApplicationIcon>
 
 		<NeutralLanguage>en</NeutralLanguage>
 
@@ -53,9 +54,7 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<EmbeddedResource Include="Resources\DefaultRights.toml" />
-		<EmbeddedResource Include="Media\SleepingKitty.png" />
-		<EmbeddedResource Include="Resources\NLog.config" />
+		<EmbeddedResource Include="Assets\*" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -75,6 +74,10 @@
 		<ProjectReference Include="..\TSLib\TSLib.csproj" />
 	</ItemGroup>
 
+    <ItemGroup>
+        <InternalsVisibleTo Include="TS3AudioBot.Tests"/>
+    </ItemGroup>
+    
 	<ItemGroup>
 		<Compile Update="Localization\strings.Designer.cs">
 			<DesignTime>True</DesignTime>
