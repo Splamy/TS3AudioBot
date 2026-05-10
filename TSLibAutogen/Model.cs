@@ -188,11 +188,11 @@ public class ModelBuilder
 
 	private List<M2BRule> BuildM2B(Messages messages, List<Struct> book, GenerationContextType context)
 	{
-		var m2bs = new List<M2BRule>();
+		List<M2BRule> m2bs = [];
 
 		foreach (var rule in M2BRules)
 		{
-			rule.properties ??= new List<M2BPropMove>();
+			rule.properties ??= [];
 
 			var msg = messages.Msgs.FirstOrDefault(x => x.Name == rule.from) ?? throw context.ParseError($"Rule {rule.from}->{rule.to} has no matching message");
 			var msgProps = msg.Fields;

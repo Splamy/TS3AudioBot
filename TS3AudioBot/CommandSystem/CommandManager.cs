@@ -30,7 +30,7 @@ public partial class CommandManager
 {
 	private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 	[GeneratedRegex(@"^[a-z\d]+( [a-z\d]+)*$")]
-	private static partial Regex CommandNamespaceValidatorReg();
+	private static partial Regex CommandNamespaceValidatorReg { get; }
 
 	private readonly Dictionary<string, AliasCommand> aliasPaths = [];
 	private readonly HashSet<string> commandPaths = [];
@@ -110,7 +110,7 @@ public partial class CommandManager
 
 	public IEnumerable<string> AllAlias => aliasPaths.Keys;
 
-	public AliasCommand? GetAlias(string path) => aliasPaths.TryGetValue(path, out var ali) ? ali : null;
+	public AliasCommand? GetAlias(string path) => aliasPaths.GetValueOrDefault(path);
 
 	public static IEnumerable<BotCommand> GetBotCommands(object? obj, Type? type = null) => GetBotCommands(GetCommandMethods(obj, type));
 
@@ -157,16 +157,15 @@ public partial class CommandManager
 
 	private E<string> LoadCommand(BotCommand com)
 	{
-		if (commandPaths.Contains(com.FullQualifiedName))
+		if (!commandPaths.Add(com.FullQualifiedName))
 			return "Command already exists: " + com.InvokeName;
 
-		commandPaths.Add(com.FullQualifiedName);
 		return LoadICommand(com, com.InvokeName);
 	}
 
 	private E<string> LoadICommand(ICommand com, string path)
 	{
-		if (!CommandNamespaceValidatorReg().IsMatch(path))
+		if (!CommandNamespaceValidatorReg.IsMatch(path))
 			return "Command has an invalid invoke name: " + path;
 
 		string[] comPath = path.Split(' ');

@@ -7,8 +7,9 @@
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
 using System;
+using System.Collections.Frozen;
 using System.Collections.Generic;
-using System.Linq;
+using System.Collections.Immutable;
 using TS3AudioBot.CommandSystem.CommandResults;
 using TSLib;
 
@@ -20,7 +21,7 @@ public static class CommandSystemTypes
 	/// The order of types, the first item has the highest priority,
 	/// items not in the list have higher priority as they are special types.
 	/// </summary>
-	public static readonly Type[] TypeOrder = [
+	public static readonly ImmutableArray<Type> TypeOrder = [
 			typeof(bool),
 			typeof(sbyte), typeof(byte),
 			typeof(short), typeof(ushort),
@@ -29,7 +30,7 @@ public static class CommandSystemTypes
 			typeof(float), typeof(double),
 			typeof(TimeSpan), typeof(DateTime),
 			typeof(string) ];
-	public static readonly HashSet<Type> BasicTypes = [..TypeOrder];
+	public static readonly FrozenSet<Type> BasicTypes = [..TypeOrder];
 
 	public static readonly HashSet<Type> AdvancedTypes = [
 			typeof(IAudioResourceResult),

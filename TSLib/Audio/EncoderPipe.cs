@@ -28,7 +28,7 @@ public sealed class EncoderPipe : IAudioPipe, IDisposable
 
 	private const int SegmentFrames = 960;
 	// todo add upper limit to buffer size and drop everying over
-	private byte[] notEncodedBuffer = Array.Empty<byte>();
+	private byte[] notEncodedBuffer = [];
 	private int notEncodedLength;
 	// https://tools.ietf.org/html/rfc6716#section-3.2.1
 	private const int max_encoded_size = 255 * 4 + 255;

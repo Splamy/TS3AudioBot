@@ -7,6 +7,7 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System.Buffers.Text;
 using TSLib.Full;
 
 namespace TSLib;
@@ -21,8 +22,7 @@ public partial struct Uid
 	{
 		if (uid == Anonymous.Value || uid == ServerAdmin.Value)
 			return true;
-		var result = TsCrypt.Base64Decode(uid);
-		return result != null && result.Length == 20;
+		return Base64.IsValid(uid, out var length) && length == 20;
 	}
 }
 

@@ -28,14 +28,14 @@ public interface IVoiceTarget
 	/// <summary>Adds a channel to the audio streaming list.</summary>
 	/// <param name="temp">When set to true this channel will be cleared with
 	/// the next <see cref="ClearTemporary"/> call (unless overwritten with false).</param>
-	/// <param name="channel">The id of the channel.</param>
-	void WhisperChannelSubscribe(bool temp, params ChannelId[] channel);
+	/// <param name="channels">The id of the channel.</param>
+	void WhisperChannelSubscribe(bool temp, params IEnumerable<ChannelId> channels);
 	/// <summary>Removes a channel from the audio streaming list.</summary>
 	/// <param name="temp">When set to true this channel will be cleared with
 	/// the next <see cref="ClearTemporary"/> call (unless overwritten with false).</param>
-	/// <param name="channel">The id of the channel.</param>
-	void WhisperChannelUnsubscribe(bool temp, params ChannelId[] channel);
+	/// <param name="channels">The id of the channel.</param>
+	void WhisperChannelUnsubscribe(bool temp, params IEnumerable<ChannelId> channels);
 	void ClearTemporary();
-	void WhisperClientSubscribe(params ClientId[] userId);
-	void WhisperClientUnsubscribe(params ClientId[] userId);
+	void WhisperClientSubscribe(params IEnumerable<ClientId> userIds);
+	void WhisperClientUnsubscribe(params IEnumerable<ClientId> userIds);
 }

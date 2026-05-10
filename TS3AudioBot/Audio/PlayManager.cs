@@ -223,7 +223,7 @@ public class PlayManager
 			throw Error.Exception(ex).LocalStr(strings.error_playmgr_internal_error);
 		}
 
-		playerConnection.Volume = Tools.Clamp(playerConnection.Volume, confBot.Audio.Volume.Min, confBot.Audio.Volume.Max);
+		playerConnection.Volume = Math.Clamp(playerConnection.Volume, confBot.Audio.Volume.Min, confBot.Audio.Volume.Max);
 		CurrentPlayData = playInfo; // TODO meta as readonly
 		await AfterResourceStarted.InvokeAsync(this, playInfo);
 	}

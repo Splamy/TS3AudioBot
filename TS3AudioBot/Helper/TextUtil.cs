@@ -33,13 +33,13 @@ public static partial class TextUtil
 
 
 	[GeneratedRegex(@"\[URL\](.+?)\[\/URL\]", RegexOptions.IgnoreCase)]
-	private static partial Regex BbUrl();
+	private static partial Regex BbUrl { get; }
 
 	public static string ExtractUrlFromBb(string ts3Link)
 	{
 		if (ts3Link.Contains("[URL]"))
 		{
-			var match = BbUrl().Match(ts3Link);
+			var match = BbUrl.Match(ts3Link);
 			if (match.Success)
 				return match.Groups[1].Value;
 		}
@@ -75,7 +75,7 @@ public static partial class TextUtil
 	}
 
 	[GeneratedRegex(@"^(?:(\d+)d)?(?:(\d+)h)?(?:(\d+)m)?(?:(\d+)s)?(?:(\d+)ms)?$", RegexOptions.IgnoreCase)]
-	private static partial Regex HumanTimeSpan();
+	private static partial Regex HumanTimeSpan { get; }
 
 	public static TimeSpan? ParseTime(string value)
 	{
@@ -94,7 +94,7 @@ public static partial class TextUtil
 			return int.TryParse(svalue, out var num) ? num : 0;
 		}
 
-		var match = HumanTimeSpan().Match(value);
+		var match = HumanTimeSpan.Match(value);
 		if (match.Success)
 		{
 			try

@@ -19,7 +19,6 @@ public class UserSession
 	private const string ResponseKey = "response";
 
 	private Dictionary<string, object>? assocMap;
-	protected bool lockToken;
 
 	public Response? ResponseProcessor => Get<Response>(ResponseKey, out var val) ? val : null;
 

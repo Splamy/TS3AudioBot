@@ -130,25 +130,25 @@ public abstract partial class TsBaseFunctions : IDisposable
 		});
 
 	public CmdR KickClientFromServer(ClientId clientId, string? reasonMsg = null)
-		=> KickClient(new[] { clientId }, KickFrom.Server, reasonMsg);
+		=> KickClient([clientId], KickFrom.Server, reasonMsg);
 
-	public CmdR KickClientFromServer(ClientId[] clientIds, string? reasonMsg = null)
+	public CmdR KickClientFromServer(IEnumerable<ClientId> clientIds, string? reasonMsg = null)
 		=> KickClient(clientIds, KickFrom.Server, reasonMsg);
 
 	public CmdR KickClientFromChannel(ClientId clientId, string? reasonMsg = null)
-		=> KickClient(new[] { clientId }, KickFrom.Channel, reasonMsg);
+		=> KickClient([clientId], KickFrom.Channel, reasonMsg);
 
-	public CmdR KickClientFromChannel(ClientId[] clientIds, string? reasonMsg = null)
+	public CmdR KickClientFromChannel(IEnumerable<ClientId> clientIds, string? reasonMsg = null)
 		=> KickClient(clientIds, KickFrom.Channel, reasonMsg);
 
 	/// <summary>Kicks one or more clients specified with clid from their currently joined channel or from the server, depending on <paramref name="reasonId"/>.
 	/// The reasonmsg parameter specifies a text message sent to the kicked clients.
 	/// This parameter is optional and may only have a maximum of 40 characters.</summary>
-	public CmdR KickClient(ClientId[] clientIds, KickFrom reasonId, string? reasonMsg = null)
+	public CmdR KickClient(IEnumerable<ClientId> clientIds, KickFrom reasonId, string? reasonMsg = null)
 		=> SendVoid(new TsCommand("clientkick") {
-				{ "reasonid", (int)reasonId },
-				{ "clid", clientIds },
-				{ "reasonmsg", reasonMsg },
+			{ "reasonid", (int)reasonId },
+			{ "clid", clientIds },
+			{ "reasonmsg", reasonMsg },
 		});
 
 	public CmdR BanClient(ushort clientId, TimeSpan? duration = null, string? reasonMsg = null)

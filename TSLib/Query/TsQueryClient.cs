@@ -24,7 +24,7 @@ namespace TSLib.Query;
 
 public sealed partial class TsQueryClient : TsBaseFunctions
 {
-	private readonly object sendQueueLock = new();
+	private readonly Lock sendQueueLock = new();
 	private readonly TcpClient tcpClient;
 	private StreamReader? tcpReader;
 	private StreamWriter? tcpWriter;
@@ -151,7 +151,7 @@ public sealed partial class TsQueryClient : TsBaseFunctions
 		await reader.CompleteAsync();
 	}
 
-	public override Task<R<T[], CommandError>> Send<T>(TsCommand com)
+	public override async Task<R<T[], CommandError>> Send<T>(TsCommand com)
 	{
 		using var wb = new WaitBlock(msgProc.Deserializer);
 		lock (sendQueueLock)
@@ -160,7 +160,7 @@ public sealed partial class TsQueryClient : TsBaseFunctions
 			SendRaw(com.ToString());
 		}
 
-		return wb.WaitForMessageAsync<T>();
+		return await wb.WaitForMessageAsync<T>();
 	}
 
 	public override Task<R<T[], CommandError>> SendHybrid<T>(TsCommand com, NotificationType type)

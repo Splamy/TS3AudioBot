@@ -1,0 +1,88 @@
+using TS3AudioBot.CommandSystem.Text;
+
+namespace TS3AudioBot.Tests;
+
+public class ColorGeneratorTests
+{
+	[Fact]
+	public void Color1Test()
+	{
+		var res = TextMod.Format("Hello {0}".Mod().Color(Color.Red).Bold(), "World".Mod().Bold());
+		Assert.Equal("[B][COLOR=red]Hello [/COLOR]World", res);
+	}
+
+	[Fact]
+	public void Color2Test()
+	{
+		var res = TextMod.Format("Hello {0}".Mod().Color(Color.Blue).Bold(), "World".Mod().Bold().Italic());
+		Assert.Equal("[B][COLOR=#00F]Hello [/COLOR][I]World", res);
+	}
+
+	[Fact]
+	public void Color3Test()
+	{
+		var res = TextMod.Format("Hello {0}{1}".Mod().Color(Color.Orange).Bold(),
+			"World".Mod().Bold().Italic(),
+			", How are you?".Mod().Underline());
+		Assert.Equal("[B][COLOR=#FF8000]Hello [/COLOR][I]World[/B][U], How are you?", res);
+	}
+
+	[Fact]
+	public void Color4Test()
+	{
+		var res = TextMod.Format("Hello {0} but {1}".Mod().Color(new Color(0, 0, 1)).Bold(),
+			   "World".Mod().Bold().Italic(),
+			   ", How are you?".Mod().Underline());
+		Assert.Equal("[B][COLOR=#000001]Hello [/COLOR][I]World[/I][COLOR=#000001] but [/B][U], How are you?", res);
+	}
+
+	[Fact]
+	public void Color5Test()
+	{
+		var res = TextMod.Format("Hello {0} but {1}".Mod().Color(new Color(255, 17, 17)).Bold(),
+				"World".Mod().Bold().Italic().Strike(),
+				", How are you?".Mod().Underline());
+		Assert.Equal("[B][COLOR=#F11]Hello [/COLOR][I][S]World[/I][COLOR=#F11] but [/B][U], How are you?", res);
+	}
+
+	[Fact]
+	public void Color6Test()
+	{
+		var res = TextMod.Format("Hello {0} but {1}",
+				"World".Mod().Bold().Color(Color.Red),
+				", How are you?".Mod().Bold().Color(Color.Red));
+		Assert.Equal("Hello [B][COLOR=red]World[/B] but [B][COLOR=red], How are you?", res);
+	}
+
+	[Fact]
+	public void Color7Test()
+	{
+		var res = TextMod.Format("Hello {0} but {1}".Mod().Color(Color.Red),
+				"World".Mod().Color(Color.Blue),
+				", How are you?".Mod().Color(Color.Blue));
+		Assert.Equal("[COLOR=red]Hello [/COLOR][COLOR=#00F]World[/COLOR][COLOR=red] but [/COLOR][COLOR=#00F], How are you?", res);
+	}
+
+	[Fact]
+	public void NoFormatHoles()
+	{
+		var res = TextMod.Format("Hello World".Mod().Color(Color.Red));
+		Assert.Equal("[COLOR=red]Hello World", res);
+	}
+
+	[Fact]
+	public void NoFormatHolesWithSuperfluousParameters()
+	{
+		var res = TextMod.Format("Hello World".Mod().Color(Color.Red), "Unused");
+		Assert.Equal("[COLOR=red]Hello World", res);
+	}
+
+	[Fact]
+	public void OutOfOrderFormatHoles()
+	{
+		var res = TextMod.Format("Hello {1} but {0}".Mod().Color(Color.Red),
+			"Inverted".Mod().Bold(),
+			"World".Mod().Italic());
+		Assert.Equal("[COLOR=red]Hello [/COLOR][I]World[/I][COLOR=red] but [/COLOR][B]Inverted", res);
+	}
+}

@@ -11,19 +11,20 @@ using Chaos.NaCl.Ed25519Ref10;
 using System;
 using System.Buffers.Binary;
 using System.Collections.Generic;
+using System.Security.Cryptography;
 using TSLib.Helper;
 
 namespace TSLib.Full;
 
 public class Licenses
 {
-	public static readonly byte[] LicenseRootKey =
-	{
-			0xcd, 0x0d, 0xe2, 0xae, 0xd4, 0x63, 0x45, 0x50, 0x9a, 0x7e, 0x3c, 0xfd, 0x8f, 0x68, 0xb3, 0xdc, 0x75, 0x55, 0xb2,
-			0x9d, 0xcc, 0xec, 0x73, 0xcd, 0x18, 0x75, 0x0f, 0x99, 0x38, 0x12, 0x40, 0x8a
-		};
+	public static ReadOnlySpan<byte> LicenseRootKey =>
+	[
+		0xcd, 0x0d, 0xe2, 0xae, 0xd4, 0x63, 0x45, 0x50, 0x9a, 0x7e, 0x3c, 0xfd, 0x8f, 0x68, 0xb3, 0xdc, 0x75, 0x55, 0xb2,
+		0x9d, 0xcc, 0xec, 0x73, 0xcd, 0x18, 0x75, 0x0f, 0x99, 0x38, 0x12, 0x40, 0x8a
+	];
 
-	public List<LicenseBlock> Blocks { get; } = new List<LicenseBlock>();
+	public List<LicenseBlock> Blocks { get; } = [];
 
 	public static R<Licenses, string> Parse(ReadOnlySpan<byte> data)
 	{
@@ -54,7 +55,7 @@ public class Licenses
 
 	public byte[] DeriveKey()
 	{
-		var round = LicenseRootKey; //Ed25519.DecodePoint(LicenseRootKey);
+		var round = LicenseRootKey.ToArray(); //Ed25519.DecodePoint(LicenseRootKey);
 		foreach (var block in Blocks)
 			round = block.DeriveKey(round);
 		return round;
@@ -108,7 +109,7 @@ public abstract class LicenseBlock
 			if (!Enum.IsDefined(typeof(ServerLicenseType), data[42]))
 				return $"Unknown license type {data[42]}";
 
-			List<byte[]> properties = new();
+			List<byte[]> properties = [];
 			int propertyCount = data[43];
 			int pos = 44;
 			for (int i = 0; i < propertyCount; i++) {
@@ -139,8 +140,9 @@ public abstract class LicenseBlock
 		block.Key = data.Slice(1, 32).ToArray();
 
 		var allLen = MinBlockLen + read;
-		var hash = TsCrypt.Hash512It(data[1..allLen].ToArray());
-		block.Hash = hash.AsSpan(0, 32).ToArray();
+		Span<byte> hash = stackalloc byte[SHA512.HashSizeInBytes];
+		TsCrypt.Hash512It(data[1..allLen], hash);
+		block.Hash = hash[..32].ToArray();
 
 		return (block, allLen);
 	}

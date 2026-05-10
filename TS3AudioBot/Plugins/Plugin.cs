@@ -190,7 +190,7 @@ internal class Plugin
 		using var pluginFileStream = System.IO.File.OpenRead(File.FullName);
 		var sourceTree = CSharpSyntaxTree.ParseText(SourceText.From(pluginFileStream));
 
-		var compilation = CSharpCompilation.Create($"plugin_{File.Name}_{Tools.Random.Next()}")
+		var compilation = CSharpCompilation.Create($"plugin_{File.Name}_{Random.Shared.Next()}")
 			.WithOptions(new CSharpCompilationOptions(
 				outputKind: OutputKind.DynamicallyLinkedLibrary,
 				optimizationLevel: OptimizationLevel.Release))

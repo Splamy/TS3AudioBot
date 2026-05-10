@@ -63,7 +63,7 @@ public class ResponseDictionary : IDictionary<KeyType, ValueType>, IResponse
 	}
 	public string? ReturnCode
 	{
-		get => data.ContainsKey("return_code") ? data["return_code"] : string.Empty;
+		get => data.TryGetValue("return_code", out var rc) ? rc : string.Empty;
 		set => data["return_code"] = value!;
 	}
 }

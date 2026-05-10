@@ -22,20 +22,16 @@ using System.Text.RegularExpressions;
 namespace TSLib.Full;
 
 /// <summary>Represents the identity of a user.
-/// To generate new identities use <see cref="TsCrypt.GenerateNewIdentity"/>.
-/// To improve the security level of this identity use <see cref="TsCrypt.ImproveSecurity"/>.</summary>
-public class IdentityData
+/// To generate new identities use <see cref="IdentityData.GenerateNewIdentity"/>.
+/// To improve the security level of this identity use <see cref="IdentityData.ImproveSecurity"/>.</summary>
+public partial class IdentityData
 {
-	private string? publicKeyString;
-	private string? privateKeyString;
-	private string? publicAndPrivateKeyString;
-
 	/// <summary>The public key encoded in base64.</summary>
-	public string PublicKeyString => publicKeyString ??= Convert.ToBase64String(ExportPublicKey(PublicKey));
+	public string PublicKeyString => field ??= Convert.ToBase64String(ExportPublicKey(PublicKey));
 	/// <summary>The private key encoded in base64.</summary>
-	public string PrivateKeyString => privateKeyString ??= Convert.ToBase64String(ExportPrivateKey(PrivateKey));
+	public string PrivateKeyString => field ??= Convert.ToBase64String(ExportPrivateKey(PrivateKey));
 	/// <summary>The public and private key encoded in base64.</summary>
-	public string PublicAndPrivateKeyString => publicAndPrivateKeyString ??= Convert.ToBase64String(ExportPrivateAndPublicKey(PrivateKey, PublicKey));
+	public string PublicAndPrivateKeyString => field ??= Convert.ToBase64String(ExportPrivateAndPublicKey(PrivateKey, PublicKey));
 	/// <summary>The public key represented as its cryptographic data structure.</summary>
 	public ECPoint PublicKey { get; }
 	/// <summary>The private key represented as its cryptographic data structure.</summary>
@@ -59,8 +55,9 @@ public class IdentityData
 	}
 
 	internal static readonly ECKeyGenerationParameters KeyGenParams = new(X9ObjectIdentifiers.Prime256v1, new SecureRandom());
-	private static readonly Regex IdentityRegex = new(@"^(?<level>\d+)V(?<identity>[\w\/\+]+={0,2})$", RegexOptions.ECMAScript | RegexOptions.CultureInvariant);
-	private static readonly byte[] TsIdentityObfuscationKey = Encoding.ASCII.GetBytes("b9dfaa7bee6ac57ac7b65f1094a1c155e747327bc2fe5d51c512023fe54a280201004e90ad1daaae1075d53b7d571c30e063b5a62a4a017bb394833aa0983e6e");
+	[GeneratedRegex(@"^(?<level>\d+)V(?<identity>[\w\/\+]+={0,2})$", RegexOptions.ECMAScript | RegexOptions.CultureInvariant)]
+	private static partial Regex IdentityRegex { get; }
+	private static ReadOnlySpan<byte> TsIdentityObfuscationKey => "b9dfaa7bee6ac57ac7b65f1094a1c155e747327bc2fe5d51c512023fe54a280201004e90ad1daaae1075d53b7d571c30e063b5a62a4a017bb394833aa0983e6e"u8;
 
 	#region KEY IMPORT/EXPROT
 
@@ -85,7 +82,7 @@ public class IdentityData
 		return FromBase64(any, keyOffset, lastCheckedKeyOffset);
 	}
 
-	/// <summary>This methods loads a secret identity.</summary>
+	/// <summary>This method loads a secret identity.</summary>
 	/// <param name="key">The key stored in base64, encoded like the libtomcrypt export method of a private key.
 	/// Or the TSLib's shorted private-only key.</param>
 	/// <param name="keyOffset">A number which determines the security level of an identity.</param>
@@ -174,7 +171,7 @@ public class IdentityData
 		{
 			var asnKeyData = (DerSequence)Asn1Object.FromByteArray(asnByteArray);
 			var bitInfo = ((DerBitString)asnKeyData[0]).IntValue;
-			if (bitInfo == 0b0000_0000 || bitInfo == 0b1000_0000)
+			if (bitInfo is 0b0000_0000 or 0b1000_0000)
 			{
 				var x = ((DerInteger)asnKeyData[2]).Value;
 				var y = ((DerInteger)asnKeyData[3]).Value;
@@ -196,20 +193,20 @@ public class IdentityData
 
 	private static byte[] ExportPublicKey(ECPoint publicKey)
 		=> new DerSequence(
-			new DerBitString(new byte[] { 0b0000_0000 }, 7),
+			new DerBitString([0b0000_0000], 7),
 			new DerInteger(32),
 			new DerInteger(publicKey.AffineXCoord.ToBigInteger()),
 			new DerInteger(publicKey.AffineYCoord.ToBigInteger())).GetDerEncoded();
 
 	private static byte[] ExportPrivateKey(BigInteger privateKey)
 		=> new DerSequence(
-			new DerBitString(new byte[] { 0b1100_0000 }, 6),
+			new DerBitString([0b1100_0000], 6),
 			new DerInteger(32),
 			new DerInteger(privateKey)).GetDerEncoded();
 
 	private static byte[] ExportPrivateAndPublicKey(BigInteger privateKey, ECPoint publicKey)
 		=> new DerSequence(
-			new DerBitString(new byte[] { 0b1000_0000 }, 7),
+			new DerBitString([0b1000_0000], 7),
 			new DerInteger(32),
 			new DerInteger(publicKey.AffineXCoord.ToBigInteger()),
 			new DerInteger(publicKey.AffineYCoord.ToBigInteger()),
@@ -239,7 +236,6 @@ public class IdentityData
 	/// <para>The algorithm takes approximately 2^toLevel milliseconds to calculate; so be careful!</para>
 	/// This method can be canceled anytime since progress which is not enough for the next level
 	/// will be saved in <see cref="IdentityData.LastCheckedKeyOffset"/> continuously.</summary>
-	/// <param name="identity">The identity to improve.</param>
 	/// <param name="toLevel">The targeted level.</param>
 	public void ImproveSecurity(int toLevel)
 	{

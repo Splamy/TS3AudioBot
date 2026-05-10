@@ -122,7 +122,7 @@ public static class MainCommands
 		url = TextUtil.ExtractUrlFromBb(url);
 		await WebWrapper.Request(url).ToAction(async (x, ct) =>
 		{
-			using var stream = await x.Content.ReadAsStreamAsync(ct);
+			await using var stream = await x.Content.ReadAsStreamAsync(ct);
 			using var image = await ImageUtil.ResizeImageSave(stream, ct);
 			await ts3Client.UploadAvatar(image.Stream, ct);
 		});
@@ -165,7 +165,7 @@ public static class MainCommands
 		{
 			var ffPath = rootConf.Tools.Ffmpeg.Path.Value;
 			var result = await Cli.Wrap(ffPath)
-				.WithArguments(new[] { "-hide_banner", "-protocols" })
+				.WithArguments(["-hide_banner", "-protocols"])
 				.ExecuteBufferedAsync();
 			var protos = new HashSet<string>(result.StandardOutput
 				.Split('\n', StringSplitOptions.TrimEntries)
@@ -794,8 +794,8 @@ public static class MainCommands
 		const int maxSongs = 20;
 		var playIndex = playlistManager.Index;
 		var plist = playlistManager.CurrentList;
-		int offsetV = Tools.Clamp(offset, 0, plist.Items.Count);
-		int countV = Tools.Clamp(count ?? 3, 0, Math.Min(maxSongs, plist.Items.Count - offsetV));
+		int offsetV = Math.Clamp(offset, 0, plist.Items.Count);
+		int countV = Math.Clamp(count ?? 3, 0, Math.Min(maxSongs, plist.Items.Count - offsetV));
 		var items = plist.Items.Skip(offsetV).Take(countV).Select(x => resourceFactory.ToApiFormat(x)).ToArray();
 
 		var plInfo = new QueueInfo(".mix", plist.Title)
@@ -826,7 +826,7 @@ public static class MainCommands
 					tmb.AppendLine(line);
 				else
 					break; // ?
-				}
+			}
 
 			return tmb.ToString();
 		});
@@ -1035,7 +1035,7 @@ public static class MainCommands
 	}
 
 	[Command("list list")]
-	[Usage("<pattern>", "Filters all lists cantaining the given pattern.")]
+	[Usage("<pattern>", "Filters all lists containing the given pattern.")]
 	public static JsonArray<PlaylistInfo> CommandListList(PlaylistManager playlistManager, string? pattern = null)
 	{
 		var files = playlistManager.GetAvailablePlaylists(pattern).UnwrapThrow();
@@ -1086,8 +1086,8 @@ public static class MainCommands
 	{
 		const int maxSongs = 20;
 		var plist = playlistManager.LoadPlaylist(listId).UnwrapThrow();
-		int offsetV = Tools.Clamp(offset ?? 0, 0, plist.Items.Count);
-		int countV = Tools.Clamp(count ?? maxSongs, 0, Math.Min(maxSongs, plist.Items.Count - offsetV));
+		int offsetV = Math.Clamp(offset ?? 0, 0, plist.Items.Count);
+		int countV = Math.Clamp(count ?? maxSongs, 0, Math.Min(maxSongs, plist.Items.Count - offsetV));
 		var items = plist.Items.Skip(offsetV).Take(countV).Select(x => resourceFactory.ToApiFormat(x)).ToArray();
 		var plInfo = new PlaylistInfo(listId, plist.Title)
 		{
@@ -1211,7 +1211,7 @@ public static class MainCommands
 	[Command("quiz off")]
 	public static async Task CommandQuizOff(Bot bot, PlayManager playManager, ClientCall? invoker = null)
 	{
-		if (invoker != null && (invoker.Visibility == TextMessageTargetMode.Private || invoker.Visibility == TextMessageTargetMode.Poke))
+		if (invoker != null && invoker.Visibility is TextMessageTargetMode.Private or TextMessageTargetMode.Poke)
 			throw new CommandException(strings.cmd_quiz_off_no_cheating, CommandExceptionReason.CommandError);
 		bot.QuizMode = false;
 		if (playManager.IsPlaying)
@@ -1287,17 +1287,17 @@ public static class MainCommands
 	{
 		if (first != null && second != null)
 		{
-			return Tools.Random.Next(Math.Min(first.Value, second.Value), Math.Max(first.Value, second.Value));
+			return Random.Shared.Next(Math.Min(first.Value, second.Value), Math.Max(first.Value, second.Value));
 		}
 		else if (first != null)
 		{
 			if (first.Value <= 0)
 				throw new CommandException(strings.cmd_rng_value_must_be_positive, CommandExceptionReason.CommandError);
-			return Tools.Random.Next(first.Value);
+			return Random.Shared.Next(first.Value);
 		}
 		else
 		{
-			return Tools.Random.Next(0, 100);
+			return Random.Shared.Next(0, 100);
 		}
 	}
 
@@ -1659,7 +1659,7 @@ public static class MainCommands
 
 		var splitted = delimiter is null
 			? text.Split()
-			: text.Split(new[] { delimiter }, StringSplitOptions.None);
+			: text.Split([delimiter], StringSplitOptions.None);
 		if (splitted.Length < start + count)
 			throw new CommandException(strings.cmd_take_not_enough_arguements, CommandExceptionReason.CommandError);
 		var splittedarr = splitted.Skip(start).Take(count).ToArray();
@@ -1723,7 +1723,7 @@ public static class MainCommands
 		else if (relNeg) newVolume = curVolume - parsedVolume;
 		else newVolume = parsedVolume;
 
-		if (newVolume < AudioValues.MinVolume || newVolume > AudioValues.MaxVolume)
+		if (newVolume is < AudioValues.MinVolume or > AudioValues.MaxVolume)
 			throw new CommandException(string.Format(strings.cmd_volume_is_limited, AudioValues.MinVolume, AudioValues.MaxVolume), CommandExceptionReason.CommandError);
 
 		if (newVolume <= config.Audio.MaxUserVolume || newVolume <= curVolume || caller.ApiCall)
@@ -1755,7 +1755,7 @@ public static class MainCommands
 	[Command("whisper group")]
 	public static void CommandWhisperGroup(IVoiceTarget targetManager, GroupWhisperType type, GroupWhisperTarget target, ulong? targetId = null)
 	{
-		if (type == GroupWhisperType.ServerGroup || type == GroupWhisperType.ChannelGroup)
+		if (type is GroupWhisperType.ServerGroup or GroupWhisperType.ChannelGroup)
 		{
 			if (targetId is null)
 				throw new CommandException(strings.cmd_whisper_group_missing_target, CommandExceptionReason.CommandError);

@@ -1,13 +1,11 @@
-using NUnit.Framework;
 using System;
 using TSLib.Full;
 
-namespace TS3ABotUnitTests;
+namespace TS3AudioBot.Tests;
 
-[TestFixture]
 public class RingQueueTest
 {
-	[Test]
+	[Fact]
 	public void RingQueueTest1()
 	{
 		var q = new RingQueue<int>(3, 5);
@@ -15,7 +13,7 @@ public class RingQueueTest
 		q.Set(0, 42);
 
 		Assert.True(q.TryPeekStart(0, out int ov));
-		Assert.AreEqual(42, ov);
+		Assert.Equal(42, ov);
 
 		q.Set(1, 43);
 
@@ -23,15 +21,15 @@ public class RingQueueTest
 		Assert.Throws<ArgumentOutOfRangeException>(() => q.Set(1, 99));
 
 		Assert.True(q.TryPeekStart(0, out ov));
-		Assert.AreEqual(42, ov);
+		Assert.Equal(42, ov);
 		Assert.True(q.TryPeekStart(1, out ov));
-		Assert.AreEqual(43, ov);
+		Assert.Equal(43, ov);
 
 		Assert.True(q.TryDequeue(out ov));
-		Assert.AreEqual(42, ov);
+		Assert.Equal(42, ov);
 
 		Assert.True(q.TryPeekStart(0, out ov));
-		Assert.AreEqual(43, ov);
+		Assert.Equal(43, ov);
 		Assert.False(q.TryPeekStart(1, out ov));
 
 		q.Set(3, 45);
@@ -41,9 +39,9 @@ public class RingQueueTest
 		Assert.Throws<ArgumentOutOfRangeException>(() => q.Set(4, 99));
 
 		Assert.True(q.TryDequeue(out ov));
-		Assert.AreEqual(43, ov);
+		Assert.Equal(43, ov);
 		Assert.True(q.TryDequeue(out ov));
-		Assert.AreEqual(44, ov);
+		Assert.Equal(44, ov);
 
 		q.Set(4, 46);
 
@@ -53,11 +51,11 @@ public class RingQueueTest
 		q.Set(0, 47);
 
 		Assert.True(q.TryDequeue(out ov));
-		Assert.AreEqual(45, ov);
+		Assert.Equal(45, ov);
 		Assert.True(q.TryDequeue(out ov));
-		Assert.AreEqual(46, ov);
+		Assert.Equal(46, ov);
 		Assert.True(q.TryDequeue(out ov));
-		Assert.AreEqual(47, ov);
+		Assert.Equal(47, ov);
 
 		q.Set(2, 49);
 
@@ -66,12 +64,12 @@ public class RingQueueTest
 		q.Set(1, 48);
 
 		Assert.True(q.TryDequeue(out ov));
-		Assert.AreEqual(48, ov);
+		Assert.Equal(48, ov);
 		Assert.True(q.TryDequeue(out ov));
-		Assert.AreEqual(49, ov);
+		Assert.Equal(49, ov);
 	}
 
-	[Test]
+	[Fact]
 	public void RingQueueTest2()
 	{
 		var q = new RingQueue<int>(50, ushort.MaxValue + 1);
@@ -80,7 +78,7 @@ public class RingQueueTest
 		{
 			q.Set(i, i);
 			Assert.True(q.TryDequeue(out var iCheck));
-			Assert.AreEqual(i, iCheck);
+			Assert.Equal(i, iCheck);
 		}
 
 		var setStatus = q.IsSet(ushort.MaxValue - 20);
@@ -92,7 +90,7 @@ public class RingQueueTest
 		}
 	}
 
-	[Test]
+	[Fact]
 	public void RingQueueTest3()
 	{
 		var q = new RingQueue<int>(100, ushort.MaxValue + 1);
@@ -107,7 +105,7 @@ public class RingQueueTest
 			for (int i = 0; i < blockSize; i++)
 			{
 				Assert.True(q.TryDequeue(out var iCheck));
-				Assert.AreEqual(i, iCheck);
+				Assert.Equal(i, iCheck);
 			}
 		}
 
@@ -121,7 +119,7 @@ public class RingQueueTest
 			for (int i = 0; i < blockSize; i++)
 			{
 				Assert.True(q.TryDequeue(out var iCheck));
-				Assert.AreEqual(i, iCheck);
+				Assert.Equal(i, iCheck);
 			}
 		}
 	}

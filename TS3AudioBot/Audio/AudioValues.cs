@@ -8,7 +8,6 @@
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
 using System;
-using TSLib.Helper;
 
 namespace TS3AudioBot.Audio;
 
@@ -33,7 +32,7 @@ public static class AudioValues
 		value = (value - MinVolume) / (MaxVolume - MinVolume);
 
 		// Scale the value logarithmically
-		return Tools.Clamp((float)(fact_a * Math.Exp(fact_b * value)) - fact_a, 0, 1);
+		return Math.Clamp((float)(fact_a * Math.Exp(fact_b * value)) - fact_a, 0, 1);
 	}
 
 	public static float FactorToHumanVolume(float value)
@@ -42,7 +41,7 @@ public static class AudioValues
 		if (value > 1) return MaxVolume;
 
 		// Undo logarithmic scale
-		value = Tools.Clamp((float)(Math.Log((value + fact_a) / fact_a) / fact_b), 0, 1);
+		value = Math.Clamp((float)(Math.Log((value + fact_a) / fact_a) / fact_b), 0, 1);
 
 		// Map input values from [0, 1] to [MinVolume, MaxVolume]
 		return (value * (MaxVolume - MinVolume)) + MinVolume;

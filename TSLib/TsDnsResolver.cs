@@ -34,21 +34,21 @@ public static class TsDnsResolver
 	private const string NicknameLookup = "https://named.myteamspeak.com/lookup?name=";
 	private static readonly TimeSpan LookupTimeout = TimeSpan.FromSeconds(1);
 	private static readonly HttpClient httpClient = new();
-	public static readonly Resolver Resolver = new(new[]
-	{
+
+	public static readonly Resolver Resolver = new([
 		// Google
-		new IPEndPoint(new IPAddress(new byte[] { 8,8,8,8 }), 53),
-		new IPEndPoint(new IPAddress(new byte[] { 8,8,4,4 }), 53),
+		new IPEndPoint(new IPAddress([8, 8, 8, 8]), 53),
+		new IPEndPoint(new IPAddress([8, 8, 4, 4]), 53),
 		// Cloudflare
-		new IPEndPoint(new IPAddress(new byte[] { 1,1,1,1 }), 53),
-		new IPEndPoint(new IPAddress(new byte[] { 1,0,0,1 }), 53),
+		new IPEndPoint(new IPAddress([1, 1, 1, 1]), 53),
+		new IPEndPoint(new IPAddress([1, 0, 0, 1]), 53),
 		// OpenDNS
-		new IPEndPoint(new IPAddress(new byte[] { 208,67,222,222 }), 53),
-		new IPEndPoint(new IPAddress(new byte[] { 208,67,220,220 }), 53),
+		new IPEndPoint(new IPAddress([208, 67, 222, 222]), 53),
+		new IPEndPoint(new IPAddress([208, 67, 220, 220]), 53),
 		// Freenom
-		new IPEndPoint(new IPAddress(new byte[] { 80,80,80,80 }), 53),
-		new IPEndPoint(new IPAddress(new byte[] { 80,80,81,81 }), 53),
-	});
+		new IPEndPoint(new IPAddress([80, 80, 80, 80]), 53),
+		new IPEndPoint(new IPAddress([80, 80, 81, 81]), 53)
+	]);
 
 	// TODO maybe change to proper TLRU
 	private static readonly ConcurrentDictionary<string, CacheEntry> addressCache = new();
@@ -78,7 +78,7 @@ public static class TsDnsResolver
 		Log.Debug("Trying to look up '{0}'", address);
 
 		// if this address does not look like a domain it might be a nickname
-		if (!address.Contains(".") && !address.Contains(":") && address != "localhost")
+		if (!address.Contains('.') && !address.Contains(':') && address != "localhost")
 		{
 			Log.Debug("Resolving '{0}' as nickname", address);
 			var resolvedNickname = await ResolveNickname(address).ConfigureAwait(false);
@@ -185,10 +185,12 @@ public static class TsDnsResolver
 			if (hostAddress != null)
 				return new IPEndPoint(hostAddress, srvRecord.PORT);
 		}
+
 		return null;
 	}
 
-	private static async Task<IPEndPoint?> ResolveTsDns(string tsDnsAddress, ushort port, string resolveAddress, ushort defaultPort)
+	private static async Task<IPEndPoint?> ResolveTsDns(string tsDnsAddress, ushort port, string resolveAddress,
+		ushort defaultPort)
 	{
 		Log.Trace("Looking for the tsdns under '{0}'", tsDnsAddress);
 		var hostAddress = await ResolveDns(tsDnsAddress).ConfigureAwait(false);
@@ -198,7 +200,8 @@ public static class TsDnsResolver
 		return await ResolveTsDns(new IPEndPoint(hostAddress, port), resolveAddress, defaultPort).ConfigureAwait(false);
 	}
 
-	private static async Task<IPEndPoint?> ResolveTsDns(IPEndPoint tsDnsAddress, string resolveAddress, ushort defaultPort)
+	private static async Task<IPEndPoint?> ResolveTsDns(IPEndPoint tsDnsAddress, string resolveAddress,
+		ushort defaultPort)
 	{
 		Log.Trace("Looking up tsdns address '{0}'", resolveAddress);
 		try
@@ -207,8 +210,11 @@ public static class TsDnsResolver
 			var cancelTask = Task.Delay(LookupTimeout);
 			var connectTask = client.ConnectAsync(tsDnsAddress.Address, tsDnsAddress.Port).ContinueWith(async t =>
 			{
-				// Swallow error on connect error
-				try { await t; } catch { }
+				try { await t; }
+				catch
+				{
+					// Swallow error on connect error
+				}
 			}, TaskContinuationOptions.OnlyOnFaulted);
 			await Task.WhenAny(connectTask, cancelTask);
 			if (cancelTask.IsCompleted)
@@ -249,27 +255,26 @@ public static class TsDnsResolver
 		catch (SocketException) { return null; }
 	}
 
-	private static readonly Regex IpRegex = new(@"(?<ip>(?:\d{1,3}\.){3}\d{1,3}|\[[0-9a-fA-F:]+\]|localhost)(?::(?<port>\d{1,5}))?", RegexOptions.ECMAScript | RegexOptions.Compiled);
-
 	private static IPEndPoint? ParseIpEndPoint(string address, ushort defaultPort)
 	{
-		var match = IpRegex.Match(address);
-		if (!match.Success)
-			return null;
+		if (IPEndPoint.TryParse(address, out var endPoint))
+		{
+			return endPoint;
+		}
 
-		IPAddress? ipAddr;
-		if (match.Groups["ip"].Value == "localhost")
-			ipAddr = IPAddress.Loopback;
-		else if (!IPAddress.TryParse(match.Groups["ip"].Value, out ipAddr))
-			return null;
+		if (address.StartsWith("localhost", StringComparison.OrdinalIgnoreCase))
+		{
+			var split = address.Split(':');
+			switch (split)
+			{
+			case [_]:
+				return new IPEndPoint(IPAddress.Loopback, defaultPort);
+			case [_, var portStr] when ushort.TryParse(portStr, out ushort port):
+				return new IPEndPoint(IPAddress.Loopback, port);
+			}
+		}
 
-		if (!match.Groups["port"].Success)
-			return new IPEndPoint(ipAddr, defaultPort);
-
-		if (!ushort.TryParse(match.Groups["port"].Value, out ushort port))
-			return null;
-
-		return new IPEndPoint(ipAddr, port);
+		return null;
 	}
 
 	private static async Task<string?> ResolveNickname(string nickname)
@@ -277,7 +282,8 @@ public static class TsDnsResolver
 		string result;
 		try
 		{
-			var response = await httpClient.GetAsync(NicknameLookup + Uri.EscapeDataString(nickname)).ConfigureAwait(false);
+			var response = await httpClient.GetAsync(NicknameLookup + Uri.EscapeDataString(nickname))
+				.ConfigureAwait(false);
 			result = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
 		}
 		catch (Exception ex)
@@ -285,7 +291,8 @@ public static class TsDnsResolver
 			Log.Warn(ex, "Failed to resolve nickname \"{0}\"", nickname);
 			return null;
 		}
-		var splits = result.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+
+		var splits = result.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries);
 		if (splits.Length == 0)
 		{
 			Log.Warn("Nickname \"{0}\" has no address entries", nickname);

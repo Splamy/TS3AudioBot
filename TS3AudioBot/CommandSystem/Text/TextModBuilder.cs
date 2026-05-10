@@ -16,7 +16,7 @@ namespace TS3AudioBot.CommandSystem.Text;
 public partial class TextModBuilder
 {
 	[GeneratedRegex(@"{\d+}", RegexOptions.ExplicitCapture)]
-	private static partial Regex Placeholder();
+	private static partial Regex Placeholder { get; }
 
 	private readonly bool color;
 	private readonly StringBuilder strb;
@@ -29,13 +29,14 @@ public partial class TextModBuilder
 
 	public TextModBuilder(StringBuilder strb, bool color = true)
 	{
-		this.strb = strb ?? throw new ArgumentNullException(nameof(strb));
+		ArgumentNullException.ThrowIfNull(strb);
+		this.strb = strb;
 		this.color = color;
 	}
 
 	public TextModBuilder Append(AppliedTextMod atm) => Append(atm.Text, atm.Mod);
 
-	public TextModBuilder Append(string? text, TextMod mod)
+	public TextModBuilder Append(ReadOnlySpan<char> text, TextMod mod)
 	{
 		if (color)
 			StartText(strb, text, ref cur, mod);
@@ -51,14 +52,14 @@ public partial class TextModBuilder
 		return this;
 	}
 
-	public TextModBuilder AppendLine(string? text, TextMod mod)
+	public TextModBuilder AppendLine(ReadOnlySpan<char> text, TextMod mod)
 	{
 		Append(text, mod);
 		strb.Append('\n');
 		return this;
 	}
 
-	public TextModBuilder AppendFormat(AppliedTextMod format, params AppliedTextMod[] para)
+	public TextModBuilder AppendFormat(AppliedTextMod format, params ReadOnlySpan<AppliedTextMod> para)
 	{
 		if (format.Text is null) throw new ArgumentNullException(nameof(format));
 		if (para.Length == 0)
@@ -67,22 +68,32 @@ public partial class TextModBuilder
 		}
 		else
 		{
-			var parts = Placeholder().Split(format.Text);
-
-			for (int i = 0; i < parts.Length - 1; i++)
+			var textSpan = format.Text.AsSpan();
+			Range? lastSpan = null;
+			foreach (var split in Placeholder.EnumerateSplits(textSpan))
 			{
-				Append(parts[i], format.Mod);
-				Append(para[i]);
+				if (lastSpan is { } lastInner)
+				{
+					Append(textSpan[lastInner], format.Mod);
+					var fill = textSpan[lastInner.End..split.Start];
+					var fillNum = int.Parse(fill[1..^1]);
+					Append(para[fillNum]);
+				}
+				lastSpan = split;
 			}
-			Append(parts[^1], format.Mod);
+
+			if (lastSpan is { } last)
+			{
+				Append(textSpan[last], format.Mod);
+			}
 		}
 
 		return this;
 	}
 
-	private static void StartText(StringBuilder strb, string? text, ref TextMod cur, TextMod mod)
+	private static void StartText(StringBuilder strb, ReadOnlySpan<char> text, ref TextMod cur, TextMod mod)
 	{
-		if (string.IsNullOrEmpty(text))
+		if (text.IsEmpty)
 			return;
 		var curFlags = cur.Flags;
 		var modFlags = mod.Flags;

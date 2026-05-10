@@ -313,7 +313,7 @@ public sealed class WebApi
 		if (!request.Headers.TryGetValue("Authorization", out var headerVal))
 			return ApiCall.CreateAnonymous();
 
-		var authParts = headerVal.ToString().Split(new[] { ' ' }, 2, StringSplitOptions.RemoveEmptyEntries);
+		var authParts = headerVal.ToString().Split([' '], 2, StringSplitOptions.RemoveEmptyEntries);
 		if (authParts.Length < 2)
 			return ErrorAuthFailure;
 

@@ -18,11 +18,6 @@ internal static class NativeLibraryLoader
 {
 	private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 
-#if !NETCOREAPP3_0_OR_GREATER
-	[DllImport("kernel32.dll", SetLastError = true)]
-	private static extern IntPtr LoadLibrary(string dllToLoad);
-#endif
-
 	public static bool DirectLoadLibrary(string lib, Action? dummyLoad = null)
 	{
 		if (Tools.IsLinux)
@@ -42,14 +37,8 @@ internal static class NativeLibraryLoader
 			foreach (var libPath in LibPathOptions(lib))
 			{
 				Log.Debug("Loading \"{0}\" from \"{1}\"", lib, libPath);
-#if !NETCOREAPP3_0_OR_GREATER
-				var handle = LoadLibrary(libPath);
-				if (handle != IntPtr.Zero)
-					return true;
-#else
 				if (NativeLibrary.TryLoad(libPath, out _))
 					return true;
-#endif
 			}
 			Log.Error("Failed to load library \"{0}\", error: {1}", lib, Marshal.GetLastWin32Error());
 			return false;
@@ -67,15 +56,10 @@ internal static class NativeLibraryLoader
 		yield return Path.Combine(asmPath, "lib", lib);
 	}
 
-	public static string ArchFolder
+	public static string ArchFolder => IntPtr.Size switch
 	{
-		get
-		{
-			if (IntPtr.Size == 8)
-				return "x64";
-			if (IntPtr.Size == 4)
-				return "x86";
-			return "xOther";
-		}
-	}
+		8 => "x64",
+		4 => "x86",
+		_ => "xOther"
+	};
 }

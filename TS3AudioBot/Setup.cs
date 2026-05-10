@@ -99,7 +99,7 @@ internal static class Setup
 			var configFileInfo = new FileInfo("NLog.config");
 			if (!configFileInfo.Exists)
 			{
-				using var configStream = Util.GetEmbeddedFile("TS3AudioBot.Resources.NLog.config")!;
+				using var configStream = Util.GetEmbeddedFile("TS3AudioBot.Assets.NLog.config")!;
 				using var configFileStream = configFileInfo.OpenWrite();
 				configStream.CopyTo(configFileStream);
 			}

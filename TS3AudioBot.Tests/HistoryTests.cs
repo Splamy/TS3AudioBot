@@ -1,4 +1,3 @@
-using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -10,13 +9,12 @@ using TS3AudioBot.History;
 using TS3AudioBot.ResourceFactories;
 using TSLib;
 
-namespace TS3ABotUnitTests;
+namespace TS3AudioBot.Tests;
 
-[TestFixture]
 public class HistoryTests
 {
-	[Test]
-	public void HistoryFileIntergrityTest()
+	[Fact]
+	public void HistoryFileIntegrityTest()
 	{
 		string testFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "history.test");
 		if (File.Exists(testFile)) File.Delete(testFile);
@@ -32,7 +30,7 @@ public class HistoryTests
 		var data2 = new HistorySaveData(ar2, inv2.Uid);
 		var data3 = new HistorySaveData(ar3, (Uid)"Uid3");
 
-		var confDb = ConfigTable.CreateRoot<ConfDb>();
+		var confDb = ConfigEnumerable.CreateRoot<ConfDb>();
 		confDb.Path.Value = testFile;
 
 		DbStore db;
@@ -49,34 +47,31 @@ public class HistoryTests
 		hf.LogAudioResourceDelayed(data1);
 
 		var lastXEntries = hf.GetLastXEntries(1);
-		Assert.True(lastXEntries.Any());
-		var lastEntry = lastXEntries.First();
-		Assert.AreEqual(ar1, lastEntry.AudioResource);
+		var lastEntry = Assert.Single(lastXEntries);
+		Assert.Equal(ar1, lastEntry.AudioResource);
 
 		db.Dispose();
 
 		CreateDbStore();
 		lastXEntries = hf.GetLastXEntries(1);
-		Assert.True(lastXEntries.Any());
-		lastEntry = lastXEntries.First();
-		Assert.AreEqual(ar1, lastEntry.AudioResource);
+		lastEntry = Assert.Single(lastXEntries);
+		Assert.Equal(ar1, lastEntry.AudioResource);
 
 		hf.LogAudioResourceDelayed(data1);
 		hf.LogAudioResourceDelayed(data2);
 
 		lastXEntries = hf.GetLastXEntries(1);
-		Assert.True(lastXEntries.Any());
-		lastEntry = lastXEntries.First();
-		Assert.AreEqual(ar2, lastEntry.AudioResource);
+		lastEntry = Assert.Single(lastXEntries);
+		Assert.Equal(ar2, lastEntry.AudioResource);
 
 		db.Dispose();
 
 		// store and order check
 		CreateDbStore();
 		var lastXEntriesArray = hf.GetLastXEntries(2).ToArray();
-		Assert.AreEqual(2, lastXEntriesArray.Length);
-		Assert.AreEqual(ar2, lastXEntriesArray[0].AudioResource);
-		Assert.AreEqual(ar1, lastXEntriesArray[1].AudioResource);
+		Assert.Equal(2, lastXEntriesArray.Length);
+		Assert.Equal(ar2, lastXEntriesArray[0].AudioResource);
+		Assert.Equal(ar1, lastXEntriesArray[1].AudioResource);
 
 		var ale1 = hf.FindEntryByResource(ar1);
 		hf.RenameEntry(ale1, "sc_ar1X");
@@ -87,9 +82,9 @@ public class HistoryTests
 		// check entry renaming
 		CreateDbStore();
 		lastXEntriesArray = hf.GetLastXEntries(2).ToArray();
-		Assert.AreEqual(2, lastXEntriesArray.Length);
-		Assert.AreEqual(ar1, lastXEntriesArray[0].AudioResource);
-		Assert.AreEqual(ar2, lastXEntriesArray[1].AudioResource);
+		Assert.Equal(2, lastXEntriesArray.Length);
+		Assert.Equal(ar1, lastXEntriesArray[0].AudioResource);
+		Assert.Equal(ar2, lastXEntriesArray[1].AudioResource);
 
 		var ale2 = hf.FindEntryByResource(ar2);
 		hf.RenameEntry(ale2, "me_ar2_loong1");
@@ -107,9 +102,9 @@ public class HistoryTests
 		// recheck order
 		CreateDbStore();
 		lastXEntriesArray = hf.GetLastXEntries(2).ToArray();
-		Assert.AreEqual(2, lastXEntriesArray.Length);
-		Assert.AreEqual(ar2, lastXEntriesArray[0].AudioResource);
-		Assert.AreEqual(ar1, lastXEntriesArray[1].AudioResource);
+		Assert.Equal(2, lastXEntriesArray.Length);
+		Assert.Equal(ar2, lastXEntriesArray[0].AudioResource);
+		Assert.Equal(ar1, lastXEntriesArray[1].AudioResource);
 		db.Dispose();
 
 		// delete entry 1
@@ -117,27 +112,27 @@ public class HistoryTests
 		hf.RemoveEntry(hf.FindEntryByResource(ar1));
 
 		lastXEntriesArray = hf.GetLastXEntries(3).ToArray();
-		Assert.AreEqual(1, lastXEntriesArray.Length);
+		Assert.Single(lastXEntriesArray);
 
 		// .. store new entry to check correct stream position writes
 		hf.LogAudioResourceDelayed(data3);
 
 		lastXEntriesArray = hf.GetLastXEntries(3).ToArray();
-		Assert.AreEqual(2, lastXEntriesArray.Length);
+		Assert.Equal(2, lastXEntriesArray.Length);
 		db.Dispose();
 
 		// delete entry 2
 		CreateDbStore();
 		// .. check integrity from previous store
 		lastXEntriesArray = hf.GetLastXEntries(3).ToArray();
-		Assert.AreEqual(2, lastXEntriesArray.Length);
+		Assert.Equal(2, lastXEntriesArray.Length);
 
 		// .. delete and recheck
 		hf.RemoveEntry(hf.FindEntryByResource(ar2));
 
 		lastXEntriesArray = hf.GetLastXEntries(3).ToArray();
-		Assert.AreEqual(1, lastXEntriesArray.Length);
-		Assert.AreEqual(ar3, lastXEntriesArray[0].AudioResource);
+		Assert.Single(lastXEntriesArray);
+		Assert.Equal(ar3, lastXEntriesArray[0].AudioResource);
 		db.Dispose();
 
 		// Cleanup
@@ -147,14 +142,17 @@ public class HistoryTests
 
 internal static class Extensions
 {
-	public static IEnumerable<AudioLogEntry> GetLastXEntries(this HistoryManager hf, int num)
+	extension(HistoryManager hm)
 	{
-		return hf.Search(new SearchQuery { MaxResults = num });
-	}
+		public IEnumerable<AudioLogEntry> GetLastXEntries(int num)
+		{
+			return hm.Search(new SearchQuery { MaxResults = num });
+		}
 
-	public static void LogAudioResourceDelayed(this HistoryManager hf, HistorySaveData data)
-	{
-		Thread.Sleep(1);
-		hf.LogAudioResource(data);
+		public void LogAudioResourceDelayed(HistorySaveData data)
+		{
+			Thread.Sleep(1);
+			hm.LogAudioResource(data);
+		}
 	}
 }

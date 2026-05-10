@@ -4,22 +4,15 @@ This is a open-source TeamSpeak3 bot, playing music and much more.
 
 - **Got questions?** Check out our [Wiki](https://github.com/Splamy/TS3AudioBot/wiki), [FAQ](https://github.com/Splamy/TS3AudioBot/wiki/FAQ), or ask on our [![Join Gitter Chat](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/TS3AudioBot/Lobby?utm_source=share-link&utm_medium=link&utm_campaign=share-link)
 - **Something's broken or it's complicated?** [Open an issue](https://github.com/Splamy/TS3AudioBot/issues/new/choose)
-  - Please use and fill out one of the templates we provide unless they are not applicable or you have a good reason not to.  
-    This helps us getting through the technical stuff faster
-  - Please keep issues in english, this makes it easier for everyone to participate and keeps issues relevant to link to.
+  - Please use and fill out one of the templates we provide unless they are not applicable, or you have a good reason not to.  
+    This helps us to get through the technical stuff faster
+  - Please keep issues in English, this makes it easier for everyone to participate and keeps issues relevant to link to.
 - **Want to support this Project?**
-  - You can discuss and suggest features. However the [backlog](https://github.com/Splamy/TS3AudioBot/projects/2) is large and feature requests will probably take time
+  - You can discuss and suggest features. However, the [backlog](https://github.com/Splamy/TS3AudioBot/projects/2) is large and feature requests will probably take time
   - You can contribute code. This is always appreciated, please open an issue or contact a maintainer to discuss *before* you start.
-  - You can support me on [![Patreon][patreon-badge]][patreon-link] or [![Paypal][paypal-badge]][paypal-link]
-
-[patreon-badge]: https://img.shields.io/badge/Patreon-Donate!-F96854.svg?logo=patreon&style=flat-square
-[patreon-link]: https://patreon.com/Splamy
-
-[paypal-badge]: https://img.shields.io/badge/Paypal-Donate!-00457C.svg?logo=paypal&style=flat-square
-[paypal-link]: https://paypal.me/Splamy
 
 ## Features
-* Play Youtube and Soundcloud songs as well as stream Twitch (extensible with plugins)
+* Play YouTube and Soundcloud songs as well as stream Twitch (extensible with plugins)
 * Song history
 * Various voice subscription modes; including to clients, channels and whisper groups
 * Playlist management for all users
@@ -43,14 +36,14 @@ For an in-depth command tutorial see [here in the wiki](https://github.com/Splam
 ### Download
 Pick and download the build for your platform and liking:
 
-|  | Stable | Experimental |
-| -- | -- | -- |
-| | Versions are mostly considered stable but won't get bigger features as fast. | Will always have the latest and greatest but might not be fully stable or have broken features. |
-| Windows_x64 | [![Download](https://img.shields.io/badge/Download-master-green.svg)](https://splamy.de/api/nightly/ts3ab/master_win_x64/download) | [![Download](https://img.shields.io/badge/Download-develop-green.svg)](https://splamy.de/api/nightly/ts3ab/develop_win_x64/download) |
-| Linux_x64 | [![Download](https://img.shields.io/badge/Download-master-green.svg)](https://splamy.de/api/nightly/ts3ab/master_linux_x64/download) | [![Download](https://img.shields.io/badge/Download-develop-green.svg)](https://splamy.de/api/nightly/ts3ab/develop_linux_x64/download) |
-| Docker | [![Docker](https://img.shields.io/badge/Docker-0.11.0-0db7ed.svg)](https://github.com/getdrunkonmovies-com/TS3AudioBot_docker) (NOTE: This build is community-maintained. It comes with all dependencies as well as youtube-dl preconfigured) | - |
+|             | Stable                                                                                                                                                                                                                                        | Experimental                                                                                                                           |
+|-------------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------|
+|             | Versions are mostly considered stable but won't get bigger features as fast.                                                                                                                                                                  | Will always have the latest and greatest but might not be fully stable or have broken features.                                        |
+| Windows_x64 | [![Download](https://img.shields.io/badge/Download-master-green.svg)](https://splamy.de/api/nightly/ts3ab/master_win_x64/download)                                                                                                            | [![Download](https://img.shields.io/badge/Download-develop-green.svg)](https://splamy.de/api/nightly/ts3ab/develop_win_x64/download)   |
+| Linux_x64   | [![Download](https://img.shields.io/badge/Download-master-green.svg)](https://splamy.de/api/nightly/ts3ab/master_linux_x64/download)                                                                                                          | [![Download](https://img.shields.io/badge/Download-develop-green.svg)](https://splamy.de/api/nightly/ts3ab/develop_linux_x64/download) |
+| Docker      | [![Docker](https://img.shields.io/badge/Docker-0.11.0-0db7ed.svg)](https://github.com/getdrunkonmovies-com/TS3AudioBot_docker) (NOTE: This build is community-maintained. It comes with all dependencies as well as youtube-dl preconfigured) | -                                                                                                                                      |
 
-(We have more builds like linux arm/arm64 and .NET framework dependent builds available on our [nightly server](https://splamy.de/Nightly#ts3ab))
+(We have more builds like linux arm/arm64 and .NET Framework dependent builds available on our [nightly server](https://splamy.de/Nightly#ts3ab))
 
 #### Linux
 Install the required dependencies for your distro:
@@ -67,14 +60,14 @@ Run
 	```
 * or **manually**:
     1. Make sure you have a C compiler installed
-    1. Make the Opus script runnable with `chmod u+x InstallOpus.sh` and run it with `./InstallOpus.sh`
-    1. Get the ffmpeg [32bit](https://johnvansickle.com/ffmpeg/builds/ffmpeg-git-i686-static.tar.xz) or [64bit](https://johnvansickle.com/ffmpeg/builds/ffmpeg-git-amd64-static.tar.xz) binary.
-    1. Extract the ffmpeg archive with `tar -vxf ffmpeg-git-*XXbit*-static.tar.xz`
-    1. Get the ffmpeg binary from `ffmpeg-git-*DATE*-amd64-static/ffmpeg` and copy it into your TS3AudioBot folder.
+    2. Make the Opus script runnable with `chmod u+x InstallOpus.sh` and run it with `./InstallOpus.sh`
+    3. Get the ffmpeg [32bit](https://johnvansickle.com/ffmpeg/builds/ffmpeg-git-i686-static.tar.xz) or [64bit](https://johnvansickle.com/ffmpeg/builds/ffmpeg-git-amd64-static.tar.xz) binary.
+    4. Extract the ffmpeg archive with `tar -vxf ffmpeg-git-*XXbit*-static.tar.xz`
+    5. Get the ffmpeg binary from `ffmpeg-git-*DATE*-amd64-static/ffmpeg` and copy it into your TS3AudioBot folder.
 
 #### Windows
 1. Get the ffmpeg [32bit](https://ffmpeg.zeranoe.com/builds/win32/static/ffmpeg-latest-win32-static.zip) or [64bit](https://ffmpeg.zeranoe.com/builds/win64/static/ffmpeg-latest-win64-static.zip) binary.
-1. Open the archive and copy the ffmpeg binary from `ffmpeg-latest-winXX-static/bin/ffmpeg.exe` into your TS3AudioBot folder.
+2. Open the archive and copy the ffmpeg binary from `ffmpeg-latest-winXX-static/bin/ffmpeg.exe` into your TS3AudioBot folder.
 
 ### Optional Dependencies
 If the bot can't play some youtube videos it might be due to some embedding restrictions which are blocking this.  
@@ -82,42 +75,42 @@ You can install the [youtube-dl](https://github.com/rg3/youtube-dl/) binary or s
 
 ### First time setup
 1. Run the bot with `./TS3AudioBot` (Linux) or `TS3AudioBot.exe` (Windows) and follow the setup instructions.
-1. (Optional) Close the bot and configure your `rights.toml` to your desires.
-You can use the template rules as suggested in the automatically generated file,
-or dive into the rights syntax [here](https://github.com/Splamy/TS3AudioBot/wiki/Rights).
-Then start the bot again.
-1. (Optional, but highly recommended for everything to work properly).
+2. (Optional) Close the bot and configure your `rights.toml` to your desires.  
+   You can use the template rules as suggested in the automatically generated file,
+   or dive into the rights syntax [here](https://github.com/Splamy/TS3AudioBot/wiki/Rights).
+   Then start the bot again.
+3. (Optional, but highly recommended for everything to work properly).
    - Create a privilege key for the ServerAdmin group (or a group which has equivalent rights).
    - Send the bot in a private message `!bot setup <privilege key>`.
-1. Congratz, you're done! Enjoy listening to your favourite music, experimenting with the crazy command system or do whatever you wish to do ;).  
+4. Congratz, you're done! Enjoy listening to your favourite music, experimenting with the crazy command system or do whatever you wish to do ;).  
 For further reading check out the [CommandSystem](https://github.com/Splamy/TS3AudioBot/wiki/CommandSystem).
 
 ## Building manually
 
-|master|develop|
-|:--:|:--:|
-|[![Build status](https://ci.appveyor.com/api/projects/status/i7nrhqkbntdhwpxp/branch/master?svg=true)](https://ci.appveyor.com/project/Splamy/ts3audiobot/branch/master)|[![Build status](https://ci.appveyor.com/api/projects/status/i7nrhqkbntdhwpxp/branch/develop?svg=true)](https://ci.appveyor.com/project/Splamy/ts3audiobot/branch/develop)|
+|                                             master                                              |                                             develop                                              |
+|:-----------------------------------------------------------------------------------------------:|:------------------------------------------------------------------------------------------------:|
+| ![](https://github.com/Splamy/TS3AudioBot/actions/workflows/dotnet.yml/badge.svg?branch=master) | ![](https://github.com/Splamy/TS3AudioBot/actions/workflows/dotnet.yml/badge.svg?branch=develop) |
 
 ### Download
 Download the git repository with `git clone --recurse-submodules https://github.com/Splamy/TS3AudioBot.git`.
 
 #### Linux
-1. Get the `.NET 5.0` sdk by following [this tutorial](https://docs.microsoft.com/dotnet/core/install/linux-package-managers) and choose your platform
-1. Go into the directory of the repository with `cd TS3AudioBot`
-1. Execute `dotnet build --framework net5.0 --configuration Release TS3AudioBot` to build the AudioBot
-1. The binary will be in `./TS3AudioBot/bin/Release/net5.0` and can be run with `dotnet TS3AudioBot.dll`
+1. Get the `.NET 10.0` sdk by following [this tutorial](https://docs.microsoft.com/dotnet/core/install/linux-package-managers) and choose your platform
+2. Go into the directory of the repository with `cd TS3AudioBot`
+3. Execute `dotnet build --framework net10.0 --configuration Release TS3AudioBot` to build the AudioBot
+4. The binary will be in `./TS3AudioBot/bin/Release/net10.0` and can be run with `dotnet TS3AudioBot.dll`
 
 #### Windows
-1. Make sure you have `Visual Studio` with the `.NET 5.0` development toolchain installed
-1. Build the AudioBot with Visual Studio.
+1. Make sure you have `Visual Studio` with the `.NET 10.0` development toolchain installed
+2. Build the AudioBot with Visual Studio.
 
 ### Building the WebInterface
 1. Go with the console of your choice into the `./WebInterface` folder
-1. Run `yarn install` to restore or update all dependencies for this project
-1. Run `yarn run build` to build the project.  
+2. Run `yarn install` to restore or update all dependencies for this project
+3. Run `yarn run build` to build the project.  
   The built project will be in `./WebInterface/dist`.  
   Make sure to the set the webinterface path in the ts3audiobot.toml to this folder.
-1. You can alternatively use `yarn run start` for development.  
+4. You can alternatively use `yarn run start` for development.  
   This will use the webpack dev server with live reload instead of the ts3ab server.
 
 ## Community

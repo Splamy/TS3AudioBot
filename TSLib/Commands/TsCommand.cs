@@ -11,7 +11,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using TSLib.Helper;
@@ -21,7 +20,8 @@ namespace TSLib.Commands;
 /// <summary>Builds TeamSpeak (query) commands from parameters.</summary>
 public partial class TsCommand : IEnumerable<ICommandPart>
 {
-	private static readonly Regex CommandMatch = new("[a-z0-9_]+", RegexOptions.Compiled | RegexOptions.CultureInvariant | RegexOptions.ECMAScript);
+	[GeneratedRegex("[a-z0-9_]+")]
+	private static partial Regex CommandMatch { get; }
 
 	protected string? raw = null;
 	public bool ExpectResponse { get; set; }
@@ -86,7 +86,7 @@ public partial class TsCommand : IEnumerable<ICommandPart>
 	/// <returns>The formatted query-like command.</returns>
 	/// <exception cref="ArgumentException">When a command is null or not valid.</exception>
 	/// <exception cref="ArgumentOutOfRangeException">When multiple <see cref="CommandMultiParameter"/> are added but have different array lengths.</exception>
-	public static string BuildToString(string command, IEnumerable<ICommandPart> parameter)
+	public static string BuildToString(string command, params IEnumerable<ICommandPart> parameter)
 	{
 		if (string.IsNullOrWhiteSpace(command))
 			throw new ArgumentNullException(nameof(command));
@@ -106,11 +106,11 @@ public partial class TsCommand : IEnumerable<ICommandPart>
 				strb.Append(' ').Append(singleParam.Key).Append('=').Append(singleParam.Value);
 				break;
 			case CommandPartType.MultiParameter:
-				multiParamList ??= new List<CommandMultiParameter>();
+				multiParamList ??= [];
 				multiParamList.Add((CommandMultiParameter)param);
 				break;
 			case CommandPartType.Option:
-				optionList ??= new List<CommandOption>();
+				optionList ??= [];
 				optionList.Add((CommandOption)param);
 				break;
 			case var _unhandled:
@@ -147,7 +147,7 @@ public partial class TsCommand : IEnumerable<ICommandPart>
 		return strb.ToString();
 	}
 
-	private IEnumerable<ICommandPart> GetParameter() => parameter ?? Enumerable.Empty<ICommandPart>();
+	private IEnumerable<ICommandPart> GetParameter() => parameter ?? [];
 
 	public IEnumerator GetEnumerator() => GetParameter().GetEnumerator();
 	IEnumerator<ICommandPart> IEnumerable<ICommandPart>.GetEnumerator() => GetParameter().GetEnumerator();

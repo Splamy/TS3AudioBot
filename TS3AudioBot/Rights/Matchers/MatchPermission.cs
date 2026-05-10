@@ -8,6 +8,7 @@
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
 using System;
+using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using TS3AudioBot.Helper;
@@ -16,14 +17,15 @@ using TSLib.Helper;
 
 namespace TS3AudioBot.Rights.Matchers;
 
-internal class MatchPermission : Matcher
+internal partial class MatchPermission : Matcher
 {
-	private static readonly Regex ExpressionMatch = new(@"(\w+)\s*(<|>|=|>=|<=|!=)\s*(-?\d+|true|false)", Util.DefaultRegexConfig);
-	private readonly Dictionary<TsPermission, (PermCompare, int)> permissions;
+	[GeneratedRegex(@"(\w+)\s*(<|>|=|>=|<=|!=)\s*(-?\d+|true|false)", RegexOptions.IgnoreCase | RegexOptions.ECMAScript)]
+	private static partial Regex ExpressionMatch { get; }
+	private readonly FrozenDictionary<TsPermission, (PermCompare, int)> _permissions;
 
 	public MatchPermission(string[] permissions, ParseContext ctx)
 	{
-		this.permissions = new Dictionary<TsPermission, (PermCompare, int)>(permissions.Length);
+		var permissionBuilder = new Dictionary<TsPermission, (PermCompare, int)>(permissions.Length);
 		foreach (var expression in permissions)
 		{
 			var match = ExpressionMatch.Match(expression);
@@ -55,7 +57,7 @@ internal class MatchPermission : Matcher
 			default: continue;
 			}
 
-			if ((value == "true" || value == "false") && !permission.StartsWith("b_", StringComparison.Ordinal))
+			if (value is "true" or "false" && !permission.StartsWith("b_", StringComparison.Ordinal))
 				ctx.Warnings.Add("Comparing an integer permission with boolean value.");
 
 			int valueNum;
@@ -69,8 +71,10 @@ internal class MatchPermission : Matcher
 				continue;
 			}
 
-			this.permissions.Add(permissionId, (compareOp, valueNum));
+			permissionBuilder.Add(permissionId, (compareOp, valueNum));
 		}
+
+		_permissions = permissionBuilder.ToFrozenDictionary();
 	}
 
 	public override bool Matches(ExecuteContext ctx)
@@ -84,7 +88,7 @@ internal class MatchPermission : Matcher
 				continue;
 			var permission = perm.PermissionId;
 			var value = perm.PermissionValue;
-			if (permissions.TryGetValue(permission, out (PermCompare op, int value) compare))
+			if (_permissions.TryGetValue(permission, out (PermCompare op, int value) compare))
 			{
 				switch (compare.op)
 				{
@@ -101,5 +105,5 @@ internal class MatchPermission : Matcher
 		return false;
 	}
 
-	public override void SetRequiredFeatures(ParseContext ctx) => ctx.NeedsPermOverview.UnionWith(permissions.Keys);
+	public override void SetRequiredFeatures(ParseContext ctx) => ctx.NeedsPermOverview.UnionWith(_permissions.Keys);
 }

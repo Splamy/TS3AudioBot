@@ -16,7 +16,7 @@ namespace TSLib;
 
 public static partial class TsPermissionHelper
 {
-	public static ICommandPart GetAsParameter(IPermissionTransform permissionTransform, TsPermission permission)
+	public static ICommandPart GetAsParameter(IPermissionTransform? permissionTransform, TsPermission permission)
 	{
 		if (permissionTransform is null || permissionTransform == DummyPermissionTransform.Instance)
 			return new CommandParameter("permsid", permission.ToString());
@@ -24,7 +24,7 @@ public static partial class TsPermissionHelper
 			return new CommandParameter("permid", permissionTransform.GetId(permission));
 	}
 
-	public static ICommandPart GetAsMultiParameter(IPermissionTransform permissionTransform, params TsPermission[] permission)
+	public static ICommandPart GetAsMultiParameter(IPermissionTransform? permissionTransform, params TsPermission[] permission)
 	{
 		if (permissionTransform is null || permissionTransform == DummyPermissionTransform.Instance)
 			return new CommandMultiParameter("permsid", permission.Select(x => x.ToString()));

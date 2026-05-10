@@ -60,10 +60,6 @@ public class ConfFactories : ConfigTable
 
 public class ConfResolverYoutube : ConfigTable
 {
-	public ConfigValue<LoaderPriority> ResolverPriority { get; } = new("prefer_resolver", LoaderPriority.Internal,
-		"Changes how to try to resolve youtube songs\n" +
-		" - youtubedl : uses youtube-dl only\n" +
-		" - internal : uses the internal resolver, then youtube-dl");
 	public ConfigValue<string> ApiKey { get; } = new("youtube_api_key", "",
 		"Set your own youtube api key to keep using the old youtube factory loader.\n" +
 		"This feature is unsupported and may break at any time");

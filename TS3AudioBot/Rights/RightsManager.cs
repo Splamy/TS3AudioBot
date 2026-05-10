@@ -9,9 +9,11 @@
 
 using Nett;
 using System;
+using System.Collections.Frozen;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using TS3AudioBot.CommandSystem;
 using TS3AudioBot.Config;
@@ -34,8 +36,8 @@ public class RightsManager
 	private bool needsRecalculation;
 	private readonly ConfRights config;
 	private RightsRule? rootRule;
-	private HashSet<string> registeredRights = [];
-	private readonly object rootRuleLock = new();
+	private FrozenSet<string> registeredRights = [];
+	private readonly Lock rootRuleLock = new();
 
 	// Required Matcher Data:
 	// This variables save whether the current rights setup has at least one rule that
@@ -57,19 +59,19 @@ public class RightsManager
 		if (!registeredRights.SetEquals(newRights))
 		{
 			// TODO validate right names
-			registeredRights = newRights;
+			registeredRights = [..newRights];
 			needsRecalculation = true;
 		}
 	}
 
-	public async ValueTask<bool> HasAllRights(ExecutionInformation info, params string[] requestedRights)
+	public async ValueTask<bool> HasAllRights(ExecutionInformation info, params IEnumerable<string> requestedRights)
 	{
 		var ctx = await GetRightsContext(info);
 		var normalizedRequest = ExpandRights(registeredRights, requestedRights);
 		return ctx.DeclAdd.IsSupersetOf(normalizedRequest);
 	}
 
-	public async ValueTask<string[]> GetRightsSubset(ExecutionInformation info, params string[] requestedRights)
+	public async ValueTask<string[]> GetRightsSubset(ExecutionInformation info, params IEnumerable<string> requestedRights)
 	{
 		var ctx = await GetRightsContext(info);
 		var normalizedRequest = ExpandRights(registeredRights, requestedRights);
@@ -277,7 +279,7 @@ public class RightsManager
 		Log.Info("Creating new permission file ({@settings})", settings);
 
 		string? toml = null;
-		using (var fs = Util.GetEmbeddedFile("TS3AudioBot.Resources.DefaultRights.toml")!)
+		using (var fs = Util.GetEmbeddedFile("TS3AudioBot.Assets.DefaultRights.toml")!)
 		using (var reader = new StreamReader(fs, Tools.Utf8Encoder))
 		{
 			toml = reader.ReadToEnd();

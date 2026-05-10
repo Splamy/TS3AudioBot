@@ -11,10 +11,8 @@ using System;
 using System.Linq;
 using System.Text;
 using TSLib.Helper;
-#if NETCOREAPP3_0_OR_GREATER
 using System.Runtime.Intrinsics;
 using System.Runtime.Intrinsics.X86;
-#endif
 
 namespace TSLib.Commands;
 
@@ -108,13 +106,10 @@ public static class TsString
 
 	public static bool IsDoubleChar(char c) => unchecked(c == (byte)c) && IsDoubleChar(unchecked((byte)c));
 
-#if NETCOREAPP3_0_OR_GREATER
 	private static readonly Vector128<byte> doubleVec = Vector128.Create((byte)'\\', (byte)'/', (byte)' ', (byte)'|', (byte)'\f', (byte)'\n', (byte)'\r', (byte)'\t', (byte)'\v', 0, 0, 0, 0, 0, 0, 0);
-#endif
 
 	public static bool IsDoubleChar(byte c)
 	{
-#if NETCOREAPP3_0_OR_GREATER
 		if (Sse2.IsSupported)
 		{
 			var inc = Vector128.Create(c);
@@ -122,7 +117,6 @@ public static class TsString
 			var mask = Sse2.MoveMask(res);
 			return mask != 0;
 		}
-#endif
 
 		return c == ' ' ||
 			c == '/' ||

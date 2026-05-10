@@ -17,19 +17,11 @@ namespace TSLib.Helper;
 
 public static class Tools
 {
-#if NET6_0_OR_GREATER
 	[System.Runtime.Versioning.SupportedOSPlatformGuard("Linux")]
-#endif
-	public static bool IsLinux
-	{
-		get
-		{
-			var p = (int)Environment.OSVersion.Platform;
-			return p == 4 || p == 6 || p == 128;
-		}
-	}
+	public static bool IsLinux => OperatingSystem.IsLinux();
 
-	public static IEnumerable<Enum> GetFlags(this Enum input) => Enum.GetValues(input.GetType()).Cast<Enum>().Where(input.HasFlag);
+	public static IEnumerable<Enum> GetFlags(this Enum input) =>
+		Enum.GetValues(input.GetType()).Cast<Enum>().Where(input.HasFlag);
 
 	// Encoding
 
@@ -43,17 +35,15 @@ public static class Tools
 
 	public static DateTime FromUnix(uint unixTimestamp) => UnixTimeStart.AddSeconds(unixTimestamp);
 
-	public static uint UnixNow => (uint)(DateTime.UtcNow - UnixTimeStart).TotalSeconds;
+	public static uint UnixNow => unchecked((uint)DateTimeOffset.UtcNow.ToUnixTimeSeconds());
 
 	public static DateTime Now => DateTime.UtcNow;
 
 	// Random
 
-	public static Random Random { get; } = new();
-
 	public static T PickRandom<T>(IReadOnlyList<T> collection)
 	{
-		int pick = Random.Next(0, collection.Count);
+		int pick = Random.Shared.Next(0, collection.Count);
 		return collection[pick];
 	}
 
@@ -64,13 +54,13 @@ public static class Tools
 
 	public static int MathMod(int x, int mod) => (x % mod + mod) % mod;
 
-	public static float Clamp(float value, float min, float max) => Math.Min(Math.Max(value, min), max);
-	public static int Clamp(int value, int min, int max) => Math.Min(Math.Max(value, min), max);
-
 	// Generic
 
 	public static void SetLogId(Id id) => SetLogId(id.ToString());
 	public static void SetLogId(string id) => ScopeContext.PushProperty("BotId", id);
 
-	public static Exception UnhandledDefault<T>(T value) where T : struct { return new MissingEnumCaseException(typeof(T).Name, value.ToString() ?? string.Empty); }
+	public static Exception UnhandledDefault<T>(T value) where T : struct
+	{
+		return new MissingEnumCaseException(typeof(T).Name, value.ToString() ?? string.Empty);
+	}
 }

@@ -7,7 +7,6 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
-using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -36,15 +35,15 @@ public class OverloadedFunctionCommand : ICommand
 	{
 		Functions.Sort((f1, f2) =>
 		{
-				// The first function in the list should be the most specialized.
-				// If the execute the command we will iterate through the list from the beginning
-				// and choose the first matching function.
+			// The first function in the list should be the most specialized.
+			// If the execute the command we will iterate through the list from the beginning
+			// and choose the first matching function.
 
-				// Sort out special arguments
-				// and remove the nullable wrapper
-				var params1 = (from p in f1.CommandParameter
-						   where p.Kind.IsNormal()
-						   select FunctionCommand.UnwrapParamType(p.Type)).ToList();
+			// Sort out special arguments
+			// and remove the nullable wrapper
+			var params1 = (from p in f1.CommandParameter
+					   where p.Kind.IsNormal()
+					   select FunctionCommand.UnwrapParamType(p.Type)).ToList();
 
 			var params2 = (from p in f2.CommandParameter
 						   where p.Kind.IsNormal()
@@ -52,14 +51,14 @@ public class OverloadedFunctionCommand : ICommand
 
 			for (int i = 0; i < params1.Count; i++)
 			{
-					// Prefer functions with higher parameter count
-					if (i >= params2.Count)
+				// Prefer functions with higher parameter count
+				if (i >= params2.Count)
 					return -1;
-					// Not found returns -1, so more important than any found index
-					int i1 = Array.IndexOf(CommandSystemTypes.TypeOrder, params1[i]);
-				int i2 = Array.IndexOf(CommandSystemTypes.TypeOrder, params2[i]);
-					// Prefer lower argument
-					if (i1 < i2)
+				// Not found returns -1, so more important than any found index
+				int i1 = CommandSystemTypes.TypeOrder.IndexOf(params1[i]);
+				int i2 = CommandSystemTypes.TypeOrder.IndexOf(params2[i]);
+				// Prefer lower argument
+				if (i1 < i2)
 					return -1;
 				if (i1 > i2)
 					return 1;
@@ -84,8 +83,7 @@ public class OverloadedFunctionCommand : ICommand
 				return await f.Execute(info, arguments);
 			}
 			catch (CommandException cmdEx)
-				when (cmdEx.Reason == CommandExceptionReason.MissingParameter
-					|| cmdEx.Reason == CommandExceptionReason.MissingContext)
+				when (cmdEx.Reason is CommandExceptionReason.MissingParameter or CommandExceptionReason.MissingContext)
 			{
 				// When we encounter a missing module problem we store it for later, as it is more helpful
 				// im most cases to know that some commands *could* have matched if the module were there.

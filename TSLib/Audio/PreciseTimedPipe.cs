@@ -23,7 +23,7 @@ public sealed class PreciseTimedPipe : IAudioActiveConsumer, IAudioActiveProduce
 	public TimeSpan AudioBufferLength { get; set; } = TimeSpan.FromMilliseconds(20);
 	public TimeSpan SendCheckInterval { get; set; } = TimeSpan.FromMilliseconds(5);
 	public int ReadBufferSize { get; set; } = 960 * 4;
-	private byte[] readBuffer = Array.Empty<byte>();
+	private byte[] readBuffer = [];
 	private readonly Thread tickThread;
 	private bool running;
 

@@ -1,29 +1,27 @@
-using NUnit.Framework;
 using System.Text.RegularExpressions;
 using TS3AudioBot.Helper;
 using TSLib.Full;
 
-namespace TS3ABotUnitTests;
+namespace TS3AudioBot.Tests;
 
-[TestFixture]
 public class UtilsTests
 {
-	[Test]
+	[Fact]
 	public void UtilSeedTest()
 	{
-		var lowCaseRegex = new Regex("^[a-z]*$", Util.DefaultRegexConfig & ~RegexOptions.IgnoreCase);
+		var lowCaseRegex = new Regex("^[a-z]*$");
 		for (int i = 0; i < 100000; i++)
 		{
 			var str = Util.FromSeed(i);
-			Assert.IsTrue(lowCaseRegex.IsMatch(str), "For seed: " + i);
+			Assert.True(lowCaseRegex.IsMatch(str), "For seed: " + i);
 			var roundtrip = Util.ToSeed(str);
-			Assert.AreEqual(i, roundtrip);
+			Assert.Equal(i, roundtrip);
 		}
 	}
 
 	/* ======================= TSLib Tests ========================*/
 
-	[Test]
+	[Fact]
 	public void VersionSelfCheck()
 	{
 		TsCrypt.VersionSelfCheck();

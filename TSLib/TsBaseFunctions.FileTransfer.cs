@@ -120,7 +120,7 @@ partial class TsBaseFunctions
 				return CommandError.ConnectionClosed;
 			}
 			using var md5Dig = token.CreateMd5 ? MD5.Create() : null;
-			using var stream = client.GetStream();
+			await using var stream = client.GetStream();
 			byte[] keyBytes = Encoding.ASCII.GetBytes(token.TransferKey);
 			await stream.WriteAsync(keyBytes);
 
@@ -139,7 +139,7 @@ partial class TsBaseFunctions
 					await stream.WriteAsync(buffer.AsMemory(0, read));
 					md5Dig?.TransformBlock(buffer, 0, read, buffer, 0);
 				}
-				md5Dig?.TransformFinalBlock(Array.Empty<byte>(), 0, 0);
+				md5Dig?.TransformFinalBlock([], 0, 0);
 				token.Md5Sum = md5Dig?.Hash;
 			}
 			else // Download

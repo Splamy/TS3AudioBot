@@ -10,6 +10,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using TSLib;
 using TSLib.Audio;
 using TSLib.Full;
@@ -58,7 +59,7 @@ internal class CustomTargetPipe : IVoiceTarget, IAudioPassiveConsumer
 	private ChannelId[] channelSubscriptionsCache = [];
 	private ClientId[] clientSubscriptionsCache = [];
 	private bool subscriptionSetupChanged;
-	private readonly object subscriptionLockObj = new();
+	private readonly Lock subscriptionLockObj = new();
 
 	private readonly TsFullClient client;
 
@@ -100,7 +101,7 @@ internal class CustomTargetPipe : IVoiceTarget, IAudioPassiveConsumer
 		GroupWhisperTargetId = targetId;
 	}
 
-	public void WhisperChannelSubscribe(bool temp, params ChannelId[] channels)
+	public void WhisperChannelSubscribe(bool temp, params IEnumerable<ChannelId> channels)
 	{
 		lock (subscriptionLockObj)
 		{
@@ -119,7 +120,7 @@ internal class CustomTargetPipe : IVoiceTarget, IAudioPassiveConsumer
 		}
 	}
 
-	public void WhisperChannelUnsubscribe(bool temp, params ChannelId[] channels)
+	public void WhisperChannelUnsubscribe(bool temp, params IEnumerable<ChannelId> channels)
 	{
 		lock (subscriptionLockObj)
 		{
@@ -141,20 +142,20 @@ internal class CustomTargetPipe : IVoiceTarget, IAudioPassiveConsumer
 		}
 	}
 
-	public void WhisperClientSubscribe(params ClientId[] userId)
+	public void WhisperClientSubscribe(params IEnumerable<ClientId> userIds)
 	{
 		lock (subscriptionLockObj)
 		{
-			clientSubscriptionsSetup.UnionWith(userId);
+			clientSubscriptionsSetup.UnionWith(userIds);
 			subscriptionSetupChanged = true;
 		}
 	}
 
-	public void WhisperClientUnsubscribe(params ClientId[] userId)
+	public void WhisperClientUnsubscribe(params IEnumerable<ClientId> userIds)
 	{
 		lock (subscriptionLockObj)
 		{
-			clientSubscriptionsSetup.ExceptWith(userId);
+			clientSubscriptionsSetup.ExceptWith(userIds);
 			subscriptionSetupChanged = true;
 		}
 	}

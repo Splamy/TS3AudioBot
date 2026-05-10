@@ -132,9 +132,8 @@ public static class OpenApiGenerator
 
 		var path = pathBuilder.ToString();
 
-		if (addedCommandPaths.Contains(path))
+		if (!addedCommandPaths.Add(path))
 			return null;
-		addedCommandPaths.Add(path);
 
 		// check tag
 
@@ -199,7 +198,7 @@ public static class OpenApiGenerator
 		return token;
 	}
 
-	private static JProperty JPropObj(string name, params object[] token)
+	private static JProperty JPropObj(string name, params IEnumerable<object> token)
 	{
 		return new JProperty(name, new JObject(token));
 	}

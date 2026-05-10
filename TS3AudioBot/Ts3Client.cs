@@ -9,6 +9,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.Immutable;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -39,16 +40,16 @@ public sealed class Ts3Client
 	public event AsyncEventHandler<AloneChanged>? OnAloneChanged;
 	public event EventHandler? OnWhisperNoTarget;
 
-	private static readonly string[] QuitMessages = [
-			"I'm outta here", "You're boring", "Have a nice day", "Bye", "Good night",
-			"Nothing to do here", "Taking a break", "Lorem ipsum dolor sit amet…",
-			"Nothing can hold me back", "It's getting quiet", "Drop the bazzzzzz",
-			"Never gonna give you up", "Never gonna let you down", "Keep rockin' it",
-			"?", "c(ꙩ_Ꙩ)ꜿ", "I'll be back", "Your advertisement could be here",
-			"connection lost", "disconnected", "Requested by API.",
-			"Robert'); DROP TABLE students;--", "It works!! No, wait...",
-			"Notice me, senpai", ":wq", "Soon™", "It's not a bug, it's a feature"
-		];
+	private static readonly ImmutableArray<string> QuitMessages = [
+		"I'm outta here", "You're boring", "Have a nice day", "Bye", "Good night",
+		"Nothing to do here", "Taking a break", "Lorem ipsum dolor sit amet…",
+		"Nothing can hold me back", "It's getting quiet", "Drop the bazzzzzz",
+		"Never gonna give you up", "Never gonna let you down", "Keep rockin' it",
+		"?", "c(ꙩ_Ꙩ)ꜿ", "I'll be back", "Your advertisement could be here",
+		"connection lost", "disconnected", "Requested by API.",
+		"Robert'); DROP TABLE students;--", "It works!! No, wait...",
+		"Notice me, senpai", ":wq", "Soon™", "It's not a bug, it's a feature"
+	];
 
 	private bool closed = false;
 	private int reconnectCounter;
@@ -106,8 +107,6 @@ public sealed class Ts3Client
 		if (string.IsNullOrEmpty(identityConf.PrivateKey))
 		{
 			identity = IdentityData.GenerateNewIdentity();
-			identityConf.PrivateKey.Value = identity.PrivateKeyString;
-			identityConf.Offset.Value = identity.ValidKeyOffset;
 		}
 		else
 		{
@@ -117,12 +116,12 @@ public sealed class Ts3Client
 				Log.Error("The identity from the config file is corrupted. Remove it to generate a new one next start; or try to repair it. ({0})", error);
 				return "Corrupted identity";
 			}
-			identityConf.PrivateKey.Value = identity.PrivateKeyString;
-			identityConf.Offset.Value = identity.ValidKeyOffset;
 		}
+		identityConf.PrivateKey.Value = identity.PrivateKeyString;
+		identityConf.Offset.Value = identity.ValidKeyOffset;
 
 		// check required security level
-		if (identityConf.Level.Value >= 0 && identityConf.Level.Value <= 160)
+		if (identityConf.Level.Value is >= 0 and <= 160)
 			UpdateIdentityToSecurityLevel(identityConf.Level.Value);
 		else if (identityConf.Level.Value != -1)
 			Log.Warn("Invalid config value for 'Level', enter a number between '0' and '160' or '-1' to adapt automatically.");
@@ -213,8 +212,8 @@ public sealed class Ts3Client
 	public Task SendChannelMessage(string message) => ts3FullClient.SendChannelMessage(message).UnwrapThrow();
 	public Task SendServerMessage(string message) => ts3FullClient.SendServerMessage(message, 1).UnwrapThrow();
 
-	public Task KickClientFromServer(params ClientId[] clientId) => ts3FullClient.KickClientFromServer(clientId).UnwrapThrow();
-	public Task KickClientFromChannel(params ClientId[] clientId) => ts3FullClient.KickClientFromChannel(clientId).UnwrapThrow();
+	public Task KickClientFromServer(params IEnumerable<ClientId> clientId) => ts3FullClient.KickClientFromServer(clientId).UnwrapThrow();
+	public Task KickClientFromChannel(params IEnumerable<ClientId> clientId) => ts3FullClient.KickClientFromChannel(clientId).UnwrapThrow();
 
 	public Task ChangeDescription(string description)
 		=> ts3FullClient.ChangeDescription(description).UnwrapThrow();
@@ -296,7 +295,8 @@ public sealed class Ts3Client
 		return clientData;
 	}
 
-	public Task<ClientInfo> GetClientInfoById(ClientId id) => ts3FullClient.ClientInfo(id).UnwrapThrow(_ => (strings.error_ts_no_client_found, true));
+	public Task<ClientInfo> GetClientInfoById(ClientId clientId)
+		=> ts3FullClient.ClientInfo(clientId).UnwrapThrow(_ => (strings.error_ts_no_client_found, true));
 
 	public async Task<ClientDbId> GetClientDbIdByUid(Uid uid)
 	{
@@ -337,13 +337,12 @@ public sealed class Ts3Client
 		}
 
 		// Remember new group (or check if in new group at all)
-		var groupDiff = Array.Empty<ServerGroupId>();
+		ServerGroupId[] groupDiff = [];
 		if (groupsOk)
 		{
-			ServerGroupId[] groupsNew;
 			try
 			{
-				groupsNew = await GetClientServerGroups(myDbId);
+				var groupsNew = await GetClientServerGroups(myDbId);
 				groupDiff = groupsNew.Except(groups).ToArray();
 			}
 			catch { }

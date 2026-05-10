@@ -9,6 +9,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Threading;
 
 namespace TSLib.Audio;
 
@@ -60,7 +61,7 @@ public class ClientMixdown : PassiveMergePipe, IAudioPassiveConsumer
 		public int Length { get; set; } = 0;
 		public Meta? LastMeta { get; set; }
 
-		private readonly object rwLock = new();
+		private readonly Lock rwLock = new();
 
 		public ClientMix(int bufferSize)
 		{

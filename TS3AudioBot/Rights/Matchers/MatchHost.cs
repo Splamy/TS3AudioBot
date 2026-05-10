@@ -7,15 +7,14 @@
 // You should have received a copy of the Open Software License along with this
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
+using System.Collections.Frozen;
 using System.Collections.Generic;
 
 namespace TS3AudioBot.Rights.Matchers;
 
-internal class MatchHost : Matcher
+internal class MatchHost(IEnumerable<string> hosts) : Matcher
 {
-	private readonly HashSet<string> hosts;
+	private readonly FrozenSet<string> _hosts = [..hosts];
 
-	public MatchHost(IEnumerable<string> hosts) => this.hosts = new HashSet<string>(hosts);
-
-	public override bool Matches(ExecuteContext ctx) => ctx.Host != null && hosts.Contains(ctx.Host);
+	public override bool Matches(ExecuteContext ctx) => ctx.Host != null && _hosts.Contains(ctx.Host);
 }

@@ -13,6 +13,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Net.Http.Json;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
@@ -29,7 +30,6 @@ public static class WebWrapper
 
 	static WebWrapper()
 	{
-		ServicePointManager.DefaultConnectionLimit = int.MaxValue;
 		httpClient.Timeout = DefaultTimeout;
 		httpClient.DefaultRequestHeaders.UserAgent.Clear();
 		ProductInfoHeaderValue version = ProductInfoHeaderValue.TryParse($"TS3AudioBot/{Environment.SystemData.AssemblyData.Version}", out var v)
@@ -68,7 +68,7 @@ public static class WebWrapper
 				using var response = await httpClient.SendDefaultAsync(request, token);
 			}
 		}
-		catch (Exception ex) when (ex is HttpRequestException || ex is OperationCanceledException)
+		catch (Exception ex) when (ex is HttpRequestException or OperationCanceledException)
 		{
 			throw ToLoggedError(ex);
 		}
@@ -84,7 +84,7 @@ public static class WebWrapper
 				return await response.Content.ReadAsStringAsync(token);
 			}
 		}
-		catch (Exception ex) when (ex is HttpRequestException || ex is OperationCanceledException)
+		catch (Exception ex) when (ex is HttpRequestException or OperationCanceledException)
 		{
 			throw ToLoggedError(ex);
 		}
@@ -97,8 +97,7 @@ public static class WebWrapper
 			using (request)
 			{
 				using var response = await httpClient.SendDefaultAsync(request, token);
-				using var stream = await response.Content.ReadAsStreamAsync(token);
-				var obj = await JsonSerializer.DeserializeAsync<T>(stream, cancellationToken: token);
+				var obj = await response.Content.ReadFromJsonAsync<T>(token);
 				if (obj is null) throw Error.LocalStr(strings.error_net_empty_response);
 				return obj;
 			}
@@ -108,7 +107,7 @@ public static class WebWrapper
 			Log.Debug(ex, "Failed to parse json.");
 			throw Error.LocalStr(strings.error_media_internal_invalid + " (json-request)");
 		}
-		catch (Exception ex) when (ex is HttpRequestException || ex is OperationCanceledException)
+		catch (Exception ex) when (ex is HttpRequestException or OperationCanceledException)
 		{
 			throw ToLoggedError(ex);
 		}
@@ -124,7 +123,7 @@ public static class WebWrapper
 				await body.Invoke(response, token);
 			}
 		}
-		catch (Exception ex) when (ex is HttpRequestException || ex is OperationCanceledException)
+		catch (Exception ex) when (ex is HttpRequestException or OperationCanceledException)
 		{
 			throw ToLoggedError(ex);
 		}
@@ -140,7 +139,7 @@ public static class WebWrapper
 				return await body.Invoke(response, token); // TODO add token ?
 			}
 		}
-		catch (Exception ex) when (ex is HttpRequestException || ex is OperationCanceledException)
+		catch (Exception ex) when (ex is HttpRequestException or OperationCanceledException)
 		{
 			throw ToLoggedError(ex);
 		}
@@ -159,7 +158,7 @@ public static class WebWrapper
 				return response;
 			}
 		}
-		catch (Exception ex) when (ex is HttpRequestException || ex is OperationCanceledException)
+		catch (Exception ex) when (ex is HttpRequestException or OperationCanceledException)
 		{
 			throw ToLoggedError(ex);
 		}
@@ -228,7 +227,7 @@ public class RedirectHandler : DelegatingHandler
 		for (int i = 0; i < MaxRedirects; i++)
 		{
 			response = await base.SendAsync(request, cancellationToken);
-			if (response.StatusCode == HttpStatusCode.Moved || response.StatusCode == HttpStatusCode.Redirect)
+			if (response.StatusCode is HttpStatusCode.Moved or HttpStatusCode.Redirect)
 			{
 				request.RequestUri = response.Headers.Location;
 			}

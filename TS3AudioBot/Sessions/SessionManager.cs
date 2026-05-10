@@ -8,6 +8,7 @@
 // program. If not, see <https://opensource.org/licenses/OSL-3.0>.
 
 using System.Collections.Generic;
+using System.Threading;
 using TSLib;
 
 namespace TS3AudioBot.Sessions;
@@ -18,11 +19,12 @@ public class SessionManager
 	private static readonly NLog.Logger Log = NLog.LogManager.GetCurrentClassLogger();
 
 	// Map: Id => UserSession
+	private readonly Lock sessionLock = new();
 	private readonly Dictionary<ClientId, UserSession> openSessions = [];
 
 	public UserSession GetOrCreateSession(ClientId clientId)
 	{
-		lock (openSessions)
+		lock (sessionLock)
 		{
 			if (openSessions.TryGetValue(clientId, out var session))
 				return session;
@@ -36,18 +38,15 @@ public class SessionManager
 
 	public UserSession? GetSession(ClientId id)
 	{
-		lock (openSessions)
+		lock (sessionLock)
 		{
-			if (openSessions.TryGetValue(id, out var session))
-				return session;
-			else
-				return null;
+			return openSessions.GetValueOrDefault(id);
 		}
 	}
 
 	public void RemoveSession(ClientId id)
 	{
-		lock (openSessions)
+		lock (sessionLock)
 		{
 			openSessions.Remove(id);
 		}
