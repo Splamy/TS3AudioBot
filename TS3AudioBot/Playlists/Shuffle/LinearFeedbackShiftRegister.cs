@@ -143,7 +143,7 @@ namespace TS3AudioBot.Playlists.Shuffle
 
 		private static int NumberOfSetBits(int i)
 		{
-#if NETCOREAPP3_1
+#if NET10_0_OR_GREATER
 			if (System.Runtime.Intrinsics.X86.Popcnt.IsSupported)
 				return unchecked((int)System.Runtime.Intrinsics.X86.Popcnt.PopCount((uint)i));
 #endif

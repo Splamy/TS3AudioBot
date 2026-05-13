@@ -3,8 +3,8 @@
   "version": "2.0.0-alpha",
   "description": "Provides a ui to control the TS3AudioBot",
   "scripts": {
-    "build": "webpack --config webpack.production.config.js",
-    "start": "webpack-dev-server --config webpack.development.config.js"
+    "build": "node --openssl-legacy-provider ./node_modules/webpack/bin/webpack.js --config webpack.production.config.js",
+    "start": "node --openssl-legacy-provider ./node_modules/webpack-dev-server/bin/webpack-dev-server.js --config webpack.development.config.js"
   },
   "repository": {
     "type": "git",

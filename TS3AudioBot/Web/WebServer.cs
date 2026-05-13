@@ -11,6 +11,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using System;
 using System.IO;
@@ -92,49 +93,53 @@ namespace TS3AudioBot.Web
 			cancelToken?.Dispose();
 			cancelToken = new CancellationTokenSource();
 
-			var host = new WebHostBuilder()
-				.SuppressStatusMessages(true)
-				.ConfigureLogging((context, logging) =>
+			var host = new HostBuilder()
+				.ConfigureLogging(logging =>
 				{
 					logging.ClearProviders();
 				})
-				.UseKestrel(kestrel =>
+				.ConfigureWebHost(webHost =>
 				{
-					kestrel.Limits.MaxRequestBodySize = 3_000_000; // 3 MiB should be enough
-				})
-				.ConfigureServices(services =>
-				{
-					services.AddCors(options =>
-					{
-						options.AddPolicy("TS3AB", builder =>
+					webHost
+						.SuppressStatusMessages(true)
+						.UseKestrel(kestrel =>
 						{
-							builder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader();
-						});
-					});
-				})
-				.Configure(app =>
-				{
-					app.UseCors("TS3AB");
-
-					if (api != null) // api enabled
-					{
-						app.Map(new PathString("/api"), map =>
+							kestrel.Limits.MaxRequestBodySize = 3_000_000; // 3 MiB should be enough
+						})
+						.ConfigureServices(services =>
 						{
-							map.Run(async ctx =>
+							services.AddCors(options =>
 							{
-								using var _ = NLog.MappedDiagnosticsLogicalContext.SetScoped("BotId", "Api");
-								await Log.SwallowAsync(() => api.ProcessApiV1Call(ctx));
+								options.AddPolicy("TS3AB", builder =>
+								{
+									builder.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader();
+								});
 							});
+						})
+						.Configure(app =>
+						{
+							app.UseCors("TS3AB");
+
+							if (api != null) // api enabled
+							{
+								app.Map(new PathString("/api"), map =>
+								{
+									map.Run(async ctx =>
+									{
+										using var _ = NLog.MappedDiagnosticsLogicalContext.SetScoped("BotId", "Api");
+										await Log.SwallowAsync(() => api.ProcessApiV1Call(ctx));
+									});
+								});
+							}
+
+							if (config.Interface.Enabled)
+							{
+								app.UseFileServer();
+							}
+
+							var applicationLifetime = app.ApplicationServices.GetRequiredService<IHostApplicationLifetime>();
+							applicationLifetime.ApplicationStopping.Register(OnShutdown);
 						});
-					}
-
-					if (config.Interface.Enabled)
-					{
-						app.UseFileServer();
-					}
-
-					var applicationLifetime = app.ApplicationServices.GetRequiredService<IApplicationLifetime>();
-					applicationLifetime.ApplicationStopping.Register(OnShutdown);
 				});
 
 			if (config.Interface.Enabled)
@@ -146,22 +151,22 @@ namespace TS3AudioBot.Web
 				}
 				else
 				{
-					host.UseWebRoot(baseDir);
+					host.ConfigureWebHost(webHost => webHost.UseWebRoot(baseDir));
 				}
 			}
 
 			var addrs = config.Hosts.Value;
 			if (addrs.Contains("*"))
 			{
-				host.ConfigureKestrel(kestrel => { kestrel.ListenAnyIP(config.Port.Value); });
+				host.ConfigureWebHost(webHost => webHost.ConfigureKestrel(kestrel => { kestrel.ListenAnyIP(config.Port.Value); }));
 			}
 			else if (addrs.Count == 1 && addrs[0] == "localhost")
 			{
-				host.ConfigureKestrel(kestrel => { kestrel.ListenLocalhost(config.Port.Value); });
+				host.ConfigureWebHost(webHost => webHost.ConfigureKestrel(kestrel => { kestrel.ListenLocalhost(config.Port.Value); }));
 			}
 			else
 			{
-				host.UseUrls(addrs.Select(uri => new UriBuilder(uri) { Port = config.Port }.Uri.AbsoluteUri).ToArray());
+				host.ConfigureWebHost(webHost => webHost.UseUrls(addrs.Select(uri => new UriBuilder(uri) { Port = config.Port }.Uri.AbsoluteUri).ToArray()));
 			}
 
 			Log.Info("Starting Webserver on port {0}", config.Port.Value);
