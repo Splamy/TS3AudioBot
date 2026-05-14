@@ -94,7 +94,7 @@ namespace TS3AudioBot.Web.Api
 				remoteAddress = realIp;
 			}
 			apiCallData.IpAddress = remoteAddress;
-			apiCallData.RequestUrl = new Uri(Dummy, context.Features.Get<IHttpRequestFeature>().RawTarget);
+			apiCallData.RequestUrl = BuildRequestUrl(request);
 
 			Log.Info("{0} Requested: {1}", remoteAddress, apiCallData.RequestUrl.PathAndQuery);
 
@@ -121,10 +121,7 @@ namespace TS3AudioBot.Web.Api
 				else if (res is DataStream data)
 				{
 					response.StatusCode = (int)HttpStatusCode.OK;
-					using (response.Body)
-					{
-						await data.WriteOut(response);
-					}
+					await data.WriteOut(response);
 				}
 				else
 				{
@@ -133,14 +130,32 @@ namespace TS3AudioBot.Web.Api
 
 					var returnString = json.Serialize();
 					response.StatusCode = returnString.Length == 0 ? (int)HttpStatusCode.NoContent : (int)HttpStatusCode.OK;
-					using var responseStream = new StreamWriter(response.Body);
-					await responseStream.WriteAsync(returnString);
+					await WriteResponseBodyAsync(response, returnString);
 				}
 			}
 			catch (Exception ex)
 			{
 				await ReturnError(ex, response);
 			}
+		}
+
+		internal static Uri BuildRequestUrl(HttpRequest request)
+		{
+			var rawTarget = request.HttpContext.Features.Get<IHttpRequestFeature>()?.RawTarget;
+			return BuildRequestUrl(rawTarget, request.PathBase, request.Path, request.QueryString);
+		}
+
+		internal static Uri BuildRequestUrl(string? rawTarget, PathString pathBase, PathString path, QueryString queryString)
+		{
+			return new Uri(Dummy,
+				string.IsNullOrEmpty(rawTarget)
+					? $"{pathBase}{path}{queryString}"
+					: rawTarget);
+		}
+
+		internal static Task WriteResponseBodyAsync(HttpResponse response, string body)
+		{
+			return response.WriteAsync(body);
 		}
 
 		private ICommand BuildCommand(Uri requestUrl)
@@ -218,8 +233,7 @@ namespace TS3AudioBot.Web.Api
 				}
 
 				jsonError ??= new JsonError(ex.Message, CommandExceptionReason.Unknown);
-				using var responseStream = new StreamWriter(response.Body);
-				await responseStream.WriteAsync(jsonError.Serialize());
+				await WriteResponseBodyAsync(response, jsonError.Serialize());
 			}
 			catch (Exception htex) { Log.Warn(htex, "Failed to respond to HTTP request."); }
 		}

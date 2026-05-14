@@ -34,7 +34,15 @@ install:
 
 before_build:
 - pwsh: |-
-    nuget restore
+	    dotnet restore TS3AudioBot.sln
+
+build_script:
+- pwsh: |-
+	    dotnet build TS3AudioBot.sln -c Release
+
+test_script:
+- pwsh: |-
+	    dotnet test TS3ABotUnitTests/TS3ABotUnitTests.csproj -c Release --no-build
 
 deploy_script:
 - pwsh: |-

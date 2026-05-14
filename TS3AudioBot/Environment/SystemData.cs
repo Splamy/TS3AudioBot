@@ -12,6 +12,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 using TS3AudioBot.Helper;
 using TSLib.Helper;
@@ -132,16 +133,24 @@ namespace TS3AudioBot.Environment
 
 		private static PlatformVersion? GetNetCoreVersion()
 		{
-			var assembly = typeof(System.Runtime.GCSettings).GetTypeInfo().Assembly;
-			var assemblyPath = assembly.CodeBase?.Split(new[] { '/', '\\' }, StringSplitOptions.RemoveEmptyEntries);
-			if (assemblyPath is null)
+			return ParseNetRuntimeDescription(RuntimeInformation.FrameworkDescription);
+		}
+
+		internal static PlatformVersion? ParseNetRuntimeDescription(string? frameworkDescription)
+		{
+			if (string.IsNullOrEmpty(frameworkDescription)
+				|| !frameworkDescription.StartsWith(".NET", StringComparison.OrdinalIgnoreCase)
+				|| frameworkDescription.StartsWith(".NET Framework", StringComparison.OrdinalIgnoreCase))
 				return null;
-			int netCoreAppIndex = Array.IndexOf(assemblyPath, "Microsoft.NETCore.App");
-			if (netCoreAppIndex <= 0 || netCoreAppIndex >= assemblyPath.Length - 2)
+
+			var version = frameworkDescription.Length > ".NET ".Length
+				? frameworkDescription.Substring(".NET ".Length)
+				: null;
+			if (string.IsNullOrEmpty(version))
 				return null;
-			var version = assemblyPath[netCoreAppIndex + 1];
+
 			var semVer = ParseToSemVer(version);
-			return new PlatformVersion(Runtime.Core, $".NET Core ({version})", semVer);
+			return new PlatformVersion(Runtime.Core, $".NET ({version})", semVer);
 		}
 
 		private static PlatformVersion? GetMonoVersion()
