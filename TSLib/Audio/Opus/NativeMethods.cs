@@ -35,6 +35,22 @@ namespace TSLib.Audio.Opus
 
 		static NativeMethods()
 		{
+#if NET5_0_OR_GREATER
+			NativeLibrary.SetDllImportResolver(typeof(NativeMethods).Assembly, (libraryName, assembly, searchPath) =>
+			{
+				if (libraryName == "libopus" && RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+				{
+					// Debian and similar distros ship only the versioned soname (libopus.so.0).
+					// The unversioned libopus.so symlink is only present when libopus-dev is installed.
+					foreach (var candidate in new[] { "libopus.so.0", "libopus.so" })
+					{
+						if (NativeLibrary.TryLoad(candidate, out var handle))
+							return handle;
+					}
+				}
+				return IntPtr.Zero;
+			});
+#endif
 			PreloadLibrary();
 		}
 
