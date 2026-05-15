@@ -32,6 +32,7 @@ onshutdown = ["5m"]
 [commands]
 
 [commands.alias]
+yt = "play"
 
 [audio]
 #When a new song starts the volume will be trimmed to between min and max.

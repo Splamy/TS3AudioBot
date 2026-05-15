@@ -24,6 +24,7 @@ RUN apt-get update \
       libopus0 \
       ffmpeg \
       libicu-dev \
+      yt-dlp \
  && rm -rf /var/lib/apt/lists/*
 
 COPY --from=build /app/publish /app
