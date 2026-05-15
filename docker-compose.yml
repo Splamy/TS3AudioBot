@@ -1,0 +1,23 @@
+services:
+  ts3server:
+    image: teamspeak/teamspeak3-server:latest
+    environment:
+      TS3SERVER_LICENSE: accept
+    ports:
+      - "9987:9987/udp"
+      - "10011:10011"
+      - "30033:30033"
+    volumes:
+      - ts3server-data:/var/ts3server
+
+  bot:
+    build: .
+    depends_on:
+      - ts3server
+    ports:
+      - "58913:58913"
+    volumes:
+      - ./docker/config:/data
+
+volumes:
+  ts3server-data:

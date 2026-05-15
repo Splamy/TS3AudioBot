@@ -1,0 +1,19 @@
+
+[bot]
+run = true
+
+[bot.connect]
+address = "ts3server:9987"
+name = "TS3AudioBot"
+
+[bot.connect.identity]
+key = ""
+offset = 0
+level = -1
+
+[bot.reconnect]
+ontimeout = ["1s", "2s", "5s", "10s", "30s", "1m", "5m", "repeat last"]
+onkick = []
+onban = []
+onerror = ["30s", "repeat last"]
+onshutdown = ["5m"]

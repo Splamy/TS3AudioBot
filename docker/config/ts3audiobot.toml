@@ -1,0 +1,72 @@
+
+#! IMPORTANT !
+#All config tables here starting with 'bot.*' will only be used as default values for each bot.
+#To make bot-instance specific changes go to the 'Bots' folder (configs.bots_path) and set your configuration values in the desired bot config.
+[bot]
+run = false
+
+[bot.connect]
+address = ""
+name = "TS3AudioBot"
+
+[bot.connect.identity]
+key = ""
+offset = 0
+level = -1
+
+[bot.reconnect]
+ontimeout = ["1s", "2s", "5s", "10s", "30s", "1m", "5m", "repeat last"]
+onkick = []
+onban = []
+onerror = ["30s", "repeat last"]
+onshutdown = ["5m"]
+
+[bot.audio]
+volume = { default = 50.0, min = 25.0, max = 75.0 }
+bitrate = 48
+send_mode = "voice"
+
+[bot.history]
+enabled = true
+fill_deleted_ids = true
+
+[configs]
+bots_path = "bots"
+send_stats = false
+
+[db]
+path = "ts3audiobot.db"
+
+[factories]
+media = { path = "" }
+
+[factories.youtube]
+prefer_resolver = "Internal"
+youtube_api_key = ""
+
+[tools]
+youtube-dl = { path = "" }
+
+[tools.ffmpeg]
+path = "ffmpeg"
+
+[rights]
+path = "rights.toml"
+
+[plugins]
+path = "plugins"
+
+[plugins.load]
+
+[web]
+hosts = ["*"]
+port = 58913
+
+[web.api]
+enabled = true
+command_complexity = 64
+matcher = "exact"
+
+[web.interface]
+enabled = true
+path = ""
