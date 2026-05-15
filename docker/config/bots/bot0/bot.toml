@@ -1,0 +1,46 @@
+#Starts the instance when the TS3AudioBot is launched.
+run = true
+
+[connect]
+#The address, ip or nickname (and port; default: 9987) of the TeamSpeak3 server
+address = "ts3server:9987"
+#Client nickname when connecting.
+name = "TS3AudioBot"
+#The server password. Leave empty for none.
+server_password = {  }
+#The default channel password. Leave empty for none.
+channel_password = {  }
+#Overrides the displayed version for the ts3 client. Leave empty for default.
+client_version = {  }
+
+[connect.identity]
+#||| DO NOT MAKE THIS KEY PUBLIC ||| The client identity. You can import a teamspeak3 identity here too.
+key = "MCoDAgbAAgEgAiEAvnCQZin3Pg+X+h7Jr2gilNFcSqcZ9r9AI3YXJcxCF58="
+#The client identity offset determining the security level.
+offset = 4
+#The client identity security level which should be calculated before connecting
+#or -1 to generate on demand when connecting.
+level = -1
+
+[reconnect]
+ontimeout = ["1s", "2s", "5s", "10s", "30s", "1m", "5m", "repeat last"]
+onkick = []
+onban = []
+onerror = ["30s", "repeat last"]
+onshutdown = ["5m"]
+
+[commands]
+
+[commands.alias]
+
+[audio]
+#When a new song starts the volume will be trimmed to between min and max.
+#When the current volume already is between min and max nothing will happen.
+#To completely or partially disable this feature, set min to 0 and/or max to 100.
+volume = {  }
+
+[playlists]
+
+[history]
+
+[events]

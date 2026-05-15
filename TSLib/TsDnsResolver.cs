@@ -123,7 +123,14 @@ namespace TSLib
 			// => cool.subdomain.from.de
 			var domainSplit = uri.Host.Split('.');
 			if (domainSplit.Length <= 1)
-				return null;
+			{
+				// Single-label hostname (e.g. Docker service name) — skip SRV/TSDNS and
+				// fall back directly to the system resolver which knows about local names.
+				var singleIp = await ResolveDns(uri.Host).ConfigureAwait(false);
+				if (singleIp is null)
+					return null;
+				return new IPEndPoint(singleIp, hasUriPort ? uri.Port : (int)defaultPort);
+			}
 			var domainList = new List<string>();
 			for (int i = 1; i < Math.Min(domainSplit.Length, 4); i++)
 				domainList.Add(string.Join(".", domainSplit, domainSplit.Length - (i + 1), i + 1));
