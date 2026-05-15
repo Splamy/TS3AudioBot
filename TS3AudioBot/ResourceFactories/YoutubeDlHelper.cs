@@ -13,6 +13,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -28,7 +29,7 @@ namespace TS3AudioBot.ResourceFactories
 		public static ConfPath? DataObj { private get; set; }
 		private static string? YoutubeDlPath => DataObj?.Path.Value;
 
-		private const string ParamGetSingleVideo = " --no-warnings --dump-json --id --";
+		private const string ParamGetSingleVideo = " --dump-json --id --";
 		private const string ParamGetPlaylist = "--no-warnings --yes-playlist --flat-playlist --dump-single-json --id --";
 		private const string ParamGetSearch = "--no-warnings --flat-playlist --dump-single-json -- ytsearch10:";
 
@@ -153,8 +154,16 @@ namespace TS3AudioBot.ResourceFactories
 
 				if (stdErr.Length > 0)
 				{
-					Log.Debug("youtube-dl failed to load the resource:\n{0}", stdErr);
-					throw Error.LocalStr(strings.error_ytdl_song_failed_to_load);
+					Log.Debug("youtube-dl stderr:\n{0}", stdErr);
+					var errLines = stdErr.ToString()
+						.Split('\n', StringSplitOptions.RemoveEmptyEntries)
+						.Where(l => l.StartsWith("ERROR"))
+						.ToList();
+					if (errLines.Count > 0)
+					{
+						Log.Debug("youtube-dl failed to load the resource:\n{0}", string.Join("\n", errLines));
+						throw Error.LocalStr(strings.error_ytdl_song_failed_to_load);
+					}
 				}
 
 				return ParseResponse<T>(stdOut.ToString());
