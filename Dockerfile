@@ -1,4 +1,4 @@
-# ── Stage 1: build .NET ─────────────────────────────────────────────────────
+# Stage 1: build .NET
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 COPY . .
@@ -9,23 +9,23 @@ RUN dotnet publish TS3AudioBot \
       --self-contained true \
       -o /app/publish
 
-# ── Stage 2: build WebInterface ─────────────────────────────────────────────
+# Stage 2: build WebInterface
 FROM node:18-slim AS webui
 WORKDIR /webui
 COPY WebInterface/package*.json ./
-RUN npm ci
+RUN npm ci --ignore-scripts
 COPY WebInterface/ ./
 RUN npm run build
 
-# ── Stage 3: runtime ────────────────────────────────────────────────────────
+# Stage 3: runtime
 FROM debian:trixie-slim AS runtime
 RUN apt-get update \
- && apt-get install -y --no-install-recommends \
-      libopus0 \
-      ffmpeg \
-      libicu-dev \
-      yt-dlp \
- && rm -rf /var/lib/apt/lists/*
+    && apt-get install -y --no-install-recommends \
+        ffmpeg \
+        libicu-dev \
+        libopus0 \
+        yt-dlp \
+    && rm -rf /var/lib/apt/lists/*
 
 COPY --from=build /app/publish /app
 COPY --from=webui /webui/dist /app/WebInterface
