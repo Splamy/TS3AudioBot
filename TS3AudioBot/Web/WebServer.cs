@@ -116,70 +116,82 @@ namespace TS3AudioBot.Web
 								});
 							});
 						})
-						.Configure(app =>
-						{
-							app.UseCors("TS3AB");
-
-							if (api != null) // api enabled
-							{
-								app.Map(new PathString("/api"), map =>
-								{
-									map.Run(async ctx =>
-									{
-										using var _ = NLog.MappedDiagnosticsLogicalContext.SetScoped("BotId", "Api");
-										await Log.SwallowAsync(() => api.ProcessApiV1Call(ctx));
-									});
-								});
-							}
-
-							if (config.Interface.Enabled)
-							{
-								app.UseFileServer();
-							}
-
-							var applicationLifetime = app.ApplicationServices.GetRequiredService<IHostApplicationLifetime>();
-							applicationLifetime.ApplicationStopping.Register(OnShutdown);
-						});
+						.Configure(ConfigureApplication);
 				});
 
-			if (config.Interface.Enabled)
+			ConfigureWebRoot(host);
+			ConfigureHostAddresses(host);
+
+			Log.Info("Starting Webserver on port {0}", config.Port.Value);
+			StartHost(host);
+		}
+
+		private void ConfigureApplication(IApplicationBuilder app)
+		{
+			app.UseCors("TS3AB");
+
+			if (api != null) // api enabled
 			{
-				var baseDir = FindWebFolder();
-				if (baseDir is null)
+				app.Map(new PathString("/api"), map =>
 				{
-					Log.Error("Can't find a WebInterface path to host. Try specifying the path to host in the config");
-				}
-				else
-				{
-					host.ConfigureWebHost(webHost => webHost.UseWebRoot(baseDir));
-				}
+					map.Run(async ctx =>
+					{
+						using var _ = NLog.MappedDiagnosticsLogicalContext.SetScoped("BotId", "Api");
+						await Log.SwallowAsync(() => api.ProcessApiV1Call(ctx));
+					});
+				});
 			}
 
+			if (config.Interface.Enabled)
+				app.UseFileServer();
+
+			app.ApplicationServices.GetRequiredService<IHostApplicationLifetime>().ApplicationStopping.Register(OnShutdown);
+		}
+
+		private void ConfigureWebRoot(IHostBuilder host)
+		{
+			if (!config.Interface.Enabled)
+				return;
+
+			var baseDir = FindWebFolder();
+			if (baseDir is null)
+			{
+				Log.Error("Can't find a WebInterface path to host. Try specifying the path to host in the config");
+				return;
+			}
+
+			host.ConfigureWebHost(webHost => webHost.UseWebRoot(baseDir));
+		}
+
+		private void ConfigureHostAddresses(IHostBuilder host)
+		{
 			var addrs = config.Hosts.Value;
 			if (addrs.Contains("*"))
 			{
 				host.ConfigureWebHost(webHost => webHost.ConfigureKestrel(kestrel => { kestrel.ListenAnyIP(config.Port.Value); }));
-			}
-			else if (addrs.Count == 1 && addrs[0] == "localhost")
-			{
-				host.ConfigureWebHost(webHost => webHost.ConfigureKestrel(kestrel => { kestrel.ListenLocalhost(config.Port.Value); }));
-			}
-			else
-			{
-				host.ConfigureWebHost(webHost => webHost.UseUrls(addrs.Select(uri => new UriBuilder(uri) { Port = config.Port }.Uri.AbsoluteUri).ToArray()));
+				return;
 			}
 
-			Log.Info("Starting Webserver on port {0}", config.Port.Value);
+			if (addrs.Count == 1 && addrs[0] == "localhost")
+			{
+				host.ConfigureWebHost(webHost => webHost.ConfigureKestrel(kestrel => { kestrel.ListenLocalhost(config.Port.Value); }));
+				return;
+			}
+
+			host.ConfigureWebHost(webHost => webHost.UseUrls(addrs.Select(uri => new UriBuilder(uri) { Port = config.Port }.Uri.AbsoluteUri).ToArray()));
+		}
+
+		private void StartHost(IHostBuilder host)
+		{
 			new Func<Task>(async () =>
 			{
 				try
 				{
-					await host.Build().RunAsync(cancelToken.Token);
+					await host.Build().RunAsync(cancelToken!.Token);
 				}
 				catch (Exception ex)
 				{
 					Log.Error(ex, "The webserver could not be started");
-					return;
 				}
 			})();
 		}

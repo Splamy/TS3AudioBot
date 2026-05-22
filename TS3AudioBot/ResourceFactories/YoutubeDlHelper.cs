@@ -194,7 +194,7 @@ namespace TS3AudioBot.ResourceFactories
 
 		public static JsonYtdlFormat? FilterBest(IEnumerable<JsonYtdlFormat>? formats)
 		{
-			Log.Debug("Picking from options: {@formats}", formats);
+			Log.Debug("Picking from options: {@Formats}", formats);
 
 			if (formats is null)
 				return null;
@@ -212,7 +212,7 @@ namespace TS3AudioBot.ResourceFactories
 				}
 			}
 
-			Log.Debug("Picked: {@format}", best);
+			Log.Debug("Picked: {@Format}", best);
 			return best;
 		}
 
