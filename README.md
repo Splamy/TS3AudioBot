@@ -1,5 +1,7 @@
 # TS3AudioBot
 
+English · [简体中文](README.zh-CN.md) · [繁體中文](README.zh-TW.md)
+
 This is a open-source TeamSpeak3 bot, playing music and much more.  
 
 - **Got questions?** Check out our [Wiki](https://github.com/Splamy/TS3AudioBot/wiki), [FAQ](https://github.com/Splamy/TS3AudioBot/wiki/FAQ), or ask on our [![Join Gitter Chat](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/TS3AudioBot/Lobby?utm_source=share-link&utm_medium=link&utm_campaign=share-link)
