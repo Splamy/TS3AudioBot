@@ -85,6 +85,44 @@ You can install the [youtube-dl](https://github.com/rg3/youtube-dl/) binary or s
 4. Congratz, you're done! Enjoy listening to your favourite music, experimenting with the crazy command system or do whatever you wish to do ;).  
 For further reading check out the [CommandSystem](https://github.com/Splamy/TS3AudioBot/wiki/CommandSystem).
 
+### Nix
+
+Build or run TS3AudioBot directly from the repository:
+
+```sh
+nix build
+nix run
+```
+
+The flake also exports a NixOS module:
+
+```nix
+{
+  inputs.ts3audiobot.url = "github:Splamy/TS3AudioBot";
+
+  outputs = { nixpkgs, ts3audiobot, ... }: {
+    nixosConfigurations.my-host = nixpkgs.lib.nixosSystem {
+      system = "x86_64-linux";
+      modules = [
+        ts3audiobot.nixosModules.default
+        {
+          services.ts3audiobot = {
+            enable = true;
+            openFirewall = true;
+            settings = {
+              configs.send_stats = false;
+              web.port = 58913;
+            };
+          };
+        }
+      ];
+    };
+  };
+}
+```
+
+Runtime data and per-bot configuration are stored in `/var/lib/ts3audiobot`.
+
 ## Building manually
 
 |                                             master                                              |                                             develop                                              |
