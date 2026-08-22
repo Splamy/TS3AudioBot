@@ -56,9 +56,8 @@
               runHook postInstall
             '';
           };
-        in
-        {
-          default = pkgs.buildDotnetModule {
+
+          ts3audiobot = pkgs.buildDotnetModule {
             pname = "ts3audiobot";
             inherit version;
             src = self;
@@ -115,6 +114,17 @@
             };
           };
 
+          updateDeps = pkgs.writeShellApplication {
+            name = "update-ts3audiobot-deps";
+            text = ''
+              output="''${1:-nix/deps.json}"
+              exec ${ts3audiobot.fetch-deps} "$output"
+            '';
+          };
+        in
+        {
+          default = ts3audiobot;
+          update-deps = updateDeps;
           web-interface = webInterface;
         }
       );
@@ -129,6 +139,12 @@
             type = "app";
             program = "${package}/bin/TS3AudioBot";
             meta.description = "Run TS3AudioBot";
+          };
+
+          update-deps = {
+            type = "app";
+            program = "${self.packages.${system}.update-deps}/bin/update-ts3audiobot-deps";
+            meta.description = "Update the TS3AudioBot NuGet dependency lock";
           };
         }
       );

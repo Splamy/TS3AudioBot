@@ -94,6 +94,12 @@ nix build
 nix run
 ```
 
+Update the fixed-output NuGet dependency list after changing package references:
+
+```sh
+nix run .#update-deps
+```
+
 The flake also exports a NixOS module:
 
 ```nix
