@@ -11,6 +11,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Reflection;
 using System.Runtime.Versioning;
 using System.Text.RegularExpressions;
 using TS3AudioBot.Helper;
@@ -132,7 +133,7 @@ public enum Runtime
 	Mono,
 }
 
-public partial class BuildData
+public class BuildData
 {
 	public string Version = "<?>";
 	public string Branch = "<?>";
@@ -142,13 +143,33 @@ public partial class BuildData
 
 	public BuildData()
 	{
-		GetDataInternal();
+		var assembly = typeof(BuildData).Assembly;
+		var informationalVersion = assembly
+			.GetCustomAttribute<AssemblyInformationalVersionAttribute>()
+			?.InformationalVersion;
+
+		if (!string.IsNullOrEmpty(informationalVersion))
+		{
+			var metadataSeparator = informationalVersion.IndexOf('+');
+			if (metadataSeparator < 0)
+			{
+				Version = informationalVersion;
+			}
+			else
+			{
+				Version = informationalVersion[..metadataSeparator];
+				CommitSha = informationalVersion[(metadataSeparator + 1)..];
+			}
+		}
+
+		BuildConfiguration = assembly
+			.GetCustomAttribute<AssemblyConfigurationAttribute>()
+			?.Configuration ?? "<?>";
 	}
 
 	public string ToLongString() => $"\nVersion: {Version}\nBranch: {Branch}\nCommitHash: {CommitSha}";
 	public override string ToString() => $"{Version}/{Branch}/{(CommitSha.Length > 8 ? CommitSha[..8] : CommitSha)}";
 
-	partial void GetDataInternal();
 }
 
 public record PlatformVersion(Runtime Runtime, string FullName, Version? SemVer)

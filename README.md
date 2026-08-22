@@ -128,6 +128,7 @@ The flake also exports a NixOS module:
 ```
 
 Runtime data and per-bot configuration are stored in `/var/lib/ts3audiobot`.
+The application version is maintained in the repository-root `version.txt`.
 
 ## Building manually
 
