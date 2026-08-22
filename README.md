@@ -119,6 +119,17 @@ The flake also exports a NixOS module:
               configs.send_stats = false;
               web.port = 58913;
             };
+            bots.default = {
+              run = true;
+              connect.address = "teamspeak.example.org";
+            };
+            rights = {
+              "+" = [ "cmd.help.*" "cmd.version" ];
+              rule = [{
+                groupid = [ 6 ];
+                "+" = "*";
+              }];
+            };
           };
         }
       ];
