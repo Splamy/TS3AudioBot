@@ -136,7 +136,6 @@ public enum Runtime
 public class BuildData
 {
 	public string Version = "<?>";
-	public string Branch = "<?>";
 	public string CommitSha = "<?>";
 
 	public string BuildConfiguration = "<?>";
@@ -167,8 +166,8 @@ public class BuildData
 			?.Configuration ?? "<?>";
 	}
 
-	public string ToLongString() => $"\nVersion: {Version}\nBranch: {Branch}\nCommitHash: {CommitSha}";
-	public override string ToString() => $"{Version}/{Branch}/{(CommitSha.Length > 8 ? CommitSha[..8] : CommitSha)}";
+	public string ToLongString() => $"\nVersion: {Version}\nCommitHash: {CommitSha}";
+	public override string ToString() => $"{Version}/{CommitSha}";
 
 }
 
