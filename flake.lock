@@ -18,7 +18,25 @@
     },
     "root": {
       "inputs": {
-        "nixpkgs": "nixpkgs"
+        "nixpkgs": "nixpkgs",
+        "tsdeclarations": "tsdeclarations"
+      }
+    },
+    "tsdeclarations": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1640439960,
+        "narHash": "sha256-WoMj1GFO0lTPj0yQhNnS54wflDVN39cv/9EKgZCaZJg=",
+        "owner": "ReSpeak",
+        "repo": "tsdeclarations",
+        "rev": "53a1580af9e09b7c80c2c83d16dba9d2a0fb09a8",
+        "type": "github"
+      },
+      "original": {
+        "owner": "ReSpeak",
+        "repo": "tsdeclarations",
+        "rev": "53a1580af9e09b7c80c2c83d16dba9d2a0fb09a8",
+        "type": "github"
       }
     }
   },

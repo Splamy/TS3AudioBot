@@ -3,12 +3,16 @@
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    self.submodules = true;
+    tsdeclarations = {
+      url = "github:ReSpeak/tsdeclarations/53a1580af9e09b7c80c2c83d16dba9d2a0fb09a8";
+      flake = false;
+    };
   };
 
   outputs = {
     self,
     nixpkgs,
+    tsdeclarations,
   }: let
     supportedSystems = [
       "aarch64-linux"
@@ -62,6 +66,11 @@
           pname = "ts3audiobot";
           inherit version;
           src = self;
+
+          postPatch = ''
+            mkdir -p TSLib/Declarations
+            cp -r ${tsdeclarations}/. TSLib/Declarations/
+          '';
 
           projectFile = "TS3AudioBot/TS3AudioBot.csproj";
           nugetDeps = ./nix/deps.json;
@@ -120,12 +129,6 @@
           type = "app";
           program = "${package}/bin/TS3AudioBot";
           meta.description = "Run TS3AudioBot";
-        };
-
-        update-deps = {
-          type = "app";
-          program = "${self.packages.${system}.update-deps}/bin/update-ts3audiobot-deps";
-          meta.description = "Update the TS3AudioBot NuGet dependency lock";
         };
       }
     );
