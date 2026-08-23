@@ -84,14 +84,6 @@
             ++ pkgs.lib.optional (revision != null) "-p:SourceRevisionId=${revision}";
 
           runtimeDeps = [pkgs.libopus];
-          makeWrapperArgs = [
-            "--prefix PATH : ${
-              pkgs.lib.makeBinPath [
-                pkgs.ffmpeg
-                pkgs.yt-dlp
-              ]
-            }"
-          ];
 
           postInstall = ''
             mkdir -p "$out/share/ts3audiobot"
@@ -140,7 +132,7 @@
         default = pkgs.mkShell {
           packages = with pkgs; [
             dotnetCorePackages.sdk_10_0_3xx
-            ffmpeg
+            ffmpeg-headless
             libopus
             nodejs_22
             yarn

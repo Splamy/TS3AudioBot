@@ -12,8 +12,8 @@
     plugins.path = "plugins";
     rights.path = "rights.toml";
     tools = {
-      ffmpeg.path = "${pkgs.ffmpeg}/bin/ffmpeg";
-      "youtube-dl".path = "${pkgs.yt-dlp}/bin/yt-dlp";
+      ffmpeg.path = lib.getExe cfg.binaries.ffmpeg;
+      "youtube-dl".path = lib.getExe cfg.binaries.yt-dlp;
     };
     web.interface.path = "${cfg.package}/share/ts3audiobot/WebInterface";
   };
@@ -133,6 +133,11 @@ in {
       type = lib.types.bool;
       default = false;
       description = "Open the configured web interface TCP port.";
+    };
+
+    binaries = {
+      ffmpeg = lib.mkPackageOption pkgs "ffmpeg-headless" {};
+      yt-dlp = lib.mkPackageOption pkgs "yt-dlp" {};
     };
   };
 
