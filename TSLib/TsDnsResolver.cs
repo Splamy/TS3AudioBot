@@ -16,7 +16,6 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Sockets;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using TSLib.Helper;
 
@@ -259,6 +258,8 @@ public static class TsDnsResolver
 	{
 		if (IPEndPoint.TryParse(address, out var endPoint))
 		{
+			if (endPoint.Port == 0)
+				endPoint.Port = defaultPort;
 			return endPoint;
 		}
 

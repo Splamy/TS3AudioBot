@@ -64,37 +64,39 @@ public static class YoutubeDlHelper
 		var youtubeDlPath = YoutubeDlPath;
 		if (string.IsNullOrEmpty(youtubeDlPath))
 		{
-			// Try from PATH
-			try
+			foreach (var binName in new[] { "youtube-dl", "yt-dlp" })
 			{
-			    const string defaultYtDlName = "youtube-dl";
-			    using var tmproc = new Process();
-			    tmproc.StartInfo.FileName = defaultYtDlName;
-			    tmproc.StartInfo.Arguments = "--version";
-			    tmproc.StartInfo.UseShellExecute = false;
-			    tmproc.StartInfo.CreateNoWindow = true;
-			    tmproc.StartInfo.RedirectStandardOutput = true;
-			    tmproc.StartInfo.RedirectStandardError = true;
-			    tmproc.EnableRaisingEvents = true;
-			    tmproc.Start();
-			    tmproc.WaitForExit();
-			    if (tmproc.ExitCode == 0)
-			        return (defaultYtDlName, "");
-			}
-			catch (Win32Exception)
-			{
-			    // Not in path, ignore
-			}
+				// Try from PATH
+				try
+				{
+					using var tmproc = new Process();
+					tmproc.StartInfo.FileName = binName;
+					tmproc.StartInfo.Arguments = "--version";
+					tmproc.StartInfo.UseShellExecute = false;
+					tmproc.StartInfo.CreateNoWindow = true;
+					tmproc.StartInfo.RedirectStandardOutput = true;
+					tmproc.StartInfo.RedirectStandardError = true;
+					tmproc.EnableRaisingEvents = true;
+					tmproc.Start();
+					tmproc.WaitForExit();
+					if (tmproc.ExitCode == 0)
+						return (binName, "");
+				}
+				catch (Win32Exception)
+				{
+					// Not in path, ignore
+				}
 
-			// Default path youtube-dl is suggesting to install
-			const string defaultYtDlPath = "/usr/local/bin/youtube-dl";
-			if (File.Exists(defaultYtDlPath))
-				return (defaultYtDlPath, "");
+				// Default path youtube-dl is suggesting to install
+				string defaultYtDlPath = $"/usr/local/bin/{binName}";
+				if (File.Exists(defaultYtDlPath))
+					return (defaultYtDlPath, "");
 
-			// Default path most package managers install to
-			const string defaultPkgManPath = "/usr/bin/youtube-dl";
-			if (File.Exists(defaultPkgManPath))
-				return (defaultPkgManPath, "");
+				// Default path most package managers install to
+				string defaultPkgManPath = $"/usr/bin/{binName}";
+				if (File.Exists(defaultPkgManPath))
+					return (defaultPkgManPath, "");
+			}
 
 			youtubeDlPath = Directory.GetCurrentDirectory();
 		}

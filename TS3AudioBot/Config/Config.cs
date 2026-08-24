@@ -148,8 +148,10 @@ public partial class ConfRoot
 	internal void AddToConfigCache(ConfBot config)
 	{
 		var name = config.Name;
-		if (!string.IsNullOrEmpty(name) && !botConfCache.ContainsKey(name))
-			botConfCache[name] = config;
+		if (!string.IsNullOrEmpty(name))
+		{
+			botConfCache.TryAdd(name, config);
+		}
 	}
 
 	public E<LocalStr> CreateBotConfig(string name)
