@@ -320,6 +320,7 @@ public class JsonYtdlFormat
 	public string? format_id { get; set; }
 	public string? url { get; set; }
 	public string? ext { get; set; }
+	public uint? available_at { get; set; }
 }
 
 public class JsonYtdlPlaylistDump : JsonYtdlBase

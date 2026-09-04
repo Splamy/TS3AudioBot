@@ -160,6 +160,19 @@ public sealed partial class YoutubeResolver : IResourceResolver, IPlaylistResolv
 			throw Error.LocalStr(strings.error_ytdl_empty_response);
 
 		Log.Debug("youtube-dl succeeded!");
+
+		if (format!.available_at.HasValue)
+		{
+			var availableTime = Tools.FromUnix(format.available_at.Value);
+			var waitTime = availableTime - DateTime.UtcNow;
+
+			if (waitTime > TimeSpan.Zero)
+			{
+				Log.Debug($"Waiting youtube delay: {waitTime}");
+				await Task.Delay(waitTime, cancellationToken);
+			}
+		}
+
 		return new PlayResource(url, resource, songInfo: songInfo);
 	}
 
